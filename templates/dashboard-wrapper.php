@@ -1,18 +1,12 @@
 <?php
 /**
  * The main template wrapper for the PuzzlingCRM dashboard.
- *
- * This template checks the current user's role and loads the appropriate
- * partial template for their dashboard view.
- *
- * @package PuzzlingCRM
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit;
 }
 
-// Get current user information
 $current_user = wp_get_current_user();
 if ( ! ( $current_user instanceof WP_User ) || $current_user->ID === 0 ) {
     echo '<p>لطفاً برای مشاهده داشبورد، ابتدا وارد حساب کاربری خود شوید.</p>';
@@ -23,7 +17,6 @@ $user_roles = (array) $current_user->roles;
 $primary_role = !empty($user_roles) ? $user_roles[0] : '';
 $dashboard_title = 'داشبورد';
 
-// Determine which partial to load based on the user role
 $partial_to_load = '';
 
 if ( in_array( 'administrator', $user_roles ) || in_array( 'system_manager', $user_roles ) ) {
@@ -43,7 +36,6 @@ if ( in_array( 'administrator', $user_roles ) || in_array( 'system_manager', $us
     return;
 }
 
-// Get the full path to the partial template
 $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to_load;
 
 ?>
@@ -59,7 +51,14 @@ $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to_lo
 
     <main class="puzzling-dashboard-content">
         <?php
-        // ** NEW **: Display payment status messages
+        // **NEW**: Persistent notice for new customers
+        if ( in_array('customer', $user_roles) && ! get_user_meta($current_user->ID, 'puzzling_crm_form_submitted', true) ) {
+            // Find the WooCommerce 'thank you' page for the user's last order to show the form again.
+            // This is a simplified check. A more robust check would find the specific order that requires form submission.
+            $thank_you_url = wc_get_endpoint_url( 'order-received', '', get_permalink( wc_get_page_id( 'checkout' ) ) );
+            echo '<div class="pzl-alert pzl-alert-warning"><strong>توجه:</strong> برای شروع پروژه، لطفاً اطلاعات کسب‌وکار خود را تکمیل کنید. <a href="'. esc_url($thank_you_url) .'"><strong>رفتن به فرم تکمیل اطلاعات</strong></a></div>';
+        }
+        
         if ( isset($_GET['payment_status']) ) {
             $status = sanitize_key($_GET['payment_status']);
             if ( $status === 'success' ) {
@@ -72,7 +71,6 @@ $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to_lo
         }
         
         if ( file_exists( $template_path ) ) {
-            // Include the specific dashboard partial
             include $template_path;
         } else {
             echo '<p>خطا: فایل قالب داشبورد یافت نشد.</p>';
@@ -84,4 +82,5 @@ $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to_lo
 .pzl-alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
 .pzl-alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
 .pzl-alert-error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
+.pzl-alert-warning { color: #856404; background-color: #fff3cd; border-color: #ffeeba; }
 </style>

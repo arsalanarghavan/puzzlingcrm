@@ -1,5 +1,5 @@
 jQuery(document).ready(function($) {
-    // --- Payment Row Management (from original file) ---
+    // --- Payment Row Management ---
     $('#add-payment-row').on('click', function() {
         var rowHtml = `
             <div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
@@ -20,7 +20,6 @@ jQuery(document).ready(function($) {
     // 1. Add New Task
     $('#puzzling-add-task-form').on('submit', function(e) {
         e.preventDefault();
-
         var form = $(this);
         var titleInput = form.find('#task_title');
         var title = titleInput.val();
@@ -45,10 +44,11 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    // Reload the page to see the new task. A better way would be to append the new task via JS.
-                    location.reload();
+                    // **IMPROVEMENT**: Prepend new task without reloading the page
+                    $('#active-tasks-list').prepend(response.data.task_html);
+                    $('.no-tasks-message').hide(); // Hide 'no tasks' message if it exists
                 } else {
-                    alert('خطا: ' + response.data.message);
+                    alert('خطا: ' + (response.data.message || 'خطای ناشناخته'));
                 }
             },
             error: function() {
@@ -61,7 +61,7 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // 2. Update Task Status (Mark as Done/Undone)
+    // 2. Update Task Status
     $('.task-list').on('change', '.task-checkbox', function() {
         var checkbox = $(this);
         var taskItem = checkbox.closest('.task-item');
@@ -73,7 +73,7 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'puzzling_update_task_status',
-                security: $('#puzzling-add-task-form #security').val(), // Use the nonce from the form
+                security: $('#puzzling-add-task-form #security').val(),
                 task_id: taskId,
                 is_done: isDone
             },
@@ -82,7 +82,6 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if(response.success) {
-                    // Move the task item to the correct list
                     if (isDone) {
                         taskItem.addClass('status-done');
                         $('#done-tasks-list').prepend(taskItem);
@@ -92,7 +91,6 @@ jQuery(document).ready(function($) {
                     }
                 } else {
                     alert('خطا در به‌روزرسانی تسک.');
-                    // Revert checkbox state
                     checkbox.prop('checked', !isDone);
                 }
             },
@@ -101,6 +99,46 @@ jQuery(document).ready(function($) {
                 checkbox.prop('checked', !isDone);
             },
             complete: function() {
+                taskItem.css('opacity', '1');
+            }
+        });
+    });
+
+    // **NEW**: 3. Delete Task
+    $('.task-list').on('click', '.delete-task', function(e) {
+        e.preventDefault();
+        
+        if ( ! confirm('آیا از حذف این تسک مطمئن هستید؟') ) {
+            return;
+        }
+
+        var link = $(this);
+        var taskItem = link.closest('.task-item');
+        var taskId = taskItem.data('task-id');
+
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'puzzling_delete_task',
+                security: $('#puzzling-add-task-form #security').val(),
+                task_id: taskId
+            },
+            beforeSend: function() {
+                taskItem.css('opacity', '0.5');
+            },
+            success: function(response) {
+                if(response.success) {
+                    taskItem.slideUp(function() {
+                        $(this).remove();
+                    });
+                } else {
+                    alert('خطا: ' + (response.data.message || 'خطای ناشناخته'));
+                    taskItem.css('opacity', '1');
+                }
+            },
+            error: function() {
+                alert('یک خطای ناشناخته در ارتباط با سرور رخ داد.');
                 taskItem.css('opacity', '1');
             }
         });

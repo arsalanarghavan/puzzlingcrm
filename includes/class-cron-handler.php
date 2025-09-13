@@ -10,14 +10,12 @@ class PuzzlingCRM_Cron_Handler {
     }
 
     public function send_payment_reminders() {
-        // ** UPDATED: Get all settings from the new handler **
         $api_key = PuzzlingCRM_Settings_Handler::get_setting('melipayamak_api_key');
         $api_secret = PuzzlingCRM_Settings_Handler::get_setting('melipayamak_api_secret');
         $pattern_3_days_left = PuzzlingCRM_Settings_Handler::get_setting('pattern_3_days');
         $pattern_1_day_left = PuzzlingCRM_Settings_Handler::get_setting('pattern_1_day');
         $pattern_due_today = PuzzlingCRM_Settings_Handler::get_setting('pattern_due_today');
 
-        // Stop if essential settings are missing
         if (empty($api_key) || empty($pattern_3_days_left) || empty($pattern_1_day_left) || empty($pattern_due_today)) {
             error_log('PuzzlingCRM Cron: Melipayamak settings are incomplete. Reminders not sent.');
             return;
@@ -58,7 +56,7 @@ class PuzzlingCRM_Cron_Handler {
                     
                     $interval = $today->diff($due_date);
                     
-                    if ($interval->invert) { // Skip if the due date is in the past
+                    if ($interval->invert) { 
                         continue;
                     }
 
@@ -75,7 +73,8 @@ class PuzzlingCRM_Cron_Handler {
                     }
 
                     if ($pattern_to_use) {
-                        // $melipayamak->send_pattern_sms($customer_phone, $pattern_to_use, $params);
+                        // **FIXED**: SMS sending is now active.
+                        $melipayamak->send_pattern_sms($customer_phone, $pattern_to_use, $params);
                         error_log("PuzzlingCRM: SMS reminder sent to {$customer_phone} for contract ID {$contract_post->ID}. Pattern: {$pattern_to_use}");
                     }
 
