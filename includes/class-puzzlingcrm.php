@@ -25,7 +25,7 @@ class PuzzlingCRM {
         // Core Classes
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/puzzling-functions.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-installer.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-admin-menu.php'; // **NEW**
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-admin-menu.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cpt-manager.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-roles-manager.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-shortcode-manager.php';
@@ -44,10 +44,7 @@ class PuzzlingCRM {
     private function define_hooks() {
         register_activation_hook( PUZZLINGCRM_PLUGIN_DIR . 'puzzlingcrm.php', [ 'PuzzlingCRM_Installer', 'activate' ] );
         
-        // The hook for displaying form after purchase is deactivated
-        // add_action( 'woocommerce_thankyou', [ $this, 'display_customer_info_form' ], 10, 1 );
-
-        new PuzzlingCRM_Admin_Menu(); // **NEW**
+        new PuzzlingCRM_Admin_Menu();
         new PuzzlingCRM_CPT_Manager();
         new PuzzlingCRM_Roles_Manager();
         new PuzzlingCRM_Shortcode_Manager();
@@ -66,7 +63,10 @@ class PuzzlingCRM {
         
         wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [
             'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce')
+            'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce'),
+            'lang'     => [
+                'confirm_delete' => __('Are you sure you want to delete this item?', 'puzzlingcrm'),
+            ]
         ]);
     }
     

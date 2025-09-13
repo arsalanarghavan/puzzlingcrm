@@ -11,8 +11,8 @@ $active_tab = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
 ?>
 
 <div class="pzl-dashboard-tabs">
-    <a href="?view=overview" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"> <span class="dashicons dashicons-dashboard"></span> نمای کلی </a>
-    <a href="?view=reports" class="pzl-tab <?php echo $active_tab === 'reports' ? 'active' : ''; ?>"> <span class="dashicons dashicons-chart-area"></span> گزارش‌گیری </a>
+    <a href="?view=overview" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"> <span class="dashicons dashicons-dashboard"></span> <?php esc_html_e('Overview', 'puzzlingcrm'); ?></a>
+    <a href="?view=reports" class="pzl-tab <?php echo $active_tab === 'reports' ? 'active' : ''; ?>"> <span class="dashicons dashicons-chart-area"></span> <?php esc_html_e('Reports', 'puzzlingcrm'); ?></a>
 </div>
 
 <div class="pzl-dashboard-tab-content">
@@ -58,20 +58,20 @@ $active_tab = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
     ?>
     <div class="pzl-dashboard-stats">
         <div class="stat-widget">
-            <h4>درآمد کل (تومان)</h4>
+            <h4><?php esc_html_e('Total Income (Toman)', 'puzzlingcrm'); ?></h4>
             <span class="stat-number"><?php echo esc_html( number_format($stats['total_income']) ); ?></span>
         </div>
         <div class="stat-widget">
-            <h4>مبلغ در انتظار پرداخت (تومان)</h4>
+            <h4><?php esc_html_e('Pending Amount (Toman)', 'puzzlingcrm'); ?></h4>
             <span class="stat-number"><?php echo esc_html( number_format($stats['pending_amount']) ); ?></span>
         </div>
         <div class="stat-widget">
-            <h4>اقساط معوق</h4>
+            <h4><?php esc_html_e('Overdue Installments', 'puzzlingcrm'); ?></h4>
             <span class="stat-number"><?php echo esc_html( $stats['overdue_installments'] ); ?></span>
         </div>
     </div>
     <div class="pzl-dashboard-section">
-        <h3><span class="dashicons dashicons-list-view" style="vertical-align: middle;"></span> لیست تمام اقساط</h3>
+        <h3><span class="dashicons dashicons-list-view" style="vertical-align: middle;"></span> <?php esc_html_e('All Installments List', 'puzzlingcrm'); ?></h3>
         <?php include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/common/payments-table.php'; ?>
     </div>
 <?php endif; ?>

@@ -13,7 +13,7 @@ $customer_id = $current_user->ID;
 ?>
 
 <div class="pzl-dashboard-section">
-    <h3><span class="dashicons dashicons-portfolio" style="vertical-align: middle;"></span> پروژه‌های شما</h3>
+    <h3><span class="dashicons dashicons-portfolio" style="vertical-align: middle;"></span> <?php esc_html_e('Your Projects', 'puzzlingcrm'); ?></h3>
     <?php
     $projects = get_posts([
         'post_type' => 'project',
@@ -22,7 +22,7 @@ $customer_id = $current_user->ID;
     ]);
 
     if (empty($projects)) {
-        echo '<p>شما در حال حاضر هیچ پروژه‌ای ندارید.</p>';
+        echo '<p>' . esc_html__('You currently have no projects.', 'puzzlingcrm') . '</p>';
     } else {
         foreach ($projects as $project) {
             echo '<h4>' . esc_html($project->post_title) . '</h4>';
@@ -34,69 +34,14 @@ $customer_id = $current_user->ID;
 <hr style="margin: 30px 0;">
 
 <div class="pzl-dashboard-section">
-    <h3><span class="dashicons dashicons-money-alt" style="vertical-align: middle;"></span> وضعیت پرداخت‌ها و اقساط</h3>
-    <?php
-    $contracts = get_posts([
-        'post_type' => 'contract',
-        'author' => $customer_id,
-        'posts_per_page' => -1,
-    ]);
-
-    if (empty($contracts)) {
-        echo '<p>هیچ برنامه پرداختی برای شما ثبت نشده است.</p>';
-    } else {
-    ?>
-    <table class="pzl-table">
-        <thead>
-            <tr>
-                <th>پروژه</th>
-                <th>مبلغ قسط (تومان)</th>
-                <th>تاریخ سررسید</th>
-                <th>وضعیت</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php
-            foreach ($contracts as $contract) {
-                $project_id = get_post_meta($contract->ID, '_project_id', true);
-                $project_title = get_the_title($project_id);
-                $installments = get_post_meta($contract->ID, '_installments', true);
-
-                if (is_array($installments)) {
-                    foreach ($installments as $index => $installment) {
-                        $status = $installment['status'] ?? 'pending';
-                        $status_text = ($status === 'paid') ? 'پرداخت شده' : 'در انتظار پرداخت';
-                        $status_class = ($status === 'paid') ? 'status-paid' : 'status-pending';
-                        
-                        echo '<tr>';
-                        echo '<td>' . esc_html($project_title) . '</td>';
-                        echo '<td>' . esc_html(number_format($installment['amount'])) . '</td>';
-                        echo '<td>' . esc_html(date_i18n('Y/m/d', strtotime($installment['due_date']))) . '</td>';
-                        echo '<td><span class="pzl-status ' . esc_attr($status_class) . '">' . $status_text . '</span></td>';
-                        echo '<td>';
-                        if ($status === 'pending') {
-                            $nonce = wp_create_nonce('pay_installment_' . $contract->ID . '_' . $index);
-                            $payment_url = add_query_arg(['puzzling_action' => 'pay_installment', 'contract_id' => $contract->ID, 'installment_index' => $index, '_wpnonce' => $nonce, ], get_permalink());
-                            echo '<a href="' . esc_url($payment_url) . '" class="pzl-button pzl-button-primary">پرداخت آنلاین</a>';
-                        } else {
-                            echo '<span>—</span>';
-                        }
-                        echo '</td>';
-                        echo '</tr>';
-                    }
-                }
-            }
-            ?>
-        </tbody>
-    </table>
-    <?php } ?>
+    <h3><span class="dashicons dashicons-money-alt" style="vertical-align: middle;"></span> <?php esc_html_e('Payments & Installments Status', 'puzzlingcrm'); ?></h3>
+    <?php include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/common/payments-table.php'; ?>
 </div>
 
 <hr style="margin: 30px 0;">
 
 <div class="pzl-dashboard-section">
-    <h3><span class="dashicons dashicons-sos" style="vertical-align: middle;"></span> پشتیبانی و تیکت‌ها</h3>
+    <h3><span class="dashicons dashicons-sos" style="vertical-align: middle;"></span> <?php esc_html_e('Support & Tickets', 'puzzlingcrm'); ?></h3>
     <?php include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/list-tickets.php'; ?>
 </div>
 

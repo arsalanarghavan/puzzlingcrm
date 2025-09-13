@@ -33,16 +33,16 @@ class PuzzlingCRM_CPT_Manager {
         // Project Custom Post Type
         register_post_type( 'project', [
             'labels'        => [
-                'name'          => 'پروژه‌ها',
-                'singular_name' => 'پروژه',
-                'add_new_item'  => 'افزودن پروژه جدید',
-                'edit_item'     => 'ویرایش پروژه',
-                'view_item'     => 'مشاهده پروژه',
-                'search_items'  => 'جستجوی پروژه‌ها',
-                'not_found'     => 'هیچ پروژه‌ای یافت نشد',
+                'name'          => __( 'Projects', 'puzzlingcrm' ),
+                'singular_name' => __( 'Project', 'puzzlingcrm' ),
+                'add_new_item'  => __( 'Add New Project', 'puzzlingcrm' ),
+                'edit_item'     => __( 'Edit Project', 'puzzlingcrm' ),
+                'view_item'     => __( 'View Project', 'puzzlingcrm' ),
+                'search_items'  => __( 'Search Projects', 'puzzlingcrm' ),
+                'not_found'     => __( 'No projects found', 'puzzlingcrm' ),
             ],
             'public'        => true,
-            'show_in_menu'  => false, // Managed via our custom frontend shortcodes
+            'show_in_menu'  => false, // Managed via our custom admin menu
             'rewrite'       => ['slug' => 'project'],
             'show_in_rest'  => true,
             'supports'      => ['title', 'editor', 'author', 'comments', 'custom-fields', 'thumbnail'],
@@ -52,49 +52,55 @@ class PuzzlingCRM_CPT_Manager {
 
         // Task Custom Post Type
         register_post_type( 'task', [
-            'labels'        => ['name' => 'وظایف', 'singular_name' => 'وظیفه'],
+            'labels'        => ['name' => __( 'Tasks', 'puzzlingcrm' ), 'singular_name' => __( 'Task', 'puzzlingcrm' )],
             'public'        => false,
-            'show_ui'       => false, // Managed via our custom frontend shortcodes
+            'show_ui'       => true, // Show in admin for direct management
+            'show_in_menu'  => false,
             'supports'      => ['title', 'editor', 'author', 'custom-fields'],
         ]);
 
         // Contract Custom Post Type
         register_post_type( 'contract', [
-            'labels'        => ['name' => 'قراردادها', 'singular_name' => 'قرارداد'],
+            'labels'        => ['name' => __( 'Contracts', 'puzzlingcrm' ), 'singular_name' => __( 'Contract', 'puzzlingcrm' )],
             'public'        => false,
-            'show_ui'       => false, // Managed via our custom frontend shortcodes
+            'show_ui'       => true, // Show in admin for direct management
+            'show_in_menu'  => false,
             'supports'      => ['title', 'author', 'custom-fields'],
         ]);
         
         // Log & Notification Custom Post Type
         register_post_type( 'puzzling_log', [
-            'labels'        => ['name' => 'لاگ‌ها و اعلان‌ها', 'singular_name' => 'لاگ'],
+            'labels'        => ['name' => __( 'Logs & Notifications', 'puzzlingcrm' ), 'singular_name' => __( 'Log', 'puzzlingcrm' )],
             'public'        => false,
-            'show_ui'       => false, // Managed via our custom frontend shortcodes
+            'show_ui'       => true,
+            'show_in_menu'  => false,
             'supports'      => ['title', 'editor', 'author'],
         ]);
 
         // Ticket Custom Post Type
         register_post_type( 'ticket', [
-            'labels'        => ['name' => 'تیکت‌ها', 'singular_name' => 'تیکت'],
+            'labels'        => ['name' => __( 'Tickets', 'puzzlingcrm' ), 'singular_name' => __( 'Ticket', 'puzzlingcrm' )],
             'public'        => false,
-            'show_ui'       => false, // Managed via our custom frontend shortcodes
+            'show_ui'       => true,
+            'show_in_menu'  => false,
             'supports'      => ['title', 'editor', 'author', 'comments'],
         ]);
 
         // Subscription Custom Post Type
         register_post_type( 'pzl_subscription', [
-            'labels'        => ['name' => 'اشتراک‌ها', 'singular_name' => 'اشتراک'],
+            'labels'        => ['name' => __( 'Subscriptions', 'puzzlingcrm' ), 'singular_name' => __( 'Subscription', 'puzzlingcrm' )],
             'public'        => false,
-            'show_ui'       => false, // Managed via our custom frontend shortcodes
+            'show_ui'       => true,
+            'show_in_menu'  => false,
             'supports'      => ['title', 'author', 'custom-fields'],
         ]);
 
         // Appointment Custom Post Type
         register_post_type( 'pzl_appointment', [
-            'labels'        => ['name' => 'قرار ملاقات‌ها', 'singular_name' => 'قرار ملاقات'],
+            'labels'        => ['name' => __( 'Appointments', 'puzzlingcrm' ), 'singular_name' => __( 'Appointment', 'puzzlingcrm' )],
             'public'        => false,
-            'show_ui'       => false, // Managed via our custom frontend shortcodes
+            'show_ui'       => true,
+            'show_in_menu'  => false,
             'supports'      => ['title', 'editor', 'author', 'custom-fields'],
         ]);
     }
@@ -104,20 +110,20 @@ class PuzzlingCRM_CPT_Manager {
      */
     public function register_taxonomies() {
         // Task Status Taxonomy
-        register_taxonomy('task_status', 'task', ['label' => 'وضعیت وظیفه', 'hierarchical' => true]);
+        register_taxonomy('task_status', 'task', ['label' => __( 'Task Status', 'puzzlingcrm' ), 'hierarchical' => true]);
         
         // Task Priority Taxonomy
-        register_taxonomy('task_priority', 'task', ['label' => 'اهمیت وظیفه', 'hierarchical' => true]);
+        register_taxonomy('task_priority', 'task', ['label' => __( 'Task Priority', 'puzzlingcrm' ), 'hierarchical' => true]);
         
         // Ticket Status Taxonomy
-        register_taxonomy('ticket_status', 'ticket', ['label' => 'وضعیت تیکت', 'hierarchical' => true]);
+        register_taxonomy('ticket_status', 'ticket', ['label' => __( 'Ticket Status', 'puzzlingcrm' ), 'hierarchical' => true]);
         
         // Subscription Status Taxonomy
-        register_taxonomy('subscription_status', 'pzl_subscription', ['label' => 'وضعیت اشتراک', 'hierarchical' => true]);
+        register_taxonomy('subscription_status', 'pzl_subscription', ['label' => __( 'Subscription Status', 'puzzlingcrm' ), 'hierarchical' => true]);
         
         // Subscription Plan Taxonomy (used to define different plans)
         register_taxonomy('subscription_plan', 'pzl_subscription', [
-            'label'         => 'پلن‌های اشتراک',
+            'label'         => __( 'Subscription Plans', 'puzzlingcrm' ),
             'hierarchical'  => false, // Non-hierarchical, like tags
             'public'        => false,
             'show_ui'       => true, // Make it visible in admin for easy management if needed
@@ -130,7 +136,7 @@ class PuzzlingCRM_CPT_Manager {
      */
     public static function create_default_terms() {
         // Task Statuses
-        $task_statuses = ['انجام نشده' => 'to-do', 'در حال انجام' => 'in-progress', 'انجام شده' => 'done'];
+        $task_statuses = [__('To Do', 'puzzlingcrm') => 'to-do', __('In Progress', 'puzzlingcrm') => 'in-progress', __('Done', 'puzzlingcrm') => 'done'];
         foreach ($task_statuses as $name => $slug) {
             if ( ! term_exists( $slug, 'task_status' ) ) {
                 wp_insert_term( $name, 'task_status', ['slug' => $slug] );
@@ -138,7 +144,7 @@ class PuzzlingCRM_CPT_Manager {
         }
         
         // Task Priorities
-        $task_priorities = ['زیاد' => 'high', 'متوسط' => 'medium', 'کم' => 'low'];
+        $task_priorities = [__('High', 'puzzlingcrm') => 'high', __('Medium', 'puzzlingcrm') => 'medium', __('Low', 'puzzlingcrm') => 'low'];
         foreach ($task_priorities as $name => $slug) {
             if ( ! term_exists( $slug, 'task_priority' ) ) {
                 wp_insert_term( $name, 'task_priority', ['slug' => $slug] );
@@ -146,7 +152,7 @@ class PuzzlingCRM_CPT_Manager {
         }
         
         // Ticket Statuses
-        $ticket_statuses = ['باز' => 'open', 'در حال بررسی' => 'in-progress', 'پاسخ داده شد' => 'answered', 'بسته شده' => 'closed'];
+        $ticket_statuses = [__('Open', 'puzzlingcrm') => 'open', __('In Progress', 'puzzlingcrm') => 'in-progress', __('Answered', 'puzzlingcrm') => 'answered', __('Closed', 'puzzlingcrm') => 'closed'];
         foreach ($ticket_statuses as $name => $slug) {
             if ( ! term_exists( $slug, 'ticket_status' ) ) {
                 wp_insert_term( $name, 'ticket_status', ['slug' => $slug] );
@@ -154,7 +160,7 @@ class PuzzlingCRM_CPT_Manager {
         }
 
         // Subscription Statuses
-        $subscription_statuses = ['فعال' => 'active', 'منقضی شده' => 'expired', 'لغو شده' => 'cancelled', 'معوق' => 'overdue'];
+        $subscription_statuses = [__('Active', 'puzzlingcrm') => 'active', __('Expired', 'puzzlingcrm') => 'expired', __('Cancelled', 'puzzlingcrm') => 'cancelled', __('Overdue', 'puzzlingcrm') => 'overdue'];
         foreach ($subscription_statuses as $name => $slug) {
             if ( ! term_exists( $slug, 'subscription_status' ) ) {
                 wp_insert_term( $name, 'subscription_status', ['slug' => $slug] );

@@ -40,52 +40,52 @@ if ($contracts) {
         }
     }
 }
+$base_url = puzzling_get_dashboard_url();
 ?>
 
 <div class="pzl-dashboard-stats">
     <div class="stat-widget">
-        <h4>کل پروژه‌ها</h4>
+        <h4><?php esc_html_e('Total Projects', 'puzzlingcrm'); ?></h4>
         <span class="stat-number"><?php echo esc_html($total_projects); ?></span>
     </div>
     <div class="stat-widget">
-        <h4>تسک‌های فعال</h4>
+        <h4><?php esc_html_e('Active Tasks', 'puzzlingcrm'); ?></h4>
         <span class="stat-number"><?php echo esc_html($active_tasks_count); ?></span>
     </div>
     <div class="stat-widget">
-        <h4>اقساط در انتظار پرداخت</h4>
+        <h4><?php esc_html_e('Pending Installments', 'puzzlingcrm'); ?></h4>
         <span class="stat-number"><?php echo esc_html($pending_installments); ?></span>
     </div>
 </div>
 
 <div class="pzl-dashboard-tabs">
-    <a href="?view=overview" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"> <span class="dashicons dashicons-dashboard"></span> نمای کلی </a>
-    <a href="?view=projects" class="pzl-tab <?php echo $active_tab === 'projects' ? 'active' : ''; ?>"> <span class="dashicons dashicons-portfolio"></span> مدیریت پروژه‌ها </a>
-    <a href="?view=contracts" class="pzl-tab <?php echo $active_tab === 'contracts' ? 'active' : ''; ?>"> <span class="dashicons dashicons-media-text"></span> مدیریت قراردادها </a>
-    <a href="?view=tickets" class="pzl-tab <?php echo $active_tab === 'tickets' ? 'active' : ''; ?>"> <span class="dashicons dashicons-sos"></span> پشتیبانی </a>
-    <a href="?view=logs" class="pzl-tab <?php echo $active_tab === 'logs' ? 'active' : ''; ?>"> <span class="dashicons dashicons-list-view"></span> لاگ رویدادها </a>
-    <a href="?view=settings" class="pzl-tab <?php echo $active_tab === 'settings' ? 'active' : ''; ?>"> <span class="dashicons dashicons-admin-settings"></span> تنظیمات </a>
+    <a href="<?php echo esc_url(add_query_arg('view', 'overview', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"> <span class="dashicons dashicons-dashboard"></span> <?php esc_html_e('Overview', 'puzzlingcrm'); ?></a>
+    <a href="<?php echo esc_url(add_query_arg('view', 'projects', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'projects' ? 'active' : ''; ?>"> <span class="dashicons dashicons-portfolio"></span> <?php esc_html_e('Manage Projects', 'puzzlingcrm'); ?></a>
+    <a href="<?php echo esc_url(add_query_arg('view', 'contracts', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'contracts' ? 'active' : ''; ?>"> <span class="dashicons dashicons-media-text"></span> <?php esc_html_e('Manage Contracts', 'puzzlingcrm'); ?></a>
+    <a href="<?php echo esc_url(add_query_arg('view', 'tickets', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'tickets' ? 'active' : ''; ?>"> <span class="dashicons dashicons-sos"></span> <?php esc_html_e('Support', 'puzzlingcrm'); ?></a>
+    <a href="<?php echo esc_url(add_query_arg('view', 'logs', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'logs' ? 'active' : ''; ?>"> <span class="dashicons dashicons-list-view"></span> <?php esc_html_e('Event Logs', 'puzzlingcrm'); ?></a>
+    <a href="<?php echo esc_url(add_query_arg('view', 'settings', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'settings' ? 'active' : ''; ?>"> <span class="dashicons dashicons-admin-settings"></span> <?php esc_html_e('Settings', 'puzzlingcrm'); ?></a>
 </div>
 
 <div class="pzl-dashboard-tab-content">
     <?php
-    if ($active_tab === 'projects') {
-        echo do_shortcode('[puzzling_manage_projects]');
-    } elseif ($active_tab === 'contracts') {
-        echo do_shortcode('[puzzling_sm_contracts]');
-    } elseif ($active_tab === 'tickets') {
-        include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/list-tickets.php';
-    } elseif ($active_tab === 'logs') {
-        include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/view-logs.php';
-    } elseif ($active_tab === 'settings') {
-        // A simple settings landing page that links to the new dedicated pages
-        echo '<h4>تنظیمات پلاگین</h4>';
-        echo '<p>برای مدیریت هر بخش از تنظیمات، لطفاً از صفحاتی که شورتکدهای زیر در آن قرار دارند، استفاده کنید:</p>';
-        echo '<ul>';
-        echo '<li><strong>تنظیمات درگاه پرداخت:</strong> <code>[puzzling_settings_payment]</code></li>';
-        echo '<li><strong>تنظیمات سامانه پیامک:</strong> <code>[puzzling_settings_sms]</code></li>';
-        echo '</ul>';
+    $template_map = [
+        'projects' => 'page-projects',
+        'contracts' => 'page-contracts',
+        'tickets' => 'list-tickets',
+        'logs' => 'view-logs',
+        'settings' => 'page-settings',
+    ];
+
+    if (isset($template_map[$active_tab])) {
+        $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $template_map[$active_tab] . '.php';
+        if (file_exists($template_path)) {
+            include $template_path;
+        }
     } else {
-        echo '<h4>به داشبورد مدیریت سیستم خوش آمدید.</h4><p>از این پنل می‌توانید نمای کلی سیستم را مشاهده کنید، پروژه‌ها و قراردادها را مدیریت کرده و تنظیمات پلاگین را پیکربندی نمایید.</p>';
+        // Overview is the default
+        echo '<h4>' . esc_html__('Welcome to the System Management Dashboard.', 'puzzlingcrm') . '</h4>';
+        echo '<p>' . esc_html__('From this panel, you can get an overview of the system, manage projects and contracts, and configure the plugin settings.', 'puzzlingcrm') . '</p>';
     }
     ?>
 </div>
