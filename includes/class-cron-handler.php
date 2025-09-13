@@ -1,48 +1,88 @@
 <?php
-class CSM_Cron_Handler {
+class PuzzlingCRM_Cron_Handler {
     
     public function __construct() {
-        // Schedule the event if it's not already scheduled
-        if ( ! wp_next_scheduled( 'csm_daily_reminder_hook' ) ) {
-            wp_schedule_event( time(), 'daily', 'csm_daily_reminder_hook' );
+        if ( ! wp_next_scheduled( 'puzzling_daily_reminder_hook' ) ) {
+            wp_schedule_event( strtotime('today 9:00am'), 'daily', 'puzzling_daily_reminder_hook' );
         }
         
-        add_action( 'csm_daily_reminder_hook', [ $this, 'send_payment_reminders' ] );
+        add_action( 'puzzling_daily_reminder_hook', [ $this, 'send_payment_reminders' ] );
     }
 
     public function send_payment_reminders() {
-        // 1. Get all pending payment orders created by our plugin
-        $args = [
-            'post_type'   => 'shop_order',
-            'post_status' => 'wc-pending',
-            'meta_key'    => '_csm_due_date', // A custom meta key we set when creating the order
+        // ** UPDATED: Get all settings from the new handler **
+        $api_key = PuzzlingCRM_Settings_Handler::get_setting('melipayamak_api_key');
+        $api_secret = PuzzlingCRM_Settings_Handler::get_setting('melipayamak_api_secret');
+        $pattern_3_days_left = PuzzlingCRM_Settings_Handler::get_setting('pattern_3_days');
+        $pattern_1_day_left = PuzzlingCRM_Settings_Handler::get_setting('pattern_1_day');
+        $pattern_due_today = PuzzlingCRM_Settings_Handler::get_setting('pattern_due_today');
+
+        // Stop if essential settings are missing
+        if (empty($api_key) || empty($pattern_3_days_left) || empty($pattern_1_day_left) || empty($pattern_due_today)) {
+            error_log('PuzzlingCRM Cron: Melipayamak settings are incomplete. Reminders not sent.');
+            return;
+        }
+
+        $melipayamak = new CSM_Melipayamak_Handler($api_key, $api_secret);
+        
+        $contracts = get_posts([
+            'post_type' => 'contract',
             'posts_per_page' => -1,
-        ];
-        $orders = get_posts( $args );
+            'post_status' => 'publish',
+        ]);
 
-        $today = new DateTime('now');
-        $melipayamak = new CSM_Melipayamak_Handler('API_KEY', 'API_SECRET');
+        if (empty($contracts)) {
+            return;
+        }
 
-        foreach ( $orders as $order_post ) {
-            $order = wc_get_order( $order_post->ID );
-            $due_date_str = get_post_meta( $order->get_id(), '_csm_due_date', true );
-            if ( empty($due_date_str) ) continue;
+        $today = new DateTime('now', new DateTimeZone('Asia/Tehran'));
+        $today->setTime(0, 0, 0);
 
-            $due_date = new DateTime($due_date_str);
-            $interval = $today->diff($due_date)->days;
-            $customer_phone = $order->get_billing_phone();
+        foreach ( $contracts as $contract_post ) {
+            $installments = get_post_meta( $contract_post->ID, '_installments', true );
+            $customer_id = $contract_post->post_author;
+            $customer_phone = get_user_meta($customer_id, 'billing_phone', true);
 
-            if ($interval == 3) {
-                // Send "3 days left" SMS with its specific pattern
-                // $melipayamak->send_pattern_sms($customer_phone, 'pattern_code_3_days', [...]);
-            } elseif ($interval == 1) {
-                // Send "1 day left" SMS
-                // $melipayamak->send_pattern_sms($customer_phone, 'pattern_code_1_day', [...]);
-            } elseif ($interval == 0) {
-                // Send "due today" SMS
-                // $melipayamak->send_pattern_sms($customer_phone, 'pattern_code_today', [...]);
+            if ( empty($installments) || ! is_array($installments) || empty($customer_phone) ) {
+                continue;
+            }
+
+            foreach ($installments as $installment) {
+                if (isset($installment['status']) && $installment['status'] === 'paid') {
+                    continue;
+                }
+
+                try {
+                    $due_date = new DateTime($installment['due_date'], new DateTimeZone('Asia/Tehran'));
+                    $due_date->setTime(0, 0, 0);
+                    
+                    $interval = $today->diff($due_date);
+                    
+                    if ($interval->invert) { // Skip if the due date is in the past
+                        continue;
+                    }
+
+                    $days_left = $interval->days;
+                    $pattern_to_use = null;
+                    $params = ['amount' => number_format($installment['amount'])];
+
+                    if ($days_left == 3) {
+                        $pattern_to_use = $pattern_3_days_left;
+                    } elseif ($days_left == 1) {
+                        $pattern_to_use = $pattern_1_day_left;
+                    } elseif ($days_left == 0) {
+                        $pattern_to_use = $pattern_due_today;
+                    }
+
+                    if ($pattern_to_use) {
+                        // $melipayamak->send_pattern_sms($customer_phone, $pattern_to_use, $params);
+                        error_log("PuzzlingCRM: SMS reminder sent to {$customer_phone} for contract ID {$contract_post->ID}. Pattern: {$pattern_to_use}");
+                    }
+
+                } catch (Exception $e) {
+                    error_log('PuzzlingCRM Cron: Invalid date format for contract ID ' . $contract_post->ID);
+                }
             }
         }
     }
 }
-// new CSM_Cron_Handler();

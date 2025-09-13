@@ -23,9 +23,9 @@ class PuzzlingCRM_CPT_Manager {
         $task_labels = [ 'name' => 'تسک‌ها', 'singular_name' => 'تسک' ];
         $task_args = [
             'labels'        => $task_labels,
-            'public'        => false, // Tasks are internal, not for public viewing
+            'public'        => false,
             'show_ui'       => true,
-            'show_in_menu'  => 'edit.php?post_type=project', // Show under Projects menu
+            'show_in_menu'  => 'edit.php?post_type=project',
             'supports'      => ['title', 'editor', 'author', 'custom-fields'],
         ];
         register_post_type( 'task', $task_args );
@@ -43,18 +43,48 @@ class PuzzlingCRM_CPT_Manager {
     }
 
     public function register_taxonomies() {
-        // Task Status Taxonomy (e.g., To Do, In Progress, Done)
+        // Task Status Taxonomy
         register_taxonomy('task_status', 'task', [
             'label' => 'وضعیت تسک',
             'rewrite' => ['slug' => 'task-status'],
             'hierarchical' => true,
         ]);
 
-        // Task Priority Taxonomy (e.g., Low, Medium, High)
+        // Task Priority Taxonomy
         register_taxonomy('task_priority', 'task', [
             'label' => 'اهمیت تسک',
             'rewrite' => ['slug' => 'task-priority'],
             'hierarchical' => true,
         ]);
+    }
+
+    /**
+     * Creates the default terms for our custom taxonomies.
+     * This method should be called once on plugin activation.
+     */
+    public static function create_default_terms() {
+        $task_statuses = [
+            'انجام نشده' => 'to-do',
+            'در حال انجام' => 'in-progress',
+            'انجام شده' => 'done',
+        ];
+
+        foreach ($task_statuses as $name => $slug) {
+            if ( ! term_exists( $slug, 'task_status' ) ) {
+                wp_insert_term( $name, 'task_status', ['slug' => $slug] );
+            }
+        }
+        
+        $task_priorities = [
+            'زیاد' => 'high',
+            'متوسط' => 'medium',
+            'کم' => 'low',
+        ];
+
+        foreach ($task_priorities as $name => $slug) {
+            if ( ! term_exists( $slug, 'task_priority' ) ) {
+                wp_insert_term( $name, 'task_priority', ['slug' => $slug] );
+            }
+        }
     }
 }
