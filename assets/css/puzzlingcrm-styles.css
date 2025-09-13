@@ -1,0 +1,30 @@
+.csm-dashboard-wrapper {
+    max-width: 800px;
+    margin: 20px 0;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+.csm-dashboard-wrapper .form-group {
+    margin-bottom: 15px;
+}
+.csm-dashboard-wrapper label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.csm-dashboard-wrapper select,
+.csm-dashboard-wrapper input[type="number"] {
+    width: 100%;
+    padding: 8px;
+}
+.payment-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.payment-row input {
+    flex-grow: 1;
+    margin-left: 10px;
+}
