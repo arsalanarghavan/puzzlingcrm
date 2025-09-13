@@ -53,6 +53,7 @@ class PuzzlingCRM_Frontend_Dashboard {
     public static function render_page_settings() { return self::render_partial('page-settings', ['system_manager']); }
     public static function render_page_logs() { return self::render_partial('page-logs', ['system_manager']); }
     public static function render_page_tickets() { return self::render_partial('list-tickets', ['system_manager']); }
+    public static function render_page_pro_invoices() { return self::render_partial('page-pro-invoices', ['system_manager']); }
 
 
     // --- Team Member Pages ---
@@ -63,7 +64,10 @@ class PuzzlingCRM_Frontend_Dashboard {
     // --- Client Pages ---
     public static function render_client_dashboard() { return self::render_partial('dashboard-client', ['customer']); }
     public static function render_client_projects() { return self::render_partial('list-projects', ['customer']); }
-    public static function render_client_payments() { return self::render_partial('common/payments-table', ['customer']); }
+    public static function render_client_invoices() { return self::render_partial('list-client-payments', ['customer']); }
     public static function render_client_tickets() { return self::render_partial('list-tickets', ['customer']); }
+    public static function render_client_appointments() { return self::render_partial('page-client-appointments', ['customer']); }
+    public static function render_client_contracts() { return self::render_partial('page-client-contracts', ['customer']); }
+    public static function render_client_pro_invoices() { return self::render_partial('page-client-pro-invoices', ['customer']); }
 
 }

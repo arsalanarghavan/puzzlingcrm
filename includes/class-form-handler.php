@@ -30,7 +30,6 @@ class PuzzlingCRM_Form_Handler {
         ]);
 
         foreach ($admins as $admin_id) {
-            // Ensure the 'user_id' in args is set to the admin's ID for each notification
             $notification_args = array_merge($args, ['user_id' => $admin_id]);
             PuzzlingCRM_Logger::add($title, $notification_args);
         }
@@ -60,12 +59,20 @@ class PuzzlingCRM_Form_Handler {
         $item_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
         
         $nonce_action = 'puzzling_' . $action;
-        if (in_array($action, ['edit_contract', 'delete_appointment', 'delete_project', 'manage_appointment'])) {
+        if (in_array($action, ['edit_contract', 'delete_appointment', 'delete_project', 'manage_appointment', 'delete_pro_invoice'])) {
              $nonce_action .= '_' . $item_id;
         }
 
         if (!wp_verify_nonce($_POST['_wpnonce'], $nonce_action)) {
-            $this->redirect_with_notice('security_failed');
+             // Specific nonce check for forms that don't follow the item_id pattern
+            if (
+                ($action === 'manage_pro_invoice' && !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_manage_pro_invoice')) ||
+                ($action === 'request_appointment' && !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_request_appointment'))
+            ) {
+                 $this->redirect_with_notice('security_failed');
+            } elseif (!in_array($action, ['manage_pro_invoice', 'request_appointment'])) {
+                $this->redirect_with_notice('security_failed');
+            }
         }
 
         if (!is_user_logged_in()) {
@@ -74,7 +81,8 @@ class PuzzlingCRM_Form_Handler {
 
         $manager_actions = [
             'manage_user', 'manage_project', 'delete_project', 'create_contract', 'edit_contract',
-            'save_settings', 'manage_appointment', 'delete_appointment'
+            'save_settings', 'manage_appointment', 'delete_appointment',
+            'manage_pro_invoice', 'delete_pro_invoice'
         ];
 
         if (in_array($action, $manager_actions)) {
@@ -88,6 +96,12 @@ class PuzzlingCRM_Form_Handler {
             }
         } elseif ($action === 'new_ticket') {
             $this->handle_new_ticket_form();
+        } elseif ($action === 'request_appointment') {
+            if (current_user_can('customer')) {
+                $this->handle_request_appointment();
+            } else {
+                $this->redirect_with_notice('permission_denied');
+            }
         }
     }
 
@@ -96,7 +110,7 @@ class PuzzlingCRM_Form_Handler {
         if (!$url) {
             $url = puzzling_get_dashboard_url();
         }
-        $url = remove_query_arg(['puzzling_action', '_wpnonce', 'action', 'user_id', 'plan_id', 'sub_id', 'appt_id', 'project_id', 'contract_id', 'puzzling_notice', 'item_id'], $url);
+        $url = remove_query_arg(['puzzling_action', '_wpnonce', 'action', 'user_id', 'plan_id', 'sub_id', 'appt_id', 'project_id', 'contract_id', 'puzzling_notice', 'item_id', 'invoice_id'], $url);
         wp_redirect( add_query_arg('puzzling_notice', $notice_key, $url) );
         exit;
     }
@@ -511,6 +525,88 @@ class PuzzlingCRM_Form_Handler {
             $this->redirect_with_notice('payment_success', $dashboard_url);
         } else {
             $this->redirect_with_notice('payment_failed_verification', $dashboard_url);
+        }
+    }
+
+    private function handle_manage_pro_invoice() {
+        $invoice_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
+        $title = sanitize_text_field($_POST['invoice_title']);
+        $content = wp_kses_post($_POST['invoice_content']);
+        $customer_id = intval($_POST['customer_id']);
+
+        if(empty($title) || empty($customer_id)) {
+            $this->redirect_with_notice('invoice_error_data_invalid');
+        }
+
+        $post_data = [
+            'post_title'    => $title,
+            'post_content'  => $content,
+            'post_author'   => $customer_id,
+            'post_status'   => 'publish',
+            'post_type'     => 'pzl_pro_invoice',
+        ];
+
+        if ($invoice_id > 0) {
+            $post_data['ID'] = $invoice_id;
+            $result = wp_update_post($post_data, true);
+            $notice = 'invoice_updated_success';
+        } else {
+            $result = wp_insert_post($post_data, true);
+            $notice = 'invoice_created_success';
+        }
+
+        if (is_wp_error($result)) {
+            $this->redirect_with_notice('invoice_error_failed');
+        } else {
+            $this->redirect_with_notice($notice);
+        }
+    }
+
+    private function handle_delete_pro_invoice() {
+        $invoice_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
+
+        if ($invoice_id > 0 && get_post_type($invoice_id) === 'pzl_pro_invoice') {
+            wp_delete_post($invoice_id, true);
+            $this->redirect_with_notice('invoice_deleted_success');
+        }
+        $this->redirect_with_notice('invoice_error_failed');
+    }
+
+    private function handle_request_appointment() {
+        $title = sanitize_text_field($_POST['title']);
+        $date = sanitize_text_field($_POST['date']);
+        $time = sanitize_text_field($_POST['time']);
+        $notes = sanitize_textarea_field($_POST['notes']);
+        
+        if (empty($title) || empty($date) || empty($time)) {
+             $this->redirect_with_notice('appt_error_data_invalid');
+        }
+
+        $full_datetime = $date . ' ' . $time;
+        $customer_id = get_current_user_id();
+
+        $post_id = wp_insert_post([
+            'post_title' => $title, 
+            'post_content' => $notes, 
+            'post_type' => 'pzl_appointment', 
+            'post_status' => 'publish',
+            'post_author' => $customer_id,
+        ]);
+
+        if (!is_wp_error($post_id)) {
+            update_post_meta($post_id, '_appointment_datetime', $full_datetime);
+
+            $this->notify_all_admins(
+                __('New Appointment Request', 'puzzlingcrm'), 
+                [
+                    'content' => sprintf(__("Customer '%s' requested an appointment for '%s' on %s.", 'puzzlingcrm'), wp_get_current_user()->display_name, $title, $full_datetime), 
+                    'type' => 'notification', 
+                    'object_id' => $post_id
+                ]
+            );
+            $this->redirect_with_notice('appt_request_success');
+        } else {
+            $this->redirect_with_notice('appt_error_failed');
         }
     }
 }
