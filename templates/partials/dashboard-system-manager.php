@@ -56,6 +56,7 @@ foreach($contracts as $contract){
 <div class="pzl-dashboard-tabs">
     <a href="?view=overview" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"> <span class="dashicons dashicons-dashboard"></span> نمای کلی </a>
     <a href="?view=contracts" class="pzl-tab <?php echo $active_tab === 'contracts' ? 'active' : ''; ?>"> <span class="dashicons dashicons-media-text"></span> مدیریت قراردادها </a>
+    <a href="?view=tickets" class="pzl-tab <?php echo $active_tab === 'tickets' ? 'active' : ''; ?>"> <span class="dashicons dashicons-sos"></span> پشتیبانی </a>
     <a href="?view=settings" class="pzl-tab <?php echo $active_tab === 'settings' ? 'active' : ''; ?>"> <span class="dashicons dashicons-admin-settings"></span> تنظیمات </a>
 </div>
 
@@ -65,6 +66,8 @@ foreach($contracts as $contract){
         include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/dashboard-settings.php';
     } elseif ($active_tab === 'contracts') {
         include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/common/contract-form.php';
+    } elseif ($active_tab === 'tickets') {
+        include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/list-tickets.php';
     } else {
         echo '<h4>به داشبورد مدیریت سیستم خوش آمدید.</h4><p>از این پنل می‌توانید نمای کلی سیستم را مشاهده کنید، قراردادها را مدیریت کرده و تنظیمات پلاگین را پیکربندی نمایید.</p>';
     }

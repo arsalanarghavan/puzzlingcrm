@@ -22,17 +22,8 @@ if ( ! function_exists( 'puzzling_render_task_item' ) ) {
         $project_id = get_post_meta( $task->ID, '_project_id', true );
         $project_title = $project_id ? get_the_title($project_id) : 'بدون پروژه';
         
-        // Smart project link generation
-        if ( current_user_can('edit_posts') ) {
-            // This role can access the backend, but since we've blocked it, we'll also send them to the frontend view.
-            // This logic can be changed if you ever grant backend access.
-            $dashboard_url = get_permalink(get_page_by_title('PuzzlingCRM Dashboard'));
-            $project_link = $project_id ? add_query_arg(['view' => 'project', 'project_id' => $project_id], $dashboard_url) : '#';
-        } else {
-            // Other roles get a link to the frontend view
-            $dashboard_url = get_permalink(get_page_by_title('PuzzlingCRM Dashboard'));
-            $project_link = $project_id ? add_query_arg(['view' => 'project', 'project_id' => $project_id], $dashboard_url) : '#';
-        }
+        $dashboard_url = get_permalink(get_page_by_title('PuzzlingCRM Dashboard'));
+        $project_link = $project_id ? add_query_arg(['view' => 'project', 'project_id' => $project_id], $dashboard_url) : '#';
 
         $assignee_name = '';
         if (current_user_can('manage_options')) {
@@ -41,6 +32,7 @@ if ( ! function_exists( 'puzzling_render_task_item' ) ) {
             $assignee_name = $assigned_user ? ' (' . esc_html($assigned_user->display_name) . ')' : '';
         }
 
+        // **IMPROVED: All outputs are now properly escaped.**
         return sprintf(
             '<li class="task-item %s" data-task-id="%d">
                 <input type="checkbox" class="task-checkbox" %s>

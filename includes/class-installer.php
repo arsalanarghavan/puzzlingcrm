@@ -13,8 +13,7 @@ class PuzzlingCRM_Installer {
         $cpt_manager->register_post_types();
         $cpt_manager->register_taxonomies();
         
-        // ** ADDED THIS LINE **
-        // Create default terms for taxonomies
+        // Create default terms for taxonomies (now includes ticket statuses)
         PuzzlingCRM_CPT_Manager::create_default_terms();
 
         // Flush rewrite rules to make CPT URLs work correctly

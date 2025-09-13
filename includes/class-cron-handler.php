@@ -12,16 +12,18 @@ class PuzzlingCRM_Cron_Handler {
     public function send_payment_reminders() {
         $api_key = PuzzlingCRM_Settings_Handler::get_setting('melipayamak_api_key');
         $api_secret = PuzzlingCRM_Settings_Handler::get_setting('melipayamak_api_secret');
+        $sender_number = PuzzlingCRM_Settings_Handler::get_setting('melipayamak_sender_number'); // <-- **FIXED: Reading sender number**
         $pattern_3_days_left = PuzzlingCRM_Settings_Handler::get_setting('pattern_3_days');
         $pattern_1_day_left = PuzzlingCRM_Settings_Handler::get_setting('pattern_1_day');
         $pattern_due_today = PuzzlingCRM_Settings_Handler::get_setting('pattern_due_today');
 
-        if (empty($api_key) || empty($pattern_3_days_left) || empty($pattern_1_day_left) || empty($pattern_due_today)) {
+        if (empty($api_key) || empty($sender_number) || empty($pattern_3_days_left) || empty($pattern_1_day_left) || empty($pattern_due_today)) {
             error_log('PuzzlingCRM Cron: Melipayamak settings are incomplete. Reminders not sent.');
             return;
         }
 
-        $melipayamak = new CSM_Melipayamak_Handler($api_key, $api_secret);
+        // <-- **FIXED: Passing all required parameters**
+        $melipayamak = new CSM_Melipayamak_Handler($api_key, $api_secret, $sender_number);
         
         $contracts = get_posts([
             'post_type' => 'contract',

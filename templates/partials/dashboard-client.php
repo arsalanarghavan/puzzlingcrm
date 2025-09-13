@@ -26,8 +26,6 @@ $customer_id = $current_user->ID;
     } else {
         foreach ($projects as $project) {
             echo '<h4>' . esc_html($project->post_title) . '</h4>';
-            // In the future, you can add more details about the project's progress here.
-            // For example, a progress bar or a list of recent updates.
         }
     }
     ?>
@@ -78,15 +76,8 @@ $customer_id = $current_user->ID;
                         echo '<td><span class="pzl-status ' . esc_attr($status_class) . '">' . $status_text . '</span></td>';
                         echo '<td>';
                         if ($status === 'pending') {
-                            // Create a secure URL to trigger the payment process
                             $nonce = wp_create_nonce('pay_installment_' . $contract->ID . '_' . $index);
-                            $payment_url = add_query_arg([
-                                'puzzling_action' => 'pay_installment',
-                                'contract_id' => $contract->ID,
-                                'installment_index' => $index,
-                                '_wpnonce' => $nonce,
-                            ], get_permalink()); // Use current page URL as base
-
+                            $payment_url = add_query_arg(['puzzling_action' => 'pay_installment', 'contract_id' => $contract->ID, 'installment_index' => $index, '_wpnonce' => $nonce, ], get_permalink());
                             echo '<a href="' . esc_url($payment_url) . '" class="pzl-button pzl-button-primary">پرداخت آنلاین</a>';
                         } else {
                             echo '<span>—</span>';
@@ -102,41 +93,19 @@ $customer_id = $current_user->ID;
     <?php } ?>
 </div>
 
+<hr style="margin: 30px 0;">
+
+<div class="pzl-dashboard-section">
+    <h3><span class="dashicons dashicons-sos" style="vertical-align: middle;"></span> پشتیبانی و تیکت‌ها</h3>
+    <?php include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/list-tickets.php'; ?>
+</div>
+
 <style>
-/* Simple styling for the table and status */
-.pzl-dashboard-section {
-    margin-bottom: 30px;
-}
-.pzl-table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    margin-top: 20px; 
-    font-size: 14px;
-}
-.pzl-table th, .pzl-table td { 
-    padding: 12px 15px; 
-    border: 1px solid #e0e0e0; 
-    text-align: right; 
-    vertical-align: middle;
-}
-.pzl-table th { 
-    background-color: #f9f9f9; 
-    font-weight: bold;
-}
-.pzl-status { 
-    display: inline-block;
-    padding: 5px 10px; 
-    border-radius: 15px; 
-    font-size: 12px; 
-    color: #fff; 
-    min-width: 90px;
-    text-align: center;
-}
-.status-paid { 
-    background-color: var(--success-color, #28a745); 
-}
-.status-pending { 
-    background-color: var(--warning-color, #ffc107); 
-    color: #333; 
-}
+.pzl-dashboard-section { margin-bottom: 30px; }
+.pzl-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+.pzl-table th, .pzl-table td { padding: 12px 15px; border: 1px solid #e0e0e0; text-align: right; vertical-align: middle; }
+.pzl-table th { background-color: #f9f9f9; font-weight: bold; }
+.pzl-status { display: inline-block; padding: 5px 10px; border-radius: 15px; font-size: 12px; color: #fff; min-width: 90px; text-align: center; }
+.status-paid { background-color: var(--success-color, #28a745); }
+.status-pending { background-color: var(--warning-color, #ffc107); color: #333; }
 </style>

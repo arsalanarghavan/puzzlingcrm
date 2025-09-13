@@ -1,4 +1,7 @@
 jQuery(document).ready(function($) {
+    // --- **NEW: Store nonce globally for all AJAX requests** ---
+    var puzzling_ajax_nonce = puzzlingcrm_ajax_obj.nonce;
+
     // --- Payment Row Management ---
     $('#add-payment-row').on('click', function() {
         var rowHtml = `
@@ -34,19 +37,20 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'puzzling_add_task',
-                security: form.find('#security').val(),
+                security: puzzling_ajax_nonce, // <-- **FIXED: Using global nonce**
                 title: title,
                 priority: form.find('#task_priority').val(),
-                due_date: form.find('#task_due_date').val()
+                due_date: form.find('#task_due_date').val(),
+                project_id: form.find('#task_project').val(), // <-- Added project ID
+                assigned_to: form.find('select[name="assigned_to"]').val() || '' // <-- Added assigned_to
             },
             beforeSend: function() {
                 form.find('button[type="submit"]').text('در حال افزودن...').prop('disabled', true);
             },
             success: function(response) {
                 if (response.success) {
-                    // **IMPROVEMENT**: Prepend new task without reloading the page
                     $('#active-tasks-list').prepend(response.data.task_html);
-                    $('.no-tasks-message').hide(); // Hide 'no tasks' message if it exists
+                    $('.no-tasks-message').hide();
                 } else {
                     alert('خطا: ' + (response.data.message || 'خطای ناشناخته'));
                 }
@@ -73,7 +77,7 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'puzzling_update_task_status',
-                security: $('#puzzling-add-task-form #security').val(),
+                security: puzzling_ajax_nonce, // <-- **FIXED: Using global nonce**
                 task_id: taskId,
                 is_done: isDone
             },
@@ -104,7 +108,7 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // **NEW**: 3. Delete Task
+    // 3. Delete Task
     $('.task-list').on('click', '.delete-task', function(e) {
         e.preventDefault();
         
@@ -121,7 +125,7 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'puzzling_delete_task',
-                security: $('#puzzling-add-task-form #security').val(),
+                security: puzzling_ajax_nonce, // <-- **FIXED: Using global nonce**
                 task_id: taskId
             },
             beforeSend: function() {

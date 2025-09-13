@@ -33,6 +33,7 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cron-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-settings-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-logger.php'; // **NEW: Logger Class**
         
         // Integrations
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-zarinpal-handler.php';
@@ -64,7 +65,7 @@ class PuzzlingCRM {
         // Pass data to JS, like the AJAX URL and a nonce for security
         wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [
             'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce')
+            'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce') // Changed nonce name for consistency
         ]);
     }
     

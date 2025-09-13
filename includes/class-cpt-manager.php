@@ -40,6 +40,35 @@ class PuzzlingCRM_CPT_Manager {
             'supports'      => ['title', 'author', 'custom-fields'],
         ];
         register_post_type( 'contract', $contract_args );
+        
+        // Log & Notification CPT
+        $log_labels = [ 'name' => 'لاگ‌ها و اعلان‌ها', 'singular_name' => 'لاگ' ];
+        $log_args = [
+            'labels'        => $log_labels,
+            'public'        => false,
+            'show_ui'       => true,
+            'show_in_menu'  => 'edit.php?post_type=project',
+            'supports'      => ['title', 'editor'],
+            'capability_type' => 'post',
+            'rewrite'       => false,
+            'query_var'     => false,
+        ];
+        register_post_type( 'puzzling_log', $log_args );
+
+        // Ticket CPT
+        $ticket_labels = [ 'name' => 'تیکت‌ها', 'singular_name' => 'تیکت' ];
+        $ticket_args = [
+            'labels'        => $ticket_labels,
+            'public'        => false,
+            'show_ui'       => true,
+            'show_in_menu'  => true,
+            'menu_icon'     => 'dashicons-sos',
+            'supports'      => ['title', 'editor', 'author', 'comments'], // Comments will be used for replies
+            'rewrite'       => false,
+            'query_var'     => false,
+            'has_archive'   => false,
+        ];
+        register_post_type( 'ticket', $ticket_args );
     }
 
     public function register_taxonomies() {
@@ -56,12 +85,18 @@ class PuzzlingCRM_CPT_Manager {
             'rewrite' => ['slug' => 'task-priority'],
             'hierarchical' => true,
         ]);
+
+        // Ticket Status Taxonomy
+        register_taxonomy('ticket_status', 'ticket', [
+            'label'         => 'وضعیت تیکت',
+            'rewrite'       => ['slug' => 'ticket-status'],
+            'hierarchical'  => true,
+            'public'        => false,
+            'show_ui'       => true,
+            'show_admin_column' => true,
+        ]);
     }
 
-    /**
-     * Creates the default terms for our custom taxonomies.
-     * This method should be called once on plugin activation.
-     */
     public static function create_default_terms() {
         $task_statuses = [
             'انجام نشده' => 'to-do',
@@ -84,6 +119,19 @@ class PuzzlingCRM_CPT_Manager {
         foreach ($task_priorities as $name => $slug) {
             if ( ! term_exists( $slug, 'task_priority' ) ) {
                 wp_insert_term( $name, 'task_priority', ['slug' => $slug] );
+            }
+        }
+        
+        $ticket_statuses = [
+            'باز' => 'open',
+            'در حال بررسی' => 'in-progress',
+            'پاسخ داده شد' => 'answered',
+            'بسته شده' => 'closed',
+        ];
+
+        foreach ($ticket_statuses as $name => $slug) {
+            if ( ! term_exists( $slug, 'ticket_status' ) ) {
+                wp_insert_term( $name, 'ticket_status', ['slug' => $slug] );
             }
         }
     }
