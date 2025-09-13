@@ -28,7 +28,7 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-admin-menu.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cpt-manager.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-roles-manager.php';
-        require_once PUZZlingCRM_PLUGIN_DIR . 'includes/class-user-profile.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-user-profile.php'; // Corrected constant name
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-shortcode-manager.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-frontend-dashboard.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-form-handler.php';
@@ -54,7 +54,7 @@ class PuzzlingCRM {
         new PuzzlingCRM_Admin_Menu();
         new PuzzlingCRM_CPT_Manager();
         new PuzzlingCRM_Roles_Manager();
-        new PuzzlingCRM_User_Profile();
+        new PuzzlingCRM_User_Profile(); // Instantiate User Profile class
         new PuzzlingCRM_Shortcode_Manager();
         new PuzzlingCRM_Form_Handler();
         new PuzzlingCRM_Ajax_Handler();
