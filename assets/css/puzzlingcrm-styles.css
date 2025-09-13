@@ -1,6 +1,6 @@
 /*
  * PuzzlingCRM Stylesheet
- * Version: 2.2.0 (Button and Icon Fixes)
+ * Version: 2.3.0 (Final Icon Color Fixes)
  */
 
 /* --- ریشه و متغیرهای اصلی --- */
@@ -22,13 +22,21 @@
     --pzl-spacing: 25px;
 }
 
-/* --- ساختار کلی و تایپوگرافی --- */
+/* --- ساختار کلی و آیکن‌ها --- */
 .puzzling-dashboard-wrapper {
     font-family: var(--pzl-font-family);
     background-color: var(--pzl-body-bg);
     padding: var(--pzl-spacing);
     max-width: 100%;
     direction: rtl;
+}
+
+/* رنگ پیش‌فرض آیکن‌ها */
+.puzzling-dashboard-wrapper .fas,
+.puzzling-dashboard-wrapper .far,
+.puzzling-dashboard-wrapper .fal,
+.puzzling-dashboard-wrapper .fab {
+    color: var(--pzl-secondary-color);
 }
 
 .puzzling-dashboard-wrapper h3 {
@@ -39,9 +47,6 @@
     align-items: center;
     gap: 10px;
     font-size: 24px;
-}
-.puzzling-dashboard-wrapper h3 .fas {
-    color: var(--pzl-primary-color);
 }
 
 .puzzling-dashboard-wrapper a {
@@ -74,7 +79,7 @@
 }
 .pzl-card-header h3 { margin: 0; }
 
-/* --- دکمه‌ها (اصلاح شده طبق درخواست) --- */
+/* --- دکمه‌ها --- */
 .pzl-button, input[type="submit"], button {
     display: inline-flex;
     align-items: center;
@@ -96,6 +101,10 @@
     background-color: var(--pzl-secondary-color) !important;
     color: #ffffff !important;
     transform: translateY(-2px);
+}
+/* رنگ آیکن داخل دکمه‌ها باید سفید باشد */
+.pzl-button .fas, .pzl-button .far {
+    color: #ffffff !important;
 }
 .pzl-button-sm {
     padding: 8px 16px;
@@ -169,12 +178,20 @@
 .pzl-dashboard-tabs { border-bottom: 1px solid var(--pzl-border-color); margin-bottom: var(--pzl-spacing); display: flex; gap: 10px; flex-wrap: wrap; }
 .pzl-tab { padding: 12px 20px; text-decoration: none; color: var(--pzl-text-light); border-bottom: 3px solid transparent; margin-bottom: -1px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
 .pzl-tab.active { color: var(--pzl-primary-color); border-bottom-color: var(--pzl-primary-color); }
+/* رنگ آیکن تب فعال */
+.pzl-tab.active .fas {
+    color: var(--pzl-primary-color);
+}
 
 /* --- گزارش‌ها و آمار --- */
 .pzl-dashboard-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--pzl-spacing); margin-bottom: var(--pzl-spacing); }
 .stat-widget-card { color: #fff; border-radius: var(--pzl-border-radius); padding: var(--pzl-spacing); display: flex; align-items: center; gap: 20px; box-shadow: var(--pzl-box-shadow); transition: transform 0.3s, box-shadow 0.3s; overflow: hidden; position: relative; border: none; }
 .stat-widget-card:hover { transform: translateY(-5px); box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
 .stat-widget-icon { background: rgba(255, 255, 255, 0.15); border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+/* رنگ آیکن داخل ویجت‌های رنگی */
+.stat-widget-icon .fas {
+    color: #ffffff;
+}
 .stat-widget-content { display: flex; flex-direction: column; }
 .stat-number { font-size: 32px; font-weight: 700; line-height: 1; }
 .stat-title { font-size: 16px; opacity: 0.9; margin-top: 5px; }

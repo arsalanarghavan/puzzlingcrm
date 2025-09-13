@@ -16,9 +16,9 @@ $base_url = puzzling_get_dashboard_url();
     <a href="<?php echo esc_url(add_query_arg('tab', 'appointments', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'appointments' ? 'active' : ''; ?>"><i class="fas fa-calendar-check"></i> <?php esc_html_e('Schedule Appointment', 'puzzlingcrm'); ?></a>
     <a href="<?php echo esc_url(add_query_arg('tab', 'projects', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'projects' ? 'active' : ''; ?>"><i class="fas fa-briefcase"></i> <?php esc_html_e('Projects', 'puzzlingcrm'); ?></a>
     <a href="<?php echo esc_url(add_query_arg('tab', 'contracts', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'contracts' ? 'active' : ''; ?>"><i class="fas fa-file-signature"></i> <?php esc_html_e('Contracts', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('tab', 'invoices', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'invoices' ? 'active' : ''; ?>"><i class="fas fa-money-bill-wave"></i> <?php esc_html_e('Invoices', 'puzzlingcrm'); ?></a>
+    <a href="<?php echo esc_url(add_query_arg('tab', 'invoices', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'invoices' ? 'active' : ''; ?>"><i class="fas fa-file-invoice"></i> <?php esc_html_e('Invoices', 'puzzlingcrm'); ?></a>
     <a href="<?php echo esc_url(add_query_arg('tab', 'pro_invoices', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'pro_invoices' ? 'active' : ''; ?>"><i class="fas fa-file-invoice-dollar"></i> <?php esc_html_e('Pro-forma Invoices', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('tab', 'tickets', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'tickets' ? 'active' : ''; ?>"><i class="fas fa-life-ring"></i> <?php esc_html_e('Support Tickets', 'puzzlingcrm'); ?></a>
+    <a href="<?php echo esc_url(add_query_arg('tab', 'tickets', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'tickets' ? 'active' : ''; ?>"><i class="fas fa-headset"></i> <?php esc_html_e('Support Tickets', 'puzzlingcrm'); ?></a>
 </div>
 
 <div class="pzl-dashboard-tab-content">
