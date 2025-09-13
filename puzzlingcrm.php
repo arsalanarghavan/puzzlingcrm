@@ -3,7 +3,7 @@
  * Plugin Name:       PuzzlingCRM
  * Plugin URI:        https://Puzzlingco.com/
  * Description:       A complete CRM and Project Management solution for Social Marketing agencies.
- * Version:           0.0.8
+ * Version:           0.0.9
  * Author:            Arsalan Arghavan
  * Author URI:        https://ArsalanArghavan.ir/
  * License:           GPL v2 or later
@@ -17,9 +17,20 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 // Define Plugin Constants
-define( 'PUZZLINGCRM_VERSION', '1.1.0' );
+define( 'PUZZLINGCRM_VERSION', '1.2.0' );
 define( 'PUZZLINGCRM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PUZZLINGCRM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+
+// Include core files
+require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-installer.php';
+require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/puzzling-functions.php';
+require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-puzzlingcrm.php';
+
+// --- Activation / Deactivation Hooks ---
+// This is the correct place to register these hooks.
+register_activation_hook( __FILE__, [ 'PuzzlingCRM_Installer', 'activate' ] );
+register_deactivation_hook( __FILE__, [ 'PuzzlingCRM_Installer', 'deactivate' ] );
+
 
 /**
  * Checks for required plugin dependencies.
@@ -55,10 +66,6 @@ function puzzling_load_textdomain() {
 }
 add_action( 'plugins_loaded', 'puzzling_load_textdomain' );
 
-
-// Include the main plugin class and helper functions
-require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/puzzling-functions.php';
-require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-puzzlingcrm.php';
 
 /**
  * Begins execution of the plugin.
