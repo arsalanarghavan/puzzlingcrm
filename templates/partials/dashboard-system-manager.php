@@ -1,6 +1,6 @@
 <?php
 /**
- * System Manager Dashboard Template - VISUALLY REVAMPED & ERROR FIXED
+ * System Manager Dashboard Template - COMPLETELY REDESIGNED & FUNCTIONAL
  * @package PuzzlingCRM
  */
 
@@ -8,97 +8,112 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Stats for widgets - Cached using transients for better performance.
+// --- Fetch Dashboard Stats (Cached) ---
 if ( false === ( $stats = get_transient( 'puzzling_system_manager_stats' ) ) ) {
     $total_projects = wp_count_posts('project')->publish;
     $active_tasks_count = count(get_posts(['post_type' => 'task', 'posts_per_page' => -1, 'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => 'done', 'operator' => 'NOT IN']]]));
-    $pending_installments = 0;
-    $contracts = get_posts(['post_type' => 'contract', 'posts_per_page' => -1, 'post_status' => 'publish']);
-    if ($contracts) {
-        foreach($contracts as $contract){
-            $installments = get_post_meta($contract->ID, '_installments', true);
-            if(is_array($installments)){
-                foreach($installments as $inst){
-                    if(isset($inst['status']) && $inst['status'] === 'pending') {
-                        $pending_installments++;
-                    }
-                }
-            }
-        }
-    }
-
-    // FATAL ERROR FIX: Check if WooCommerce Subscriptions function exists before calling it.
+    
     $active_subscriptions = 0;
     if ( function_exists('wcs_get_subscription_count') ) {
         $active_subscriptions = wcs_get_subscription_count( 'active' );
     }
+    $open_tickets = count(get_posts(['post_type' => 'ticket', 'posts_per_page' => -1, 'tax_query' => [['taxonomy' => 'ticket_status', 'field' => 'slug', 'terms' => 'closed', 'operator' => 'NOT IN']]]));
 
     $stats = [
         'total_projects' => $total_projects,
         'active_tasks_count' => $active_tasks_count,
-        'pending_installments' => $pending_installments,
+        'open_tickets' => $open_tickets,
         'active_subscriptions' => $active_subscriptions,
     ];
     set_transient( 'puzzling_system_manager_stats', $stats, HOUR_IN_SECONDS );
 }
-?>
 
+// --- Fetch Recent Activities ---
+$recent_projects = get_posts(['post_type' => 'project', 'posts_per_page' => 5, 'orderby' => 'date', 'order' => 'DESC']);
+$recent_tasks = get_posts(['post_type' => 'task', 'posts_per_page' => 5, 'orderby' => 'date', 'order' => 'DESC']);
+$recent_tickets = get_posts(['post_type' => 'ticket', 'posts_per_page' => 5, 'orderby' => 'date', 'order' => 'DESC']);
+
+?>
 <div class="pzl-dashboard-stats-grid">
     <div class="stat-widget-card gradient-1">
-        <div class="stat-widget-icon">
-            <span class="dashicons dashicons-portfolio"></span>
-        </div>
+        <div class="stat-widget-icon"><span class="dashicons dashicons-portfolio"></span></div>
         <div class="stat-widget-content">
             <span class="stat-number"><?php echo esc_html($stats['total_projects']); ?></span>
-            <span class="stat-title"><?php esc_html_e('پروژه کل', 'puzzlingcrm'); ?></span>
+            <span class="stat-title">پروژه کل</span>
         </div>
     </div>
     <div class="stat-widget-card gradient-2">
-        <div class="stat-widget-icon">
-            <span class="dashicons dashicons-marker"></span>
-        </div>
+        <div class="stat-widget-icon"><span class="dashicons dashicons-marker"></span></div>
         <div class="stat-widget-content">
             <span class="stat-number"><?php echo esc_html($stats['active_tasks_count']); ?></span>
-            <span class="stat-title"><?php esc_html_e('وظایف فعال', 'puzzlingcrm'); ?></span>
+            <span class="stat-title">وظایف فعال</span>
         </div>
     </div>
     <div class="stat-widget-card gradient-3">
-        <div class="stat-widget-icon">
-            <span class="dashicons dashicons-money-alt"></span>
-        </div>
+        <div class="stat-widget-icon"><span class="dashicons dashicons-sos"></span></div>
         <div class="stat-widget-content">
-            <span class="stat-number"><?php echo esc_html($stats['pending_installments']); ?></span>
-            <span class="stat-title"><?php esc_html_e('اقساط در انتظار', 'puzzlingcrm'); ?></span>
+            <span class="stat-number"><?php echo esc_html($stats['open_tickets']); ?></span>
+            <span class="stat-title">تیکت‌های باز</span>
         </div>
     </div>
     <div class="stat-widget-card gradient-4">
-        <div class="stat-widget-icon">
-            <span class="dashicons dashicons-update-alt"></span>
-        </div>
+        <div class="stat-widget-icon"><span class="dashicons dashicons-update-alt"></span></div>
         <div class="stat-widget-content">
             <span class="stat-number"><?php echo esc_html($stats['active_subscriptions']); ?></span>
-            <span class="stat-title"><?php esc_html_e('اشتراک‌های فعال', 'puzzlingcrm'); ?></span>
+            <span class="stat-title">اشتراک‌های فعال</span>
         </div>
     </div>
 </div>
 
-<div class="pzl-dashboard-section pzl-card">
-    <h3><span class="dashicons dashicons-admin-tools"></span> <?php esc_html_e('راهنمای مدیریت سیستم', 'puzzlingcrm'); ?></h3>
-    <p><?php esc_html_e('به پنل مدیریت سیستم خوش آمدید. برای مدیریت بخش‌های مختلف، برگه‌های جدیدی در وردپرس بسازید و از شورت‌کدهای زیر در آن‌ها استفاده کنید تا پنل کاربری خود را به دلخواه بچینید.', 'puzzlingcrm'); ?></p>
+<div class="pzl-dashboard-grid">
+    <div class="pzl-card">
+        <div class="pzl-card-header">
+            <h3><span class="dashicons dashicons-portfolio"></span> آخرین پروژه‌ها</h3>
+        </div>
+        <ul class="pzl-activity-list">
+            <?php if (!empty($recent_projects)): foreach($recent_projects as $p): ?>
+                <li>
+                    <a href="<?php echo get_edit_post_link($p->ID); // Links to backend editor for admin ?>" target="_blank"><?php echo esc_html($p->post_title); ?></a>
+                    <span class="meta"><?php echo get_the_author_meta('display_name', $p->post_author); ?> - <?php echo date_i18n('Y/m/d', strtotime($p->post_date)); ?></span>
+                </li>
+            <?php endforeach; else: ?>
+                <li>موردی یافت نشد.</li>
+            <?php endif; ?>
+        </ul>
+    </div>
+
+    <div class="pzl-card">
+        <div class="pzl-card-header">
+            <h3><span class="dashicons dashicons-marker"></span> آخرین وظایف</h3>
+        </div>
+        <ul class="pzl-activity-list">
+             <?php if (!empty($recent_tasks)): foreach($recent_tasks as $t): ?>
+                <li>
+                    <span><?php echo esc_html($t->post_title); ?></span>
+                     <span class="meta"><?php echo get_the_author_meta('display_name', get_post_meta($t->ID, '_assigned_to', true)); ?> - <?php echo date_i18n('Y/m/d', strtotime($t->post_date)); ?></span>
+                </li>
+            <?php endforeach; else: ?>
+                <li>موردی یافت نشد.</li>
+            <?php endif; ?>
+        </ul>
+    </div>
     
-    <h4><?php esc_html_e('لیست شورت‌کدهای مدیریتی:', 'puzzlingcrm'); ?></h4>
-    <ul class="pzl-shortcode-list">
-        <li><code>[puzzling_projects]</code> - <?php esc_html_e('مدیریت پروژه‌ها', 'puzzlingcrm'); ?></li>
-        <li><code>[puzzling_contracts]</code> - <?php esc_html_e('مدیریت قراردادها', 'puzzlingcrm'); ?></li>
-        <li><code>[puzzling_tasks]</code> - <?php esc_html_e('مدیریت وظایف کل سیستم', 'puzzlingcrm'); ?></li>
-        <li><code>[puzzling_customers]</code> - <?php esc_html_e('مدیریت مشتریان', 'puzzlingcrm'); ?></li>
-        <li><code>[puzzling_staff]</code> - <?php esc_html_e('مدیریت کارکنان', 'puzzlingcrm'); ?></li>
-        <li><code>[puzzling_subscriptions]</code> - <?php esc_html_e('مشاهده اشتراک‌های ووکامرس', 'puzzlingcrm'); ?></li>
-        <li><code>[puzzling_appointments]</code> - <?php esc_html_e('مدیریت قرار ملاقات‌ها', 'puzzlingcrm'); ?></li>
-        <li><code>[puzzling_pro_invoices]</code> - <?php esc_html_e('مدیریت پیش‌فاکتورها', 'puzzlingcrm'); ?></li>
-        <li><code>[puzzling_tickets]</code> - <?php esc_html_e('مدیریت تیکت‌های پشتیبانی', 'puzzlingcrm'); ?></li>
-        <li><code>[puzzling_reports]</code> - <?php esc_html_e('مشاهده گزارش‌ها', 'puzzlingcrm'); ?></li>
-        <li><code>[puzzling_logs]</code> - <?php esc_html_e('مشاهده لاگ رویدادها', 'puzzlingcrm'); ?></li>
-        <li><code>[puzzling_settings]</code> - <?php esc_html_e('تنظیمات پلاگین', 'puzzlingcrm'); ?></li>
-    </ul>
+    <div class="pzl-card">
+        <div class="pzl-card-header">
+            <h3><span class="dashicons dashicons-sos"></span> آخرین تیکت‌ها</h3>
+        </div>
+        <ul class="pzl-activity-list">
+             <?php if (!empty($recent_tickets)): foreach($recent_tickets as $ticket): 
+                 $status_terms = get_the_terms($ticket->ID, 'ticket_status');
+                 $status_name = !empty($status_terms) ? esc_html($status_terms[0]->name) : 'نامشخص';
+             ?>
+                <li>
+                    <span><?php echo esc_html($ticket->post_title); ?></span>
+                     <span class="meta"><?php echo get_the_author_meta('display_name', $ticket->post_author); ?> - <span class="pzl-status-badge status-<?php echo esc_attr($status_terms[0]->slug); ?>"><?php echo $status_name; ?></span></span>
+                </li>
+            <?php endforeach; else: ?>
+                <li>موردی یافت نشد.</li>
+            <?php endif; ?>
+        </ul>
+    </div>
 </div>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Template for System Manager to Manage Appointments - VISUALLY REVAMPED
+ * Template for System Manager to Manage Appointments - VISUALLY REVAMPED & TRANSLATED
  * @package PuzzlingCRM
  */
 if (!defined('ABSPATH')) exit;
@@ -10,7 +10,7 @@ $action = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 $appt_id = isset($_GET['appt_id']) ? intval($_GET['appt_id']) : 0;
 $appt_to_edit = ($appt_id > 0) ? get_post($appt_id) : null;
 ?>
-<div class="pzl-dashboard-section">
+<div class="puzzling-dashboard-wrapper">
     <?php if ($action === 'edit' || $action === 'add'): 
         $customers = get_users(['role__in' => ['customer', 'subscriber'], 'orderby' => 'display_name']);
     ?>
@@ -67,7 +67,7 @@ $appt_to_edit = ($appt_id > 0) ? get_post($appt_id) : null;
         </div>
     <?php else: ?>
         <div class="pzl-card-header">
-            <h3><span class="dashicons dashicons-calendar-alt"></span> مدیریت قرار ملاقات‌ها</h3>
+            <h3><span class="dashicons dashicons-calendar-alt"></span> لیست قرار ملاقات‌ها</h3>
             <a href="<?php echo add_query_arg(['action' => 'add']); ?>" class="pzl-button pzl-button-primary">ایجاد قرار جدید</a>
         </div>
         <div class="pzl-card">
