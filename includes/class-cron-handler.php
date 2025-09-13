@@ -1,4 +1,13 @@
 <?php
+/**
+ * PuzzlingCRM Cron Handler
+ * Manages scheduled tasks like sending payment reminders.
+ *
+ * @package PuzzlingCRM
+ */
+
+if ( ! defined( 'ABSPATH' ) ) exit;
+
 class PuzzlingCRM_Cron_Handler {
     
     public function __construct() {
@@ -10,30 +19,16 @@ class PuzzlingCRM_Cron_Handler {
     }
 
     public function send_payment_reminders() {
-        $api_key = PuzzlingCRM_Settings_Handler::get_setting('melipayamak_api_key');
-        $api_secret = PuzzlingCRM_Settings_Handler::get_setting('melipayamak_api_secret');
-        $sender_number = PuzzlingCRM_Settings_Handler::get_setting('melipayamak_sender_number'); // <-- **FIXED: Reading sender number**
-        $pattern_3_days_left = PuzzlingCRM_Settings_Handler::get_setting('pattern_3_days');
-        $pattern_1_day_left = PuzzlingCRM_Settings_Handler::get_setting('pattern_1_day');
-        $pattern_due_today = PuzzlingCRM_Settings_Handler::get_setting('pattern_due_today');
+        $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+        $active_service = $settings['sms_service'] ?? null;
 
-        if (empty($api_key) || empty($sender_number) || empty($pattern_3_days_left) || empty($pattern_1_day_left) || empty($pattern_due_today)) {
-            error_log('PuzzlingCRM Cron: Melipayamak settings are incomplete. Reminders not sent.');
+        if ( empty($active_service) ) {
+            error_log('PuzzlingCRM Cron: No active SMS service selected.');
             return;
         }
 
-        // <-- **FIXED: Passing all required parameters**
-        $melipayamak = new CSM_Melipayamak_Handler($api_key, $api_secret, $sender_number);
-        
-        $contracts = get_posts([
-            'post_type' => 'contract',
-            'posts_per_page' => -1,
-            'post_status' => 'publish',
-        ]);
-
-        if (empty($contracts)) {
-            return;
-        }
+        $contracts = get_posts(['post_type' => 'contract', 'posts_per_page' => -1, 'post_status' => 'publish']);
+        if (empty($contracts)) return;
 
         $today = new DateTime('now', new DateTimeZone('Asia/Tehran'));
         $today->setTime(0, 0, 0);
@@ -48,7 +43,7 @@ class PuzzlingCRM_Cron_Handler {
             }
 
             foreach ($installments as $installment) {
-                if (isset($installment['status']) && $installment['status'] === 'paid') {
+                if (($installment['status'] ?? 'pending') === 'paid') {
                     continue;
                 }
 
@@ -57,33 +52,67 @@ class PuzzlingCRM_Cron_Handler {
                     $due_date->setTime(0, 0, 0);
                     
                     $interval = $today->diff($due_date);
-                    
-                    if ($interval->invert) { 
-                        continue;
-                    }
+                    if ($interval->invert) continue;
 
                     $days_left = $interval->days;
-                    $pattern_to_use = null;
-                    $params = ['amount' => number_format($installment['amount'])];
-
-                    if ($days_left == 3) {
-                        $pattern_to_use = $pattern_3_days_left;
-                    } elseif ($days_left == 1) {
-                        $pattern_to_use = $pattern_1_day_left;
-                    } elseif ($days_left == 0) {
-                        $pattern_to_use = $pattern_due_today;
+                    $amount_formatted = number_format($installment['amount']);
+                    
+                    if (in_array($days_left, [0, 1, 3])) {
+                         if ($active_service === 'melipayamak') {
+                            $this->send_melipayamak_reminder($settings, $customer_phone, $days_left, $amount_formatted, $contract_post->ID);
+                        } elseif ($active_service === 'parsgreen') {
+                            $this->send_parsgreen_reminder($settings, $customer_phone, $days_left, $amount_formatted, $contract_post->ID);
+                        }
                     }
-
-                    if ($pattern_to_use) {
-                        // **FIXED**: SMS sending is now active.
-                        $melipayamak->send_pattern_sms($customer_phone, $pattern_to_use, $params);
-                        error_log("PuzzlingCRM: SMS reminder sent to {$customer_phone} for contract ID {$contract_post->ID}. Pattern: {$pattern_to_use}");
-                    }
-
                 } catch (Exception $e) {
                     error_log('PuzzlingCRM Cron: Invalid date format for contract ID ' . $contract_post->ID);
                 }
             }
+        }
+    }
+
+    private function send_melipayamak_reminder($settings, $recipient, $days_left, $amount, $contract_id) {
+        $api_key = $settings['melipayamak_api_key'] ?? '';
+        $sender_number = $settings['melipayamak_sender_number'] ?? '';
+        $pattern_map = [
+            3 => $settings['pattern_3_days'] ?? '',
+            1 => $settings['pattern_1_day'] ?? '',
+            0 => $settings['pattern_due_today'] ?? '',
+        ];
+        $pattern_to_use = $pattern_map[$days_left] ?? null;
+
+        if (empty($api_key) || empty($sender_number) || empty($pattern_to_use)) {
+            error_log("PuzzlingCRM Cron (Melipayamak): Settings are incomplete for a {$days_left}-day reminder.");
+            return;
+        }
+        
+        $melipayamak = new CSM_Melipayamak_Handler($api_key, $settings['melipayamak_api_secret'] ?? '', $sender_number);
+        $params = ['amount' => $amount];
+        if ($melipayamak->send_pattern_sms($recipient, $pattern_to_use, $params)) {
+            error_log("PuzzlingCRM Cron (Melipayamak): SUCCESS - SMS sent to {$recipient} for contract ID {$contract_id}.");
+        }
+    }
+
+    private function send_parsgreen_reminder($settings, $recipient, $days_left, $amount, $contract_id) {
+        $signature = $settings['parsgreen_signature'] ?? '';
+        $sender_number = $settings['parsgreen_sender_number'] ?? '';
+        $message_template_map = [
+            3 => $settings['parsgreen_msg_3_days'] ?? '',
+            1 => $settings['parsgreen_msg_1_day'] ?? '',
+            0 => $settings['parsgreen_msg_due_today'] ?? '',
+        ];
+        $message_template = $message_template_map[$days_left] ?? null;
+
+        if (empty($signature) || empty($sender_number) || empty($message_template)) {
+            error_log("PuzzlingCRM Cron (ParsGreen): Settings are incomplete for a {$days_left}-day reminder.");
+            return;
+        }
+        
+        $message = str_replace('{amount}', $amount, $message_template);
+
+        $parsgreen = new PuzzlingCRM_ParsGreen_Handler($signature, $sender_number);
+        if ($parsgreen->send_sms($recipient, $message)) {
+            error_log("PuzzlingCRM Cron (ParsGreen): SUCCESS - SMS sent to {$recipient} for contract ID {$contract_id}.");
         }
     }
 }
