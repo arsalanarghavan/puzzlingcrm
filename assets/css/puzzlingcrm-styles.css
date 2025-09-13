@@ -1,30 +1,122 @@
-.csm-dashboard-wrapper {
-    max-width: 800px;
-    margin: 20px 0;
+/*
+ * PuzzlingCRM Stylesheet
+ * Version: 1.0.0
+ */
+
+/* --- Variable Definitions --- */
+:root {
+    --primary-color: #F0192A;
+    --secondary-color: #1D1E29;
+    --text-color: #333;
+    --light-text-color: #fff;
+    --border-color: #e0e0e0;
+    --background-color: #f9f9f9;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+}
+
+/* --- General Wrapper --- */
+.puzzling-dashboard-wrapper {
+    max-width: 1200px;
+    margin: 30px auto;
     padding: 20px;
-    background-color: #f9f9f9;
-    border: 1px solid #ccc;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    font-family: 'Vazirmatn', sans-serif; /* Recommended to use a nice Persian font */
+    color: var(--text-color);
+}
+
+.puzzling-dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.puzzling-dashboard-header h1 {
+    font-size: 24px;
+    color: var(--secondary-color);
+    margin: 0;
+}
+
+.puzzling-dashboard-header .user-info {
+    font-size: 14px;
+    text-align: left;
+}
+.puzzling-dashboard-header .user-info a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+/* --- Buttons --- */
+.pzl-button {
+    display: inline-block;
+    padding: 10px 20px;
     border-radius: 5px;
-}
-.csm-dashboard-wrapper .form-group {
-    margin-bottom: 15px;
-}
-.csm-dashboard-wrapper label {
-    display: block;
-    margin-bottom: 5px;
+    text-decoration: none;
     font-weight: bold;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.3s ease;
 }
-.csm-dashboard-wrapper select,
-.csm-dashboard-wrapper input[type="number"] {
-    width: 100%;
-    padding: 8px;
+
+.pzl-button-primary {
+    background-color: var(--primary-color);
+    color: var(--light-text-color);
 }
-.payment-row {
+.pzl-button-primary:hover {
+    background-color: #c01422;
+    color: var(--light-text-color);
+}
+
+.pzl-button-secondary {
+    background-color: var(--secondary-color);
+    color: var(--light-text-color);
+}
+.pzl-button-secondary:hover {
+    background-color: #000;
+    color: var(--light-text-color);
+}
+
+
+/* --- Task List Styling --- */
+.task-list {
+    list-style: none;
+    padding: 0;
+}
+.task-item {
     display: flex;
     align-items: center;
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
     margin-bottom: 10px;
+    transition: box-shadow 0.2s ease;
 }
-.payment-row input {
+.task-item:hover {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+.task-item.status-done {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+.task-item .task-checkbox {
+    margin-left: 15px;
+}
+.task-item .task-title {
     flex-grow: 1;
-    margin-left: 10px;
+    font-size: 16px;
 }
+.task-item .task-priority {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    color: #fff;
+    margin-right: 15px;
+}
+.task-priority.priority-high { background-color: #dc3545; }
+.task-priority.priority-medium { background-color: #ffc107; color: #333; }
+.task-priority.priority-low { background-color: #17a2b8; }
