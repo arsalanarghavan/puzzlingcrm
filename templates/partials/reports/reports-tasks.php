@@ -9,8 +9,8 @@ if ( ! current_user_can('manage_options') ) return;
 
 // Stats Calculation
 $total_tasks = wp_count_posts('task')->publish;
-$done_tasks = count(get_posts(['post_type' => 'task', 'posts_per_page' => -1, 'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => 'done']]]));
-$active_tasks = $total_tasks - $done_tasks;
+$done_tasks_count = count(get_posts(['post_type' => 'task', 'posts_per_page' => -1, 'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => 'done']]]));
+$active_tasks = $total_tasks - $done_tasks_count;
 
 $today_str = date('Y-m-d');
 $overdue_tasks_query = new WP_Query([
@@ -37,7 +37,7 @@ $overdue_tasks_count = $overdue_tasks_query->post_count;
     </div>
      <div class="stat-widget">
         <h4>وظایف انجام شده</h4>
-        <span class="stat-number"><?php echo esc_html($done_tasks); ?></span>
+        <span class="stat-number"><?php echo esc_html($done_tasks_count); ?></span>
     </div>
     <div class="stat-widget">
         <h4>وظایف دارای تاخیر</h4>
