@@ -86,15 +86,6 @@ class PuzzlingCRM_CPT_Manager {
             'supports'      => ['title', 'editor', 'author', 'comments'],
         ]);
 
-        // Subscription Custom Post Type
-        register_post_type( 'pzl_subscription', [
-            'labels'        => ['name' => __( 'Subscriptions', 'puzzlingcrm' ), 'singular_name' => __( 'Subscription', 'puzzlingcrm' )],
-            'public'        => false,
-            'show_ui'       => true,
-            'show_in_menu'  => false,
-            'supports'      => ['title', 'author', 'custom-fields'],
-        ]);
-
         // Appointment Custom Post Type
         register_post_type( 'pzl_appointment', [
             'labels'        => ['name' => __( 'Appointments', 'puzzlingcrm' ), 'singular_name' => __( 'Appointment', 'puzzlingcrm' )],
@@ -117,17 +108,6 @@ class PuzzlingCRM_CPT_Manager {
         
         // Ticket Status Taxonomy
         register_taxonomy('ticket_status', 'ticket', ['label' => __( 'Ticket Status', 'puzzlingcrm' ), 'hierarchical' => true]);
-        
-        // Subscription Status Taxonomy
-        register_taxonomy('subscription_status', 'pzl_subscription', ['label' => __( 'Subscription Status', 'puzzlingcrm' ), 'hierarchical' => true]);
-        
-        // Subscription Plan Taxonomy (used to define different plans)
-        register_taxonomy('subscription_plan', 'pzl_subscription', [
-            'label'         => __( 'Subscription Plans', 'puzzlingcrm' ),
-            'hierarchical'  => false, // Non-hierarchical, like tags
-            'public'        => false,
-            'show_ui'       => true, // Make it visible in admin for easy management if needed
-        ]);
     }
 
     /**
@@ -156,14 +136,6 @@ class PuzzlingCRM_CPT_Manager {
         foreach ($ticket_statuses as $name => $slug) {
             if ( ! term_exists( $slug, 'ticket_status' ) ) {
                 wp_insert_term( $name, 'ticket_status', ['slug' => $slug] );
-            }
-        }
-
-        // Subscription Statuses
-        $subscription_statuses = [__('Active', 'puzzlingcrm') => 'active', __('Expired', 'puzzlingcrm') => 'expired', __('Cancelled', 'puzzlingcrm') => 'cancelled', __('Overdue', 'puzzlingcrm') => 'overdue'];
-        foreach ($subscription_statuses as $name => $slug) {
-            if ( ! term_exists( $slug, 'subscription_status' ) ) {
-                wp_insert_term( $name, 'subscription_status', ['slug' => $slug] );
             }
         }
     }

@@ -28,7 +28,7 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-admin-menu.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cpt-manager.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-roles-manager.php';
-        require_once PUZZlingCRM_PLUGIN_DIR . 'includes/class-user-profile.php'; // Added User Profile class
+        require_once PUZZlingCRM_PLUGIN_DIR . 'includes/class-user-profile.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-shortcode-manager.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-frontend-dashboard.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-form-handler.php';
@@ -54,7 +54,7 @@ class PuzzlingCRM {
         new PuzzlingCRM_Admin_Menu();
         new PuzzlingCRM_CPT_Manager();
         new PuzzlingCRM_Roles_Manager();
-        new PuzzlingCRM_User_Profile(); // Instantiate User Profile class
+        new PuzzlingCRM_User_Profile();
         new PuzzlingCRM_Shortcode_Manager();
         new PuzzlingCRM_Form_Handler();
         new PuzzlingCRM_Ajax_Handler();
@@ -67,7 +67,7 @@ class PuzzlingCRM {
     public function enqueue_dashboard_assets() {
         // Only load assets on the dashboard page
         $dashboard_page_id = get_option('puzzling_dashboard_page_id');
-        if ( is_page( $dashboard_page_id ) ) {
+        if ( is_page( $dashboard_page_id ) || (is_singular('project') && has_shortcode(get_post($dashboard_page_id)->post_content, 'puzzling_dashboard')) ) {
             wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
             
             wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery'], PUZZLINGCRM_VERSION, true );
@@ -76,7 +76,8 @@ class PuzzlingCRM {
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce'),
                 'lang'     => [
-                    'confirm_delete' => __('Are you sure you want to permanently delete this task? This action cannot be undone.', 'puzzlingcrm'),
+                    'confirm_delete_task' => __('Are you sure you want to permanently delete this task? This action cannot be undone.', 'puzzlingcrm'),
+                    'confirm_delete_project' => __('Are you sure you want to permanently delete this project? This will also delete all associated contracts and data. This action cannot be undone.', 'puzzlingcrm'),
                 ]
             ]);
         }

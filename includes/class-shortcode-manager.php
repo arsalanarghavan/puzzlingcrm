@@ -15,10 +15,11 @@ class PuzzlingCRM_Shortcode_Manager {
         add_shortcode( 'puzzling_projects', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_projects' ] );
         add_shortcode( 'puzzling_contracts', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_contracts' ] );
         add_shortcode( 'puzzling_tasks', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_tasks' ] );
-        add_shortcode( 'puzzling_subscriptions', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_subscriptions' ] );
         add_shortcode( 'puzzling_appointments', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_appointments' ] );
         add_shortcode( 'puzzling_reports', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_reports' ] );
         add_shortcode( 'puzzling_settings', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_settings' ] );
+		add_shortcode( 'puzzling_subscriptions', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_subscriptions' ] );
+
 
         // --- Team Member Shortcodes ---
         add_shortcode( 'puzzling_team_tasks', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_team_tasks' ] );

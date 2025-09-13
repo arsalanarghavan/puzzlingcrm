@@ -60,7 +60,7 @@ class PuzzlingCRM_Form_Handler {
         $item_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
         
         $nonce_action = 'puzzling_' . $action;
-        if (in_array($action, ['edit_contract', 'delete_subscription', 'delete_appointment', 'delete_project'])) {
+        if (in_array($action, ['edit_contract', 'delete_appointment', 'delete_project', 'manage_appointment'])) {
              $nonce_action .= '_' . $item_id;
         }
 
@@ -74,8 +74,7 @@ class PuzzlingCRM_Form_Handler {
 
         $manager_actions = [
             'manage_user', 'manage_project', 'delete_project', 'create_contract', 'edit_contract',
-            'save_settings', 'manage_subscription_plan', 'assign_subscription',
-            'delete_subscription', 'manage_appointment', 'delete_appointment'
+            'save_settings', 'manage_appointment', 'delete_appointment'
         ];
 
         if (in_array($action, $manager_actions)) {
@@ -303,77 +302,8 @@ class PuzzlingCRM_Form_Handler {
         $this->redirect_with_notice('settings_saved');
     }
 
-    private function handle_manage_subscription_plan() {
-        $plan_name = sanitize_text_field($_POST['plan_name']);
-        $price = filter_var($_POST['price'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-        $interval = sanitize_key($_POST['interval']);
-
-        if (empty($plan_name) || !is_numeric($price) || !in_array($interval, ['month', 'year'])) {
-            $this->redirect_with_notice('plan_error_data_invalid');
-        }
-
-        $term = term_exists($plan_name, 'subscription_plan');
-        if ($term && isset($term['term_id'])) {
-            wp_update_term($term['term_id'], 'subscription_plan', ['name' => $plan_name]);
-            update_term_meta($term['term_id'], 'price', $price);
-            update_term_meta($term['term_id'], 'interval', $interval);
-        } else {
-            $new_term = wp_insert_term($plan_name, 'subscription_plan');
-            if (!is_wp_error($new_term)) {
-                add_term_meta($new_term['term_id'], 'price', $price);
-                add_term_meta($new_term['term_id'], 'interval', $interval);
-            }
-        }
-        $this->redirect_with_notice('plan_saved_success');
-    }
-
-    private function handle_assign_subscription() {
-        $customer_id = intval($_POST['customer_id']);
-        $plan_id = intval($_POST['plan_id']);
-        $start_date = sanitize_text_field($_POST['start_date']);
-
-        if (empty($customer_id) || empty($plan_id) || empty($start_date)) {
-            $this->redirect_with_notice('sub_error_data_invalid');
-        }
-        
-        $plan = get_term($plan_id, 'subscription_plan');
-        $customer = get_user_by('ID', $customer_id);
-        if (!$plan || !$customer) {
-            $this->redirect_with_notice('sub_error_data_invalid');
-        }
-        $title = sprintf(__('%s Subscription for %s', 'puzzlingcrm'), $plan->name, $customer->display_name);
-
-        $sub_id = wp_insert_post([
-            'post_title' => $title, 
-            'post_type' => 'pzl_subscription', 
-            'post_status' => 'publish', 
-            'post_author' => $customer_id,
-        ]);
-
-        if (!is_wp_error($sub_id)) {
-            $interval_value = get_term_meta($plan_id, 'interval', true);
-            $next_date = date('Y-m-d', strtotime($start_date . ' +1 ' . $interval_value));
-            
-            update_post_meta($sub_id, '_plan_id', $plan_id);
-            update_post_meta($sub_id, '_start_date', $start_date);
-            update_post_meta($sub_id, '_next_payment_date', $next_date);
-            wp_set_object_terms($sub_id, 'active', 'subscription_status');
-            $this->redirect_with_notice('sub_assigned_success');
-        } else {
-            $this->redirect_with_notice('sub_error_failed');
-        }
-    }
-
-    private function handle_delete_subscription() {
-        $sub_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
-        if ($sub_id > 0) {
-            wp_delete_post($sub_id, true);
-            $this->redirect_with_notice('sub_deleted_success');
-        }
-        $this->redirect_with_notice('sub_error_failed');
-    }
-
     private function handle_manage_appointment() {
+        $appt_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
         $customer_id = intval($_POST['customer_id']);
         $title = sanitize_text_field($_POST['title']);
         $date = sanitize_text_field($_POST['date']);
@@ -385,16 +315,27 @@ class PuzzlingCRM_Form_Handler {
         }
 
         $full_datetime = $date . ' ' . $time;
-        $post_id = wp_insert_post([
+        $post_data = [
             'post_title' => $title, 
             'post_content' => $notes, 
             'post_type' => 'pzl_appointment', 
             'post_status' => 'publish', 
             'post_author' => $customer_id,
-        ]);
-        if (!is_wp_error($post_id)) {
+        ];
+
+        if ($appt_id > 0) {
+            $post_data['ID'] = $appt_id;
+            $result = wp_update_post($post_data, true);
+            $notice = 'appt_updated_success';
+        } else {
+            $result = wp_insert_post($post_data, true);
+            $notice = 'appt_created_success';
+        }
+
+        if (!is_wp_error($result)) {
+            $post_id = is_int($result) ? $result : $appt_id;
             update_post_meta($post_id, '_appointment_datetime', $full_datetime);
-            $this->redirect_with_notice('appt_created_success');
+            $this->redirect_with_notice($notice);
         } else {
             $this->redirect_with_notice('appt_error_failed');
         }

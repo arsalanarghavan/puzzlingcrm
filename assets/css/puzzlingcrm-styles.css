@@ -1,6 +1,6 @@
 /*
  * PuzzlingCRM Stylesheet
- * Version: 1.3.1 (Final UI Polish & Refinements)
+ * Version: 1.4.0 (Centralized & Refined)
  */
 
 /* --- Variable Definitions --- */
@@ -25,7 +25,6 @@
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 5px 25px rgba(0, 0, 0, 0.07);
-    /* Font will be inherited from the theme for consistency */
     color: var(--text-color);
 }
 .pzl-dashboard-section {
@@ -67,7 +66,7 @@ hr {
 
 /* --- Tables --- */
 .pzl-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-.pzl-table th, .pzl-table td { padding: 14px 16px; border-bottom: 1px solid #eee; text-align: right; vertical-align: middle; }
+.pzl-table th, .pzl-table td { padding: 14px 16px; border: 1px solid #eee; text-align: right; vertical-align: middle; }
 .pzl-table thead th { background-color: var(--light-grey-bg); font-weight: 600; color: #555; border-bottom: 2px solid #ddd; }
 .pzl-table tbody tr:hover { background-color: #fcfcfc; }
 .pzl-table .pzl-button { padding: 6px 12px; font-size: 12px; }
@@ -77,7 +76,7 @@ hr {
 .pzl-form-container h3, .pzl-form-container h4 { margin-top: 0; }
 .pzl-form-container .form-group { margin-bottom: 15px; }
 .pzl-form-container label { display: block; margin-bottom: 5px; font-weight: 600; }
-.pzl-form-container input[type="text"], .pzl-form-container input[type="number"], .pzl-form-container input[type="date"], .pzl-form-container textarea, .pzl-form-container select { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc; transition: border-color 0.3s, box-shadow 0.3s; }
+.pzl-form-container input[type="text"], .pzl-form-container input[type="email"], .pzl-form-container input[type="password"], .pzl-form-container input[type="number"], .pzl-form-container input[type="date"], .pzl-form-container input[type="time"], .pzl-form-container textarea, .pzl-form-container select { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc; transition: border-color 0.3s, box-shadow 0.3s; }
 .pzl-form-container input:focus, .pzl-form-container textarea:focus, .pzl-form-container select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(240, 25, 42, 0.1); outline: none; }
 .ltr-input { direction: ltr; text-align: left; }
 
@@ -95,12 +94,13 @@ hr {
 
 /* --- Status Badges (for tickets, payments, etc.) --- */
 .pzl-status, .pzl-status-badge { display: inline-block; padding: 5px 14px; border-radius: 20px; font-size: 12px; color: #fff; text-align: center; min-width: 90px; font-weight: 500; }
-.status-paid, .status-answered { background-color: var(--success-color); }
-.status-pending, .status-in-progress { background-color: var(--warning-color); color: #333; }
+.status-paid, .status-answered, .status-active { background-color: var(--success-color); }
+.status-pending, .status-in-progress, .status-on-hold { background-color: var(--warning-color); color: #333; }
 .status-open { background-color: var(--info-color); }
-.status-closed { background-color: #777; }
+.status-closed, .status-cancelled, .status-expired { background-color: #777; }
 
 /* --- Ticketing System Styles --- */
+.pzl-new-ticket-form-container input[type="text"], .pzl-new-ticket-form-container textarea { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; }
 .back-to-list-link { display: inline-block; margin-bottom: 20px; color: var(--primary-color); text-decoration: none; font-weight: 600; }
 .pzl-single-ticket-wrapper .ticket-header { background: var(--light-grey-bg); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e0e0e0; }
 .pzl-single-ticket-wrapper .ticket-header h2 { margin-top: 0; }
@@ -123,15 +123,7 @@ hr {
 .ticket-closed-notice { margin-top: 30px; background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 5px; text-align: center; }
 .ticket-closed-notice .dashicons { vertical-align: middle; }
 
-/* --- ADDED/MOVED STYLES --- */
-
-/* From list-tickets.php */
-.pzl-new-ticket-form-container { background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; }
-
-/* From list-client-payments.php */
-.pzl-table th, .pzl-table td { border: 1px solid #e0e0e0; }
-
-/* From dashboard-team-member.php */
+/* --- Task Management Styles --- */
 .add-task-form-container { background: #fff; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 .add-task-form-container .form-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .add-task-form-container input[type="text"], .add-task-form-container select { flex-grow: 1; min-width: 150px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
@@ -145,10 +137,16 @@ hr {
 .pagination .page-numbers.current { background: var(--primary-color, #F0192A); color: #fff; border-color: var(--primary-color, #F0192A); }
 .no-tasks-message { background-color: #f9f9f9; text-align: center; padding: 20px; border-radius: 5px; color: #777; list-style: none; }
 
-/* from reports-finance.php */
+/* --- Reports & Charts --- */
 .pzl-form-container .form-row { display: flex; align-items: flex-end; gap: 15px; background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; flex-wrap: wrap; }
 .pzl-chart-container { display: flex; align-items: flex-end; gap: 10px; border: 1px solid #e0e0e0; padding: 20px; border-radius: 5px; height: 250px; background: #fcfcfc; }
 .chart-bar-wrapper { flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: flex-end; }
 .chart-bar { background-color: var(--primary-color, #F0192A); width: 80%; max-width: 50px; margin: 0 auto; transition: background-color 0.3s, opacity 0.3s; opacity: 0.8; border-radius: 3px 3px 0 0; }
 .chart-bar:hover { background-color: var(--secondary-color, #1D1E29); opacity: 1; }
 .chart-label { font-size: 12px; margin-top: 5px; color: #555; }
+
+/* --- Single Project View --- */
+.back-to-dashboard-link { display: inline-block; margin-bottom: 20px; color: var(--primary-color); text-decoration: none; font-weight: bold; }
+.project-content { background: #f9f9f9; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; margin-bottom: 30px; }
+.task-details { flex-grow: 1; }
+.task-project-link { font-size: 12px; color: #777; display: block; }

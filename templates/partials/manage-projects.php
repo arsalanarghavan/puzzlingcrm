@@ -87,7 +87,7 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
         $projects_query = new WP_Query($args);
 
         if ($projects_query->have_posts()): ?>
-            <table class="pzl-table">
+            <table class="pzl-table" id="projects-table">
                 <thead>
                     <tr>
                         <th>عنوان پروژه</th>
@@ -112,12 +112,9 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                         <td><?php echo $contract_status; ?></td>
                         <td>
                             <a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-secondary">ویرایش</a>
-                            <form method="post" onsubmit="return confirm('آیا از حذف این پروژه مطمئن هستید؟');" style="display: inline;">
-                                 <input type="hidden" name="puzzling_action" value="delete_project">
-                                 <input type="hidden" name="item_id" value="<?php echo esc_attr($project_id); ?>">
-                                 <?php wp_nonce_field('puzzling_delete_project_' . $project_id, '_wpnonce'); ?>
-                                 <button type="submit" class="pzl-button" style="background-color: #dc3545; color: white;">حذف</button>
-                            </form>
+                            <a href="#" class="delete-project pzl-button" style="background-color: #dc3545; color: white;" 
+                               data-project-id="<?php echo esc_attr($project_id); ?>" 
+                               data-nonce="<?php echo esc_attr(wp_create_nonce('puzzling_delete_project_' . $project_id)); ?>">حذف</a>
                         </td>
                     </tr>
                     <?php endwhile; ?>

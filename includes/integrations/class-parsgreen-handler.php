@@ -34,6 +34,16 @@ class PuzzlingCRM_ParsGreen_Handler implements PuzzlingCRM_SMS_Service_Interface
             return false;
         }
 
+        if ( ! class_exists( 'SoapClient' ) ) {
+            error_log( 'PuzzlingCRM SMS Error: SoapClient class is not found. Please enable the PHP SOAP extension.' );
+            // Set a transient to show an admin notice
+            set_transient('puzzling_soap_not_enabled', true, DAY_IN_SECONDS);
+            return false;
+        }
+        
+        // If the SOAP client exists, we can clear any previous notice
+        delete_transient('puzzling_soap_not_enabled');
+
         $message_utf8 = mb_convert_encoding($message, "UTF-8");
 
         $parameters = [
@@ -45,10 +55,6 @@ class PuzzlingCRM_ParsGreen_Handler implements PuzzlingCRM_SMS_Service_Interface
             'udh'       => ''
         ];
 
-        if ( ! class_exists( 'SoapClient' ) ) {
-            error_log( 'PuzzlingCRM SMS Error: SoapClient class is not found. Please enable the PHP SOAP extension.' );
-            return false;
-        }
 
         try {
             $client   = new SoapClient( $this->api_url, ['encoding' => 'UTF-8']);

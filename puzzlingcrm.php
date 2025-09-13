@@ -3,7 +3,7 @@
  * Plugin Name:       PuzzlingCRM
  * Plugin URI:        https://Puzzlingco.com/
  * Description:       A complete CRM and Project Management solution for Social Marketing agencies.
- * Version:           0.0.4
+ * Version:           0.0.6
  * Author:            Arsalan Arghavan
  * Author URI:        https://ArsalanArghavan.ir/
  * License:           GPL v2 or later
@@ -17,22 +17,37 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 // Define Plugin Constants
-define( 'PUZZLINGCRM_VERSION', '1.0.1' );
+define( 'PUZZLINGCRM_VERSION', '1.1.0' );
 define( 'PUZZLINGCRM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PUZZLINGCRM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 /**
- * WooCommerce dependency check is no longer mandatory.
- * The plugin will now fallback gracefully if WooCommerce is not present.
- *
- * function puzzling_check_dependencies() {
- * if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) ) {
- * deactivate_plugins( plugin_basename( __FILE__ ) );
- * wp_die( esc_html__( 'PuzzlingCRM plugin requires WooCommerce to be installed and active. Please install WooCommerce first, then activate this plugin.', 'puzzlingcrm' ) );
- * }
- * }
- * add_action( 'admin_init', 'puzzling_check_dependencies' );
+ * Checks for required plugin dependencies.
  */
+function puzzling_check_dependencies() {
+    if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) || ! is_plugin_active( 'woocommerce-subscriptions/woocommerce-subscriptions.php' ) ) {
+        add_action( 'admin_notices', 'puzzling_dependency_notice' );
+        deactivate_plugins( plugin_basename( __FILE__ ) );
+        if ( isset( $_GET['activate'] ) ) {
+            unset( $_GET['activate'] );
+        }
+    }
+}
+add_action( 'admin_init', 'puzzling_check_dependencies' );
+
+/**
+ * Renders the admin notice for missing dependencies.
+ */
+function puzzling_dependency_notice() {
+    ?>
+    <div class="notice notice-error">
+        <p>
+            <strong><?php esc_html_e( 'PuzzlingCRM Deactivated', 'puzzlingcrm' ); ?></strong><br>
+            <?php esc_html_e( 'This plugin requires both WooCommerce and WooCommerce Subscriptions to be installed and active. Please ensure they are active before activating PuzzlingCRM.', 'puzzlingcrm' ); ?>
+        </p>
+    </div>
+    <?php
+}
 
 // Load plugin textdomain for translation.
 function puzzling_load_textdomain() {

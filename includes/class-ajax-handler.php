@@ -171,4 +171,33 @@ class PuzzlingCRM_Ajax_Handler {
         }
         wp_send_json_error(['message' => 'خطا.']);
     }
+    
+    public function delete_project() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+
+        if ( ! current_user_can('delete_posts') || ! isset($_POST['project_id']) || !isset($_POST['_wpnonce']) ) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+        
+        $project_id = intval($_POST['project_id']);
+        
+        if ( ! wp_verify_nonce( $_POST['_wpnonce'], 'puzzling_delete_project_' . $project_id ) ) {
+            wp_send_json_error(['message' => 'خطای امنیتی.']);
+        }
+
+        $project = get_post($project_id);
+
+        if ( !$project || $project->post_type !== 'project' ) {
+            wp_send_json_error(['message' => 'پروژه یافت نشد.']);
+        }
+
+        $result = wp_delete_post($project_id, true);
+
+        if ( $result ) {
+            PuzzlingCRM_Logger::add('پروژه حذف شد', ['content' => "پروژه '{$project->post_title}' توسط " . wp_get_current_user()->display_name . " حذف شد.", 'type' => 'log']);
+            wp_send_json_success(['message' => 'پروژه با موفقیت حذف شد.']);
+        } else {
+            wp_send_json_error(['message' => 'خطا در حذف پروژه.']);
+        }
+    }
 }

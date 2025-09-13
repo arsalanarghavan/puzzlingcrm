@@ -1,5 +1,19 @@
 <?php
-class CSM_Melipayamak_Handler {
+/**
+ * PuzzlingCRM Melipayamak SMS Handler
+ * Implements the SMS Service Interface.
+ *
+ * @package PuzzlingCRM
+ */
+
+if ( ! defined( 'ABSPATH' ) ) exit;
+
+// Ensure the interface is loaded before implementing it
+if ( ! interface_exists('PuzzlingCRM_SMS_Service_Interface') ) {
+    require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-sms-service-interface.php';
+}
+
+class CSM_Melipayamak_Handler implements PuzzlingCRM_SMS_Service_Interface {
     private $api_key;
     private $api_secret;
     private $sender_number;
@@ -11,17 +25,33 @@ class CSM_Melipayamak_Handler {
         $this->sender_number = $sender_number;
     }
     
-    public function send_pattern_sms( $recipient, $pattern_code, array $params ) {
-        if (empty($this->sender_number) || empty($this->api_key)) {
-            error_log('PuzzlingCRM SMS Error: API Key or Sender number is not configured.');
+    /**
+     * Sends an SMS message using a pattern.
+     *
+     * @param string $to The recipient's mobile number.
+     * @param string $message This will be the pattern code for Melipayamak.
+     * @param array $params The parameters to be replaced in the pattern (e.g., ['amount' => '10000']).
+     * @return bool True on success, false on failure.
+     */
+    public function send_sms( $to, $message, $params = [] ) {
+        $pattern_code = $message; // For this provider, 'message' is the pattern code.
+
+        if (empty($this->sender_number) || empty($this->api_key) || empty($pattern_code)) {
+            error_log('PuzzlingCRM SMS Error (Melipayamak): API Key, Sender number, or Pattern Code is not configured.');
             return false;
+        }
+
+        // Melipayamak expects values to be a string, so we need to format the params
+        $values = [];
+        foreach ($params as $key => $value) {
+            $values[$key] = (string)$value;
         }
 
         $body = [
             'pattern_code' => $pattern_code,
             'originator'   => $this->sender_number,
-            'recipient'    => $recipient,
-            'values'       => $params,
+            'recipient'    => $to,
+            'values'       => $values,
         ];
         
         $args = [
@@ -37,7 +67,7 @@ class CSM_Melipayamak_Handler {
         $response = wp_remote_post( $this->api_url, $args );
 
         if ( is_wp_error( $response ) ) {
-            error_log('PuzzlingCRM SMS Error: ' . $response->get_error_message());
+            error_log('PuzzlingCRM SMS Error (Melipayamak): ' . $response->get_error_message());
             return false;
         }
         

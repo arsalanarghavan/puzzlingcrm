@@ -16,7 +16,6 @@ class PuzzlingCRM_Admin_Menu {
      */
     public function __construct() {
         add_action( 'admin_menu', [ $this, 'register_admin_menus' ] );
-        // **NEW: Hook to show admin notices**
         add_action( 'admin_notices', [ $this, 'show_admin_notices' ] );
     }
 
@@ -60,9 +59,10 @@ class PuzzlingCRM_Admin_Menu {
     }
     
     /**
-     * Displays admin notices, e.g., for configuration errors.
+     * Displays admin notices, e.g., for configuration errors or missing extensions.
      */
     public function show_admin_notices() {
+        // Notice for unconfigured SMS service
         if ( get_transient( 'puzzling_sms_not_configured' ) ) {
             $settings_url = admin_url('admin.php?page=puzzling-settings&tab=sms');
             ?>
@@ -79,8 +79,20 @@ class PuzzlingCRM_Admin_Menu {
                 </p>
             </div>
             <?php
-            // The notice is dismissible, so we can delete the transient.
             delete_transient( 'puzzling_sms_not_configured' );
+        }
+
+        // Notice for missing SOAP extension (for ParsGreen)
+        if ( get_transient( 'puzzling_soap_not_enabled' ) ) {
+            ?>
+            <div class="notice notice-error is-dismissible">
+                <p>
+                    <strong><?php esc_html_e( 'PuzzlingCRM:', 'puzzlingcrm' ); ?></strong>
+                    <?php esc_html_e( 'The PHP SOAP extension is not enabled on your server. This is required for the ParsGreen SMS service to function. Please contact your hosting provider to enable it.', 'puzzlingcrm' ); ?>
+                </p>
+            </div>
+            <?php
+            delete_transient( 'puzzling_soap_not_enabled' );
         }
     }
 }

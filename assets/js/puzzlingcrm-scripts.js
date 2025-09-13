@@ -128,8 +128,7 @@ jQuery(document).ready(function($) {
     $('.task-list').on('click', '.delete-task', function(e) {
         e.preventDefault();
         
-        // Use the improved confirmation message from localized object
-        if ( !confirm(puzzling_lang.confirm_delete) ) return;
+        if ( !confirm(puzzling_lang.confirm_delete_task) ) return;
 
         var link = $(this);
         var taskItem = link.closest('.task-item');
@@ -158,6 +157,43 @@ jQuery(document).ready(function($) {
             }
         });
     });
+
+    // --- AJAX for Project Deletion ---
+    $('#projects-table').on('click', '.delete-project', function(e) {
+        e.preventDefault();
+        
+        if ( !confirm(puzzling_lang.confirm_delete_project) ) return;
+
+        var link = $(this);
+        var projectRow = link.closest('tr');
+        var projectId = link.data('project-id');
+        var nonce = link.data('nonce');
+
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'puzzling_delete_project',
+                security: puzzling_ajax_nonce, // Main AJAX nonce
+                _wpnonce: nonce, // Specific action nonce
+                project_id: projectId
+            },
+            beforeSend: function() { projectRow.css('opacity', '0.5'); },
+            success: function(response) {
+                if(response.success) {
+                    projectRow.slideUp(function() { $(this).remove(); });
+                } else {
+                    alert('خطا: ' + (response.data.message || 'خطای ناشناخته'));
+                    projectRow.css('opacity', '1');
+                }
+            },
+            error: function() {
+                alert('یک خطای ناشناخته در ارتباط با سرور رخ داد.');
+                projectRow.css('opacity', '1');
+            }
+        });
+    });
+
 
     // --- Notification Center ---
     function fetchNotifications() {
