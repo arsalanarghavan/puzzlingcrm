@@ -67,10 +67,11 @@ class PuzzlingCRM_Form_Handler {
              // Specific nonce check for forms that don't follow the item_id pattern
             if (
                 ($action === 'manage_pro_invoice' && !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_manage_pro_invoice')) ||
+                ($action === 'manage_user' && !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_manage_user')) ||
                 ($action === 'request_appointment' && !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_request_appointment'))
             ) {
                  $this->redirect_with_notice('security_failed');
-            } elseif (!in_array($action, ['manage_pro_invoice', 'request_appointment'])) {
+            } elseif (!in_array($action, ['manage_pro_invoice', 'request_appointment', 'manage_user'])) {
                 $this->redirect_with_notice('security_failed');
             }
         }
@@ -118,18 +119,31 @@ class PuzzlingCRM_Form_Handler {
     private function handle_manage_user() {
         $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
         $email = sanitize_email($_POST['email']);
-        $display_name = sanitize_text_field($_POST['display_name']);
+        $first_name = sanitize_text_field($_POST['first_name']);
+        $last_name = sanitize_text_field($_POST['last_name']);
         $password = $_POST['password'];
         $role = sanitize_key($_POST['role']);
+        $phone_number = sanitize_text_field($_POST['puzzling_phone_number']);
 
-        if (!is_email($email) || empty($display_name) || empty($role)) {
+        if (!is_email($email) || empty($last_name) || empty($role)) {
             $this->redirect_with_notice('user_error_data_invalid');
         }
         if ($user_id === 0 && empty($password)) {
             $this->redirect_with_notice('user_error_password_required');
         }
+        
+        $display_name = trim($first_name . ' ' . $last_name);
+        if(empty($display_name)) {
+            $display_name = $email;
+        }
 
-        $user_data = ['user_email' => $email, 'display_name' => $display_name, 'role' => $role];
+        $user_data = [
+            'user_email' => $email,
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            'display_name' => $display_name,
+            'role' => $role
+        ];
 
         if (!empty($password)) {
             $user_data['user_pass'] = $password;
@@ -143,6 +157,7 @@ class PuzzlingCRM_Form_Handler {
             if (email_exists($email)) {
                 $this->redirect_with_notice('user_error_email_exists');
             }
+            $user_data['user_login'] = $email; // Use email as username for new users
             $result = wp_insert_user($user_data);
             $notice = 'user_created_success';
         }
@@ -150,6 +165,8 @@ class PuzzlingCRM_Form_Handler {
         if (is_wp_error($result)) {
             $this->redirect_with_notice('user_error_failed');
         } else {
+            $new_user_id = is_int($result) ? $result : $user_id;
+            update_user_meta($new_user_id, 'puzzling_phone_number', $phone_number);
             $this->redirect_with_notice($notice);
         }
     }
@@ -564,6 +581,10 @@ class PuzzlingCRM_Form_Handler {
 
     private function handle_delete_pro_invoice() {
         $invoice_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
+        
+        if ( !isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_delete_pro_invoice_' . $invoice_id) ) {
+            $this->redirect_with_notice('security_failed');
+        }
 
         if ($invoice_id > 0 && get_post_type($invoice_id) === 'pzl_pro_invoice') {
             wp_delete_post($invoice_id, true);
@@ -597,9 +618,9 @@ class PuzzlingCRM_Form_Handler {
             update_post_meta($post_id, '_appointment_datetime', $full_datetime);
 
             $this->notify_all_admins(
-                __('New Appointment Request', 'puzzlingcrm'), 
+                __('درخواست قرار ملاقات جدید', 'puzzlingcrm'), 
                 [
-                    'content' => sprintf(__("Customer '%s' requested an appointment for '%s' on %s.", 'puzzlingcrm'), wp_get_current_user()->display_name, $title, $full_datetime), 
+                    'content' => sprintf(__("مشتری '%s' برای موضوع '%s' در تاریخ %s درخواست قرار ملاقات داد.", 'puzzlingcrm'), wp_get_current_user()->display_name, $title, $full_datetime), 
                     'type' => 'notification', 
                     'object_id' => $post_id
                 ]

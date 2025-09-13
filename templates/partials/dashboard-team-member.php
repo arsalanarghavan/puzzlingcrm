@@ -1,7 +1,7 @@
 <?php
 /**
  * Team Member Dashboard Template - Fully Completed & Upgraded
- * Includes AJAX form, search, pagination, and role-based views.
+ * Includes My Projects list, AJAX task form, search, and pagination.
  * @package PuzzlingCRM
  */
 
@@ -9,43 +9,73 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; 
 }
 
-// Ensure the function for rendering a task item is available.
-if (!function_exists('puzzling_render_task_item')) {
-    $functions_file = PUZZLINGCRM_PLUGIN_DIR . 'includes/puzzling-functions.php';
-    if (file_exists($functions_file)) {
-        include_once $functions_file;
-    } else {
-        // Fallback in case the function file is missing, to avoid fatal errors.
-        function puzzling_render_task_item($task) {
-            return '<li>Error: Task render function is missing.</li>';
-        }
-    }
-}
-
 $current_user = wp_get_current_user();
 $user_id = $current_user->ID;
 
-// Sanitize GET parameters for pagination and search.
+// --- Query for Team Member's Projects ---
+$tasks_args = [
+    'post_type' => 'task',
+    'posts_per_page' => -1,
+    'meta_key' => '_assigned_to',
+    'meta_value' => $user_id,
+    'fields' => 'ids', // Only get post IDs for efficiency
+];
+$assigned_task_ids = get_posts($tasks_args);
+
+$project_ids = [];
+if (!empty($assigned_task_ids)) {
+    foreach ($assigned_task_ids as $task_id) {
+        $project_id = get_post_meta($task_id, '_project_id', true);
+        if ($project_id) {
+            $project_ids[] = $project_id;
+        }
+    }
+}
+$project_ids = array_unique($project_ids); // Get unique project IDs
+
+// Sanitize GET parameters for pagination, search, and project filter.
 $paged = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
 $search_query = isset($_GET['task_search']) ? sanitize_text_field($_GET['task_search']) : '';
-$tasks_per_page = 10; // Number of tasks per page.
+$project_filter = isset($_GET['project_filter']) ? intval($_GET['project_filter']) : 0;
+$tasks_per_page = 15;
 
 ?>
 
 <div class="pzl-dashboard-section">
-    <h3><span class="dashicons dashicons-list-view" style="vertical-align: middle;"></span> تسک‌های من</h3>
+    <h3><span class="dashicons dashicons-portfolio" style="vertical-align: middle;"></span> <?php esc_html_e('My Projects', 'puzzlingcrm'); ?></h3>
+    <?php if (!empty($project_ids)): 
+        $project_query = new WP_Query(['post_type' => 'project', 'post__in' => $project_ids, 'posts_per_page' => -1]);
+    ?>
+        <div class="pzl-projects-grid">
+        <?php while($project_query->have_posts()): $project_query->the_post(); 
+            $filter_link = add_query_arg('project_filter', get_the_ID());
+            $is_active_filter = ($project_filter === get_the_ID());
+        ?>
+            <a href="<?php echo esc_url($filter_link); ?>" class="project-card <?php echo $is_active_filter ? 'active' : ''; ?>">
+                <?php the_title(); ?>
+            </a>
+        <?php endwhile; wp_reset_postdata(); ?>
+        <?php if ($project_filter): ?>
+            <a href="<?php echo esc_url(remove_query_arg('project_filter')); ?>" class="clear-filter-link">&times; <?php esc_html_e('Clear Filter', 'puzzlingcrm'); ?></a>
+        <?php endif; ?>
+        </div>
+    <?php else: ?>
+        <p><?php esc_html_e('You are not currently assigned to any projects.', 'puzzlingcrm'); ?></p>
+    <?php endif; ?>
+    <hr>
+    <h3><span class="dashicons dashicons-list-view" style="vertical-align: middle;"></span> <?php esc_html_e('My Tasks', 'puzzlingcrm'); ?></h3>
 
     <div class="add-task-form-container">
-        <h4><span class="dashicons dashicons-plus-alt"></span> افزودن تسک جدید</h4>
+        <h4><span class="dashicons dashicons-plus-alt"></span> <?php esc_html_e('Add New Task', 'puzzlingcrm'); ?></h4>
         <form id="puzzling-add-task-form">
             <div class="form-row">
-                <input type="text" id="task_title" name="title" placeholder="عنوان تسک..." required>
+                <input type="text" name="title" placeholder="<?php esc_attr_e('Task title...', 'puzzlingcrm'); ?>" required>
                 
-                <select id="task_project" name="project_id" required>
-                    <option value="">-- انتخاب پروژه --</option>
+                <select name="project_id" required>
+                    <option value="">-- <?php esc_html_e('Select Project', 'puzzlingcrm'); ?> --</option>
                     <?php
-                    $projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish']);
-                    foreach ($projects as $project) {
+                    $all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish']);
+                    foreach ($all_projects as $project) {
                         echo '<option value="' . esc_attr($project->ID) . '">' . esc_html($project->post_title) . '</option>';
                     }
                     ?>
@@ -53,19 +83,17 @@ $tasks_per_page = 10; // Number of tasks per page.
 
                 <?php if (current_user_can('assign_tasks')) : ?>
                 <select name="assigned_to" required>
-                    <option value="">-- تخصیص به --</option>
+                    <option value="">-- <?php esc_html_e('Assign To', 'puzzlingcrm'); ?> --</option>
                     <?php
-                    // List users who can be assigned tasks.
                     $team_members = get_users(['role__in' => ['team_member', 'system_manager', 'administrator']]);
                     foreach ($team_members as $member) {
-                        // The current manager is selected by default.
                         echo '<option value="' . esc_attr($member->ID) . '"' . selected($user_id, $member->ID, false) . '>' . esc_html($member->display_name) . '</option>';
                     }
                     ?>
                 </select>
                 <?php endif; ?>
                 
-                <select name="priority" required title="اهمیت تسک">
+                <select name="priority" required title="<?php esc_attr_e('Task Priority', 'puzzlingcrm'); ?>">
                     <?php
                     $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
                     foreach ($priorities as $priority) {
@@ -74,21 +102,23 @@ $tasks_per_page = 10; // Number of tasks per page.
                     ?>
                 </select>
                 
-                <input type="date" name="due_date" title="ددلاین تسک">
+                <input type="date" name="due_date" title="<?php esc_attr_e('Task Deadline', 'puzzlingcrm'); ?>">
 
-                <button type="submit" class="pzl-button pzl-button-primary">افزودن</button>
+                <button type="submit" class="pzl-button pzl-button-primary"><?php esc_html_e('Add', 'puzzlingcrm'); ?></button>
             </div>
-            <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); // Note: This nonce is primarily for non-JS fallback. The JS uses the localized nonce. ?>
         </form>
     </div>
 
     <div class="task-lists">
-        <h4><span class="dashicons dashicons-marker"></span> لیست تسک‌های فعال</h4>
+        <h4><span class="dashicons dashicons-marker"></span> <?php esc_html_e('Active Tasks', 'puzzlingcrm'); ?></h4>
 
         <div class="pzl-search-form">
             <form method="get">
-                <input type="search" name="task_search" placeholder="جستجوی عنوان تسک..." value="<?php echo esc_attr($search_query); ?>">
-                <button type="submit" class="pzl-button pzl-button-secondary">جستجو</button>
+                <?php if ($project_filter): // Keep the project filter active during search ?>
+                    <input type="hidden" name="project_filter" value="<?php echo esc_attr($project_filter); ?>">
+                <?php endif; ?>
+                <input type="search" name="task_search" placeholder="<?php esc_attr_e('Search task titles...', 'puzzlingcrm'); ?>" value="<?php echo esc_attr($search_query); ?>">
+                <button type="submit" class="pzl-button pzl-button-secondary"><?php esc_html_e('Search', 'puzzlingcrm'); ?></button>
             </form>
         </div>
 
@@ -98,7 +128,14 @@ $tasks_per_page = 10; // Number of tasks per page.
                 'post_type' => 'task',
                 'posts_per_page' => $tasks_per_page,
                 'paged' => $paged,
-                's' => $search_query, // Search by title.
+                's' => $search_query,
+                'meta_query' => [
+                    'relation' => 'AND',
+                    [
+                        'key' => '_assigned_to',
+                        'value' => $user_id,
+                    ],
+                ],
                 'tax_query' => [
                     [
                         'taxonomy' => 'task_status',
@@ -108,19 +145,20 @@ $tasks_per_page = 10; // Number of tasks per page.
                     ]
                 ],
             ];
-            // If the current user is not a manager, show only tasks assigned to them.
-            if (!current_user_can('manage_options')) {
-                $active_tasks_args['meta_key'] = '_assigned_to';
-                $active_tasks_args['meta_value'] = $user_id;
+            // If a project is selected, filter tasks by that project
+            if ($project_filter > 0) {
+                $active_tasks_args['meta_query'][] = [
+                    'key' => '_project_id',
+                    'value' => $project_filter,
+                ];
             }
             $active_tasks_query = new WP_Query($active_tasks_args);
 
             if (!$active_tasks_query->have_posts()) {
-                echo '<li class="no-tasks-message">هیچ تسک فعالی یافت نشد.</li>';
+                echo '<li class="no-tasks-message">' . esc_html__('No active tasks found.', 'puzzlingcrm') . '</li>';
             } else {
                 while($active_tasks_query->have_posts()) {
                     $active_tasks_query->the_post();
-                    // Use the dedicated function to render the task item.
                     echo puzzling_render_task_item(get_post());
                 }
             }
@@ -128,37 +166,33 @@ $tasks_per_page = 10; // Number of tasks per page.
         </ul>
         <div class="pagination">
             <?php
-            // Display pagination links.
             echo paginate_links([
                 'base' => add_query_arg('paged', '%#%'),
                 'total' => $active_tasks_query->max_num_pages,
                 'current' => max( 1, $paged ),
                 'format' => '?paged=%#%',
-                'prev_text' => '« قبلی',
-                'next_text' => 'بعدی »',
+                'prev_text' => __('&laquo; Previous', 'puzzlingcrm'),
+                'next_text' => __('Next &raquo;', 'puzzlingcrm'),
             ]);
             wp_reset_postdata();
             ?>
         </div>
         
-        <hr style="margin: 30px 0;">
+        <hr>
 
-        <h4><span class="dashicons dashicons-yes"></span> لیست تسک‌های انجام شده</h4>
+        <h4><span class="dashicons dashicons-yes"></span> <?php esc_html_e('Recently Completed Tasks', 'puzzlingcrm'); ?></h4>
         <ul id="done-tasks-list" class="task-list">
              <?php
-            $done_tasks_args = [
+            $done_tasks = get_posts([
                 'post_type' => 'task',
-                'posts_per_page' => 5, // Show only the 5 most recent completed tasks.
+                'posts_per_page' => 5,
+                'meta_key' => '_assigned_to',
+                'meta_value' => $user_id,
                 'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => 'done']],
-            ];
-            if (!current_user_can('manage_options')) {
-                $done_tasks_args['meta_key'] = '_assigned_to';
-                $done_tasks_args['meta_value'] = $user_id;
-            }
-            $done_tasks = get_posts($done_tasks_args);
+            ]);
 
             if (empty($done_tasks)) {
-                echo '<li class="no-tasks-message">هنوز تسکی را به اتمام نرسانده‌اید.</li>';
+                echo '<li class="no-tasks-message">' . esc_html__('You have not completed any tasks yet.', 'puzzlingcrm') . '</li>';
             } else {
                 foreach ($done_tasks as $task) { echo puzzling_render_task_item($task); }
             }
@@ -167,17 +201,38 @@ $tasks_per_page = 10; // Number of tasks per page.
     </div>
 </div>
 <style>
-.add-task-form-container { background: #fff; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-.add-task-form-container h4 { margin-top: 0; }
-.add-task-form-container .form-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.add-task-form-container input[type="text"], .add-task-form-container select { flex-grow: 1; min-width: 150px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-.add-task-form-container button { flex-shrink: 0; }
-.pzl-search-form { margin-bottom: 20px; display: flex; gap: 10px; }
-.pzl-search-form input { flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-.task-lists h4 { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
-.pagination { margin-top: 20px; text-align: left; }
-.pagination .page-numbers { display: inline-block; padding: 8px 12px; border: 1px solid #ddd; text-decoration: none; border-radius: 4px; transition: background-color 0.3s; }
-.pagination .page-numbers:hover { background-color: #f0f0f0; }
-.pagination .page-numbers.current { background: var(--primary-color, #F0192A); color: #fff; border-color: var(--primary-color, #F0192A); }
-.no-tasks-message { background-color: #f9f9f9; text-align: center; padding: 20px; border-radius: 5px; color: #777; list-style: none; }
+/* Add these styles to your main CSS file (puzzlingcrm-styles.css) */
+.pzl-projects-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.project-card {
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 8px 15px;
+    text-decoration: none;
+    color: #333;
+    font-size: 14px;
+    transition: all 0.2s ease-in-out;
+}
+.project-card:hover {
+    background-color: #e0e0e0;
+    border-color: #ccc;
+}
+.project-card.active {
+    background-color: var(--primary-color, #F0192A);
+    color: #fff;
+    border-color: var(--primary-color, #F0192A);
+    font-weight: bold;
+}
+.clear-filter-link {
+    color: var(--primary-color, #F0192A);
+    text-decoration: none;
+    margin-left: 10px;
+    font-size: 14px;
+    align-self: center;
+}
 </style>

@@ -1,14 +1,8 @@
 <?php
 class PuzzlingCRM {
 
-    /**
-     * The single instance of the class.
-     */
     protected static $_instance = null;
 
-    /**
-     * Main PuzzlingCRM Instance.
-     */
     public static function instance() {
         if ( is_null( self::$_instance ) ) {
             self::$_instance = new self();
@@ -22,7 +16,6 @@ class PuzzlingCRM {
     }
 
     private function load_dependencies() {
-        // Core Classes
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-admin-menu.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cpt-manager.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-roles-manager.php';
@@ -34,8 +27,6 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cron-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-settings-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-logger.php';
-        
-        // SMS Interface and Integrations
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-sms-service-interface.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-zarinpal-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-melipayamak-handler.php';
@@ -43,9 +34,6 @@ class PuzzlingCRM {
     }
 
     private function define_hooks() {
-        // Activation & Deactivation hooks have been moved to the main plugin file (puzzlingcrm.php)
-        // which is the correct place for them.
-
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_dashboard_assets' ] );
         
         new PuzzlingCRM_Admin_Menu();
@@ -60,12 +48,30 @@ class PuzzlingCRM {
 
     /**
      * Conditionally enqueues scripts and styles.
+     * FIX: Broadened the condition to ensure styles load on any page with a Puzzling shortcode.
      */
     public function enqueue_dashboard_assets() {
-        // Only load assets on pages that might contain our shortcodes.
-        // A more robust check might be needed if shortcodes are used in widgets, etc.
         global $post;
-        if ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'puzzling_dashboard' ) ) {
+        $load_assets = false;
+        
+        // List of all shortcodes that require the assets
+        $shortcodes = [
+            'puzzling_dashboard', 'puzzling_projects', 'puzzling_contracts', 'puzzling_invoices',
+            'puzzling_pro_invoices', 'puzzling_appointments', 'puzzling_tickets', 'puzzling_tasks',
+            'puzzling_customers', 'puzzling_staff', 'puzzling_subscriptions', 'puzzling_reports',
+            'puzzling_settings', 'puzzling_logs'
+        ];
+
+        if ( is_a( $post, 'WP_Post' ) ) {
+            foreach($shortcodes as $sc) {
+                if ( has_shortcode( $post->post_content, $sc ) ) {
+                    $load_assets = true;
+                    break;
+                }
+            }
+        }
+
+        if ( $load_assets ) {
             wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
             
             wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery'], PUZZLINGCRM_VERSION, true );
@@ -74,8 +80,8 @@ class PuzzlingCRM {
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce'),
                 'lang'     => [
-                    'confirm_delete_task' => __('Are you sure you want to permanently delete this task? This action cannot be undone.', 'puzzlingcrm'),
-                    'confirm_delete_project' => __('Are you sure you want to permanently delete this project? This will also delete all associated contracts and data. This action cannot be undone.', 'puzzlingcrm'),
+                    'confirm_delete_task' => __('آیا از حذف این وظیفه مطمئن هستید؟ این عمل قابل بازگشت نیست.', 'puzzlingcrm'),
+                    'confirm_delete_project' => __('آیا از حذف این پروژه مطمئن هستید؟ تمام قراردادها و اطلاعات مرتبط با آن نیز حذف خواهند شد. این عمل قابل بازگشت نیست.', 'puzzlingcrm'),
                 ]
             ]);
         }

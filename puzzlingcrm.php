@@ -3,7 +3,7 @@
  * Plugin Name:       PuzzlingCRM
  * Plugin URI:        https://Puzzlingco.com/
  * Description:       A complete CRM and Project Management solution for Social Marketing agencies.
- * Version:           0.0.9
+ * Version:           0.0.12
  * Author:            Arsalan Arghavan
  * Author URI:        https://ArsalanArghavan.ir/
  * License:           GPL v2 or later
@@ -17,7 +17,7 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 // Define Plugin Constants
-define( 'PUZZLINGCRM_VERSION', '1.2.0' );
+define( 'PUZZLINGCRM_VERSION', '1.3.0' );
 define( 'PUZZLINGCRM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PUZZLINGCRM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -27,10 +27,8 @@ require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/puzzling-functions.php';
 require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-puzzlingcrm.php';
 
 // --- Activation / Deactivation Hooks ---
-// This is the correct place to register these hooks.
 register_activation_hook( __FILE__, [ 'PuzzlingCRM_Installer', 'activate' ] );
 register_deactivation_hook( __FILE__, [ 'PuzzlingCRM_Installer', 'deactivate' ] );
-
 
 /**
  * Checks for required plugin dependencies.
@@ -53,8 +51,8 @@ function puzzling_dependency_notice() {
     ?>
     <div class="notice notice-error">
         <p>
-            <strong><?php esc_html_e( 'PuzzlingCRM Deactivated', 'puzzlingcrm' ); ?></strong><br>
-            <?php esc_html_e( 'This plugin requires both WooCommerce and WooCommerce Subscriptions to be installed and active. Please ensure they are active before activating PuzzlingCRM.', 'puzzlingcrm' ); ?>
+            <strong><?php esc_html_e( 'پلاگین PuzzlingCRM غیرفعال شد', 'puzzlingcrm' ); ?></strong><br>
+            <?php esc_html_e( 'این پلاگین نیازمند نصب و فعال بودن هر دو پلاگین WooCommerce و WooCommerce Subscriptions است. لطفاً ابتدا آن‌ها را فعال کرده و سپس PuzzlingCRM را فعال کنید.', 'puzzlingcrm' ); ?>
         </p>
     </div>
     <?php
@@ -65,7 +63,6 @@ function puzzling_load_textdomain() {
     load_plugin_textdomain( 'puzzlingcrm', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 }
 add_action( 'plugins_loaded', 'puzzling_load_textdomain' );
-
 
 /**
  * Begins execution of the plugin.

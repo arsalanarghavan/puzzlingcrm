@@ -64,7 +64,7 @@ class PuzzlingCRM_Frontend_Dashboard {
             case 'team_member':
                 return self::render_partial('dashboard-team-member');
             case 'customer':
-                return self::render_partial('page-client-overview'); // The customer's main dashboard is their overview.
+                return self::render_partial('page-client-overview');
             default:
                 return '<p>' . __('You do not have a defined role to view a dashboard.', 'puzzlingcrm') . '</p>';
         }
@@ -95,7 +95,7 @@ class PuzzlingCRM_Frontend_Dashboard {
         if ( ! is_user_logged_in() ) return self::render_partial('common/login-prompt');
         $role = self::get_user_role();
 
-        if ( $role === 'system_manager' || $role === 'finance_manager' ) { // <-- دسترسی به مدیر مالی اضافه شد
+        if ( $role === 'system_manager' || $role === 'finance_manager' ) {
             return self::render_partial('page-contracts');
         } elseif ( $role === 'customer' ) {
             return self::render_partial('page-client-contracts');
@@ -129,7 +129,7 @@ class PuzzlingCRM_Frontend_Dashboard {
         if ( ! is_user_logged_in() ) return self::render_partial('common/login-prompt');
         $role = self::get_user_role();
 
-        if ( $role === 'system_manager' ) {
+        if ( $role === 'system_manager' || $role === 'finance_manager' ) { // <-- دسترسی به مدیر مالی اضافه شد
             return self::render_partial('page-pro-invoices');
         } elseif ( $role === 'customer' ) {
             return self::render_partial('page-client-pro-invoices');

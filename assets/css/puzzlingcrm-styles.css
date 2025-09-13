@@ -1,152 +1,291 @@
 /*
  * PuzzlingCRM Stylesheet
- * Version: 1.4.0 (Centralized & Refined)
+ * Version: 2.0.0 (Complete Visual Revamp)
  */
 
-/* --- Variable Definitions --- */
+/* --- ریشه و متغیرهای اصلی --- */
 :root {
-    --primary-color: #F0192A;
-    --secondary-color: #1D1E29;
-    --text-color: #333;
-    --light-text-color: #fff;
-    --border-color: #e0e0e0;
-    --background-color: #f9f9f9;
-    --success-color: #28a745;
-    --warning-color: #ffc107;
-    --info-color: #0073aa;
-    --light-grey-bg: #f9f9f9;
+    --pzl-primary-color: #6a11cb; /* بنفش مدرن */
+    --pzl-secondary-color: #2575fc; /* آبی زنده */
+    --pzl-text-color: #212529;
+    --pzl-text-light: #6c757d;
+    --pzl-body-bg: #f4f7f6;
+    --pzl-card-bg: #ffffff;
+    --pzl-border-color: #e9ecef;
+    --pzl-success-color: #28a745;
+    --pzl-warning-color: #ffc107;
+    --pzl-danger-color: #dc3545;
+    --pzl-info-color: #17a2b8;
+    --pzl-font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --pzl-border-radius: 12px;
+    --pzl-box-shadow: 0 4px H(25px) rgba(0, 0, 0, 0.05);
 }
 
-/* --- General Wrapper & Layout --- */
+/* --- ساختار کلی و تایپوگرافی --- */
 .puzzling-dashboard-wrapper {
-    max-width: 1200px;
-    margin: 30px auto;
+    font-family: var(--pzl-font-family);
+    background-color: var(--pzl-body-bg);
+    padding: 20px;
+    max-width: 100%;
+    direction: rtl;
+}
+
+.puzzling-dashboard-wrapper h3 {
+    font-weight: 700;
+    color: var(--pzl-text-color);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 22px;
+}
+
+.puzzling-dashboard-wrapper a {
+    color: var(--pzl-primary-color);
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.puzzling-dashboard-wrapper a:hover {
+    color: var(--pzl-secondary-color);
+}
+
+/* --- کارت‌ها و چیدمان --- */
+.pzl-card {
+    background-color: var(--pzl-card-bg);
+    border-radius: var(--pzl-border-radius);
+    box-shadow: var(--pzl-box-shadow);
     padding: 25px 30px;
-    background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.07);
-    color: var(--text-color);
+    margin-bottom: 30px;
+    border: 1px solid var(--pzl-border-color);
 }
-.pzl-dashboard-section {
-    margin-bottom: 40px;
+
+.pzl-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--pzl-border-color);
+    flex-wrap: wrap;
+    gap: 15px;
 }
-hr {
+
+.pzl-card-header h3 {
+    margin: 0;
+}
+
+/* --- دکمه‌ها --- */
+.pzl-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: var(--pzl-border-radius);
+    text-decoration: none;
+    font-weight: 700;
+    cursor: pointer;
     border: none;
-    border-top: 1px solid #eee;
-    margin: 40px 0;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+.pzl-button-primary {
+    background: linear-gradient(45deg, var(--pzl-primary-color), var(--pzl-secondary-color));
+    color: #fff;
+}
+.pzl-button-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(37, 117, 252, 0.4);
+}
+.pzl-button-secondary {
+    background-color: #6c757d;
+    color: #fff;
+}
+.pzl-button-secondary:hover {
+    background-color: #5a6268;
+    transform: translateY(-2px);
+}
+.pzl-button-danger {
+    background-color: var(--pzl-danger-color);
+    color: #fff;
+}
+.pzl-button-danger:hover {
+    background-color: #c82333;
+    transform: translateY(-2px);
+}
+.pzl-button-sm {
+    padding: 8px 16px;
+    font-size: 12px;
 }
 
-/* --- Header & Notification Center --- */
-.puzzling-dashboard-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 30px; }
-.puzzling-dashboard-header h1 { font-size: 26px; color: var(--secondary-color); margin: 0; font-weight: 700; }
-.header-controls { display: flex; align-items: center; gap: 25px; }
-.user-info { font-size: 14px; text-align: left; }
-.user-info strong { font-weight: 600; }
-.user-info a { color: var(--primary-color); text-decoration: none; margin-right: 5px; font-weight: 500; }
-.pzl-notification-center { position: relative; }
-.pzl-notification-bell { cursor: pointer; position: relative; color: #555; }
-.pzl-notification-bell .dashicons { font-size: 24px; vertical-align: middle; }
-.pzl-notification-count { position: absolute; top: -5px; right: -8px; background-color: var(--primary-color); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; line-height: 18px; text-align: center; font-weight: bold; display: none; box-shadow: 0 0 5px rgba(240, 25, 42, 0.7); }
-.pzl-notification-panel { position: absolute; top: 120%; left: -250px; width: 320px; background-color: #fff; border: 1px solid #ddd; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px; display: none; z-index: 1000; }
-.pzl-notification-panel .panel-header { font-weight: 600; padding: 12px 15px; border-bottom: 1px solid #eee; }
-.pzl-notification-panel ul { list-style: none; padding: 0; margin: 0; max-height: 350px; overflow-y: auto; }
-.pzl-notification-panel li { padding: 12px 15px; border-bottom: 1px solid #f5f5f5; transition: background-color 0.2s; font-size: 14px; }
-.pzl-notification-panel li:last-child { border-bottom: none; }
-.pzl-notification-panel li.pzl-unread { background-color: #f0f8ff; font-weight: 600; }
-.pzl-notification-panel li:hover { background-color: #f9f9f9; }
-.pzl-notification-panel li small { display: block; color: #999; font-size: 12px; margin-top: 4px; font-weight: normal; }
-.pzl-no-notifications { text-align: center; color: #888; padding: 20px; }
+/* --- فرم‌ها --- */
+.pzl-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.pzl-form-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.form-group {
+    flex: 1 1 100%;
+}
+.form-group.half-width {
+    flex: 1 1 calc(50% - 10px);
+}
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--pzl-text-light);
+    font-size: 14px;
+}
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group input[type="number"],
+.form-group input[type="date"],
+.form-group input[type="time"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border-radius: var(--pzl-border-radius);
+    border: 1px solid var(--pzl-border-color);
+    background-color: #fdfdfd;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    font-size: 14px;
+    font-family: var(--pzl-font-family);
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--pzl-primary-color);
+    box-shadow: 0 0 0 4px rgba(106, 17, 203, 0.1);
+    outline: none;
+}
+.form-group .description {
+    font-size: 13px;
+    color: var(--pzl-text-light);
+    margin-top: 5px;
+}
+.form-submit {
+    margin-top: 15px;
+    border-top: 1px solid var(--pzl-border-color);
+    padding-top: 20px;
+}
+.ltr-input {
+    direction: ltr;
+    text-align: left;
+}
 
-/* --- Buttons --- */
-.pzl-button { display: inline-block; padding: 10px 22px; border-radius: 8px; text-decoration: none; font-weight: 600; cursor: pointer; border: none; transition: all 0.3s ease; font-size: 14px; }
-.pzl-button-primary { background-color: var(--primary-color); color: var(--light-text-color); }
-.pzl-button-primary:hover { background-color: #c01422; color: var(--light-text-color); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(240, 25, 42, 0.3); }
-.pzl-button-secondary { background-color: var(--secondary-color); color: var(--light-text-color); }
-.pzl-button-secondary:hover { background-color: #000; color: var(--light-text-color); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(29, 30, 41, 0.3); }
+/* --- جداول --- */
+.pzl-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.pzl-table th, .pzl-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--pzl-border-color);
+    text-align: right;
+    vertical-align: middle;
+}
+.pzl-table thead th {
+    background-color: #f8f9fa;
+    font-weight: 700;
+    color: #495057;
+    border-bottom: 2px solid var(--pzl-border-color);
+}
+.pzl-table tbody tr {
+    transition: background-color 0.2s;
+}
+.pzl-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+.pzl-table tbody td:first-child {
+    font-weight: 600;
+}
 
-/* --- Tables --- */
-.pzl-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-.pzl-table th, .pzl-table td { padding: 14px 16px; border: 1px solid #eee; text-align: right; vertical-align: middle; }
-.pzl-table thead th { background-color: var(--light-grey-bg); font-weight: 600; color: #555; border-bottom: 2px solid #ddd; }
-.pzl-table tbody tr:hover { background-color: #fcfcfc; }
-.pzl-table .pzl-button { padding: 6px 12px; font-size: 12px; }
+/* --- ویجت‌های آمار --- */
+.pzl-dashboard-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.stat-widget-card {
+    color: #fff;
+    border-radius: var(--pzl-border-radius);
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: var(--pzl-box-shadow);
+    transition: transform 0.3s, box-shadow 0.3s;
+    overflow: hidden;
+    position: relative;
+}
+.stat-widget-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+}
+.stat-widget-icon {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.stat-widget-icon .dashicons {
+    font-size: 32px;
+    width: auto;
+    height: auto;
+}
+.stat-widget-content {
+    display: flex;
+    flex-direction: column;
+}
+.stat-number {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+}
+.stat-title {
+    font-size: 16px;
+    opacity: 0.9;
+    margin-top: 5px;
+}
+.gradient-1 { background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%); }
+.gradient-2 { background: linear-gradient(45deg, #fc5c7d 0%, #6a82fb 100%); }
+.gradient-3 { background: linear-gradient(45deg, #ffb88c 0%, #de6262 100%); }
+.gradient-4 { background: linear-gradient(45deg, #2af598 0%, #009efd 100%); }
 
-/* --- Forms & Inputs --- */
-.pzl-form-container { background: var(--light-grey-bg); padding: 25px; border-radius: 8px; border: 1px solid #e0e0e0; }
-.pzl-form-container h3, .pzl-form-container h4 { margin-top: 0; }
-.pzl-form-container .form-group { margin-bottom: 15px; }
-.pzl-form-container label { display: block; margin-bottom: 5px; font-weight: 600; }
-.pzl-form-container input[type="text"], .pzl-form-container input[type="email"], .pzl-form-container input[type="password"], .pzl-form-container input[type="number"], .pzl-form-container input[type="date"], .pzl-form-container input[type="time"], .pzl-form-container textarea, .pzl-form-container select { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc; transition: border-color 0.3s, box-shadow 0.3s; }
-.pzl-form-container input:focus, .pzl-form-container textarea:focus, .pzl-form-container select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(240, 25, 42, 0.1); outline: none; }
-.ltr-input { direction: ltr; text-align: left; }
-
-/* --- Tabs --- */
-.pzl-dashboard-tabs { border-bottom: 1px solid #ddd; margin-bottom: 25px; display: flex; }
-.pzl-tab { padding: 12px 20px; text-decoration: none; color: #555; border-bottom: 3px solid transparent; margin-bottom: -1px; font-weight: 500; transition: color 0.3s, border-color 0.3s; }
-.pzl-tab.active, .pzl-tab:hover { color: var(--primary-color); border-bottom-color: var(--primary-color); font-weight: 600; }
-.pzl-tab .dashicons { vertical-align: middle; margin-left: 8px; }
-
-/* --- Widgets --- */
-.stat-widget { flex: 1; background: #fff; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; text-align: center; transition: transform 0.3s, box-shadow 0.3s; }
-.stat-widget:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
-.stat-widget h4 { margin: 0 0 10px; font-size: 16px; color: #555; font-weight: 600; }
-.stat-widget .stat-number { font-size: 36px; font-weight: 700; color: var(--primary-color); }
-
-/* --- Status Badges (for tickets, payments, etc.) --- */
-.pzl-status, .pzl-status-badge { display: inline-block; padding: 5px 14px; border-radius: 20px; font-size: 12px; color: #fff; text-align: center; min-width: 90px; font-weight: 500; }
-.status-paid, .status-answered, .status-active { background-color: var(--success-color); }
-.status-pending, .status-in-progress, .status-on-hold { background-color: var(--warning-color); color: #333; }
-.status-open { background-color: var(--info-color); }
-.status-closed, .status-cancelled, .status-expired { background-color: #777; }
-
-/* --- Ticketing System Styles --- */
-.pzl-new-ticket-form-container input[type="text"], .pzl-new-ticket-form-container textarea { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; }
-.back-to-list-link { display: inline-block; margin-bottom: 20px; color: var(--primary-color); text-decoration: none; font-weight: 600; }
-.pzl-single-ticket-wrapper .ticket-header { background: var(--light-grey-bg); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e0e0e0; }
-.pzl-single-ticket-wrapper .ticket-header h2 { margin-top: 0; }
-.pzl-single-ticket-wrapper .ticket-meta { display: flex; flex-wrap: wrap; gap: 20px; font-size: 13px; color: #555; align-items: center; }
-.ticket-content { line-height: 1.8; padding: 10px; }
-.ticket-replies { margin-top: 30px; }
-.ticket-replies h3 { border-bottom: 1px solid #eee; padding-bottom: 10px; }
-.ticket-replies .comment-list { list-style: none; padding: 0; margin: 0; }
-.ticket-replies .comment-list li { padding: 20px; border: 1px solid #e5e5e5; border-radius: 8px; margin-bottom: 15px; }
-.ticket-replies .comment-list li.admin-reply { background-color: #f0f8ff; border-left: 4px solid var(--info-color); }
-.ticket-replies .comment-list li.client-reply { background-color: #fff; border-left: 4px solid #777; }
-.ticket-replies .comment-author { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.ticket-replies .author-name { font-weight: bold; }
-.ticket-replies .comment-date { font-size: 12px; color: #888; margin-right: auto; }
-.ticket-replies .comment-content p:last-child { margin-bottom: 0; }
-.ticket-reply-form { margin-top: 30px; background: var(--light-grey-bg); padding: 25px; border-radius: 8px; border: 1px solid #e0e0e0; }
-.ticket-reply-form h3 { margin-top: 0; }
-.ticket-reply-form textarea { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 15px; }
-.ticket-reply-form .form-group-inline { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
-.ticket-closed-notice { margin-top: 30px; background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 5px; text-align: center; }
-.ticket-closed-notice .dashicons { vertical-align: middle; }
-
-/* --- Task Management Styles --- */
-.add-task-form-container { background: #fff; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-.add-task-form-container .form-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.add-task-form-container input[type="text"], .add-task-form-container select { flex-grow: 1; min-width: 150px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-.add-task-form-container button { flex-shrink: 0; }
-.pzl-search-form { margin-bottom: 20px; display: flex; gap: 10px; }
-.pzl-search-form input { flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-.task-lists h4 { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
-.pagination { margin-top: 20px; text-align: left; }
-.pagination .page-numbers { display: inline-block; padding: 8px 12px; border: 1px solid #ddd; text-decoration: none; border-radius: 4px; transition: background-color 0.3s; }
-.pagination .page-numbers:hover { background-color: #f0f0f0; }
-.pagination .page-numbers.current { background: var(--primary-color, #F0192A); color: #fff; border-color: var(--primary-color, #F0192A); }
-.no-tasks-message { background-color: #f9f9f9; text-align: center; padding: 20px; border-radius: 5px; color: #777; list-style: none; }
-
-/* --- Reports & Charts --- */
-.pzl-form-container .form-row { display: flex; align-items: flex-end; gap: 15px; background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; flex-wrap: wrap; }
-.pzl-chart-container { display: flex; align-items: flex-end; gap: 10px; border: 1px solid #e0e0e0; padding: 20px; border-radius: 5px; height: 250px; background: #fcfcfc; }
-.chart-bar-wrapper { flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: flex-end; }
-.chart-bar { background-color: var(--primary-color, #F0192A); width: 80%; max-width: 50px; margin: 0 auto; transition: background-color 0.3s, opacity 0.3s; opacity: 0.8; border-radius: 3px 3px 0 0; }
-.chart-bar:hover { background-color: var(--secondary-color, #1D1E29); opacity: 1; }
-.chart-label { font-size: 12px; margin-top: 5px; color: #555; }
-
-/* --- Single Project View --- */
-.back-to-dashboard-link { display: inline-block; margin-bottom: 20px; color: var(--primary-color); text-decoration: none; font-weight: bold; }
-.project-content { background: #f9f9f9; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; margin-bottom: 30px; }
-.task-details { flex-grow: 1; }
-.task-project-link { font-size: 12px; color: #777; display: block; }
+/* --- لیست شورت‌کدها --- */
+.pzl-shortcode-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+}
+.pzl-shortcode-list li {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-radius: var(--pzl-border-radius);
+    border: 1px solid var(--pzl-border-color);
+}
+.pzl-shortcode-list code {
+    background: #e9ecef;
+    padding: 3px 8px;
+    border-radius: 4px;
+    direction: ltr;
+    display: inline-block;
+    font-size: 14px;
+    color: var(--pzl-primary-color);
+}
