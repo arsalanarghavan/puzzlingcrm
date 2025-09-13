@@ -6,26 +6,26 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-// Security check: Only users with 'manage_options' capability can view this page.
+// Security check
 if ( ! current_user_can('manage_options') ) {
     echo '<p>شما دسترسی لازم برای مشاهده این بخش را ندارید.</p>';
     return;
 }
 
-// Handle date filters from GET request and sanitize them.
+// Handle date filters
 $start_date_str = isset($_GET['start_date']) && !empty($_GET['start_date']) ? sanitize_text_field($_GET['start_date']) : '';
 $end_date_str = isset($_GET['end_date']) && !empty($_GET['end_date']) ? sanitize_text_field($_GET['end_date']) : '';
 
-// Initialize variables for statistics.
+// Initialize variables
 $income_in_range = 0;
 $paid_installments_count = 0;
 $overdue_customers = [];
 $chart_data = [];
+$pending_in_range = 0;
 
-// Fetch all contracts to process their installments.
 $contracts = get_posts(['post_type' => 'contract', 'posts_per_page' => -1, 'post_status' => 'publish']);
 $today = new DateTime('now', new DateTimeZone('Asia/Tehran'));
-$today->setTime(0, 0, 0); // Set time to beginning of the day for accurate comparison.
+$today->setTime(0, 0, 0);
 
 foreach ($contracts as $contract) {
     $installments = get_post_meta($contract->ID, '_installments', true);
@@ -38,30 +38,27 @@ foreach ($contracts as $contract) {
             $due_date_time = new DateTime($inst['due_date'], new DateTimeZone('Asia/Tehran'));
             $due_date_time->setTime(0, 0, 0);
         } catch (Exception $e) {
-            // Log error for invalid date format and skip this installment.
             error_log('PuzzlingCRM Report Error: Invalid date format in contract ID ' . $contract->ID);
             continue;
         }
         
-        // Check if the installment's due date is within the selected date range.
         $is_in_range = true;
         if ($start_date_str && $due_date_time < new DateTime($start_date_str)) $is_in_range = false;
         if ($end_date_str && $due_date_time > (new DateTime($end_date_str))->setTime(23, 59, 59)) $is_in_range = false;
 
         if ($is_in_range) {
-            // Calculate total income and paid installments in the date range.
-            if (isset($inst['status']) && $inst['status'] === 'paid' && isset($inst['amount'])) {
-                $income_in_range += (int)$inst['amount'];
+            $amount = (int)($inst['amount'] ?? 0);
+            if (isset($inst['status']) && $inst['status'] === 'paid') {
+                $income_in_range += $amount;
                 $paid_installments_count++;
                 
-                // Prepare data for the monthly income chart.
                 $paid_month = $due_date_time->format('Y-m');
-                if (!isset($chart_data[$paid_month])) {
-                    $chart_data[$paid_month] = 0;
-                }
-                $chart_data[$paid_month] += (int)$inst['amount'];
+                if (!isset($chart_data[$paid_month])) $chart_data[$paid_month] = 0;
+                $chart_data[$paid_month] += $amount;
+            } else {
+                 $pending_in_range += $amount;
             }
-            // Identify customers with overdue payments in the date range.
+
             if (isset($inst['status']) && $inst['status'] !== 'paid' && $due_date_time < $today) {
                 $customer_id = $contract->post_author;
                 if (!isset($overdue_customers[$customer_id])) {
@@ -76,41 +73,53 @@ foreach ($contracts as $contract) {
         }
     }
 }
-ksort($chart_data); // Sort chart data by month.
+ksort($chart_data);
 ?>
-
-<h3><span class="dashicons dashicons-chart-area"></span> گزارش‌های مالی</h3>
-<form method="get" class="pzl-form-container">
-    <input type="hidden" name="view" value="reports">
-    <div class="form-row">
-        <div>
-            <label for="start_date">از تاریخ:</label>
-            <input type="date" name="start_date" id="start_date" value="<?php echo esc_attr($start_date_str); ?>">
+<div class="pzl-card">
+    <h3><span class="dashicons dashicons-filter"></span> فیلتر گزارش مالی</h3>
+    <form method="get" class="pzl-form">
+        <input type="hidden" name="view" value="reports">
+        <input type="hidden" name="tab" value="finance">
+        <div class="pzl-form-row" style="align-items: flex-end;">
+            <div class="form-group">
+                <label for="start_date">از تاریخ:</label>
+                <input type="date" name="start_date" id="start_date" value="<?php echo esc_attr($start_date_str); ?>">
+            </div>
+            <div class="form-group">
+                <label for="end_date">تا تاریخ:</label>
+                <input type="date" name="end_date" id="end_date" value="<?php echo esc_attr($end_date_str); ?>">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="pzl-button pzl-button-secondary">اعمال فیلتر</button>
+            </div>
         </div>
-        <div>
-            <label for="end_date">تا تاریخ:</label>
-            <input type="date" name="end_date" id="end_date" value="<?php echo esc_attr($end_date_str); ?>">
-        </div>
-        <button type="submit" class="pzl-button pzl-button-primary">اعمال فیلتر</button>
-    </div>
-</form>
+    </form>
+</div>
 
-<div class="pzl-dashboard-stats">
-    <div class="stat-widget">
-        <h4>درآمد در بازه (تومان)</h4>
+<div class="finance-report-grid">
+    <div class="report-card">
+        <h4><span class="dashicons dashicons-money-alt"></span> درآمد در بازه</h4>
         <span class="stat-number"><?php echo esc_html(number_format($income_in_range)); ?></span>
+        <span class="stat-label">تومان</span>
     </div>
-    <div class="stat-widget">
-        <h4>اقساط پرداخت شده</h4>
+    <div class="report-card">
+        <h4><span class="dashicons dashicons-hourglass"></span> مبالغ در انتظار پرداخت</h4>
+        <span class="stat-number"><?php echo esc_html(number_format($pending_in_range)); ?></span>
+        <span class="stat-label">تومان</span>
+    </div>
+    <div class="report-card">
+        <h4><span class="dashicons dashicons-yes"></span> اقساط پرداخت شده</h4>
         <span class="stat-number"><?php echo esc_html($paid_installments_count); ?></span>
+        <span class="stat-label">قسط</span>
     </div>
-    <div class="stat-widget">
-        <h4>مشتریان با پرداخت معوق</h4>
+    <div class="report-card">
+        <h4><span class="dashicons dashicons-warning"></span> مشتریان با پرداخت معوق</h4>
         <span class="stat-number"><?php echo esc_html(count($overdue_customers)); ?></span>
+        <span class="stat-label">مشتری</span>
     </div>
 </div>
 
-<div class="pzl-dashboard-section">
+<div class="pzl-card">
     <h4>نمودار درآمد ماهانه در بازه انتخابی (تومان)</h4>
     <div class="pzl-chart-container">
         <?php if (!empty($chart_data)): 
@@ -118,8 +127,8 @@ ksort($chart_data); // Sort chart data by month.
         ?>
             <?php foreach($chart_data as $month => $amount): ?>
                 <div class="chart-bar-wrapper">
-                    <div class="chart-bar" style="height: <?php echo esc_attr(max(1, ($amount / $max_amount) * 200)); ?>px;" title="<?php echo esc_attr(date_i18n('F Y', strtotime($month . '-01'))) . ': ' . esc_attr(number_format($amount)); ?>"></div>
-                    <div class="chart-label"><?php echo esc_html(date_i18n('M', strtotime($month . '-01'))); ?></div>
+                    <div class="chart-bar" style="height: <?php echo esc_attr(max(1, ($amount / $max_amount) * 250)); ?>px;" title="<?php echo esc_attr(date_i18n('F Y', strtotime($month . '-01'))) . ': ' . esc_attr(number_format($amount)); ?>"></div>
+                    <div class="chart-label"><?php echo esc_html(date_i18n('M Y', strtotime($month . '-01'))); ?></div>
                 </div>
             <?php endforeach; ?>
         <?php else: ?>
@@ -129,7 +138,7 @@ ksort($chart_data); // Sort chart data by month.
 </div>
 
 <?php if (!empty($overdue_customers)): ?>
-<div class="pzl-dashboard-section">
+<div class="pzl-card">
     <h4>لیست مشتریان با پرداخت معوق در بازه انتخابی</h4>
     <table class="pzl-table">
         <thead>
@@ -149,12 +158,3 @@ ksort($chart_data); // Sort chart data by month.
     </table>
 </div>
 <?php endif; ?>
-
-<style>
-.pzl-form-container .form-row { display: flex; align-items: flex-end; gap: 15px; background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; flex-wrap: wrap; }
-.pzl-chart-container { display: flex; align-items: flex-end; gap: 10px; border: 1px solid #e0e0e0; padding: 20px; border-radius: 5px; height: 250px; background: #fcfcfc; }
-.chart-bar-wrapper { flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: flex-end; }
-.chart-bar { background-color: var(--primary-color, #F0192A); width: 80%; max-width: 50px; margin: 0 auto; transition: background-color 0.3s, opacity 0.3s; opacity: 0.8; border-radius: 3px 3px 0 0; }
-.chart-bar:hover { background-color: var(--secondary-color, #1D1E29); opacity: 1; }
-.chart-label { font-size: 12px; margin-top: 5px; color: #555; }
-</style>
