@@ -1,4 +1,5 @@
 jQuery(document).ready(function($) {
+    // Get nonce from localized script object for all AJAX requests
     var puzzling_ajax_nonce = puzzlingcrm_ajax_obj.nonce;
 
     // --- Intelligent Installment Calculation ---
@@ -28,18 +29,11 @@ jQuery(document).ready(function($) {
             var dueDate = new Date(startDate);
             dueDate.setDate(startDate.getDate() + (i * intervalDays));
             
-            // Formatting for display
             var displayDate = dueDate.toLocaleDateString('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' });
-
-            // Formatting for input (YYYY-MM-DD)
             var inputDate = dueDate.getFullYear() + '-' + ('0' + (dueDate.getMonth() + 1)).slice(-2) + '-' + ('0' + dueDate.getDate()).slice(-2);
-            
             var formattedAmount = installmentAmount.toLocaleString('en-US');
 
-            // Append to preview table
             tableBody.append(`<tr><td>${i + 1}</td><td>${formattedAmount}</td><td>${displayDate}</td></tr>`);
-
-            // Append hidden inputs for form submission
             hiddenContainer.append(`
                 <input type="hidden" name="payment_amount[]" value="${installmentAmount}">
                 <input type="hidden" name="payment_due_date[]" value="${inputDate}">
@@ -47,17 +41,16 @@ jQuery(document).ready(function($) {
         }
     });
 
-
     // --- AJAX for Task Management ---
     
-    // 1. Add New Task
+    // Add New Task
     $('#puzzling-add-task-form').on('submit', function(e) {
         e.preventDefault();
         var form = $(this);
-        var titleInput = form.find('input[name="title"]'); // Corrected selector
+        var titleInput = form.find('input[name="title"]');
         var title = titleInput.val();
         
-        if ( !title.trim() ) {
+        if (!title.trim()) {
             alert('لطفاً عنوان تسک را وارد کنید.');
             return;
         }
@@ -80,7 +73,7 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     $('#active-tasks-list').prepend(response.data.task_html);
-                    $('#active-tasks-list .no-tasks-message').remove(); // Remove 'no tasks' message
+                    $('#active-tasks-list .no-tasks-message').remove();
                 } else {
                     alert('خطا: ' + (response.data.message || 'خطای ناشناخته'));
                 }
@@ -95,7 +88,7 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // 2. Update Task Status
+    // Update Task Status
     $('.task-list').on('change', '.task-checkbox', function() {
         var checkbox = $(this);
         var taskItem = checkbox.closest('.task-item');
@@ -111,18 +104,12 @@ jQuery(document).ready(function($) {
                 task_id: taskId,
                 is_done: isDone
             },
-            beforeSend: function() {
-                taskItem.css('opacity', '0.5');
-            },
+            beforeSend: function() { taskItem.css('opacity', '0.5'); },
             success: function(response) {
                 if(response.success) {
-                    if (isDone) {
-                        taskItem.addClass('status-done');
-                        $('#done-tasks-list').prepend(taskItem);
-                    } else {
-                        taskItem.removeClass('status-done');
-                        $('#active-tasks-list').prepend(taskItem);
-                    }
+                    var targetList = isDone ? '#done-tasks-list' : '#active-tasks-list';
+                    taskItem.toggleClass('status-done', isDone);
+                    $(targetList).prepend(taskItem);
                 } else {
                     alert('خطا در به‌روزرسانی تسک.');
                     checkbox.prop('checked', !isDone);
@@ -132,19 +119,15 @@ jQuery(document).ready(function($) {
                 alert('یک خطای ناشناخته در ارتباط با سرور رخ داد.');
                 checkbox.prop('checked', !isDone);
             },
-            complete: function() {
-                taskItem.css('opacity', '1');
-            }
+            complete: function() { taskItem.css('opacity', '1'); }
         });
     });
 
-    // 3. Delete Task
+    // Delete Task
     $('.task-list').on('click', '.delete-task', function(e) {
         e.preventDefault();
         
-        if ( ! confirm('آیا از حذف این تسک مطمئن هستید؟') ) {
-            return;
-        }
+        if ( !confirm('آیا از حذف این تسک مطمئن هستید؟') ) return;
 
         var link = $(this);
         var taskItem = link.closest('.task-item');
@@ -158,14 +141,10 @@ jQuery(document).ready(function($) {
                 security: puzzling_ajax_nonce,
                 task_id: taskId
             },
-            beforeSend: function() {
-                taskItem.css('opacity', '0.5');
-            },
+            beforeSend: function() { taskItem.css('opacity', '0.5'); },
             success: function(response) {
                 if(response.success) {
-                    taskItem.slideUp(function() {
-                        $(this).remove();
-                    });
+                    taskItem.slideUp(function() { $(this).remove(); });
                 } else {
                     alert('خطا: ' + (response.data.message || 'خطای ناشناخته'));
                     taskItem.css('opacity', '1');
@@ -177,4 +156,66 @@ jQuery(document).ready(function($) {
             }
         });
     });
+
+    // --- Notification Center ---
+    function fetchNotifications() {
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: { action: 'puzzling_get_notifications', security: puzzling_ajax_nonce },
+            success: function(response) {
+                if (response.success) {
+                    $('.pzl-notification-panel ul').html(response.data.html);
+                    var count = parseInt(response.data.count);
+                    if (count > 0) {
+                        $('.pzl-notification-count').text(count).show();
+                    } else {
+                        $('.pzl-notification-count').hide();
+                    }
+                }
+            }
+        });
+    }
+
+    // Toggle notification panel
+    $('.pzl-notification-bell').on('click', function(e) {
+        e.stopPropagation();
+        $('.pzl-notification-panel').toggle();
+    });
+
+    // Hide panel when clicking outside
+    $(document).on('click', function() {
+        $('.pzl-notification-panel').hide();
+    });
+
+    // Stop propagation to prevent closing when clicking inside panel
+    $('.pzl-notification-panel').on('click', function(e) {
+        e.stopPropagation();
+    });
+
+    // Mark notification as read
+    $('.pzl-notification-panel').on('click', 'li.pzl-unread', function() {
+        var notificationItem = $(this);
+        var notificationId = notificationItem.data('id');
+        
+        // Immediately update UI for better UX
+        notificationItem.removeClass('pzl-unread').addClass('pzl-read');
+        var countEl = $('.pzl-notification-count');
+        var currentCount = parseInt(countEl.text()) - 1;
+        if (currentCount > 0) {
+            countEl.text(currentCount);
+        } else {
+            countEl.hide();
+        }
+
+        $.post(puzzlingcrm_ajax_obj.ajax_url, {
+            action: 'puzzling_mark_notification_read',
+            security: puzzling_ajax_nonce,
+            id: notificationId
+        });
+    });
+
+    // Initial fetch and periodic check every 2 minutes
+    fetchNotifications();
+    setInterval(fetchNotifications, 120000);
 });
