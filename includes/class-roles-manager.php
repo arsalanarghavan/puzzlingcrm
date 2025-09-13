@@ -11,7 +11,12 @@ class PuzzlingCRM_Roles_Manager {
         $this->remove_custom_roles();
 
         // Finance Manager
-        add_role( 'finance_manager', 'مدیر مالی', ['read' => true] );
+        add_role( 'finance_manager', 'مدیر مالی', [
+            'read' => true,
+            'edit_posts' => true, // <-- دسترسی ویرایش قراردادها و سایر پست‌ها
+            'publish_posts' => true, // <-- دسترسی انتشار
+            'delete_posts' => true, // <-- دسترسی حذف
+        ] );
 
         // System Manager (Can do almost everything)
         add_role( 'system_manager', 'مدیر سیستم', [
