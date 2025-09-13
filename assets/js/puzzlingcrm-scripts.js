@@ -1,22 +1,52 @@
 jQuery(document).ready(function($) {
-    // --- **NEW: Store nonce globally for all AJAX requests** ---
     var puzzling_ajax_nonce = puzzlingcrm_ajax_obj.nonce;
 
-    // --- Payment Row Management ---
-    $('#add-payment-row').on('click', function() {
-        var rowHtml = `
-            <div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                <input type="number" name="payment_amount[]" placeholder="مبلغ (تومان)" style="flex-grow: 1; padding: 8px;" required>
-                <input type="date" name="payment_due_date[]" style="padding: 8px;" required>
-                <button type="button" class="button remove-payment-row">حذف</button>
-            </div>
-        `;
-        $('#payment-rows-container').append(rowHtml);
+    // --- Intelligent Installment Calculation ---
+    $('#calculate-installments').on('click', function() {
+        var totalAmount = parseFloat($('#total_amount').val().replace(/,/g, ''));
+        var totalInstallments = parseInt($('#total_installments').val());
+        var intervalDays = parseInt($('#installment_interval').val());
+        var startDateStr = $('#start_date').val();
+
+        if (isNaN(totalAmount) || isNaN(totalInstallments) || isNaN(intervalDays) || !startDateStr) {
+            alert('لطفاً تمام فیلدهای محاسبه‌گر اقساط را به درستی پر کنید.');
+            return;
+        }
+
+        var installmentAmount = Math.round(totalAmount / totalInstallments);
+        var startDate = new Date(startDateStr);
+        
+        var previewContainer = $('#installments-preview-container');
+        var hiddenContainer = $('#payment-rows-container');
+        
+        previewContainer.html('<table class="pzl-table"><thead><tr><th>#</th><th>مبلغ قسط (تومان)</th><th>تاریخ سررسید</th></tr></thead><tbody></tbody></table>');
+        hiddenContainer.html('');
+
+        var tableBody = previewContainer.find('tbody');
+
+        for (var i = 0; i < totalInstallments; i++) {
+            var dueDate = new Date(startDate);
+            dueDate.setDate(startDate.getDate() + (i * intervalDays));
+            
+            // Formatting for display
+            var displayDate = dueDate.toLocaleDateString('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+            // Formatting for input (YYYY-MM-DD)
+            var inputDate = dueDate.getFullYear() + '-' + ('0' + (dueDate.getMonth() + 1)).slice(-2) + '-' + ('0' + dueDate.getDate()).slice(-2);
+            
+            var formattedAmount = installmentAmount.toLocaleString('en-US');
+
+            // Append to preview table
+            tableBody.append(`<tr><td>${i + 1}</td><td>${formattedAmount}</td><td>${displayDate}</td></tr>`);
+
+            // Append hidden inputs for form submission
+            hiddenContainer.append(`
+                <input type="hidden" name="payment_amount[]" value="${installmentAmount}">
+                <input type="hidden" name="payment_due_date[]" value="${inputDate}">
+            `);
+        }
     });
 
-    $('#payment-rows-container').on('click', '.remove-payment-row', function() {
-        $(this).closest('.payment-row').remove();
-    });
 
     // --- AJAX for Task Management ---
     
@@ -24,7 +54,7 @@ jQuery(document).ready(function($) {
     $('#puzzling-add-task-form').on('submit', function(e) {
         e.preventDefault();
         var form = $(this);
-        var titleInput = form.find('#task_title');
+        var titleInput = form.find('input[name="title"]'); // Corrected selector
         var title = titleInput.val();
         
         if ( !title.trim() ) {
@@ -37,12 +67,12 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'puzzling_add_task',
-                security: puzzling_ajax_nonce, // <-- **FIXED: Using global nonce**
+                security: puzzling_ajax_nonce,
                 title: title,
-                priority: form.find('#task_priority').val(),
-                due_date: form.find('#task_due_date').val(),
-                project_id: form.find('#task_project').val(), // <-- Added project ID
-                assigned_to: form.find('select[name="assigned_to"]').val() || '' // <-- Added assigned_to
+                priority: form.find('select[name="priority"]').val(),
+                due_date: form.find('input[name="due_date"]').val(),
+                project_id: form.find('select[name="project_id"]').val(),
+                assigned_to: form.find('select[name="assigned_to"]').val() || ''
             },
             beforeSend: function() {
                 form.find('button[type="submit"]').text('در حال افزودن...').prop('disabled', true);
@@ -50,7 +80,7 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     $('#active-tasks-list').prepend(response.data.task_html);
-                    $('.no-tasks-message').hide();
+                    $('#active-tasks-list .no-tasks-message').remove(); // Remove 'no tasks' message
                 } else {
                     alert('خطا: ' + (response.data.message || 'خطای ناشناخته'));
                 }
@@ -77,7 +107,7 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'puzzling_update_task_status',
-                security: puzzling_ajax_nonce, // <-- **FIXED: Using global nonce**
+                security: puzzling_ajax_nonce,
                 task_id: taskId,
                 is_done: isDone
             },
@@ -125,7 +155,7 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'puzzling_delete_task',
-                security: puzzling_ajax_nonce, // <-- **FIXED: Using global nonce**
+                security: puzzling_ajax_nonce,
                 task_id: taskId
             },
             beforeSend: function() {

@@ -75,12 +75,20 @@ class PuzzlingCRM_Frontend_Dashboard {
 
     // --- System Manager Render Functions ---
 
+    public static function render_sm_manage_projects() {
+        return self::render_partial('manage-projects.php', ['system_manager', 'administrator']);
+    }
+
     public static function render_sm_contracts() {
         return self::render_partial('common/contract-form.php', ['system_manager', 'administrator']);
     }
 
-    public static function render_sm_settings() {
-        return self::render_partial('dashboard-settings.php', ['system_manager', 'administrator']);
+    public static function render_settings_payment() {
+        return self::render_partial('settings-payment.php', ['system_manager', 'administrator']);
+    }
+    
+    public static function render_settings_sms() {
+        return self::render_partial('settings-sms.php', ['system_manager', 'administrator']);
     }
     
     // --- Finance Manager Render Functions ---

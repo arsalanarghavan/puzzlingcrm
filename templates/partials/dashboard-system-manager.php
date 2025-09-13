@@ -59,6 +59,7 @@ if ($contracts) {
 
 <div class="pzl-dashboard-tabs">
     <a href="?view=overview" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"> <span class="dashicons dashicons-dashboard"></span> نمای کلی </a>
+    <a href="?view=projects" class="pzl-tab <?php echo $active_tab === 'projects' ? 'active' : ''; ?>"> <span class="dashicons dashicons-portfolio"></span> مدیریت پروژه‌ها </a>
     <a href="?view=contracts" class="pzl-tab <?php echo $active_tab === 'contracts' ? 'active' : ''; ?>"> <span class="dashicons dashicons-media-text"></span> مدیریت قراردادها </a>
     <a href="?view=tickets" class="pzl-tab <?php echo $active_tab === 'tickets' ? 'active' : ''; ?>"> <span class="dashicons dashicons-sos"></span> پشتیبانی </a>
     <a href="?view=logs" class="pzl-tab <?php echo $active_tab === 'logs' ? 'active' : ''; ?>"> <span class="dashicons dashicons-list-view"></span> لاگ رویدادها </a>
@@ -67,23 +68,31 @@ if ($contracts) {
 
 <div class="pzl-dashboard-tab-content">
     <?php
-    if ($active_tab === 'settings') {
-        include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/dashboard-settings.php';
+    if ($active_tab === 'projects') {
+        echo do_shortcode('[puzzling_manage_projects]');
     } elseif ($active_tab === 'contracts') {
-        include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/common/contract-form.php';
+        echo do_shortcode('[puzzling_sm_contracts]');
     } elseif ($active_tab === 'tickets') {
         include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/list-tickets.php';
     } elseif ($active_tab === 'logs') {
         include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/view-logs.php';
+    } elseif ($active_tab === 'settings') {
+        // A simple settings landing page that links to the new dedicated pages
+        echo '<h4>تنظیمات پلاگین</h4>';
+        echo '<p>برای مدیریت هر بخش از تنظیمات، لطفاً از صفحاتی که شورتکدهای زیر در آن قرار دارند، استفاده کنید:</p>';
+        echo '<ul>';
+        echo '<li><strong>تنظیمات درگاه پرداخت:</strong> <code>[puzzling_settings_payment]</code></li>';
+        echo '<li><strong>تنظیمات سامانه پیامک:</strong> <code>[puzzling_settings_sms]</code></li>';
+        echo '</ul>';
     } else {
-        echo '<h4>به داشبورد مدیریت سیستم خوش آمدید.</h4><p>از این پنل می‌توانید نمای کلی سیستم را مشاهده کنید، قراردادها را مدیریت کرده و تنظیمات پلاگین را پیکربندی نمایید.</p>';
+        echo '<h4>به داشبورد مدیریت سیستم خوش آمدید.</h4><p>از این پنل می‌توانید نمای کلی سیستم را مشاهده کنید، پروژه‌ها و قراردادها را مدیریت کرده و تنظیمات پلاگین را پیکربندی نمایید.</p>';
     }
     ?>
 </div>
 
 <style>
 /* This inline style is kept for simplicity, but ideally should be in the main CSS file */
-.pzl-dashboard-tabs { border-bottom: 1px solid #ddd; margin-bottom: 25px; display: flex; }
+.pzl-dashboard-tabs { border-bottom: 1px solid #ddd; margin-bottom: 25px; display: flex; flex-wrap: wrap; }
 .pzl-tab { padding: 12px 20px; text-decoration: none; color: #555; border-bottom: 3px solid transparent; margin-bottom: -1px; font-weight: 500; transition: color 0.3s, border-color 0.3s; }
 .pzl-tab.active, .pzl-tab:hover { color: var(--primary-color, #F0192A); border-bottom-color: var(--primary-color, #F0192A); font-weight: 600; }
 .pzl-tab .dashicons { vertical-align: middle; margin-left: 8px; }

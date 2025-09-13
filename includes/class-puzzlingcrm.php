@@ -33,7 +33,7 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cron-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-settings-handler.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-logger.php'; // **NEW: Logger Class**
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-logger.php';
         
         // Integrations
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-zarinpal-handler.php';
@@ -43,8 +43,8 @@ class PuzzlingCRM {
     private function define_hooks() {
         register_activation_hook( PUZZLINGCRM_PLUGIN_DIR . 'puzzlingcrm.php', [ 'PuzzlingCRM_Installer', 'activate' ] );
         
-        // Add hook for displaying form after purchase
-        add_action( 'woocommerce_thankyou', [ $this, 'display_customer_info_form' ], 10, 1 );
+        // **REMOVED**: The hook for displaying form after purchase is deactivated
+        // add_action( 'woocommerce_thankyou', [ $this, 'display_customer_info_form' ], 10, 1 );
 
         new PuzzlingCRM_CPT_Manager();
         new PuzzlingCRM_Roles_Manager();
@@ -65,10 +65,13 @@ class PuzzlingCRM {
         // Pass data to JS, like the AJAX URL and a nonce for security
         wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [
             'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce') // Changed nonce name for consistency
+            'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce')
         ]);
     }
     
+    /**
+     * This function is kept for potential future use but is currently not hooked.
+     */
     public function display_customer_info_form( $order_id ) {
         if ( ! $order_id ) return;
         $order = wc_get_order( $order_id );
@@ -80,7 +83,7 @@ class PuzzlingCRM {
         }
         echo '<h2>لطفاً برای شروع پروژه، اطلاعات زیر را تکمیل کنید:</h2>';
         ?>
-        <form id="puzzling-customer-info-form" action="<?php echo esc_url( get_permalink( get_page_by_title('PuzzlingCRM Dashboard') ) ); ?>" method="post" enctype="multipart/form-data">
+        <form id="puzzling-customer-info-form" action="" method="post" enctype="multipart/form-data">
             <input type="hidden" name="puzzling_form_order_id" value="<?php echo esc_attr( $order_id ); ?>">
             <?php wp_nonce_field( 'puzzling_save_customer_info', 'puzzling_customer_info_nonce' ); ?>
             <p style="margin-bottom: 15px;">

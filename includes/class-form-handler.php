@@ -2,77 +2,68 @@
 class PuzzlingCRM_Form_Handler {
 
     public function __construct() {
-        add_action( 'init', [ $this, 'handle_customer_info_form' ] );
+        // Deactivated automatic project creation from WooCommerce
+        // add_action( 'init', [ $this, 'handle_customer_info_form' ] ); 
+        
+        add_action( 'init', [ $this, 'handle_manage_project_form' ] );
         add_action( 'init', [ $this, 'handle_new_contract_form' ] );
-        add_action('init', [$this, 'handle_settings_form']);
-        add_action('init', [$this, 'handle_payment_request']);
-        add_action('template_redirect', [$this, 'handle_payment_verification']);
+        add_action( 'init', [$this, 'handle_settings_form']);
+        add_action( 'init', [$this, 'handle_payment_request']);
+        add_action( 'template_redirect', [$this, 'handle_payment_verification']);
         add_action( 'init', [ $this, 'handle_new_ticket_form' ] );
         add_action( 'admin_post_puzzling_ticket_reply', [ $this, 'handle_ticket_reply_form' ] );
     }
 
     private function redirect_with_notice($notice_key, $base_url = '') {
         $url = empty($base_url) ? wp_get_referer() : $base_url;
-        $url = remove_query_arg(['puzzling_action', '_wpnonce'], $url);
+        $url = remove_query_arg(['puzzling_action', '_wpnonce', 'action', 'project_id'], $url);
         wp_redirect( add_query_arg('puzzling_notice', $notice_key, $url) );
         exit;
     }
 
-    public function handle_customer_info_form() {
-        if ( ! isset( $_POST['puzzling_submit_customer_info'] ) || ! isset( $_POST['puzzling_customer_info_nonce'] ) ) {
+    public function handle_manage_project_form() {
+        if ( ! isset( $_POST['puzzling_action'] ) || $_POST['puzzling_action'] !== 'manage_project' ) {
             return;
         }
 
-        if ( ! wp_verify_nonce( $_POST['puzzling_customer_info_nonce'], 'puzzling_save_customer_info' ) ) {
+        if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'puzzling_manage_project' ) ) {
             $this->redirect_with_notice('security_failed');
         }
-
-        $order_id = intval( $_POST['puzzling_form_order_id'] );
-        $order = wc_get_order( $order_id );
-
-        if ( ! $order ) return;
-
-        $user_id = $order->get_user_id();
-        if ( ! $user_id || get_current_user_id() !== $user_id ) {
-             $this->redirect_with_notice('permission_denied');
-        }
         
-        if ( get_user_meta( $user_id, 'puzzling_crm_form_submitted', true ) ) return;
+        if ( ! current_user_can( 'manage_options' ) ) {
+            $this->redirect_with_notice('permission_denied');
+        }
 
-        $business_name = sanitize_text_field( $_POST['business_name'] );
-        $business_desc = sanitize_textarea_field( $_POST['business_desc'] );
+        $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
+        $project_title = sanitize_text_field($_POST['project_title']);
+        $project_content = wp_kses_post($_POST['project_content']);
+        $customer_id = intval($_POST['customer_id']);
 
-        $project_id = wp_insert_post([
-            'post_title'    => $business_name,
-            'post_content'  => $business_desc,
+        if(empty($project_title) || empty($customer_id)) {
+            $this->redirect_with_notice('project_error_data_invalid');
+        }
+
+        $post_data = [
+            'post_title'    => $project_title,
+            'post_content'  => $project_content,
+            'post_author'   => $customer_id,
             'post_status'   => 'publish',
-            'post_author'   => $user_id,
             'post_type'     => 'project',
-        ]);
-        
-        if ( $project_id && ! is_wp_error( $project_id ) ) {
-            if ( ! empty( $_FILES['business_logo']['name'] ) ) {
-                require_once( ABSPATH . 'wp-admin/includes/image.php' );
-                require_once( ABSPATH . 'wp-admin/includes/file.php' );
-                require_once( ABSPATH . 'wp-admin/includes/media.php' );
+        ];
 
-                $attachment_id = media_handle_upload( 'business_logo', $project_id );
-
-                if ( ! is_wp_error( $attachment_id ) ) {
-                    set_post_thumbnail( $project_id, $attachment_id );
-                }
-            }
-
-            update_user_meta( $user_id, 'puzzling_crm_form_submitted', true );
-            update_post_meta($project_id, '_order_id', $order_id);
-            
-            PuzzlingCRM_Logger::add( 'پروژه جدید ایجاد شد', ['content' => "پروژه '{$business_name}' بر اساس سفارش شماره {$order_id} ایجاد شد.", 'type' => 'log', 'user_id' => 1, 'object_id' => $project_id]);
+        if ($project_id > 0) {
+            $post_data['ID'] = $project_id;
+            $result = wp_update_post($post_data);
+            $notice = 'project_updated_success';
+        } else {
+            $result = wp_insert_post($post_data);
+            $notice = 'project_created_success';
         }
 
-        $dashboard_page = get_page_by_title('PuzzlingCRM Dashboard');
-        if ( $dashboard_page ) {
-            wp_redirect( get_permalink( $dashboard_page->ID ) );
-            exit;
+        if (is_wp_error($result)) {
+            $this->redirect_with_notice('project_error_failed');
+        } else {
+            $this->redirect_with_notice($notice);
         }
     }
 
@@ -93,7 +84,12 @@ class PuzzlingCRM_Form_Handler {
         $installments = [];
         for ($i = 0; $i < count($payment_amounts); $i++) {
             if ( !empty($payment_amounts[$i]) && !empty($payment_due_dates[$i]) ) {
-                 $installments[] = [ 'amount' => sanitize_text_field($payment_amounts[$i]), 'due_date' => sanitize_text_field($payment_due_dates[$i]), 'status' => 'pending', 'ref_id' => '' ];
+                 $installments[] = [ 
+                     'amount'   => sanitize_text_field(str_replace(',', '', $payment_amounts[$i])), // Remove commas
+                     'due_date' => sanitize_text_field($payment_due_dates[$i]), 
+                     'status'   => 'pending', 
+                     'ref_id'   => '' 
+                    ];
             }
         }
         
@@ -115,15 +111,17 @@ class PuzzlingCRM_Form_Handler {
     }
     
     public function handle_settings_form() {
-        if ( ! isset($_POST['puzzling_action']) || $_POST['puzzling_action'] !== 'save_settings' ) return;
+        if ( ! isset($_POST['puzzling_action']) || ! in_array($_POST['puzzling_action'], ['save_payment_settings', 'save_sms_settings']) ) return;
         if ( ! isset($_POST['_wpnonce']) || ! wp_verify_nonce($_POST['_wpnonce'], 'puzzling_save_settings') ) $this->redirect_with_notice('security_failed');
         if ( ! current_user_can('manage_options') ) $this->redirect_with_notice('permission_denied');
 
         if ( isset($_POST['puzzling_settings']) && is_array($_POST['puzzling_settings']) ) {
-            $settings_data = array_map('sanitize_text_field', $_POST['puzzling_settings']);
-            PuzzlingCRM_Settings_Handler::update_settings($settings_data);
+            $current_settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+            $new_settings = array_map('sanitize_text_field', $_POST['puzzling_settings']);
+            $updated_settings = array_merge($current_settings, $new_settings);
+            PuzzlingCRM_Settings_Handler::update_settings($updated_settings);
         }
-        $this->redirect_with_notice('settings_saved', add_query_arg('view', 'settings', wp_get_referer()));
+        $this->redirect_with_notice('settings_saved');
     }
     
     public function handle_payment_request() {
