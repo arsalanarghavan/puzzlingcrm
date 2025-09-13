@@ -23,6 +23,7 @@ class PuzzlingCRM {
 
     private function load_dependencies() {
         // Core Classes
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/puzzling-functions.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-installer.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cpt-manager.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-roles-manager.php';
@@ -31,7 +32,7 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-form-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cron-handler.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-settings-handler.php'; // ** ADDED THIS LINE **
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-settings-handler.php';
         
         // Integrations
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-zarinpal-handler.php';
@@ -40,8 +41,6 @@ class PuzzlingCRM {
 
     private function define_hooks() {
         register_activation_hook( PUZZLINGCRM_PLUGIN_DIR . 'puzzlingcrm.php', [ 'PuzzlingCRM_Installer', 'activate' ] );
-        
-        add_action('wp_enqueue_scripts', [ $this, 'enqueue_styles_scripts' ] );
         
         // Add hook for displaying form after purchase
         add_action( 'woocommerce_thankyou', [ $this, 'display_customer_info_form' ], 10, 1 );
@@ -54,7 +53,10 @@ class PuzzlingCRM {
         new PuzzlingCRM_Cron_Handler();
     }
 
-    public function enqueue_styles_scripts() {
+    /**
+     * Conditionally enqueues scripts and styles only when the dashboard is being rendered.
+     */
+    public static function enqueue_dashboard_assets() {
         wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
         
         wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery'], PUZZLINGCRM_VERSION, true );
@@ -72,7 +74,7 @@ class PuzzlingCRM {
         if ( ! $order ) return;
         $user_id = $order->get_user_id();
         if ( get_user_meta( $user_id, 'puzzling_crm_form_submitted', true ) ) {
-            echo '<h4>اطلاعات تکمیلی شما قبلاً دریافت شده است. به زودی پروژه شما در داشبورد قابل مشاهده خواهد بود.</h4>';
+            echo '<h4>اطلاعات تکمیلی شما قبلاً دریافت شده است. به زودی پروژه شما در داشبور قابل مشاهده خواهد بود.</h4>';
             return;
         }
         echo '<h2>لطفاً برای شروع پروژه، اطلاعات زیر را تکمیل کنید:</h2>';

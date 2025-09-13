@@ -1,6 +1,6 @@
 <?php
 /**
- * The main template wrapper for the PuzzlingCRM dashboard - IMPROVED
+ * The main template wrapper for the PuzzlingCRM dashboard - FULLY UPGRADED
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -13,28 +13,40 @@ if ( ! ( $current_user instanceof WP_User ) || $current_user->ID === 0 ) {
     return;
 }
 
-$user_roles = (array) $current_user->roles;
-$dashboard_title = 'داشبورد';
-$partial_to_load = '';
+// Check if a specific view like 'project' is requested.
+$current_view = isset($_GET['view']) ? sanitize_key($_GET['view']) : '';
+$project_id_to_view = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0;
 
-if ( in_array( 'administrator', $user_roles ) || in_array( 'system_manager', $user_roles ) ) {
-    $partial_to_load = 'dashboard-system-manager.php';
-    $dashboard_title = 'داشبورد مدیر سیستم';
-} elseif ( in_array( 'finance_manager', $user_roles ) ) {
-    $partial_to_load = 'dashboard-finance.php';
-    $dashboard_title = 'داشبورد مدیر مالی';
-} elseif ( in_array( 'team_member', $user_roles ) ) {
-    $partial_to_load = 'dashboard-team-member.php';
-    $dashboard_title = 'داشبورد تیم';
-} elseif ( in_array( 'customer', $user_roles ) ) {
-    $partial_to_load = 'dashboard-client.php';
-    $dashboard_title = 'داشبورد مشتری';
+if ($current_view === 'project' && $project_id_to_view > 0) {
+    // Load the single project view template
+    $template_to_load = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/single-project.php';
+    $project_title_to_view = get_the_title($project_id_to_view);
+    $dashboard_title = 'نمایش پروژه: ' . ($project_title_to_view ? esc_html($project_title_to_view) : 'ناشناس');
 } else {
-    echo '<p>نقش کاربری شما تعریف نشده است.</p>';
-    return;
+    // Load the role-based dashboard view
+    $user_roles = (array) $current_user->roles;
+    $dashboard_title = 'داشبورد';
+    $partial_to_load = '';
+
+    if ( in_array( 'administrator', $user_roles ) || in_array( 'system_manager', $user_roles ) ) {
+        $partial_to_load = 'dashboard-system-manager.php';
+        $dashboard_title = 'داشبورد مدیر سیستم';
+    } elseif ( in_array( 'finance_manager', $user_roles ) ) {
+        $partial_to_load = 'dashboard-finance.php';
+        $dashboard_title = 'داشبورد مدیر مالی';
+    } elseif ( in_array( 'team_member', $user_roles ) ) {
+        $partial_to_load = 'dashboard-team-member.php';
+        $dashboard_title = 'داشبورد تیم';
+    } elseif ( in_array( 'customer', $user_roles ) ) {
+        $partial_to_load = 'dashboard-client.php';
+        $dashboard_title = 'داشبورد مشتری';
+    } else {
+        echo '<p>نقش کاربری شما تعریف نشده است.</p>';
+        return;
+    }
+    $template_to_load = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to_load;
 }
 
-$template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to_load;
 ?>
 <div class="puzzling-dashboard-wrapper">
     <header class="puzzling-dashboard-header">
@@ -42,7 +54,7 @@ $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to_lo
         <div class="user-info">
             خوش آمدید، <strong><?php echo esc_html( $current_user->display_name ); ?></strong>
             <br>
-            <a href="<?php echo wp_logout_url( home_url() ); ?>">خروج از حساب</a>
+            <a href="<?php echo esc_url( wp_logout_url( home_url() ) ); ?>">خروج از حساب</a>
         </div>
     </header>
 
@@ -75,8 +87,12 @@ $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to_lo
             }
         }
         
-        if ( file_exists( $template_path ) ) {
-            include $template_path;
+        if ( file_exists( $template_to_load ) ) {
+            // Make variables available to the included template file
+            global $puzzling_project_id;
+            $puzzling_project_id = $project_id_to_view;
+            
+            include $template_to_load;
         } else {
             echo '<p>خطا: فایل قالب داشبورد یافت نشد.</p>';
         }

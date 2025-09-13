@@ -12,8 +12,8 @@ class CSM_Melipayamak_Handler {
     }
     
     public function send_pattern_sms( $recipient, $pattern_code, array $params ) {
-        if (empty($this->sender_number)) {
-            error_log('PuzzlingCRM SMS Error: Sender number is not configured.');
+        if (empty($this->sender_number) || empty($this->api_key)) {
+            error_log('PuzzlingCRM SMS Error: API Key or Sender number is not configured.');
             return false;
         }
 
@@ -30,7 +30,8 @@ class CSM_Melipayamak_Handler {
                 'Content-Type'  => 'application/json',
                 'Authorization' => 'AccessKey ' . $this->api_key
             ],
-            'body' => json_encode($body)
+            'body' => json_encode($body),
+            'timeout' => 30,
         ];
 
         $response = wp_remote_post( $this->api_url, $args );
@@ -38,6 +39,12 @@ class CSM_Melipayamak_Handler {
         if ( is_wp_error( $response ) ) {
             error_log('PuzzlingCRM SMS Error: ' . $response->get_error_message());
             return false;
+        }
+        
+        $response_code = wp_remote_retrieve_response_code($response);
+        if ($response_code >= 300) {
+             error_log('PuzzlingCRM SMS Error: Melipayamak API returned status ' . $response_code . ' with body: ' . wp_remote_retrieve_body($response));
+             return false;
         }
 
         return true;

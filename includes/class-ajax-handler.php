@@ -79,7 +79,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_mail($to, $subject, $body, $headers);
     }
     
-    // update_task_status and delete_task methods remain the same as the previous complete version
     public function update_task_status() {
         check_ajax_referer('puzzling_ajax_task_nonce', 'security');
 
@@ -99,7 +98,6 @@ class PuzzlingCRM_Ajax_Handler {
         if ($is_done) {
             wp_set_post_terms($task_id, [$done_term_id], 'task_status');
         } else {
-            // Revert to 'to-do' status
             wp_set_post_terms($task_id, term_exists('to-do', 'task_status')['term_id'], 'task_status');
         }
 

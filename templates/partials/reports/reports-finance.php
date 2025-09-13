@@ -5,10 +5,14 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
+if ( ! current_user_can('manage_options') ) {
+    echo '<p>شما دسترسی لازم برای مشاهده این بخش را ندارید.</p>';
+    return;
+}
 
 // Handle date filters
-$start_date = isset($_GET['start_date']) && !empty($_GET['start_date']) ? sanitize_text_field($_GET['start_date']) : '';
-$end_date = isset($_GET['end_date']) && !empty($_GET['end_date']) ? sanitize_text_field($_GET['end_date']) : '';
+$start_date_str = isset($_GET['start_date']) && !empty($_GET['start_date']) ? sanitize_text_field($_GET['start_date']) : '';
+$end_date_str = isset($_GET['end_date']) && !empty($_GET['end_date']) ? sanitize_text_field($_GET['end_date']) : '';
 
 $income_in_range = 0;
 $paid_installments_count = 0;
@@ -22,15 +26,20 @@ foreach ($contracts as $contract) {
     if (!is_array($installments)) continue;
 
     foreach ($installments as $inst) {
-        $due_date_time = isset($inst['due_date']) ? new DateTime($inst['due_date'], new DateTimeZone('Asia/Tehran')) : null;
-        if (!$due_date_time) continue;
+        if (!isset($inst['due_date']) || empty($inst['due_date'])) continue;
+
+        try {
+            $due_date_time = new DateTime($inst['due_date'], new DateTimeZone('Asia/Tehran'));
+        } catch (Exception $e) {
+            continue; // Skip invalid dates
+        }
         
         $is_in_range = true;
-        if ($start_date && $due_date_time < new DateTime($start_date)) $is_in_range = false;
-        if ($end_date && $due_date_time > new DateTime($end_date)) $is_in_range = false;
+        if ($start_date_str && $due_date_time < new DateTime($start_date_str)) $is_in_range = false;
+        if ($end_date_str && $due_date_time > new DateTime($end_date_str)) $is_in_range = false;
 
         if ($is_in_range) {
-            if (isset($inst['status']) && $inst['status'] === 'paid') {
+            if (isset($inst['status']) && $inst['status'] === 'paid' && isset($inst['amount'])) {
                 $income_in_range += (int)$inst['amount'];
                 $paid_installments_count++;
             }
@@ -56,28 +65,28 @@ foreach ($contracts as $contract) {
     <div class="form-row">
         <div>
             <label for="start_date">از تاریخ:</label>
-            <input type="date" name="start_date" id="start_date" value="<?php echo esc_attr($start_date); ?>">
+            <input type="date" name="start_date" id="start_date" value="<?php echo esc_attr($start_date_str); ?>">
         </div>
         <div>
             <label for="end_date">تا تاریخ:</label>
-            <input type="date" name="end_date" id="end_date" value="<?php echo esc_attr($end_date); ?>">
+            <input type="date" name="end_date" id="end_date" value="<?php echo esc_attr($end_date_str); ?>">
         </div>
-        <button type="submit" class="pzl-button pzl-button-primary">فیلتر</button>
+        <button type="submit" class="pzl-button pzl-button-primary">اعمال فیلتر</button>
     </div>
 </form>
 
 <div class="pzl-dashboard-stats">
     <div class="stat-widget">
         <h4>درآمد در بازه (تومان)</h4>
-        <span class="stat-number"><?php echo number_format($income_in_range); ?></span>
+        <span class="stat-number"><?php echo esc_html(number_format($income_in_range)); ?></span>
     </div>
     <div class="stat-widget">
         <h4>اقساط پرداخت شده</h4>
-        <span class="stat-number"><?php echo $paid_installments_count; ?></span>
+        <span class="stat-number"><?php echo esc_html($paid_installments_count); ?></span>
     </div>
     <div class="stat-widget">
         <h4>مشتریان با پرداخت معوق</h4>
-        <span class="stat-number"><?php echo count($overdue_customers); ?></span>
+        <span class="stat-number"><?php echo esc_html(count($overdue_customers)); ?></span>
     </div>
 </div>
 
@@ -102,3 +111,7 @@ foreach ($contracts as $contract) {
     </table>
 </div>
 <?php endif; ?>
+
+<style>
+.pzl-form-container .form-row { display: flex; align-items: flex-end; gap: 15px; background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+</style>

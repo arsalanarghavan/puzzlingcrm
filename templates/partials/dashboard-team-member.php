@@ -1,6 +1,6 @@
 <?php
 /**
- * Team Member Dashboard Template - FULLY UPGRADED
+ * Team Member Dashboard Template - SEARCH & PAGINATION & UPGRADED
  * @package PuzzlingCRM
  */
 
@@ -10,8 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $current_user = wp_get_current_user();
 $user_id = $current_user->ID;
-$paged = ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : 1;
+$paged = ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : (isset($_GET['paged']) ? intval($_GET['paged']) : 1);
 $tasks_per_page = 10; // Number of tasks per page
+$search_query = isset($_GET['task_search']) ? sanitize_text_field($_GET['task_search']) : '';
 
 if (!function_exists('puzzling_render_task_item')) {
     include_once PUZZLINGCRM_PLUGIN_DIR . 'includes/puzzling-functions.php';
@@ -25,7 +26,7 @@ if (!function_exists('puzzling_render_task_item')) {
         <h4><span class="dashicons dashicons-plus-alt"></span> افزودن تسک جدید</h4>
         <form id="puzzling-add-task-form">
             <div class="form-row">
-                <input type="text" id="task_title" name="title" placeholder="عنوان تسک" required>
+                <input type="text" id="task_title" name="title" placeholder="عنوان تسک..." required>
                 
                 <select id="task_project" name="project_id" required>
                     <option value="">-- انتخاب پروژه --</option>
@@ -68,12 +69,21 @@ if (!function_exists('puzzling_render_task_item')) {
 
     <div class="task-lists">
         <h4>لیست تسک‌های فعال</h4>
+
+        <div class="pzl-search-form">
+            <form method="get">
+                <input type="search" name="task_search" placeholder="جستجوی تسک..." value="<?php echo esc_attr($search_query); ?>">
+                <button type="submit" class="pzl-button pzl-button-secondary">جستجو</button>
+            </form>
+        </div>
+
         <ul id="active-tasks-list" class="task-list">
             <?php
             $active_tasks_args = [
                 'post_type' => 'task',
                 'posts_per_page' => $tasks_per_page,
                 'paged' => $paged,
+                's' => $search_query,
                 'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => 'done', 'operator' => 'NOT IN']],
             ];
             if (!current_user_can('manage_options')) {
@@ -83,7 +93,7 @@ if (!function_exists('puzzling_render_task_item')) {
             $active_tasks_query = new WP_Query($active_tasks_args);
 
             if (!$active_tasks_query->have_posts()) {
-                echo '<p class="no-tasks-message">هیچ تسک فعالی برای شما ثبت نشده است.</p>';
+                echo '<p class="no-tasks-message">هیچ تسک فعالی یافت نشد.</p>';
             } else {
                 while($active_tasks_query->have_posts()) {
                     $active_tasks_query->the_post();
@@ -95,7 +105,7 @@ if (!function_exists('puzzling_render_task_item')) {
         <div class="pagination">
             <?php
             echo paginate_links([
-                'base' => str_replace( 999999999, '%#%', esc_url( get_pagenum_link( 999999999 ) ) ),
+                'base' => add_query_arg('paged', '%#%'),
                 'total' => $active_tasks_query->max_num_pages,
                 'current' => max( 1, $paged ),
                 'format' => '?paged=%#%',
@@ -105,3 +115,13 @@ if (!function_exists('puzzling_render_task_item')) {
         </div>
     </div>
 </div>
+<style>
+.add-task-form-container { background: #fff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+.add-task-form-container .form-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.add-task-form-container input[type="text"] { flex-grow: 1; min-width: 200px; }
+.pzl-search-form { margin-bottom: 20px; display: flex; gap: 10px; }
+.pzl-search-form input { flex-grow: 1; }
+.pagination { margin-top: 20px; }
+.pagination .page-numbers { padding: 5px 10px; border: 1px solid #ddd; text-decoration: none; }
+.pagination .page-numbers.current { background: var(--primary-color); color: #fff; }
+</style>

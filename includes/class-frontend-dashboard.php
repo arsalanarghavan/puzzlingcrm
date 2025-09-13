@@ -61,33 +61,38 @@ class PuzzlingCRM_Frontend_Dashboard {
     }
 
     /**
-     * Renders the main dashboard wrapper.
+     * Renders the main dashboard wrapper and enqueues assets.
      * Shortcode: [puzzling_dashboard]
      */
     public static function render_dashboard() {
-        return self::render_partial('dashboard-wrapper.php');
+        // Enqueue assets only when this shortcode is called.
+        PuzzlingCRM::enqueue_dashboard_assets();
+
+        ob_start();
+        include PUZZLINGCRM_PLUGIN_DIR . 'templates/dashboard-wrapper.php';
+        return ob_get_clean();
     }
 
     // --- System Manager Render Functions ---
 
     public static function render_sm_contracts() {
-        return self::render_partial('form-new-contract.php', ['system_manager']);
+        return self::render_partial('common/contract-form.php', ['system_manager', 'administrator']);
     }
 
     public static function render_sm_settings() {
-        return self::render_partial('dashboard-settings.php', ['system_manager']);
+        return self::render_partial('dashboard-settings.php', ['system_manager', 'administrator']);
     }
     
     // --- Finance Manager Render Functions ---
 
     public static function render_fm_dashboard() {
-        return self::render_partial('dashboard-finance.php', ['finance_manager']);
+        return self::render_partial('dashboard-finance.php', ['finance_manager', 'administrator']);
     }
 
     // --- Team Member Render Functions ---
 
     public static function render_tm_tasks() {
-        return self::render_partial('dashboard-team-member.php', ['team_member']);
+        return self::render_partial('dashboard-team-member.php', ['team_member', 'system_manager', 'administrator']);
     }
 
     // --- Client Render Functions ---
@@ -101,13 +106,6 @@ class PuzzlingCRM_Frontend_Dashboard {
     }
 
     public static function render_client_payments() {
-        $render_logic = function() {
-            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/dashboard-client.php';
-        };
-        // This is a simplified approach. For true separation, the payment table logic
-        // from 'dashboard-client.php' would be extracted into its own file or function.
-        // For now, we render the whole client dashboard for this shortcode as well.
-        // A better implementation would be to create a new partial just for payments.
-        return self::render_partial('dashboard-client.php', ['customer']);
+        return self::render_partial('common/payments-table.php', ['customer']);
     }
 }
