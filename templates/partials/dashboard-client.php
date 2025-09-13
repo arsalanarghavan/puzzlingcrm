@@ -18,35 +18,31 @@ $base_url = puzzling_get_dashboard_url();
     <a href="<?php echo esc_url(add_query_arg('tab', 'contracts', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'contracts' ? 'active' : ''; ?>"><i class="fas fa-file-signature"></i> <?php esc_html_e('Contracts', 'puzzlingcrm'); ?></a>
     <a href="<?php echo esc_url(add_query_arg('tab', 'invoices', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'invoices' ? 'active' : ''; ?>"><i class="fas fa-file-invoice"></i> <?php esc_html_e('Invoices', 'puzzlingcrm'); ?></a>
     <a href="<?php echo esc_url(add_query_arg('tab', 'pro_invoices', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'pro_invoices' ? 'active' : ''; ?>"><i class="fas fa-file-invoice-dollar"></i> <?php esc_html_e('Pro-forma Invoices', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('tab', 'tickets', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'tickets' ? 'active' : ''; ?>"><i class="fas fa-headset"></i> <?php esc_html_e('Support Tickets', 'puzzlingcrm'); ?></a>
+    <a href="<?php echo esc_url(add_query_arg('tab', 'tickets', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'tickets' ? 'active' : ''; ?>"><i class="fas fa-life-ring"></i> <?php esc_html_e('Support Tickets', 'puzzlingcrm'); ?></a>
 </div>
 
 <div class="pzl-dashboard-tab-content">
 <?php
-    switch ($active_tab) {
-        case 'appointments':
-            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/page-client-appointments.php';
-            break;
-        case 'projects':
-            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/list-projects.php';
-            break;
-        case 'contracts':
-            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/page-client-contracts.php';
-            break;
-        case 'invoices':
-            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/list-client-payments.php';
-            break;
-        case 'pro_invoices':
-            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/page-client-pro-invoices.php';
-            break;
-        case 'tickets':
-            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/list-tickets.php';
-            break;
-        case 'overview':
-        default:
-            echo '<h3>' . sprintf(esc_html__('Welcome, %s!', 'puzzlingcrm'), wp_get_current_user()->display_name) . '</h3>';
-            echo '<p>' . esc_html__('This is your dashboard. You can use the tabs above to navigate through different sections.', 'puzzlingcrm') . '</p>';
-            break;
+    // FIX: Switched to a more robust way of handling views to prevent logic errors.
+    $view_map = [
+        'appointments' => 'page-client-appointments.php',
+        'projects'     => 'list-projects.php',
+        'contracts'    => 'page-client-contracts.php',
+        'invoices'     => 'list-client-payments.php', // Corrected this line
+        'pro_invoices' => 'page-client-pro-invoices.php',
+        'tickets'      => 'list-tickets.php',
+        'overview'     => 'client-overview.php', // A placeholder for the default view
+    ];
+
+    $template_file = $view_map[$active_tab] ?? 'client-overview.php';
+    $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $template_file;
+
+    if (file_exists($template_path) && $active_tab !== 'overview') {
+        include $template_path;
+    } else {
+        // Default overview content
+        echo '<h3>' . sprintf(esc_html__('Welcome, %s!', 'puzzlingcrm'), wp_get_current_user()->display_name) . '</h3>';
+        echo '<p>' . esc_html__('This is your dashboard. You can use the tabs above to navigate through different sections.', 'puzzlingcrm') . '</p>';
     }
 ?>
 </div>
