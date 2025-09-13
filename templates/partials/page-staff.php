@@ -34,12 +34,12 @@ $staff_roles = ['system_manager' => 'مدیر سیستم', 'finance_manager' => 
                 <input type="password" id="password" name="password" <?php echo $user_id === 0 ? 'required' : ''; ?>>
                 <?php if ($user_id > 0): ?><small>برای عدم تغییر، خالی بگذارید.</small><?php endif; ?>
             </div>
-            <button type="submit" class="pzl-button pzl-button-primary"><?php echo $user_id > 0 ? 'ذخیره تغییرات' : 'ایجاد کارمند'; ?></button>
+            <button type="submit" class="pzl-button"><?php echo $user_id > 0 ? 'ذخیره تغییرات' : 'ایجاد کارمند'; ?></button>
         </form>
     <?php else: ?>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3><span class="dashicons dashicons-groups"></span> مدیریت کارکنان</h3>
-            <a href="<?php echo add_query_arg(['action' => 'add']); ?>" class="pzl-button pzl-button-primary">افزودن کارمند جدید</a>
+            <h3><i class="fas fa-users-cog"></i> مدیریت کارکنان</h3>
+            <a href="<?php echo add_query_arg(['action' => 'add']); ?>" class="pzl-button">افزودن کارمند جدید</a>
         </div>
         <table class="pzl-table">
             <thead><tr><th>نام</th><th>ایمیل</th><th>نقش</th><th>عملیات</th></tr></thead>
@@ -49,7 +49,7 @@ $staff_roles = ['system_manager' => 'مدیر سیستم', 'finance_manager' => 
                         <td><?php echo esc_html($staff->display_name); ?></td>
                         <td><?php echo esc_html($staff->user_email); ?></td>
                         <td><?php echo esc_html(implode(', ', array_map(function($role) use ($staff_roles){ return $staff_roles[$role] ?? $role; }, $staff->roles))); ?></td>
-                        <td><a href="<?php echo add_query_arg(['action' => 'edit', 'user_id' => $staff->ID]); ?>" class="pzl-button pzl-button-secondary">ویرایش</a></td>
+                        <td><a href="<?php echo add_query_arg(['action' => 'edit', 'user_id' => $staff->ID]); ?>" class="pzl-button pzl-button-sm">ویرایش</a></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

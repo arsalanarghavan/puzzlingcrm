@@ -15,8 +15,8 @@ $appt_to_edit = ($appt_id > 0) ? get_post($appt_id) : null;
         $customers = get_users(['role__in' => ['customer', 'subscriber'], 'orderby' => 'display_name']);
     ?>
         <div class="pzl-card-header">
-            <h3><span class="dashicons dashicons-calendar-alt"></span> <?php echo $appt_to_edit ? 'ویرایش قرار ملاقات' : 'ایجاد قرار ملاقات جدید'; ?></h3>
-            <a href="<?php echo remove_query_arg(['action', 'appt_id']); ?>" class="pzl-button pzl-button-secondary">&larr; بازگشت به لیست</a>
+            <h3><i class="fas fa-calendar-alt"></i> <?php echo $appt_to_edit ? 'ویرایش قرار ملاقات' : 'ایجاد قرار ملاقات جدید'; ?></h3>
+            <a href="<?php echo remove_query_arg(['action', 'appt_id']); ?>" class="pzl-button">&larr; بازگشت به لیست</a>
         </div>
         <div class="pzl-card">
             <form method="post" class="pzl-form">
@@ -61,14 +61,14 @@ $appt_to_edit = ($appt_id > 0) ? get_post($appt_id) : null;
                     <textarea id="notes" name="notes" rows="4"><?php echo $appt_to_edit ? esc_textarea($appt_to_edit->post_content) : ''; ?></textarea>
                 </div>
                 <div class="form-submit">
-                    <button type="submit" class="pzl-button pzl-button-primary"><?php echo $appt_to_edit ? 'ذخیره تغییرات' : 'ایجاد قرار ملاقات'; ?></button>
+                    <button type="submit" class="pzl-button"><?php echo $appt_to_edit ? 'ذخیره تغییرات' : 'ایجاد قرار ملاقات'; ?></button>
                 </div>
             </form>
         </div>
     <?php else: ?>
         <div class="pzl-card-header">
-            <h3><span class="dashicons dashicons-calendar-alt"></span> لیست قرار ملاقات‌ها</h3>
-            <a href="<?php echo add_query_arg(['action' => 'add']); ?>" class="pzl-button pzl-button-primary">ایجاد قرار جدید</a>
+            <h3><i class="fas fa-calendar-alt"></i> لیست قرار ملاقات‌ها</h3>
+            <a href="<?php echo add_query_arg(['action' => 'add']); ?>" class="pzl-button">ایجاد قرار جدید</a>
         </div>
         <div class="pzl-card">
             <?php 
@@ -88,12 +88,12 @@ $appt_to_edit = ($appt_id > 0) ? get_post($appt_id) : null;
                         <td><?php echo date_i18n('Y/m/d H:i', strtotime($datetime_str)); ?></td>
                         <td><?php echo $is_past ? 'انجام شده' : 'در پیش رو'; ?></td>
                         <td>
-                            <a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-secondary pzl-button-sm">ویرایش</a>
+                            <a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-sm">ویرایش</a>
                             <form method="post" onsubmit="return confirm('آیا از حذف این قرار مطمئن هستید؟');" style="display: inline;">
                                 <input type="hidden" name="puzzling_action" value="delete_appointment">
                                 <input type="hidden" name="item_id" value="<?php echo esc_attr($appt->ID); ?>">
                                 <?php wp_nonce_field('puzzling_delete_appointment_' . $appt->ID, '_wpnonce'); ?>
-                                <button type="submit" class="pzl-button pzl-button-danger pzl-button-sm">حذف</button>
+                                <button type="submit" class="pzl-button pzl-button-sm">حذف</button>
                             </form>
                         </td>
                     </tr>

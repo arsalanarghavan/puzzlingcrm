@@ -36,28 +36,28 @@ $recent_tickets = get_posts(['post_type' => 'ticket', 'posts_per_page' => 5, 'or
 ?>
 <div class="pzl-dashboard-stats-grid">
     <div class="stat-widget-card gradient-1">
-        <div class="stat-widget-icon"><span class="dashicons dashicons-portfolio"></span></div>
+        <div class="stat-widget-icon"><i class="fas fa-briefcase"></i></div>
         <div class="stat-widget-content">
             <span class="stat-number"><?php echo esc_html($stats['total_projects']); ?></span>
             <span class="stat-title">پروژه کل</span>
         </div>
     </div>
     <div class="stat-widget-card gradient-2">
-        <div class="stat-widget-icon"><span class="dashicons dashicons-marker"></span></div>
+        <div class="stat-widget-icon"><i class="fas fa-tasks"></i></div>
         <div class="stat-widget-content">
             <span class="stat-number"><?php echo esc_html($stats['active_tasks_count']); ?></span>
             <span class="stat-title">وظایف فعال</span>
         </div>
     </div>
     <div class="stat-widget-card gradient-3">
-        <div class="stat-widget-icon"><span class="dashicons dashicons-sos"></span></div>
+        <div class="stat-widget-icon"><i class="fas fa-life-ring"></i></div>
         <div class="stat-widget-content">
             <span class="stat-number"><?php echo esc_html($stats['open_tickets']); ?></span>
             <span class="stat-title">تیکت‌های باز</span>
         </div>
     </div>
     <div class="stat-widget-card gradient-4">
-        <div class="stat-widget-icon"><span class="dashicons dashicons-update-alt"></span></div>
+        <div class="stat-widget-icon"><i class="fas fa-sync-alt"></i></div>
         <div class="stat-widget-content">
             <span class="stat-number"><?php echo esc_html($stats['active_subscriptions']); ?></span>
             <span class="stat-title">اشتراک‌های فعال</span>
@@ -68,7 +68,7 @@ $recent_tickets = get_posts(['post_type' => 'ticket', 'posts_per_page' => 5, 'or
 <div class="pzl-dashboard-grid">
     <div class="pzl-card">
         <div class="pzl-card-header">
-            <h3><span class="dashicons dashicons-portfolio"></span> آخرین پروژه‌ها</h3>
+            <h3><i class="fas fa-briefcase"></i> آخرین پروژه‌ها</h3>
         </div>
         <ul class="pzl-activity-list">
             <?php if (!empty($recent_projects)): foreach($recent_projects as $p): ?>
@@ -84,7 +84,7 @@ $recent_tickets = get_posts(['post_type' => 'ticket', 'posts_per_page' => 5, 'or
 
     <div class="pzl-card">
         <div class="pzl-card-header">
-            <h3><span class="dashicons dashicons-marker"></span> آخرین وظایف</h3>
+            <h3><i class="fas fa-tasks"></i> آخرین وظایف</h3>
         </div>
         <ul class="pzl-activity-list">
              <?php if (!empty($recent_tasks)): foreach($recent_tasks as $t): ?>
@@ -100,7 +100,7 @@ $recent_tickets = get_posts(['post_type' => 'ticket', 'posts_per_page' => 5, 'or
     
     <div class="pzl-card">
         <div class="pzl-card-header">
-            <h3><span class="dashicons dashicons-sos"></span> آخرین تیکت‌ها</h3>
+            <h3><i class="fas fa-life-ring"></i> آخرین تیکت‌ها</h3>
         </div>
         <ul class="pzl-activity-list">
              <?php if (!empty($recent_tickets)): foreach($recent_tickets as $ticket): 

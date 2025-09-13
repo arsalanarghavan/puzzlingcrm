@@ -15,7 +15,7 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
         <div class="pzl-card">
             <div class="pzl-card-header">
                 <h3><?php echo $invoice_id > 0 ? 'ویرایش پیش‌فاکتور' : 'ایجاد پیش‌فاکتور جدید'; ?></h3>
-                <a href="<?php echo remove_query_arg(['action', 'invoice_id']); ?>" class="pzl-button pzl-button-secondary">&larr; بازگشت به لیست</a>
+                <a href="<?php echo remove_query_arg(['action', 'invoice_id']); ?>" class="pzl-button">&larr; بازگشت به لیست</a>
             </div>
             <form method="post" class="pzl-form">
                 <?php wp_nonce_field('puzzling_manage_pro_invoice'); ?>
@@ -44,15 +44,15 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
                     <?php wp_editor($invoice_to_edit ? $invoice_to_edit->post_content : '', 'invoice_content', ['textarea_rows' => 10]); ?>
                 </div>
                 <div class="form-submit">
-                    <button type="submit" class="pzl-button pzl-button-primary"><?php echo $invoice_id > 0 ? 'ذخیره تغییرات' : 'ایجاد پیش‌فاکتور'; ?></button>
+                    <button type="submit" class="pzl-button"><?php echo $invoice_id > 0 ? 'ذخیره تغییرات' : 'ایجاد پیش‌فاکتور'; ?></button>
                 </div>
             </form>
         </div>
     <?php else: // 'list' view ?>
         <div class="pzl-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3><span class="dashicons dashicons-text-page"></span> مدیریت پیش‌فاکتورها</h3>
-                <a href="<?php echo add_query_arg(['action' => 'new']); ?>" class="pzl-button pzl-button-primary">ایجاد جدید</a>
+                <h3><i class="fas fa-file-invoice"></i> مدیریت پیش‌فاکتورها</h3>
+                <a href="<?php echo add_query_arg(['action' => 'new']); ?>" class="pzl-button">ایجاد جدید</a>
             </div>
             
             <?php
@@ -67,12 +67,12 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
                             <td><?php echo esc_html(get_the_author_meta('display_name', $invoice->post_author)); ?></td>
                             <td><?php echo get_the_date('Y/m/d', $invoice); ?></td>
                             <td>
-                                <a href="<?php echo add_query_arg(['action' => 'edit', 'invoice_id' => $invoice->ID]); ?>" class="pzl-button pzl-button-secondary pzl-button-sm">ویرایش</a>
+                                <a href="<?php echo add_query_arg(['action' => 'edit', 'invoice_id' => $invoice->ID]); ?>" class="pzl-button pzl-button-sm">ویرایش</a>
                                 <form method="post" onsubmit="return confirm('آیا مطمئن هستید؟');" style="display: inline;">
-                                    <input type="hidden" name="puzzling_action" value="delete_pro_invoice">
-                                    <input type="hidden" name="item_id" value="<?php echo esc_attr($invoice->ID); ?>">
-                                    <?php wp_nonce_field('puzzling_delete_pro_invoice_' . $invoice->ID, '_wpnonce'); ?>
-                                    <button type="submit" class="pzl-button pzl-button-danger pzl-button-sm">حذف</button>
+                                     <input type="hidden" name="puzzling_action" value="delete_pro_invoice">
+                                     <input type="hidden" name="item_id" value="<?php echo esc_attr($invoice->ID); ?>">
+                                     <?php wp_nonce_field('puzzling_delete_pro_invoice_' . $invoice->ID, '_wpnonce'); ?>
+                                     <button type="submit" class="pzl-button pzl-button-sm">حذف</button>
                                 </form>
                             </td>
                         </tr>

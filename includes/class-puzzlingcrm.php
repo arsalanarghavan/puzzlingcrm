@@ -51,13 +51,13 @@ class PuzzlingCRM {
 
     /**
      * Enqueues scripts and styles.
-     * FINAL FIX (v2): Explicitly enqueues dashicons to override any theme/plugin that dequeues it.
+     * FINAL FIX (v3): Replaced Dashicons with Font Awesome for reliability.
      */
     public function enqueue_dashboard_assets() {
-        // Forcefully load Dashicons on the frontend.
-        wp_enqueue_style( 'dashicons' );
-
-        wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', ['dashicons'], PUZZLINGCRM_VERSION );
+        // Enqueue Font Awesome from a reliable CDN
+        wp_enqueue_style( 'font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css', [], '6.5.1' );
+        
+        wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
         wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery'], PUZZLINGCRM_VERSION, true );
         
         wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [

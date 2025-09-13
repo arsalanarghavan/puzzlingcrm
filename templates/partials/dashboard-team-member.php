@@ -42,7 +42,7 @@ $tasks_per_page = 15;
 ?>
 
 <div class="pzl-dashboard-section">
-    <h3><span class="dashicons dashicons-portfolio" style="vertical-align: middle;"></span> <?php esc_html_e('My Projects', 'puzzlingcrm'); ?></h3>
+    <h3><i class="fas fa-briefcase" style="vertical-align: middle;"></i> <?php esc_html_e('My Projects', 'puzzlingcrm'); ?></h3>
     <?php if (!empty($project_ids)): 
         $project_query = new WP_Query(['post_type' => 'project', 'post__in' => $project_ids, 'posts_per_page' => -1]);
     ?>
@@ -63,10 +63,10 @@ $tasks_per_page = 15;
         <p><?php esc_html_e('You are not currently assigned to any projects.', 'puzzlingcrm'); ?></p>
     <?php endif; ?>
     <hr>
-    <h3><span class="dashicons dashicons-list-view" style="vertical-align: middle;"></span> <?php esc_html_e('My Tasks', 'puzzlingcrm'); ?></h3>
+    <h3><i class="fas fa-list-ul" style="vertical-align: middle;"></i> <?php esc_html_e('My Tasks', 'puzzlingcrm'); ?></h3>
 
     <div class="add-task-form-container">
-        <h4><span class="dashicons dashicons-plus-alt"></span> <?php esc_html_e('Add New Task', 'puzzlingcrm'); ?></h4>
+        <h4><i class="fas fa-plus-circle"></i> <?php esc_html_e('Add New Task', 'puzzlingcrm'); ?></h4>
         <form id="puzzling-add-task-form">
             <div class="form-row">
                 <input type="text" name="title" placeholder="<?php esc_attr_e('Task title...', 'puzzlingcrm'); ?>" required>
@@ -104,13 +104,13 @@ $tasks_per_page = 15;
                 
                 <input type="date" name="due_date" title="<?php esc_attr_e('Task Deadline', 'puzzlingcrm'); ?>">
 
-                <button type="submit" class="pzl-button pzl-button-primary"><?php esc_html_e('Add', 'puzzlingcrm'); ?></button>
+                <button type="submit" class="pzl-button"><?php esc_html_e('Add', 'puzzlingcrm'); ?></button>
             </div>
         </form>
     </div>
 
     <div class="task-lists">
-        <h4><span class="dashicons dashicons-marker"></span> <?php esc_html_e('Active Tasks', 'puzzlingcrm'); ?></h4>
+        <h4><i class="fas fa-tasks"></i> <?php esc_html_e('Active Tasks', 'puzzlingcrm'); ?></h4>
 
         <div class="pzl-search-form">
             <form method="get">
@@ -118,7 +118,7 @@ $tasks_per_page = 15;
                     <input type="hidden" name="project_filter" value="<?php echo esc_attr($project_filter); ?>">
                 <?php endif; ?>
                 <input type="search" name="task_search" placeholder="<?php esc_attr_e('Search task titles...', 'puzzlingcrm'); ?>" value="<?php echo esc_attr($search_query); ?>">
-                <button type="submit" class="pzl-button pzl-button-secondary"><?php esc_html_e('Search', 'puzzlingcrm'); ?></button>
+                <button type="submit" class="pzl-button"><?php esc_html_e('Search', 'puzzlingcrm'); ?></button>
             </form>
         </div>
 
@@ -180,7 +180,7 @@ $tasks_per_page = 15;
         
         <hr>
 
-        <h4><span class="dashicons dashicons-yes"></span> <?php esc_html_e('Recently Completed Tasks', 'puzzlingcrm'); ?></h4>
+        <h4><i class="fas fa-check-circle"></i> <?php esc_html_e('Recently Completed Tasks', 'puzzlingcrm'); ?></h4>
         <ul id="done-tasks-list" class="task-list">
              <?php
             $done_tasks = get_posts([
@@ -223,13 +223,13 @@ $tasks_per_page = 15;
     border-color: #ccc;
 }
 .project-card.active {
-    background-color: var(--primary-color, #F0192A);
+    background-color: var(--pzl-primary-color, #F0192A);
     color: #fff;
-    border-color: var(--primary-color, #F0192A);
+    border-color: var(--pzl-primary-color, #F0192A);
     font-weight: bold;
 }
 .clear-filter-link {
-    color: var(--primary-color, #F0192A);
+    color: var(--pzl-primary-color, #F0192A);
     text-decoration: none;
     margin-left: 10px;
     font-size: 14px;

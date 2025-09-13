@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 $current_user = wp_get_current_user();
 if ( ! ( $current_user instanceof WP_User ) || $current_user->ID === 0 ) {
     echo '<div class="puzzling-dashboard-wrapper">';
-    echo '<h3><span class="dashicons dashicons-lock"></span> دسترسی غیرمجاز</h3>';
+    echo '<h3><i class="fas fa-lock"></i> دسترسی غیرمجاز</h3>';
     echo '<p>لطفاً برای مشاهده داشبورد، ابتدا وارد حساب کاربری خود شوید.</p>';
     wp_login_form();
     echo '</div>';
@@ -59,7 +59,7 @@ $template_to_load = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to
         <div class="header-controls">
              <div class="pzl-notification-center">
                 <div class="pzl-notification-bell" title="اعلانات">
-                    <span class="dashicons dashicons-bell"></span>
+                    <i class="fas fa-bell"></i>
                     <span class="pzl-notification-count"></span>
                 </div>
                 <div class="pzl-notification-panel">

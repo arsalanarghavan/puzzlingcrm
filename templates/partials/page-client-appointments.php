@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) exit;
 if (!current_user_can('customer')) return;
 ?>
 <div class="pzl-dashboard-section">
-    <h3><span class="dashicons dashicons-calendar-alt"></span> <?php esc_html_e('Schedule a New Appointment', 'puzzlingcrm'); ?></h3>
+    <h3><i class="fas fa-calendar-plus"></i> <?php esc_html_e('Schedule a New Appointment', 'puzzlingcrm'); ?></h3>
     <p><?php esc_html_e('Please fill out the form below to request a new appointment. We will review your request and confirm the schedule with you.', 'puzzlingcrm'); ?></p>
 
     <div class="pzl-form-container">
@@ -31,7 +31,7 @@ if (!current_user_can('customer')) return;
                 <label for="appointment_notes"><?php esc_html_e('Notes (optional):', 'puzzlingcrm'); ?></label>
                 <textarea id="appointment_notes" name="notes" rows="4" placeholder="<?php esc_attr_e('Any additional details you would like to provide.', 'puzzlingcrm'); ?>"></textarea>
             </div>
-            <button type="submit" class="pzl-button pzl-button-primary"><?php esc_html_e('Submit Request', 'puzzlingcrm'); ?></button>
+            <button type="submit" class="pzl-button"><?php esc_html_e('Submit Request', 'puzzlingcrm'); ?></button>
         </form>
     </div>
 </div>

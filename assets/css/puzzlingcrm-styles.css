@@ -40,7 +40,7 @@
     gap: 10px;
     font-size: 24px;
 }
-.puzzling-dashboard-wrapper h3 .dashicons {
+.puzzling-dashboard-wrapper h3 .fas {
     color: var(--pzl-primary-color);
 }
 
@@ -166,7 +166,7 @@
 .pzl-table tbody td:first-child { font-weight: 600; }
 
 /* --- تب‌ها --- */
-.pzl-dashboard-tabs { border-bottom: 1px solid var(--pzl-border-color); margin-bottom: var(--pzl-spacing); display: flex; gap: 10px; }
+.pzl-dashboard-tabs { border-bottom: 1px solid var(--pzl-border-color); margin-bottom: var(--pzl-spacing); display: flex; gap: 10px; flex-wrap: wrap; }
 .pzl-tab { padding: 12px 20px; text-decoration: none; color: var(--pzl-text-light); border-bottom: 3px solid transparent; margin-bottom: -1px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
 .pzl-tab.active { color: var(--pzl-primary-color); border-bottom-color: var(--pzl-primary-color); }
 
@@ -174,8 +174,7 @@
 .pzl-dashboard-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--pzl-spacing); margin-bottom: var(--pzl-spacing); }
 .stat-widget-card { color: #fff; border-radius: var(--pzl-border-radius); padding: var(--pzl-spacing); display: flex; align-items: center; gap: 20px; box-shadow: var(--pzl-box-shadow); transition: transform 0.3s, box-shadow 0.3s; overflow: hidden; position: relative; border: none; }
 .stat-widget-card:hover { transform: translateY(-5px); box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
-.stat-widget-icon { background: rgba(255, 255, 255, 0.15); border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; }
-.stat-widget-icon .dashicons { font-size: 32px; width: auto; height: auto; }
+.stat-widget-icon { background: rgba(255, 255, 255, 0.15); border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
 .stat-widget-content { display: flex; flex-direction: column; }
 .stat-number { font-size: 32px; font-weight: 700; line-height: 1; }
 .stat-title { font-size: 16px; opacity: 0.9; margin-top: 5px; }

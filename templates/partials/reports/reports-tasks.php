@@ -25,7 +25,7 @@ $overdue_tasks_query = new WP_Query([
 ]);
 $overdue_tasks_count = $overdue_tasks_query->post_count;
 ?>
-<h3><span class="dashicons dashicons-chart-pie"></span> گزارش وظایف</h3>
+<h3><i class="fas fa-chart-pie"></i> گزارش وظایف</h3>
 <div class="pzl-dashboard-stats" style="margin-top:20px;">
     <div class="stat-widget">
         <h4>کل وظایف ثبت شده</h4>
@@ -47,7 +47,7 @@ $overdue_tasks_count = $overdue_tasks_query->post_count;
 
 <?php if ($overdue_tasks_query->have_posts()): ?>
 <div class="pzl-dashboard-section">
-    <h4><span class="dashicons dashicons-warning"></span> لیست وظایف دارای تاخیر</h4>
+    <h4><i class="fas fa-exclamation-triangle"></i> لیست وظایف دارای تاخیر</h4>
     <table class="pzl-table">
         <thead>
             <tr><th>عنوان وظیفه</th><th>مربوط به پروژه</th><th>تخصیص به</th><th>ددلاین</th></tr>

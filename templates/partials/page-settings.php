@@ -4,11 +4,11 @@ $active_tab = isset( $_GET[ 'tab' ] ) ? sanitize_key($_GET[ 'tab' ]) : 'payment'
 $base_url = remove_query_arg('puzzling_notice');
 ?>
 <div class="pzl-dashboard-section">
-    <h3><span class="dashicons dashicons-admin-settings"></span> تنظیمات</h3>
+    <h3><i class="fas fa-cog"></i> تنظیمات</h3>
     
     <div class="pzl-dashboard-tabs">
-        <a href="<?php echo add_query_arg('tab', 'payment', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'payment' ? 'active' : ''; ?>"><span class="dashicons dashicons-money-alt"></span> درگاه پرداخت</a>
-        <a href="<?php echo add_query_arg('tab', 'sms', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'sms' ? 'active' : ''; ?>"><span class="dashicons dashicons-email-alt"></span> سامانه پیامک</a>
+        <a href="<?php echo add_query_arg('tab', 'payment', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'payment' ? 'active' : ''; ?>"><i class="fas fa-credit-card"></i> درگاه پرداخت</a>
+        <a href="<?php echo add_query_arg('tab', 'sms', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'sms' ? 'active' : ''; ?>"><i class="fas fa-sms"></i> سامانه پیامک</a>
     </div>
 
     <div class="pzl-dashboard-tab-content">

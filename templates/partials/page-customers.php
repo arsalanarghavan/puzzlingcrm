@@ -16,8 +16,8 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
         $phone_number = $user_to_edit ? get_user_meta($user_to_edit->ID, 'puzzling_phone_number', true) : '';
     ?>
         <div class="pzl-card-header">
-            <h3><span class="dashicons dashicons-admin-users"></span> <?php echo $user_id > 0 ? 'ویرایش اطلاعات کاربر' : 'افزودن کاربر جدید'; ?></h3>
-            <a href="<?php echo remove_query_arg(['action', 'user_id']); ?>" class="pzl-button pzl-button-secondary">&larr; بازگشت به لیست کاربران</a>
+            <h3><i class="fas fa-user-edit"></i> <?php echo $user_id > 0 ? 'ویرایش اطلاعات کاربر' : 'افزودن کاربر جدید'; ?></h3>
+            <a href="<?php echo remove_query_arg(['action', 'user_id']); ?>" class="pzl-button">&larr; بازگشت به لیست کاربران</a>
         </div>
         <div class="pzl-card">
             <form method="post" class="pzl-form">
@@ -68,14 +68,14 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
                 </div>
                 
                 <div class="form-group form-submit">
-                    <button type="submit" class="pzl-button pzl-button-primary"><?php echo $user_id > 0 ? 'ذخیره تغییرات' : 'ایجاد کاربر'; ?></button>
+                    <button type="submit" class="pzl-button"><?php echo $user_id > 0 ? 'ذخیره تغییرات' : 'ایجاد کاربر'; ?></button>
                 </div>
             </form>
         </div>
     <?php else: ?>
         <div class="pzl-card-header">
-            <h3><span class="dashicons dashicons-admin-users"></span> مدیریت کاربران و مشتریان</h3>
-            <a href="<?php echo add_query_arg(['action' => 'add']); ?>" class="pzl-button pzl-button-primary">افزودن کاربر جدید</a>
+            <h3><i class="fas fa-users"></i> مدیریت کاربران و مشتریان</h3>
+            <a href="<?php echo add_query_arg(['action' => 'add']); ?>" class="pzl-button">افزودن کاربر جدید</a>
         </div>
         <div class="pzl-card">
             <table class="pzl-table">
@@ -89,7 +89,7 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
                             <td><?php echo esc_html($user->user_email); ?></td>
                             <td><?php echo !empty($user->roles) ? esc_html(wp_roles()->roles[$user->roles[0]]['name']) : '---'; ?></td>
                             <td><?php echo date_i18n('Y/m/d', strtotime($user->user_registered)); ?></td>
-                            <td><a href="<?php echo add_query_arg(['action' => 'edit', 'user_id' => $user->ID]); ?>" class="pzl-button pzl-button-secondary pzl-button-sm">ویرایش</a></td>
+                            <td><a href="<?php echo add_query_arg(['action' => 'edit', 'user_id' => $user->ID]); ?>" class="pzl-button pzl-button-sm">ویرایش</a></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

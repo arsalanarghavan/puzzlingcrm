@@ -80,12 +80,12 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
             </div>
             <?php endif; ?>
 
-            <button type="submit" class="pzl-button pzl-button-primary">ارسال پاسخ</button>
+            <button type="submit" class="pzl-button">ارسال پاسخ</button>
         </form>
     </div>
     <?php else: ?>
     <div class="ticket-closed-notice">
-        <p><span class="dashicons dashicons-lock"></span> این تیکت بسته شده است و امکان ارسال پاسخ جدید وجود ندارد.</p>
+        <p><i class="fas fa-lock"></i> این تیکت بسته شده است و امکان ارسال پاسخ جدید وجود ندارد.</p>
     </div>
     <?php endif; ?>
 </div>

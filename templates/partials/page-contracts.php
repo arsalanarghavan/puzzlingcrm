@@ -6,11 +6,11 @@ $action = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']) : 0;
 ?>
 <div class="pzl-dashboard-section">
-    <h3><span class="dashicons dashicons-media-text"></span> مدیریت قراردادها</h3>
+    <h3><i class="fas fa-file-signature"></i> مدیریت قراردادها</h3>
     
     <div class="pzl-dashboard-tabs">
-        <a href="<?php echo remove_query_arg(['action', 'contract_id']); ?>" class="pzl-tab <?php echo $action === 'list' ? 'active' : ''; ?>"> <span class="dashicons dashicons-list-view"></span> لیست قراردادها</a>
-        <a href="<?php echo add_query_arg('action', 'new'); ?>" class="pzl-tab <?php echo $action === 'new' ? 'active' : ''; ?>"> <span class="dashicons dashicons-plus-alt"></span> قرارداد جدید</a>
+        <a href="<?php echo remove_query_arg(['action', 'contract_id']); ?>" class="pzl-tab <?php echo $action === 'list' ? 'active' : ''; ?>"> <i class="fas fa-list-ul"></i> لیست قراردادها</a>
+        <a href="<?php echo add_query_arg('action', 'new'); ?>" class="pzl-tab <?php echo $action === 'new' ? 'active' : ''; ?>"> <i class="fas fa-plus"></i> قرارداد جدید</a>
     </div>
 
     <div class="pzl-dashboard-tab-content">
@@ -35,7 +35,7 @@ $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']
                 'paged' => get_query_var('paged') ? get_query_var('paged') : 1,
             ]);
             ?>
-            <h4><span class="dashicons dashicons-archive"></span> لیست قراردادهای ثبت شده</h4>
+            <h4><i class="fas fa-archive"></i> لیست قراردادهای ثبت شده</h4>
             <?php if ($contracts_query->have_posts()): ?>
                 <table class="pzl-table">
                     <thead>
@@ -80,7 +80,7 @@ $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']
                             <td><?php echo esc_html(number_format($total_amount)); ?> تومان</td>
                             <td><?php echo esc_html(number_format($paid_amount)); ?> تومان</td>
                             <td><span class="pzl-status <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_text); ?></span></td>
-                            <td><a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-secondary pzl-button-sm">ویرایش / مشاهده اقساط</a></td>
+                            <td><a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-sm">ویرایش / مشاهده اقساط</a></td>
                         </tr>
                         <?php endwhile; ?>
                     </tbody>

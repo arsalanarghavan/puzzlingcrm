@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 if ( ! current_user_can('manage_options') ) return;
 ?>
 <div class="pzl-form-container">
-    <h3><span class="dashicons dashicons-plus-alt"></span> ایجاد قرارداد و قسط‌بندی جدید</h3>
+    <h3><i class="fas fa-plus-circle"></i> ایجاد قرارداد و قسط‌بندی جدید</h3>
     <form id="create-contract-form" method="post">
         <?php wp_nonce_field('puzzling_create_contract'); ?>
         <div class="form-group">
@@ -42,7 +42,7 @@ if ( ! current_user_can('manage_options') ) return;
                 <input type="date" id="start_date">
             </div>
         </div>
-        <button type="button" id="calculate-installments" class="pzl-button pzl-button-secondary">محاسبه و تولید اقساط</button>
+        <button type="button" id="calculate-installments" class="pzl-button">محاسبه و تولید اقساط</button>
 
         <hr>
         <h4>لیست اقساط تولید شده</h4>
@@ -54,6 +54,6 @@ if ( ! current_user_can('manage_options') ) return;
             </div>
 
         <hr style="margin: 20px 0;">
-        <button type="submit" name="submit_contract" class="pzl-button pzl-button-primary" style="font-size: 16px;">ایجاد و ثبت قرارداد</button>
+        <button type="submit" name="submit_contract" class="pzl-button" style="font-size: 16px;">ایجاد و ثبت قرارداد</button>
     </form>
 </div>

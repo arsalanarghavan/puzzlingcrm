@@ -18,7 +18,7 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
         <div class="pzl-card">
             <div class="pzl-card-header">
                 <h3><?php echo $project_id > 0 ? 'ویرایش پروژه' : 'ایجاد پروژه جدید'; ?></h3>
-                <a href="<?php echo remove_query_arg(['action', 'project_id']); ?>" class="pzl-button pzl-button-secondary">&larr; بازگشت به لیست پروژه‌ها</a>
+                <a href="<?php echo remove_query_arg(['action', 'project_id']); ?>" class="pzl-button">&larr; بازگشت به لیست پروژه‌ها</a>
             </div>
 
             <form method="post" class="pzl-form" enctype="multipart/form-data">
@@ -53,7 +53,7 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                     <p class="description">می‌توانید چندین فایل را به صورت همزمان انتخاب کنید. فایل‌های قبلی حذف نخواهند شد.</p>
                 </div>
                  <div class="form-submit">
-                    <button type="submit" class="pzl-button pzl-button-primary"><?php echo $project_id > 0 ? 'ذخیره تغییرات' : 'ایجاد پروژه'; ?></button>
+                    <button type="submit" class="pzl-button"><?php echo $project_id > 0 ? 'ذخیره تغییرات' : 'ایجاد پروژه'; ?></button>
                 </div>
             </form>
         </div>
@@ -61,8 +61,8 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
     <?php else: // 'list' view ?>
         <div class="pzl-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                <h3><span class="dashicons dashicons-portfolio"></span> لیست پروژه‌ها</h3>
-                <a href="<?php echo add_query_arg(['action' => 'new']); ?>" class="pzl-button pzl-button-primary">ایجاد پروژه جدید</a>
+                <h3><i class="fas fa-briefcase"></i> لیست پروژه‌ها</h3>
+                <a href="<?php echo add_query_arg(['action' => 'new']); ?>" class="pzl-button">ایجاد پروژه جدید</a>
             </div>
             
             <form method="get" class="pzl-form">
@@ -86,7 +86,7 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                         </select>
                     </div>
                     <div class="form-group">
-                        <button type="submit" class="pzl-button pzl-button-secondary">فیلتر</button>
+                        <button type="submit" class="pzl-button">فیلتر</button>
                     </div>
                 </div>
             </form>
@@ -131,10 +131,10 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                             <td><?php echo get_the_date('Y/m/d'); ?></td>
                             <td><?php echo $contract_status; ?></td>
                             <td>
-                                <a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-secondary pzl-button-sm">ویرایش</a>
-                                <a href="#" class="delete-project pzl-button pzl-button-danger pzl-button-sm" 
-                                data-project-id="<?php echo esc_attr($project_id); ?>" 
-                                data-nonce="<?php echo esc_attr(wp_create_nonce('puzzling_delete_project_' . $project_id)); ?>">حذف</a>
+                                <a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-sm">ویرایش</a>
+                                <a href="#" class="delete-project pzl-button pzl-button-sm" 
+                               data-project-id="<?php echo esc_attr($project_id); ?>" 
+                               data-nonce="<?php echo esc_attr(wp_create_nonce('puzzling_delete_project_' . $project_id)); ?>">حذف</a>
                             </td>
                         </tr>
                         <?php endwhile; ?>

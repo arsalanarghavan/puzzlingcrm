@@ -18,7 +18,7 @@ $subscriptions = wcs_get_subscriptions([
 ?>
 <div class="pzl-dashboard-section">
     <div class="pzl-card">
-        <h3><span class="dashicons dashicons-update-alt"></span> اشتراک‌های مشتریان</h3>
+        <h3><i class="fas fa-sync-alt"></i> اشتراک‌های مشتریان</h3>
         <p class="description">
             این صفحه تمام اشتراک‌های فعال از افزونه WooCommerce Subscriptions را نمایش می‌دهد. برای مدیریت یا ایجاد اشتراک جدید، لطفاً از منوی ووکامرس اقدام کنید.
         </p>
@@ -48,7 +48,7 @@ $subscriptions = wcs_get_subscriptions([
                         <td><?php echo esc_html($subscription->get_date_to_display('start_date')); ?></td>
                         <td><?php echo esc_html($subscription->get_date_to_display('next_payment_date')); ?></td>
                         <td>
-                            <a href="<?php echo esc_url(get_edit_post_link($subscription->get_id())); ?>" class="pzl-button pzl-button-secondary pzl-button-sm" target="_blank">مدیریت</a>
+                            <a href="<?php echo esc_url(get_edit_post_link($subscription->get_id())); ?>" class="pzl-button pzl-button-sm" target="_blank">مدیریت</a>
                         </td>
                     </tr>
                     <?php endforeach; ?>

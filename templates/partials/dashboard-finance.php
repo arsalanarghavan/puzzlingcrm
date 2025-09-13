@@ -11,8 +11,8 @@ $active_tab = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
 ?>
 
 <div class="pzl-dashboard-tabs">
-    <a href="?view=overview" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"> <span class="dashicons dashicons-dashboard"></span> <?php esc_html_e('Overview', 'puzzlingcrm'); ?></a>
-    <a href="?view=reports" class="pzl-tab <?php echo $active_tab === 'reports' ? 'active' : ''; ?>"> <span class="dashicons dashicons-chart-area"></span> <?php esc_html_e('Reports', 'puzzlingcrm'); ?></a>
+    <a href="?view=overview" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"> <i class="fas fa-tachometer-alt"></i> <?php esc_html_e('Overview', 'puzzlingcrm'); ?></a>
+    <a href="?view=reports" class="pzl-tab <?php echo $active_tab === 'reports' ? 'active' : ''; ?>"> <i class="fas fa-chart-area"></i> <?php esc_html_e('Reports', 'puzzlingcrm'); ?></a>
 </div>
 
 <div class="pzl-dashboard-tab-content">
@@ -71,7 +71,7 @@ $active_tab = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
         </div>
     </div>
     <div class="pzl-dashboard-section">
-        <h3><span class="dashicons dashicons-list-view" style="vertical-align: middle;"></span> <?php esc_html_e('All Installments List', 'puzzlingcrm'); ?></h3>
+        <h3><i class="fas fa-list-ul" style="vertical-align: middle;"></i> <?php esc_html_e('All Installments List', 'puzzlingcrm'); ?></h3>
         <?php include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/common/payments-table.php'; ?>
     </div>
 <?php endif; ?>
@@ -79,10 +79,10 @@ $active_tab = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
 <style>
 .pzl-dashboard-tabs { border-bottom: 2px solid #e0e0e0; margin-bottom: 20px; display: flex; }
 .pzl-tab { padding: 10px 20px; text-decoration: none; color: #555; border-bottom: 2px solid transparent; margin-bottom: -2px; }
-.pzl-tab.active { color: var(--primary-color, #F0192A); border-bottom-color: var(--primary-color, #F0192A); font-weight: bold; }
-.pzl-tab .dashicons { vertical-align: middle; margin-left: 5px; }
+.pzl-tab.active { color: var(--pzl-primary-color, #F0192A); border-bottom-color: var(--pzl-primary-color, #F0192A); font-weight: bold; }
+.pzl-tab .fas { vertical-align: middle; margin-left: 5px; }
 .pzl-dashboard-stats { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 30px; }
 .stat-widget { flex: 1; min-width: 200px; background: #fff; border: 1px solid #e0e0e0; padding: 20px; border-radius: 5px; text-align: center; }
 .stat-widget h4 { margin: 0 0 10px; font-size: 16px; color: #555; }
-.stat-widget .stat-number { font-size: 32px; font-weight: bold; color: var(--primary-color, #F0192A); }
+.stat-widget .stat-number { font-size: 32px; font-weight: bold; color: var(--pzl-primary-color, #F0192A); }
 </style>

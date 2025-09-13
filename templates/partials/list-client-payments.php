@@ -20,7 +20,7 @@ $contracts = get_posts([
 
 ?>
 <div class="pzl-dashboard-section">
-    <h3><span class="dashicons dashicons-money-alt" style="vertical-align: middle;"></span> وضعیت پرداخت‌ها و اقساط</h3>
+    <h3><i class="fas fa-money-bill-wave" style="vertical-align: middle;"></i> وضعیت پرداخت‌ها و اقساط</h3>
     <?php if (empty($contracts)) : ?>
         <p>هیچ برنامه پرداختی برای شما ثبت نشده است.</p>
     <?php else : ?>
@@ -62,7 +62,7 @@ $contracts = get_posts([
                                 '_wpnonce' => $nonce,
                             ], get_permalink());
 
-                            echo '<a href="' . esc_url($payment_url) . '" class="pzl-button pzl-button-primary">پرداخت آنلاین</a>';
+                            echo '<a href="' . esc_url($payment_url) . '" class="pzl-button">پرداخت آنلاین</a>';
                         } else {
                             echo '<span>—</span>';
                         }
@@ -82,6 +82,6 @@ $contracts = get_posts([
 .pzl-table th, .pzl-table td { padding: 12px 15px; border: 1px solid #e0e0e0; text-align: right; vertical-align: middle; }
 .pzl-table th { background-color: #f9f9f9; font-weight: bold; }
 .pzl-status { display: inline-block; padding: 5px 10px; border-radius: 15px; font-size: 12px; color: #fff; min-width: 90px; text-align: center; }
-.status-paid { background-color: var(--success-color, #28a745); }
-.status-pending { background-color: var(--warning-color, #ffc107); color: #333; }
+.status-paid { background-color: var(--pzl-success-color, #28a745); }
+.status-pending { background-color: var(--pzl-warning-color, #ffc107); color: #333; }
 </style>

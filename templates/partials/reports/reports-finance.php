@@ -76,7 +76,7 @@ foreach ($contracts as $contract) {
 ksort($chart_data);
 ?>
 <div class="pzl-card">
-    <h3><span class="dashicons dashicons-filter"></span> فیلتر گزارش مالی</h3>
+    <h3><i class="fas fa-filter"></i> فیلتر گزارش مالی</h3>
     <form method="get" class="pzl-form">
         <input type="hidden" name="view" value="reports">
         <input type="hidden" name="tab" value="finance">
@@ -90,7 +90,7 @@ ksort($chart_data);
                 <input type="date" name="end_date" id="end_date" value="<?php echo esc_attr($end_date_str); ?>">
             </div>
             <div class="form-group">
-                <button type="submit" class="pzl-button pzl-button-secondary">اعمال فیلتر</button>
+                <button type="submit" class="pzl-button">اعمال فیلتر</button>
             </div>
         </div>
     </form>
@@ -98,22 +98,22 @@ ksort($chart_data);
 
 <div class="finance-report-grid">
     <div class="report-card">
-        <h4><span class="dashicons dashicons-money-alt"></span> درآمد در بازه</h4>
+        <h4><i class="fas fa-money-bill-wave"></i> درآمد در بازه</h4>
         <span class="stat-number"><?php echo esc_html(number_format($income_in_range)); ?></span>
         <span class="stat-label">تومان</span>
     </div>
     <div class="report-card">
-        <h4><span class="dashicons dashicons-hourglass"></span> مبالغ در انتظار پرداخت</h4>
+        <h4><i class="fas fa-hourglass"></i> مبالغ در انتظار پرداخت</h4>
         <span class="stat-number"><?php echo esc_html(number_format($pending_in_range)); ?></span>
         <span class="stat-label">تومان</span>
     </div>
     <div class="report-card">
-        <h4><span class="dashicons dashicons-yes"></span> اقساط پرداخت شده</h4>
+        <h4><i class="fas fa-check"></i> اقساط پرداخت شده</h4>
         <span class="stat-number"><?php echo esc_html($paid_installments_count); ?></span>
         <span class="stat-label">قسط</span>
     </div>
     <div class="report-card">
-        <h4><span class="dashicons dashicons-warning"></span> مشتریان با پرداخت معوق</h4>
+        <h4><i class="fas fa-user-clock"></i> مشتریان با پرداخت معوق</h4>
         <span class="stat-number"><?php echo esc_html(count($overdue_customers)); ?></span>
         <span class="stat-label">مشتری</span>
     </div>

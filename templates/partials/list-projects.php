@@ -27,7 +27,7 @@ $projects_query = new WP_Query($args);
 ?>
 
 <div class="puzzling-projects-list">
-    <h3><span class="dashicons dashicons-portfolio"></span> لیست پروژه‌های شما</h3>
+    <h3><i class="fas fa-briefcase"></i> لیست پروژه‌های شما</h3>
     
     <?php if ($projects_query->have_posts()) : ?>
         <ul>
@@ -48,5 +48,5 @@ $projects_query = new WP_Query($args);
 <style>
 .puzzling-projects-list ul { list-style: none; padding: 0; }
 .puzzling-projects-list li { background: #f9f9f9; border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 4px; }
-.puzzling-projects-list li a { font-weight: bold; text-decoration: none; color: var(--secondary-color, #1D1E29); }
+.puzzling-projects-list li a { font-weight: bold; text-decoration: none; color: var(--pzl-secondary-color, #1D1E29); }
 </style>

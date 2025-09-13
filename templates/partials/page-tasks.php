@@ -5,11 +5,11 @@ if (!defined('ABSPATH')) exit;
 $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'list';
 ?>
 <div class="pzl-dashboard-section">
-    <h3><span class="dashicons dashicons-marker"></span> مدیریت وظایف</h3>
+    <h3><i class="fas fa-tasks"></i> مدیریت وظایف</h3>
 
     <div class="pzl-dashboard-tabs">
-        <a href="<?php echo remove_query_arg('tab'); ?>" class="pzl-tab <?php echo $active_tab === 'list' ? 'active' : ''; ?>"> <span class="dashicons dashicons-list-view"></span> لیست وظایف</a>
-        <a href="<?php echo add_query_arg('tab', 'new'); ?>" class="pzl-tab <?php echo $active_tab === 'new' ? 'active' : ''; ?>"> <span class="dashicons dashicons-plus-alt"></span> افزودن وظیفه جدید</a>
+        <a href="<?php echo remove_query_arg('tab'); ?>" class="pzl-tab <?php echo $active_tab === 'list' ? 'active' : ''; ?>"> <i class="fas fa-list-ul"></i> لیست وظایف</a>
+        <a href="<?php echo add_query_arg('tab', 'new'); ?>" class="pzl-tab <?php echo $active_tab === 'new' ? 'active' : ''; ?>"> <i class="fas fa-plus"></i> افزودن وظیفه جدید</a>
     </div>
 
     <div class="pzl-dashboard-tab-content">
@@ -23,7 +23,7 @@ $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'list';
             $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
             ?>
             <div class="pzl-card-header">
-                <h3><span class="dashicons dashicons-plus-alt"></span> افزودن وظیفه جدید</h3>
+                <h3><i class="fas fa-plus-circle"></i> افزودن وظیفه جدید</h3>
             </div>
             <form id="puzzling-add-task-form" class="pzl-form">
                 <div class="pzl-form-row">
@@ -86,7 +86,7 @@ $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'list';
             $tasks_query = new WP_Query($args);
             ?>
             <div class="pzl-card-header">
-                <h3><span class="dashicons dashicons-list-view"></span> لیست وظایف سیستم</h3>
+                <h3><i class="fas fa-list-ul"></i> لیست وظایف سیستم</h3>
             </div>
             <form method="get" class="pzl-form">
                 <input type="hidden" name="view" value="tasks">
