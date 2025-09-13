@@ -8,9 +8,7 @@ class PuzzlingCRM_Roles_Manager {
 
     public function add_custom_roles() {
         // Remove existing roles to ensure capabilities are updated
-        remove_role('finance_manager');
-        remove_role('system_manager');
-        remove_role('team_member');
+        $this->remove_custom_roles();
 
         // Finance Manager
         add_role( 'finance_manager', 'مدیر مالی', ['read' => true] );
@@ -34,6 +32,16 @@ class PuzzlingCRM_Roles_Manager {
         ] );
     }
 
+    /**
+     * Removes the custom roles.
+     * This is called on deactivation.
+     */
+    public function remove_custom_roles() {
+        remove_role('finance_manager');
+        remove_role('system_manager');
+        remove_role('team_member');
+    }
+
     public function block_dashboard_access() {
         if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
             return;
@@ -52,9 +60,9 @@ class PuzzlingCRM_Roles_Manager {
             $is_super_admin = in_array('administrator', $user_roles);
 
             if ( $has_blocked_role && !$is_super_admin ) {
-                $dashboard_page = get_page_by_title('PuzzlingCRM Dashboard');
-                if ($dashboard_page) {
-                    wp_redirect( get_permalink($dashboard_page->ID) );
+                $dashboard_page_id = get_option('puzzling_dashboard_page_id');
+                if ($dashboard_page_id) {
+                    wp_redirect( get_permalink($dashboard_page_id) );
                 } else {
                     // Fallback to home URL if dashboard page doesn't exist
                     wp_redirect( home_url() );

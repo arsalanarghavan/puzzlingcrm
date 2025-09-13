@@ -77,11 +77,8 @@ $base_url = puzzling_get_dashboard_url();
         'settings' => 'page-settings',
     ];
 
-    if (isset($template_map[$active_tab])) {
-        $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $template_map[$active_tab] . '.php';
-        if (file_exists($template_path)) {
-            include $template_path;
-        }
+    if (isset($template_map[$active_tab]) && file_exists(PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $template_map[$active_tab] . '.php')) {
+        include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $template_map[$active_tab] . '.php';
     } else {
         // Overview is the default
         echo '<h4>' . esc_html__('Welcome to the System Management Dashboard.', 'puzzlingcrm') . '</h4>';
@@ -89,16 +86,3 @@ $base_url = puzzling_get_dashboard_url();
     }
     ?>
 </div>
-
-<style>
-/* This inline style is kept for simplicity, but ideally should be in the main CSS file */
-.pzl-dashboard-tabs { border-bottom: 1px solid #ddd; margin-bottom: 25px; display: flex; flex-wrap: wrap; }
-.pzl-tab { padding: 12px 20px; text-decoration: none; color: #555; border-bottom: 3px solid transparent; margin-bottom: -1px; font-weight: 500; transition: color 0.3s, border-color 0.3s; }
-.pzl-tab.active, .pzl-tab:hover { color: var(--primary-color, #F0192A); border-bottom-color: var(--primary-color, #F0192A); font-weight: 600; }
-.pzl-tab .dashicons { vertical-align: middle; margin-left: 8px; }
-.pzl-dashboard-stats { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 30px; }
-.stat-widget { flex: 1; min-width: 200px; background: #fff; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; text-align: center; transition: transform 0.3s, box-shadow 0.3s; }
-.stat-widget:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
-.stat-widget h4 { margin: 0 0 10px; font-size: 16px; color: #555; font-weight: 600; }
-.stat-widget .stat-number { font-size: 36px; font-weight: 700; color: var(--primary-color, #F0192A); }
-</style>

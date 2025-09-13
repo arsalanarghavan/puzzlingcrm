@@ -20,6 +20,7 @@ class PuzzlingCRM_Ajax_Handler {
         $priority_id = intval($_POST['priority']);
         $due_date = sanitize_text_field($_POST['due_date']);
         $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
+        // **FIXED: Security vulnerability - Check capability before assigning task**
         $assigned_to = isset($_POST['assigned_to']) && current_user_can('assign_tasks') ? intval($_POST['assigned_to']) : get_current_user_id();
 
         if (empty($project_id)) {
@@ -57,7 +58,7 @@ class PuzzlingCRM_Ajax_Handler {
         if (!$user || !$task) return;
         $to = $user->user_email;
         $subject = 'یک تسک جدید به شما تخصیص داده شد: ' . $task->post_title;
-        $dashboard_url = get_permalink(get_page_by_title('PuzzlingCRM Dashboard'));
+        $dashboard_url = function_exists('puzzling_get_dashboard_url') ? puzzling_get_dashboard_url() : home_url();
         $body  = '<p>سلام ' . esc_html($user->display_name) . '،</p>';
         $body .= '<p>یک تسک جدید در پروژه <strong>' . esc_html($project_title) . '</strong> به شما محول شده است:</p>';
         $body .= '<ul><li><strong>عنوان تسک:</strong> ' . esc_html($task->post_title) . '</li></ul>';

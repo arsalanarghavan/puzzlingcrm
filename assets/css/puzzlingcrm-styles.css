@@ -122,3 +122,33 @@ hr {
 .ticket-reply-form .form-group-inline { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
 .ticket-closed-notice { margin-top: 30px; background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 5px; text-align: center; }
 .ticket-closed-notice .dashicons { vertical-align: middle; }
+
+/* --- ADDED/MOVED STYLES --- */
+
+/* From list-tickets.php */
+.pzl-new-ticket-form-container { background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; }
+
+/* From list-client-payments.php */
+.pzl-table th, .pzl-table td { border: 1px solid #e0e0e0; }
+
+/* From dashboard-team-member.php */
+.add-task-form-container { background: #fff; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.add-task-form-container .form-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.add-task-form-container input[type="text"], .add-task-form-container select { flex-grow: 1; min-width: 150px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+.add-task-form-container button { flex-shrink: 0; }
+.pzl-search-form { margin-bottom: 20px; display: flex; gap: 10px; }
+.pzl-search-form input { flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+.task-lists h4 { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+.pagination { margin-top: 20px; text-align: left; }
+.pagination .page-numbers { display: inline-block; padding: 8px 12px; border: 1px solid #ddd; text-decoration: none; border-radius: 4px; transition: background-color 0.3s; }
+.pagination .page-numbers:hover { background-color: #f0f0f0; }
+.pagination .page-numbers.current { background: var(--primary-color, #F0192A); color: #fff; border-color: var(--primary-color, #F0192A); }
+.no-tasks-message { background-color: #f9f9f9; text-align: center; padding: 20px; border-radius: 5px; color: #777; list-style: none; }
+
+/* from reports-finance.php */
+.pzl-form-container .form-row { display: flex; align-items: flex-end; gap: 15px; background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; flex-wrap: wrap; }
+.pzl-chart-container { display: flex; align-items: flex-end; gap: 10px; border: 1px solid #e0e0e0; padding: 20px; border-radius: 5px; height: 250px; background: #fcfcfc; }
+.chart-bar-wrapper { flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: flex-end; }
+.chart-bar { background-color: var(--primary-color, #F0192A); width: 80%; max-width: 50px; margin: 0 auto; transition: background-color 0.3s, opacity 0.3s; opacity: 0.8; border-radius: 3px 3px 0 0; }
+.chart-bar:hover { background-color: var(--secondary-color, #1D1E29); opacity: 1; }
+.chart-label { font-size: 12px; margin-top: 5px; color: #555; }

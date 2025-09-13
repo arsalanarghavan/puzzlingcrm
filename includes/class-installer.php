@@ -2,7 +2,7 @@
 /**
  * PuzzlingCRM Installer
  *
- * This class handles all the tasks that need to be run when the plugin is activated.
+ * This class handles all the tasks that need to be run when the plugin is activated or deactivated.
  *
  * @package PuzzlingCRM
  */
@@ -32,6 +32,20 @@ class PuzzlingCRM_Installer {
 
         // Create the frontend dashboard page and store its ID
         self::create_dashboard_page();
+    }
+    
+    /**
+     * Deactivation hook callback.
+     * Cleans up roles created by the plugin.
+     */
+    public static function deactivate() {
+        // Call role removal
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-roles-manager.php';
+        $roles_manager = new PuzzlingCRM_Roles_Manager();
+        $roles_manager->remove_custom_roles();
+        
+        // Flush rewrite rules
+        flush_rewrite_rules();
     }
 
     /**

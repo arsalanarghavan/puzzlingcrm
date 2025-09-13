@@ -23,9 +23,14 @@ class PuzzlingCRM_Cron_Handler {
         $active_service = $settings['sms_service'] ?? null;
 
         if ( empty($active_service) ) {
+            // **IMPROVED: Set a transient to show an admin notice**
+            set_transient('puzzling_sms_not_configured', true, DAY_IN_SECONDS);
             error_log('PuzzlingCRM Cron: No active SMS service selected.');
             return;
         }
+
+        // If cron runs successfully, remove the notice transient
+        delete_transient('puzzling_sms_not_configured');
 
         $contracts = get_posts(['post_type' => 'contract', 'posts_per_page' => -1, 'post_status' => 'publish']);
         if (empty($contracts)) return;
@@ -82,6 +87,7 @@ class PuzzlingCRM_Cron_Handler {
         $pattern_to_use = $pattern_map[$days_left] ?? null;
 
         if (empty($api_key) || empty($sender_number) || empty($pattern_to_use)) {
+            set_transient('puzzling_sms_not_configured', true, DAY_IN_SECONDS);
             error_log("PuzzlingCRM Cron (Melipayamak): Settings are incomplete for a {$days_left}-day reminder.");
             return;
         }
@@ -104,6 +110,7 @@ class PuzzlingCRM_Cron_Handler {
         $message_template = $message_template_map[$days_left] ?? null;
 
         if (empty($signature) || empty($sender_number) || empty($message_template)) {
+            set_transient('puzzling_sms_not_configured', true, DAY_IN_SECONDS);
             error_log("PuzzlingCRM Cron (ParsGreen): Settings are incomplete for a {$days_left}-day reminder.");
             return;
         }

@@ -43,7 +43,11 @@ class PuzzlingCRM {
     }
 
     private function define_hooks() {
+        // **MODIFIED: Added deactivation hook**
         register_activation_hook( PUZZLINGCRM_PLUGIN_DIR . 'puzzlingcrm.php', [ 'PuzzlingCRM_Installer', 'activate' ] );
+        register_deactivation_hook( PUZZLINGCRM_PLUGIN_DIR . 'puzzlingcrm.php', [ 'PuzzlingCRM_Installer', 'deactivate' ] );
+
+        add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_dashboard_assets' ] );
         
         new PuzzlingCRM_Admin_Menu();
         new PuzzlingCRM_CPT_Manager();
@@ -57,18 +61,22 @@ class PuzzlingCRM {
     /**
      * Conditionally enqueues scripts and styles.
      */
-    public static function enqueue_dashboard_assets() {
-        wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
-        
-        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery'], PUZZLINGCRM_VERSION, true );
-        
-        wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [
-            'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce'),
-            'lang'     => [
-                'confirm_delete' => __('Are you sure you want to delete this item?', 'puzzlingcrm'),
-            ]
-        ]);
+    public function enqueue_dashboard_assets() {
+        // **IMPROVED: Only load assets on the dashboard page**
+        $dashboard_page_id = get_option('puzzling_dashboard_page_id');
+        if ( is_page( $dashboard_page_id ) ) {
+            wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
+            
+            wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery'], PUZZLINGCRM_VERSION, true );
+            
+            wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce'),
+                'lang'     => [
+                    'confirm_delete' => __('Are you sure you want to delete this item?', 'puzzlingcrm'),
+                ]
+            ]);
+        }
     }
     
     public function run() {

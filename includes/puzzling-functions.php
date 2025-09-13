@@ -3,6 +3,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
+/**
+ * NEW: Function to get the frontend dashboard URL reliably.
+ *
+ * @return string The URL of the dashboard page or home URL as a fallback.
+ */
+if ( ! function_exists( 'puzzling_get_dashboard_url' ) ) {
+    function puzzling_get_dashboard_url() {
+        $dashboard_page_id = get_option( 'puzzling_dashboard_page_id', 0 );
+        if ( $dashboard_page_id && get_post_status( $dashboard_page_id ) === 'publish' ) {
+            return get_permalink( $dashboard_page_id );
+        }
+        // Fallback to home URL if the page is not set or deleted
+        return home_url( '/' );
+    }
+}
+
+
 if ( ! function_exists( 'puzzling_render_task_item' ) ) {
     /**
      * Renders the HTML for a single task item.
@@ -22,7 +39,7 @@ if ( ! function_exists( 'puzzling_render_task_item' ) ) {
         $project_id = get_post_meta( $task->ID, '_project_id', true );
         $project_title = $project_id ? get_the_title($project_id) : 'بدون پروژه';
         
-        $dashboard_url = get_permalink(get_page_by_title('PuzzlingCRM Dashboard'));
+        $dashboard_url = puzzling_get_dashboard_url();
         $project_link = $project_id ? add_query_arg(['view' => 'project', 'project_id' => $project_id], $dashboard_url) : '#';
 
         $assignee_name = '';

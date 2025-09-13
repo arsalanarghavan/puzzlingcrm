@@ -16,6 +16,8 @@ class PuzzlingCRM_Admin_Menu {
      */
     public function __construct() {
         add_action( 'admin_menu', [ $this, 'register_admin_menus' ] );
+        // **NEW: Hook to show admin notices**
+        add_action( 'admin_notices', [ $this, 'show_admin_notices' ] );
     }
 
     /**
@@ -54,6 +56,31 @@ class PuzzlingCRM_Admin_Menu {
      * Renders the settings page for the admin area.
      */
     public function render_settings_page() {
-        include PUZZlingCRM_PLUGIN_DIR . 'templates/admin/page-settings.php';
+        include PUZZLINGCRM_PLUGIN_DIR . 'templates/admin/page-settings.php';
+    }
+    
+    /**
+     * Displays admin notices, e.g., for configuration errors.
+     */
+    public function show_admin_notices() {
+        if ( get_transient( 'puzzling_sms_not_configured' ) ) {
+            $settings_url = admin_url('admin.php?page=puzzling-settings&tab=sms');
+            ?>
+            <div class="notice notice-error is-dismissible">
+                <p>
+                    <strong><?php esc_html_e( 'PuzzlingCRM:', 'puzzlingcrm' ); ?></strong>
+                    <?php
+                    printf(
+                        /* translators: %s: URL to settings page */
+                        wp_kses_post( __( 'The SMS service for sending reminders is not configured correctly. Please <a href="%s">check your settings</a>.', 'puzzlingcrm' ) ),
+                        esc_url( $settings_url )
+                    );
+                    ?>
+                </p>
+            </div>
+            <?php
+            // The notice is dismissible, so we can delete the transient.
+            delete_transient( 'puzzling_sms_not_configured' );
+        }
     }
 }

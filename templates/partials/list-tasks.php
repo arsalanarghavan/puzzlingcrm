@@ -17,35 +17,8 @@ if ($current_user->ID === 0) {
 
 $user_id = $current_user->ID;
 
-// A helper function to render a single task item to avoid code repetition.
-if (!function_exists('puzzling_render_task_item_template')) {
-    function puzzling_render_task_item_template( $task ) {
-        $priority_terms = wp_get_post_terms( $task->ID, 'task_priority' );
-        $priority_class = ! empty( $priority_terms ) ? 'priority-' . esc_attr( $priority_terms[0]->slug ) : 'priority-low';
-        $priority_name = ! empty( $priority_terms ) ? esc_html( $priority_terms[0]->name ) : 'کم';
-        
-        $is_done = has_term( 'done', 'task_status', $task );
-        $status_class = $is_done ? 'status-done' : '';
-        $checked_attr = $is_done ? 'checked' : '';
-        $due_date = get_post_meta( $task->ID, '_due_date', true );
-
-        return sprintf(
-            '<li class="task-item %s" data-task-id="%d">
-                <input type="checkbox" class="task-checkbox" %s>
-                <span class="task-title">%s</span>
-                <span class="task-priority %s">%s</span>
-                <span class="task-due-date">%s</span>
-            </li>',
-            esc_attr( $status_class ),
-            esc_attr( $task->ID ),
-            $checked_attr,
-            esc_html( $task->post_title ),
-            esc_attr( $priority_class ),
-            $priority_name,
-            !empty($due_date) ? 'ددلاین: ' . esc_html(date_i18n('Y/m/d', strtotime($due_date))) : ''
-        );
-    }
-}
+// **REMOVED: Duplicate function `puzzling_render_task_item_template` was removed.**
+// The main function from puzzling-functions.php will be used instead.
 ?>
 
 <div class="pzl-task-manager-wrapper">
@@ -73,7 +46,10 @@ if (!function_exists('puzzling_render_task_item_template')) {
             if (empty($active_tasks)) {
                 echo '<p class="no-tasks-message">هیچ تسک فعالی برای شما ثبت نشده است.</p>';
             } else {
-                foreach ($active_tasks as $task) { echo puzzling_render_task_item_template($task); }
+                foreach ($active_tasks as $task) { 
+                    // Use the main function from puzzling-functions.php
+                    echo puzzling_render_task_item($task); 
+                }
             }
             ?>
         </ul>
@@ -87,7 +63,10 @@ if (!function_exists('puzzling_render_task_item_template')) {
             if (empty($done_tasks)) {
                 echo '<p class="no-tasks-message">هنوز تسکی را به اتمام نرسانده‌اید.</p>';
             } else {
-                foreach ($done_tasks as $task) { echo puzzling_render_task_item_template($task); }
+                foreach ($done_tasks as $task) { 
+                    // Use the main function from puzzling-functions.php
+                    echo puzzling_render_task_item($task); 
+                }
             }
             ?>
         </ul>
