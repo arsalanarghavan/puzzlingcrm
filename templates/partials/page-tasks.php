@@ -1,10 +1,84 @@
-<?php if ( ! defined( 'ABSPATH' ) ) exit; ?>
+<?php
+if (!defined('ABSPATH')) exit;
+
+// Get filter parameters
+$paged = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
+$project_filter = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0;
+$staff_filter = isset($_GET['staff_id']) ? intval($_GET['staff_id']) : 0;
+$status_filter = isset($_GET['status']) ? sanitize_key($_GET['status']) : '';
+
+$args = [
+    'post_type' => 'task',
+    'posts_per_page' => 20,
+    'paged' => $paged,
+    'meta_query' => ['relation' => 'AND'],
+    'tax_query' => ['relation' => 'AND'],
+];
+
+if ($project_filter > 0) {
+    $args['meta_query'][] = ['key' => '_project_id', 'value' => $project_filter];
+}
+if ($staff_filter > 0) {
+    $args['meta_query'][] = ['key' => '_assigned_to', 'value' => $staff_filter];
+}
+if (!empty($status_filter)) {
+    $args['tax_query'][] = ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status_filter];
+}
+
+$tasks_query = new WP_Query($args);
+$staff_roles = ['system_manager', 'finance_manager', 'team_member'];
+$all_staff = get_users(['role__in' => $staff_roles]);
+$all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1]);
+$all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false]);
+?>
 <div class="pzl-dashboard-section">
     <h3><span class="dashicons dashicons-list-view"></span> مدیریت وظایف کل سیستم</h3>
-    <?php
-    // This template is already built for team members, we can reuse it with a flag
-    // for the admin view.
-    // For a true admin view, this would be a more complex template showing ALL tasks.
-    include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/dashboard-team-member.php';
-    ?>
+
+    <form method="get" class="pzl-form-container" style="margin-bottom: 20px;">
+        <div class="form-row" style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <select name="project_id">
+                <option value="">همه پروژه‌ها</option>
+                <?php foreach ($all_projects as $project): ?>
+                    <option value="<?php echo $project->ID; ?>" <?php selected($project_filter, $project->ID); ?>><?php echo esc_html($project->post_title); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <select name="staff_id">
+                <option value="">همه کارکنان</option>
+                 <?php foreach ($all_staff as $staff): ?>
+                    <option value="<?php echo $staff->ID; ?>" <?php selected($staff_filter, $staff->ID); ?>><?php echo esc_html($staff->display_name); ?></option>
+                <?php endforeach; ?>
+            </select>
+             <select name="status">
+                <option value="">همه وضعیت‌ها</option>
+                <?php foreach ($all_statuses as $status): ?>
+                    <option value="<?php echo esc_attr($status->slug); ?>" <?php selected($status_filter, $status->slug); ?>><?php echo esc_html($status->name); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <button type="submit" class="pzl-button pzl-button-secondary">فیلتر</button>
+        </div>
+    </form>
+
+    <table class="pzl-table">
+        <thead><tr><th>عنوان وظیفه</th><th>پروژه</th><th>تخصیص به</th><th>وضعیت</th><th>ددلاین</th></tr></thead>
+        <tbody>
+            <?php if ($tasks_query->have_posts()): while($tasks_query->have_posts()): $tasks_query->the_post();
+                $project_id = get_post_meta(get_the_ID(), '_project_id', true);
+                $assigned_id = get_post_meta(get_the_ID(), '_assigned_to', true);
+                $status_terms = get_the_terms(get_the_ID(), 'task_status');
+            ?>
+                <tr>
+                    <td><?php the_title(); ?></td>
+                    <td><?php echo $project_id ? get_the_title($project_id) : '---'; ?></td>
+                    <td><?php echo $assigned_id ? get_the_author_meta('display_name', $assigned_id) : '---'; ?></td>
+                    <td><?php echo !empty($status_terms) ? esc_html($status_terms[0]->name) : '---'; ?></td>
+                    <td><?php echo get_post_meta(get_the_ID(), '_due_date', true); ?></td>
+                </tr>
+            <?php endwhile; else: ?>
+                <tr><td colspan="5">هیچ وظیفه‌ای با این فیلترها یافت نشد.</td></tr>
+            <?php endif; wp_reset_postdata(); ?>
+        </tbody>
+    </table>
+    <div class="pagination">
+        <?php echo paginate_links(['total' => $tasks_query->max_num_pages, 'current' => $paged]); ?>
+    </div>
 </div>
