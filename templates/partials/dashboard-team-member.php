@@ -1,6 +1,6 @@
 <?php
 /**
- * Team Member Dashboard Template - IMPROVED
+ * Team Member Dashboard Template - FULLY UPGRADED
  * @package PuzzlingCRM
  */
 
@@ -10,8 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $current_user = wp_get_current_user();
 $user_id = $current_user->ID;
+$paged = ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : 1;
+$tasks_per_page = 10; // Number of tasks per page
 
-// Use the global rendering function
 if (!function_exists('puzzling_render_task_item')) {
     include_once PUZZLINGCRM_PLUGIN_DIR . 'includes/puzzling-functions.php';
 }
@@ -24,10 +25,20 @@ if (!function_exists('puzzling_render_task_item')) {
         <h4><span class="dashicons dashicons-plus-alt"></span> افزودن تسک جدید</h4>
         <form id="puzzling-add-task-form">
             <div class="form-row">
-                <input type="text" id="task_title" name="task_title" placeholder="عنوان تسک" required>
+                <input type="text" id="task_title" name="title" placeholder="عنوان تسک" required>
                 
-                <?php if (current_user_can('assign_tasks')) : // Only managers can assign tasks to others ?>
-                <select id="task_assigned_to" name="assigned_to" required>
+                <select id="task_project" name="project_id" required>
+                    <option value="">-- انتخاب پروژه --</option>
+                    <?php
+                    $projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish']);
+                    foreach ($projects as $project) {
+                        echo '<option value="' . esc_attr($project->ID) . '">' . esc_html($project->post_title) . '</option>';
+                    }
+                    ?>
+                </select>
+
+                <?php if (current_user_can('assign_tasks')) : ?>
+                <select name="assigned_to" required>
                     <option value="">-- تخصیص به --</option>
                     <?php
                     $team_members = get_users(['role__in' => ['team_member', 'system_manager', 'administrator']]);
@@ -38,7 +49,7 @@ if (!function_exists('puzzling_render_task_item')) {
                 </select>
                 <?php endif; ?>
                 
-                <select id="task_priority" name="priority" required>
+                <select name="priority" required>
                     <?php
                     $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
                     foreach ($priorities as $priority) {
@@ -47,7 +58,7 @@ if (!function_exists('puzzling_render_task_item')) {
                     ?>
                 </select>
                 
-                <input type="date" id="task_due_date" name="due_date" title="ددلاین تسک">
+                <input type="date" name="due_date" title="ددلاین تسک">
 
                 <button type="submit" class="pzl-button pzl-button-primary">افزودن</button>
             </div>
@@ -61,71 +72,36 @@ if (!function_exists('puzzling_render_task_item')) {
             <?php
             $active_tasks_args = [
                 'post_type' => 'task',
-                'posts_per_page' => -1,
-                'meta_key' => '_assigned_to',
-                'meta_value' => $user_id,
-                'tax_query' => [[
-                    'taxonomy' => 'task_status',
-                    'field' => 'slug',
-                    'terms' => 'done',
-                    'operator' => 'NOT IN',
-                ]],
+                'posts_per_page' => $tasks_per_page,
+                'paged' => $paged,
+                'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => 'done', 'operator' => 'NOT IN']],
             ];
-
-            if (current_user_can('manage_options')) {
-                unset($active_tasks_args['meta_key']);
-                unset($active_tasks_args['meta_value']);
+            if (!current_user_can('manage_options')) {
+                $active_tasks_args['meta_key'] = '_assigned_to';
+                $active_tasks_args['meta_value'] = $user_id;
             }
-            
-            $active_tasks = get_posts($active_tasks_args);
+            $active_tasks_query = new WP_Query($active_tasks_args);
 
-            if (empty($active_tasks)) {
+            if (!$active_tasks_query->have_posts()) {
                 echo '<p class="no-tasks-message">هیچ تسک فعالی برای شما ثبت نشده است.</p>';
             } else {
-                foreach ($active_tasks as $task) {
-                    echo puzzling_render_task_item($task);
+                while($active_tasks_query->have_posts()) {
+                    $active_tasks_query->the_post();
+                    echo puzzling_render_task_item(get_post());
                 }
             }
             ?>
         </ul>
-
-        <h4>لیست تسک‌های انجام شده</h4>
-        <ul id="done-tasks-list" class="task-list">
-             <?php
-            $done_tasks_args = [
-                'post_type' => 'task',
-                'posts_per_page' => -1,
-                'meta_key' => '_assigned_to',
-                'meta_value' => $user_id,
-                'tax_query' => [[
-                    'taxonomy' => 'task_status',
-                    'field' => 'slug',
-                    'terms' => 'done',
-                ]],
-            ];
-
-            if (current_user_can('manage_options')) {
-                unset($done_tasks_args['meta_key']);
-                unset($done_tasks_args['meta_value']);
-            }
-
-            $done_tasks = get_posts($done_tasks_args);
-
-            if (!empty($done_tasks)) {
-                foreach ($done_tasks as $task) {
-                    echo puzzling_render_task_item($task);
-                }
-            }
+        <div class="pagination">
+            <?php
+            echo paginate_links([
+                'base' => str_replace( 999999999, '%#%', esc_url( get_pagenum_link( 999999999 ) ) ),
+                'total' => $active_tasks_query->max_num_pages,
+                'current' => max( 1, $paged ),
+                'format' => '?paged=%#%',
+            ]);
+            wp_reset_postdata();
             ?>
-        </ul>
+        </div>
     </div>
 </div>
-
-<style>
-.add-task-form-container { background: #fff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-.add-task-form-container .form-row { display: flex; gap: 10px; align-items: center; }
-.add-task-form-container input[type="text"] { flex-grow: 1; padding: 8px; }
-.task-due-date { font-size: 12px; color: #777; margin-right: 15px; }
-.task-actions { font-size: 12px; margin-right: auto; }
-.task-actions a { color: #F0192A; text-decoration: none; }
-</style>

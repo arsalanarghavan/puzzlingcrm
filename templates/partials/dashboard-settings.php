@@ -1,7 +1,6 @@
 <?php
 /**
  * Settings Page Template for System Manager
- *
  * @package PuzzlingCRM
  */
 
@@ -10,12 +9,14 @@ if (!defined('ABSPATH')) {
 }
 
 // Get saved settings to populate the form fields
-$zarinpal_merchant_id = PuzzlingCRM_Settings_Handler::get_setting('zarinpal_merchant_id');
-$melipayamak_api_key = PuzzlingCRM_Settings_Handler::get_setting('melipayamak_api_key');
-$melipayamak_api_secret = PuzzlingCRM_Settings_Handler::get_setting('melipayamak_api_secret');
-$pattern_3_days = PuzzlingCRM_Settings_Handler::get_setting('pattern_3_days');
-$pattern_1_day = PuzzlingCRM_Settings_Handler::get_setting('pattern_1_day');
-$pattern_due_today = PuzzlingCRM_Settings_Handler::get_setting('pattern_due_today');
+$settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+$zarinpal_merchant_id = $settings['zarinpal_merchant_id'] ?? '';
+$melipayamak_api_key = $settings['melipayamak_api_key'] ?? '';
+$melipayamak_api_secret = $settings['melipayamak_api_secret'] ?? '';
+$melipayamak_sender_number = $settings['melipayamak_sender_number'] ?? ''; // New field
+$pattern_3_days = $settings['pattern_3_days'] ?? '';
+$pattern_1_day = $settings['pattern_1_day'] ?? '';
+$pattern_due_today = $settings['pattern_due_today'] ?? '';
 ?>
 
 <div class="pzl-form-container">
@@ -40,6 +41,10 @@ $pattern_due_today = PuzzlingCRM_Settings_Handler::get_setting('pattern_due_toda
         <div class="form-group">
             <label for="melipayamak_api_secret">کلید Secret:</label>
             <input type="text" id="melipayamak_api_secret" name="puzzling_settings[melipayamak_api_secret]" value="<?php echo esc_attr($melipayamak_api_secret); ?>" class="ltr-input">
+        </div>
+        <div class="form-group">
+            <label for="melipayamak_sender_number">شماره خط فرستنده:</label>
+            <input type="text" id="melipayamak_sender_number" name="puzzling_settings[melipayamak_sender_number]" value="<?php echo esc_attr($melipayamak_sender_number); ?>" class="ltr-input" required placeholder="مثال: 3000...">
         </div>
 
         <h4>کدهای پترن (الگوی) پیامک</h4>
