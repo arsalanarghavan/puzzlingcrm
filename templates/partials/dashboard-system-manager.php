@@ -8,8 +8,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$active_tab = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
-
 // Stats for widgets - Cached using transients for better performance.
 if ( false === ( $stats = get_transient( 'puzzling_system_manager_stats' ) ) ) {
     $total_projects = wp_count_posts('project')->publish;
@@ -45,12 +43,12 @@ if ( false === ( $stats = get_transient( 'puzzling_system_manager_stats' ) ) ) {
         'total_projects' => $total_projects,
         'active_tasks_count' => $active_tasks_count,
         'pending_installments' => $pending_installments,
+        'active_subscriptions' => class_exists('WC_Subscriptions') ? wcs_get_subscription_count( 'active' ) : 0,
     ];
     // Cache the stats for 1 hour.
     set_transient( 'puzzling_system_manager_stats', $stats, HOUR_IN_SECONDS );
 }
 
-$base_url = puzzling_get_dashboard_url();
 ?>
 
 <div class="pzl-dashboard-stats">
@@ -66,33 +64,29 @@ $base_url = puzzling_get_dashboard_url();
         <h4><?php esc_html_e('Pending Installments', 'puzzlingcrm'); ?></h4>
         <span class="stat-number"><?php echo esc_html($stats['pending_installments']); ?></span>
     </div>
+    <div class="stat-widget">
+        <h4><?php esc_html_e('Active Subscriptions', 'puzzlingcrm'); ?></h4>
+        <span class="stat-number"><?php echo esc_html($stats['active_subscriptions']); ?></span>
+    </div>
 </div>
 
-<div class="pzl-dashboard-tabs">
-    <a href="<?php echo esc_url(add_query_arg('view', 'overview', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"> <span class="dashicons dashicons-dashboard"></span> <?php esc_html_e('Overview', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('view', 'projects', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'projects' ? 'active' : ''; ?>"> <span class="dashicons dashicons-portfolio"></span> <?php esc_html_e('Manage Projects', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('view', 'contracts', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'contracts' ? 'active' : ''; ?>"> <span class="dashicons dashicons-media-text"></span> <?php esc_html_e('Manage Contracts', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('view', 'tickets', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'tickets' ? 'active' : ''; ?>"> <span class="dashicons dashicons-sos"></span> <?php esc_html_e('Support', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('view', 'logs', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'logs' ? 'active' : ''; ?>"> <span class="dashicons dashicons-list-view"></span> <?php esc_html_e('Event Logs', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('view', 'settings', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'settings' ? 'active' : ''; ?>"> <span class="dashicons dashicons-admin-settings"></span> <?php esc_html_e('Settings', 'puzzlingcrm'); ?></a>
-</div>
-
-<div class="pzl-dashboard-tab-content">
-    <?php
-    $template_map = [
-        'projects' => 'page-projects',
-        'contracts' => 'page-contracts',
-        'tickets' => 'list-tickets',
-        'logs' => 'view-logs',
-        'settings' => 'page-settings',
-    ];
-
-    if (isset($template_map[$active_tab]) && file_exists(PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $template_map[$active_tab] . '.php')) {
-        include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $template_map[$active_tab] . '.php';
-    } else {
-        // Overview is the default
-        echo '<h4>' . esc_html__('Welcome to the System Management Dashboard.', 'puzzlingcrm') . '</h4>';
-        echo '<p>' . esc_html__('From this panel, you can get an overview of the system, manage projects and contracts, and configure the plugin settings.', 'puzzlingcrm') . '</p>';
-    }
-    ?>
+<div class="pzl-dashboard-section">
+    <h3><?php esc_html_e('System Overview', 'puzzlingcrm'); ?></h3>
+    <p><?php esc_html_e('Welcome to the System Management Dashboard. From this panel, you can get a quick overview of the system status.', 'puzzlingcrm'); ?></p>
+    <p><?php esc_html_e('To manage different parts of the CRM, please create separate pages and use the corresponding shortcodes. This provides greater flexibility in how you structure your admin area.', 'puzzlingcrm'); ?></p>
+    
+    <h4><?php esc_html_e('Available Management Shortcodes:', 'puzzlingcrm'); ?></h4>
+    <ul>
+        <li><code>[puzzling_projects]</code> - <?php esc_html_e('Manage all projects', 'puzzlingcrm'); ?></li>
+        <li><code>[puzzling_contracts]</code> - <?php esc_html_e('Manage all contracts', 'puzzlingcrm'); ?></li>
+        <li><code>[puzzling_tasks]</code> - <?php esc_html_e('Manage all tasks in the system', 'puzzlingcrm'); ?></li>
+        <li><code>[puzzling_customers]</code> - <?php esc_html_e('Manage customer accounts', 'puzzlingcrm'); ?></li>
+        <li><code>[puzzling_staff]</code> - <?php esc_html_e('Manage staff accounts', 'puzzlingcrm'); ?></li>
+        <li><code>[puzzling_subscriptions]</code> - <?php esc_html_e('View WooCommerce customer subscriptions', 'puzzlingcrm'); ?></li>
+        <li><code>[puzzling_appointments]</code> - <?php esc_html_e('Manage appointments', 'puzzlingcrm'); ?></li>
+        <li><code>[puzzling_tickets_manager]</code> - <?php esc_html_e('Manage all support tickets', 'puzzlingcrm'); ?></li>
+        <li><code>[puzzling_reports]</code> - <?php esc_html_e('View financial and task reports', 'puzzlingcrm'); ?></li>
+        <li><code>[puzzling_logs]</code> - <?php esc_html_e('View system event logs', 'puzzlingcrm'); ?></li>
+        <li><code>[puzzling_settings]</code> - <?php esc_html_e('Configure plugin settings', 'puzzlingcrm'); ?></li>
+    </ul>
 </div>

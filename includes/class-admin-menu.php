@@ -21,57 +21,57 @@ class PuzzlingCRM_Admin_Menu {
 
     /**
      * Registers all the admin menu and submenu pages for the plugin.
+     * The main purpose of this menu is now to provide a clear entry point
+     * to the frontend dashboard for administrators.
      */
     public function register_admin_menus() {
-        // Main Menu Page
+        // Main Menu Page that links to the frontend dashboard
         add_menu_page(
             __( 'PuzzlingCRM', 'puzzlingcrm' ),
             __( 'PuzzlingCRM', 'puzzlingcrm' ),
             'manage_options',
-            'puzzling-dashboard',
-            [ $this, 'render_dashboard_page' ],
+            'puzzling-dashboard', // Slug
+            [ $this, 'render_redirect_page' ], // Callback function
             'dashicons-businesswoman',
             25
         );
-
-        // Submenu Pages
-        add_submenu_page( 'puzzling-dashboard', __( 'Dashboard', 'puzzlingcrm' ), __( 'Dashboard', 'puzzlingcrm' ), 'manage_options', 'puzzling-dashboard', [ $this, 'render_dashboard_page' ] );
-        add_submenu_page( 'puzzling-dashboard', __( 'Projects', 'puzzlingcrm' ), __( 'Projects', 'puzzlingcrm' ), 'manage_options', 'edit.php?post_type=project' );
-        add_submenu_page( 'puzzling-dashboard', __( 'Tasks', 'puzzlingcrm' ), __( 'Tasks', 'puzzlingcrm' ), 'manage_options', 'edit.php?post_type=task' );
-        add_submenu_page( 'puzzling-dashboard', __( 'Contracts', 'puzzlingcrm' ), __( 'Contracts', 'puzzlingcrm' ), 'manage_options', 'edit.php?post_type=contract' );
-        add_submenu_page( 'puzzling-dashboard', __( 'Customers', 'puzzlingcrm' ), __( 'Customers', 'puzzlingcrm' ), 'manage_options', 'users.php?role=customer' );
-        add_submenu_page( 'puzzling-dashboard', __( 'Staff', 'puzzlingcrm' ), __( 'Staff', 'puzzlingcrm' ), 'manage_options', 'users.php?role__in[]=system_manager&role__in[]=finance_manager&role__in[]=team_member' );
-        add_submenu_page( 'puzzling-dashboard', __( 'Settings', 'puzzlingcrm' ), __( 'Settings', 'puzzlingcrm' ), 'manage_options', 'puzzling-settings', [ $this, 'render_settings_page' ] );
     }
 
     /**
-     * Renders the main dashboard page for the admin area.
+     * Renders a simple page for the admin that redirects them to the frontend dashboard.
+     * This ensures even admins use the intended interface.
      */
-    public function render_dashboard_page() {
-        include PUZZLINGCRM_PLUGIN_DIR . 'templates/admin/page-dashboard.php';
-    }
-
-    /**
-     * Renders the settings page for the admin area.
-     */
-    public function render_settings_page() {
-        include PUZZLINGCRM_PLUGIN_DIR . 'templates/admin/page-settings.php';
+    public function render_redirect_page() {
+        $dashboard_url = puzzling_get_dashboard_url();
+        ?>
+        <div class="wrap">
+            <h1><?php esc_html_e( 'Redirecting to PuzzlingCRM Dashboard', 'puzzlingcrm' ); ?></h1>
+            <p><?php esc_html_e( 'All management for PuzzlingCRM is handled through the frontend dashboard for a unified experience.', 'puzzlingcrm' ); ?></p>
+            <p>
+                <a href="<?php echo esc_url( $dashboard_url ); ?>" class="button button-primary">
+                    <?php esc_html_e( 'Go to Frontend Dashboard', 'puzzlingcrm' ); ?>
+                </a>
+            </p>
+            <script type="text/javascript">
+                window.location.href = '<?php echo esc_url_raw( $dashboard_url ); ?>';
+            </script>
+        </div>
+        <?php
     }
     
     /**
      * Displays admin notices, e.g., for configuration errors or missing extensions.
      */
     public function show_admin_notices() {
-        // Notice for unconfigured SMS service
+        // This function remains unchanged and will show important server/config notices to the admin.
         if ( get_transient( 'puzzling_sms_not_configured' ) ) {
-            $settings_url = admin_url('admin.php?page=puzzling-settings&tab=sms');
+            $settings_url = add_query_arg(['view' => 'settings'], puzzling_get_dashboard_url());
             ?>
             <div class="notice notice-error is-dismissible">
                 <p>
                     <strong><?php esc_html_e( 'PuzzlingCRM:', 'puzzlingcrm' ); ?></strong>
                     <?php
                     printf(
-                        /* translators: %s: URL to settings page */
                         wp_kses_post( __( 'The SMS service for sending reminders is not configured correctly. Please <a href="%s">check your settings</a>.', 'puzzlingcrm' ) ),
                         esc_url( $settings_url )
                     );
@@ -82,7 +82,6 @@ class PuzzlingCRM_Admin_Menu {
             delete_transient( 'puzzling_sms_not_configured' );
         }
 
-        // Notice for missing SOAP extension (for ParsGreen)
         if ( get_transient( 'puzzling_soap_not_enabled' ) ) {
             ?>
             <div class="notice notice-error is-dismissible">

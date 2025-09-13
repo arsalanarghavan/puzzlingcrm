@@ -27,7 +27,7 @@ class PuzzlingCRM_Frontend_Dashboard {
                 if ( file_exists( $template_path ) ) {
                     include $template_path;
                 } else {
-                    echo '<p>خطای سیستمی: فایل قالب داشبورد یافت نشد.</p>';
+                    echo '<div class="pzl-alert pzl-alert-error">خطای سیستمی: فایل قالب داشبورد یافت نشد. (' . esc_html($template_name) . ')</div>';
                 }
             } else {
                  echo '<p>شما دسترسی لازم برای مشاهده این صفحه را ندارید.</p>';
@@ -38,7 +38,6 @@ class PuzzlingCRM_Frontend_Dashboard {
 
     // --- Wrapper ---
     public static function render_dashboard_wrapper() {
-        PuzzlingCRM::enqueue_dashboard_assets();
         return self::render_partial('dashboard-wrapper', ['customer', 'team_member', 'finance_manager', 'system_manager']);
     }
 
@@ -52,6 +51,9 @@ class PuzzlingCRM_Frontend_Dashboard {
     public static function render_page_appointments() { return self::render_partial('page-appointments', ['system_manager']); }
     public static function render_page_reports() { return self::render_partial('page-reports', ['system_manager', 'finance_manager']); }
     public static function render_page_settings() { return self::render_partial('page-settings', ['system_manager']); }
+    public static function render_page_logs() { return self::render_partial('page-logs', ['system_manager']); }
+    public static function render_page_tickets() { return self::render_partial('list-tickets', ['system_manager']); }
+
 
     // --- Team Member Pages ---
     public static function render_team_tasks() {
@@ -62,4 +64,6 @@ class PuzzlingCRM_Frontend_Dashboard {
     public static function render_client_dashboard() { return self::render_partial('dashboard-client', ['customer']); }
     public static function render_client_projects() { return self::render_partial('list-projects', ['customer']); }
     public static function render_client_payments() { return self::render_partial('common/payments-table', ['customer']); }
+    public static function render_client_tickets() { return self::render_partial('list-tickets', ['customer']); }
+
 }
