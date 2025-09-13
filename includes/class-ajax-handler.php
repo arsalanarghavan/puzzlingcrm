@@ -4,7 +4,6 @@ class PuzzlingCRM_Ajax_Handler {
     public function __construct() {
         add_action('wp_ajax_puzzling_add_task', [$this, 'add_task']);
         add_action('wp_ajax_puzzling_update_task_status', [$this, 'update_task_status']);
-        // **NEW**: Action for deleting a task
         add_action('wp_ajax_puzzling_delete_task', [$this, 'delete_task']);
     }
 
@@ -18,33 +17,39 @@ class PuzzlingCRM_Ajax_Handler {
         $title = sanitize_text_field($_POST['title']);
         $priority_id = intval($_POST['priority']);
         $due_date = sanitize_text_field($_POST['due_date']);
+        
+        // Use assigned_to from POST, fallback to current user if not set (for team members adding for themselves)
+        $assigned_to = isset($_POST['assigned_to']) && current_user_can('assign_tasks') ? intval($_POST['assigned_to']) : get_current_user_id();
 
         $task_id = wp_insert_post([
             'post_title' => $title,
             'post_type' => 'task',
             'post_status' => 'publish',
-            'post_author' => get_current_user_id(),
+            'post_author' => get_current_user_id(), // The user who creates the task
         ]);
 
         if ( is_wp_error($task_id) ) {
             wp_send_json_error(['message' => 'خطا در ایجاد تسک.']);
         }
+        
+        // Assign task to a user via post meta
+        update_post_meta($task_id, '_assigned_to', $assigned_to);
 
         wp_set_post_terms($task_id, [$priority_id], 'task_priority');
-        wp_set_post_terms($task_id, 'to-do', 'task_status');
+        wp_set_post_terms($task_id, 'to-do', 'task_status'); // Default status
 
         if (!empty($due_date)) {
             update_post_meta($task_id, '_due_date', $due_date);
         }
 
-        // **IMPROVEMENT**: Return the HTML for the new task to improve UX
-        ob_start();
+        // Use the global function to render the task item HTML
         $task = get_post($task_id);
-        // We need a globally accessible function to render the task item
-        // Let's assume `puzzling_render_task_item` is available (we will ensure it is)
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/dashboard-team-member.php';
-        puzzling_render_task_item($task);
-        $task_html = ob_get_clean();
+        // Ensure the rendering function is available
+        if (function_exists('puzzling_render_task_item')) {
+            $task_html = puzzling_render_task_item($task);
+        } else {
+            $task_html = '<li>تسک جدید اضافه شد. لطفا صفحه را رفرش کنید.</li>';
+        }
 
         wp_send_json_success(['message' => 'تسک با موفقیت اضافه شد.', 'task_html' => $task_html]);
     }
@@ -61,22 +66,20 @@ class PuzzlingCRM_Ajax_Handler {
 
         $done_term = term_exists('done', 'task_status');
         if ( !$done_term ) {
-            $done_term = wp_insert_term('Done', 'task_status', ['slug' => 'done']);
+            $done_term = wp_insert_term('انجام شده', 'task_status', ['slug' => 'done']);
         }
         $done_term_id = $done_term['term_id'];
 
         if ($is_done) {
             wp_set_post_terms($task_id, [$done_term_id], 'task_status');
         } else {
-            wp_remove_object_terms($task_id, $done_term_id, 'task_status');
+            // Revert to 'to-do' status
+            wp_set_post_terms($task_id, term_exists('to-do', 'task_status')['term_id'], 'task_status');
         }
 
         wp_send_json_success(['message' => 'وضعیت تسک به‌روزرسانی شد.']);
     }
 
-    /**
-     * **NEW**: Handles the deletion of a task.
-     */
     public function delete_task() {
         check_ajax_referer('puzzling_ajax_task_nonce', 'security');
 
@@ -87,9 +90,10 @@ class PuzzlingCRM_Ajax_Handler {
         $task_id = intval($_POST['task_id']);
         $task = get_post($task_id);
 
-        // Ensure the user is deleting their own task
-        if ( !$task || $task->post_author != get_current_user_id() ) {
-            wp_send_json_error(['message' => 'شما فقط می‌توانید تسک‌های خود را حذف کنید.']);
+        // Allow manager to delete any task, or user to delete their own assigned task
+        $assigned_user_id = get_post_meta($task_id, '_assigned_to', true);
+        if ( !$task || ( !current_user_can('manage_options') && $assigned_user_id != get_current_user_id() ) ) {
+            wp_send_json_error(['message' => 'شما اجازه حذف این تسک را ندارید.']);
         }
 
         $result = wp_delete_post($task_id, true); // true = force delete

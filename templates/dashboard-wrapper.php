@@ -1,6 +1,6 @@
 <?php
 /**
- * The main template wrapper for the PuzzlingCRM dashboard.
+ * The main template wrapper for the PuzzlingCRM dashboard - IMPROVED
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,9 +14,7 @@ if ( ! ( $current_user instanceof WP_User ) || $current_user->ID === 0 ) {
 }
 
 $user_roles = (array) $current_user->roles;
-$primary_role = !empty($user_roles) ? $user_roles[0] : '';
 $dashboard_title = 'داشبورد';
-
 $partial_to_load = '';
 
 if ( in_array( 'administrator', $user_roles ) || in_array( 'system_manager', $user_roles ) ) {
@@ -37,7 +35,6 @@ if ( in_array( 'administrator', $user_roles ) || in_array( 'system_manager', $us
 }
 
 $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to_load;
-
 ?>
 <div class="puzzling-dashboard-wrapper">
     <header class="puzzling-dashboard-header">
@@ -51,22 +48,30 @@ $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to_lo
 
     <main class="puzzling-dashboard-content">
         <?php
-        // **NEW**: Persistent notice for new customers
-        if ( in_array('customer', $user_roles) && ! get_user_meta($current_user->ID, 'puzzling_crm_form_submitted', true) ) {
-            // Find the WooCommerce 'thank you' page for the user's last order to show the form again.
-            // This is a simplified check. A more robust check would find the specific order that requires form submission.
-            $thank_you_url = wc_get_endpoint_url( 'order-received', '', get_permalink( wc_get_page_id( 'checkout' ) ) );
-            echo '<div class="pzl-alert pzl-alert-warning"><strong>توجه:</strong> برای شروع پروژه، لطفاً اطلاعات کسب‌وکار خود را تکمیل کنید. <a href="'. esc_url($thank_you_url) .'"><strong>رفتن به فرم تکمیل اطلاعات</strong></a></div>';
-        }
-        
-        if ( isset($_GET['payment_status']) ) {
-            $status = sanitize_key($_GET['payment_status']);
-            if ( $status === 'success' ) {
-                echo '<div class="pzl-alert pzl-alert-success">پرداخت شما با موفقیت انجام شد. سپاسگزاریم!</div>';
-            } elseif ( $status === 'failed' ) {
-                echo '<div class="pzl-alert pzl-alert-error">تراکنش ناموفق بود یا توسط شما لغو شد.</div>';
-            } elseif ( $status === 'failed_verification' ) {
-                echo '<div class="pzl-alert pzl-alert-error">خطا در تایید پرداخت. لطفاً با پشتیبانی تماس بگیرید.</div>';
+        if ( isset($_GET['puzzling_notice']) ) {
+            $notice_type = 'info';
+            $message = '';
+            $notice_key = sanitize_key($_GET['puzzling_notice']);
+            
+            $messages = [
+                'contract_created_success' => ['type' => 'success', 'text' => 'قرارداد جدید با موفقیت ایجاد شد.'],
+                'settings_saved' => ['type' => 'success', 'text' => 'تنظیمات با موفقیت ذخیره شد.'],
+                'payment_success' => ['type' => 'success', 'text' => 'پرداخت شما با موفقیت انجام شد. سپاسگزاریم!'],
+                'payment_cancelled' => ['type' => 'warning', 'text' => 'تراکنش توسط شما لغو شد.'],
+                'payment_failed' => ['type' => 'error', 'text' => 'خطا در اتصال به درگاه پرداخت.'],
+                'payment_failed_verification' => ['type' => 'error', 'text' => 'خطا در تایید پرداخت. لطفاً با پشتیبانی تماس بگیرید.'],
+                'contract_error_data_invalid' => ['type' => 'error', 'text' => 'اطلاعات ارسال شده برای ایجاد قرارداد ناقص یا نامعتبر است.'],
+                'contract_error_project_not_found' => ['type' => 'error', 'text' => 'پروژه انتخاب شده یافت نشد.'],
+                'contract_error_no_installments' => ['type' => 'error', 'text' => 'حداقل یک قسط باید برای قرارداد تعریف شود.'],
+            ];
+
+            if (array_key_exists($notice_key, $messages)) {
+                $notice_type = $messages[$notice_key]['type'];
+                $message = $messages[$notice_key]['text'];
+            }
+            
+            if ($message) {
+                echo '<div class="pzl-alert pzl-alert-' . esc_attr($notice_type) . '">' . esc_html($message) . '</div>';
             }
         }
         
@@ -83,4 +88,5 @@ $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to_lo
 .pzl-alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
 .pzl-alert-error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
 .pzl-alert-warning { color: #856404; background-color: #fff3cd; border-color: #ffeeba; }
+.pzl-alert-info { color: #0c5460; background-color: #d1ecf1; border-color: #bee5eb; }
 </style>

@@ -5,11 +5,10 @@ class PuzzlingCRM_Form_Handler {
         add_action( 'init', [ $this, 'handle_customer_info_form' ] );
         add_action( 'init', [ $this, 'handle_new_contract_form' ] );
         add_action('init', [$this, 'handle_settings_form']);
+        add_action('init', [$this, 'handle_payment_request']);
+        add_action('template_redirect', [$this, 'handle_payment_verification']);
     }
 
-    /**
-     * Handles the submission of the customer info form displayed after a WooCommerce purchase.
-     */
     public function handle_customer_info_form() {
         if ( ! isset( $_POST['puzzling_submit_customer_info'] ) || ! isset( $_POST['puzzling_customer_info_nonce'] ) ) {
             return;
@@ -27,12 +26,10 @@ class PuzzlingCRM_Form_Handler {
         }
 
         $user_id = $order->get_user_id();
-        // Ensure the logged-in user is the one who made the purchase
         if ( ! $user_id || get_current_user_id() !== $user_id ) {
              wp_die('You do not have permission to submit this form for this order.');
         }
         
-        // Prevent duplicate submissions
         if ( get_user_meta( $user_id, 'puzzling_crm_form_submitted', true ) ) {
             return;
         }
@@ -40,7 +37,6 @@ class PuzzlingCRM_Form_Handler {
         $business_name = sanitize_text_field( $_POST['business_name'] );
         $business_desc = sanitize_textarea_field( $_POST['business_desc'] );
 
-        // Create a new project for this customer
         $project_id = wp_insert_post([
             'post_title'    => $business_name,
             'post_content'  => $business_desc,
@@ -50,7 +46,6 @@ class PuzzlingCRM_Form_Handler {
         ]);
         
         if ( $project_id && ! is_wp_error( $project_id ) ) {
-            // Handle logo upload
             if ( ! empty( $_FILES['business_logo']['name'] ) ) {
                 require_once( ABSPATH . 'wp-admin/includes/image.php' );
                 require_once( ABSPATH . 'wp-admin/includes/file.php' );
@@ -63,12 +58,10 @@ class PuzzlingCRM_Form_Handler {
                 }
             }
 
-            // Mark the form as submitted for this user
             update_user_meta( $user_id, 'puzzling_crm_form_submitted', true );
             update_post_meta($project_id, '_order_id', $order_id);
         }
 
-        // Redirect to the dashboard
         $dashboard_page = get_page_by_title('PuzzlingCRM Dashboard');
         if ( $dashboard_page ) {
             wp_redirect( get_permalink( $dashboard_page->ID ) );
@@ -76,9 +69,6 @@ class PuzzlingCRM_Form_Handler {
         }
     }
 
-    /**
-     * Handles the creation of a new contract from the system manager dashboard.
-     */
     public function handle_new_contract_form() {
         if ( ! isset( $_POST['submit_contract'] ) || ! isset( $_POST['_wpnonce'] ) ) {
             return;
@@ -88,7 +78,7 @@ class PuzzlingCRM_Form_Handler {
             wp_die('Security check failed.');
         }
 
-        if ( ! current_user_can( 'manage_options' ) ) { // Or a more specific capability
+        if ( ! current_user_can( 'manage_options' ) ) {
             wp_die('You do not have permission to create contracts.');
         }
 
@@ -97,14 +87,13 @@ class PuzzlingCRM_Form_Handler {
         $payment_due_dates = $_POST['payment_due_date'] ?? [];
 
         if ( empty($project_id) || empty($payment_amounts) || count($payment_amounts) !== count($payment_due_dates) ) {
-            // Handle error: redirect back with an error message
-            wp_redirect( add_query_arg('contract_error', 'data_invalid', wp_get_referer()) );
+            wp_redirect( add_query_arg('puzzling_notice', 'contract_error_data_invalid', wp_get_referer()) );
             exit;
         }
         
         $project = get_post($project_id);
         if(!$project || $project->post_type !== 'project'){
-            wp_redirect( add_query_arg('contract_error', 'project_not_found', wp_get_referer()) );
+            wp_redirect( add_query_arg('puzzling_notice', 'contract_error_project_not_found', wp_get_referer()) );
             exit;
         }
 
@@ -115,38 +104,31 @@ class PuzzlingCRM_Form_Handler {
                     'amount'   => sanitize_text_field($payment_amounts[$i]),
                     'due_date' => sanitize_text_field($payment_due_dates[$i]),
                     'status'   => 'pending',
+                    'ref_id'   => '', // Add ref_id for tracking
                 ];
             }
         }
         
         if(empty($installments)){
-             wp_redirect( add_query_arg('contract_error', 'no_installments', wp_get_referer()) );
+             wp_redirect( add_query_arg('puzzling_notice', 'contract_error_no_installments', wp_get_referer()) );
             exit;
         }
 
-        // Create the contract post
         $contract_id = wp_insert_post([
-            'post_title'  => 'Contract for ' . get_the_title($project_id),
+            'post_title'  => 'قرارداد پروژه: ' . get_the_title($project_id),
             'post_type'   => 'contract',
             'post_status' => 'publish',
-            'post_author' => $project->post_author, // Assign contract to the project's author (the client)
+            'post_author' => $project->post_author,
         ]);
 
         if ( ! is_wp_error($contract_id) ) {
-            // Save the project ID and installments as post meta
             update_post_meta($contract_id, '_project_id', $project_id);
             update_post_meta($contract_id, '_installments', $installments);
-
-            // Redirect back to the dashboard with a success message
-            $redirect_url = add_query_arg('contract_created', 'success', wp_get_referer());
-            wp_redirect($redirect_url);
+            wp_redirect(add_query_arg('puzzling_notice', 'contract_created_success', wp_get_referer()));
             exit;
         }
     }
     
-    /**
-     * Handles saving the plugin settings from the system manager's dashboard.
-     */
     public function handle_settings_form() {
         if ( ! isset($_POST['puzzling_action']) || $_POST['puzzling_action'] !== 'save_settings' ) {
             return;
@@ -169,9 +151,107 @@ class PuzzlingCRM_Form_Handler {
             PuzzlingCRM_Settings_Handler::update_settings($sanitized_settings);
         }
 
-        // Redirect back with a success message
-        $redirect_url = add_query_arg(['view' => 'settings', 'settings_saved' => 'success'], wp_get_referer());
-        wp_redirect($redirect_url);
+        wp_redirect( add_query_arg(['view' => 'settings', 'puzzling_notice' => 'settings_saved'], wp_get_referer()) );
         exit;
+    }
+    
+    public function handle_payment_request() {
+        if ( ! isset($_GET['puzzling_action']) || $_GET['puzzling_action'] !== 'pay_installment' ) {
+            return;
+        }
+
+        if ( ! isset($_GET['contract_id']) || ! isset($_GET['installment_index']) || ! isset($_GET['_wpnonce']) ) {
+            return;
+        }
+
+        if ( ! wp_verify_nonce($_GET['_wpnonce'], 'pay_installment_' . $_GET['contract_id'] . '_' . $_GET['installment_index']) ) {
+            wp_die('لینک پرداخت معتبر نیست.');
+        }
+
+        $contract_id = intval($_GET['contract_id']);
+        $installment_index = intval($_GET['installment_index']);
+
+        $contract = get_post($contract_id);
+        $installments = get_post_meta($contract_id, '_installments', true);
+
+        if ( !$contract || !is_array($installments) || !isset($installments[$installment_index]) ) {
+            wp_die('اطلاعات قسط مورد نظر یافت نشد.');
+        }
+
+        $installment = $installments[$installment_index];
+        $amount = $installment['amount'];
+        
+        $merchant_id = PuzzlingCRM_Settings_Handler::get_setting('zarinpal_merchant_id');
+        if (empty($merchant_id)) {
+            wp_die('درگاه پرداخت پیکربندی نشده است. لطفاً با مدیر سیستم تماس بگیرید.');
+        }
+
+        $zarinpal = new CSM_Zarinpal_Handler($merchant_id);
+        $dashboard_page = get_page_by_title('PuzzlingCRM Dashboard');
+        $callback_url = add_query_arg([
+            'puzzling_action' => 'verify_payment',
+            'contract_id' => $contract_id,
+            'installment_index' => $installment_index
+        ], get_permalink($dashboard_page->ID));
+        
+        $project_id = get_post_meta($contract_id, '_project_id', true);
+        $description = 'پرداخت قسط شماره ' . ($installment_index + 1) . ' برای پروژه ' . get_the_title($project_id);
+
+        $payment_link = $zarinpal->create_payment_link($amount, $description, $callback_url);
+
+        if ($payment_link) {
+            wp_redirect($payment_link);
+            exit;
+        } else {
+            wp_redirect(add_query_arg('puzzling_notice', 'payment_failed', get_permalink($dashboard_page->ID)));
+            exit;
+        }
+    }
+
+    public function handle_payment_verification() {
+        if ( ! isset($_GET['puzzling_action']) || $_GET['puzzling_action'] !== 'verify_payment' ) {
+            return;
+        }
+        
+        $dashboard_page = get_page_by_title('PuzzlingCRM Dashboard');
+        $dashboard_url = get_permalink($dashboard_page->ID);
+
+        if ( ! isset($_GET['contract_id'], $_GET['installment_index'], $_GET['Authority'], $_GET['Status']) ) {
+             wp_redirect(add_query_arg('puzzling_notice', 'payment_failed', $dashboard_url));
+             exit;
+        }
+
+        $contract_id = intval($_GET['contract_id']);
+        $installment_index = intval($_GET['installment_index']);
+        $authority = sanitize_text_field($_GET['Authority']);
+        $status = sanitize_text_field($_GET['Status']);
+
+        if ( $status !== 'OK' ) {
+            wp_redirect(add_query_arg('puzzling_notice', 'payment_cancelled', $dashboard_url));
+            exit;
+        }
+
+        $installments = get_post_meta($contract_id, '_installments', true);
+        if ( ! is_array($installments) || ! isset($installments[$installment_index]) ) {
+             wp_redirect(add_query_arg('puzzling_notice', 'payment_failed', $dashboard_url));
+             exit;
+        }
+        
+        $amount = $installments[$installment_index]['amount'];
+        $merchant_id = PuzzlingCRM_Settings_Handler::get_setting('zarinpal_merchant_id');
+
+        $zarinpal = new CSM_Zarinpal_Handler($merchant_id);
+        $verification = $zarinpal->verify_payment($amount, $authority);
+
+        if ( $verification && $verification['status'] === 'success' ) {
+            $installments[$installment_index]['status'] = 'paid';
+            $installments[$installment_index]['ref_id'] = $verification['ref_id'];
+            update_post_meta($contract_id, '_installments', $installments);
+            wp_redirect(add_query_arg('puzzling_notice', 'payment_success', $dashboard_url));
+            exit;
+        } else {
+            wp_redirect(add_query_arg('puzzling_notice', 'payment_failed_verification', $dashboard_url));
+            exit;
+        }
     }
 }
