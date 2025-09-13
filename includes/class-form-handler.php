@@ -1,105 +1,177 @@
 <?php
-class PuzzlingCRM {
-
-    /**
-     * The single instance of the class.
-     */
-    protected static $_instance = null;
-
-    /**
-     * Main PuzzlingCRM Instance.
-     */
-    public static function instance() {
-        if ( is_null( self::$_instance ) ) {
-            self::$_instance = new self();
-        }
-        return self::$_instance;
-    }
+class PuzzlingCRM_Form_Handler {
 
     public function __construct() {
-        $this->load_dependencies();
-        $this->define_hooks();
+        add_action( 'init', [ $this, 'handle_customer_info_form' ] );
+        add_action( 'init', [ $this, 'handle_new_contract_form' ] );
+        add_action('init', [$this, 'handle_settings_form']);
     }
 
-    private function load_dependencies() {
-        // Core Classes
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-installer.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cpt-manager.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-roles-manager.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-shortcode-manager.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-frontend-dashboard.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-form-handler.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-ajax-handler.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cron-handler.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-settings-handler.php'; // ** ADDED THIS LINE **
-        
-        // Integrations
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-zarinpal-handler.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-melipayamak-handler.php';
-    }
-
-    private function define_hooks() {
-        register_activation_hook( PUZZLINGCRM_PLUGIN_DIR . 'puzzlingcrm.php', [ 'PuzzlingCRM_Installer', 'activate' ] );
-        
-        add_action('wp_enqueue_scripts', [ $this, 'enqueue_styles_scripts' ] );
-        
-        // Add hook for displaying form after purchase
-        add_action( 'woocommerce_thankyou', [ $this, 'display_customer_info_form' ], 10, 1 );
-
-        new PuzzlingCRM_CPT_Manager();
-        new PuzzlingCRM_Roles_Manager();
-        new PuzzlingCRM_Shortcode_Manager();
-        new PuzzlingCRM_Form_Handler();
-        new PuzzlingCRM_Ajax_Handler();
-        new PuzzlingCRM_Cron_Handler();
-    }
-
-    public function enqueue_styles_scripts() {
-        wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
-        
-        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery'], PUZZLINGCRM_VERSION, true );
-        
-        // Pass data to JS, like the AJAX URL and a nonce for security
-        wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [
-            'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce')
-        ]);
-    }
-    
-    public function display_customer_info_form( $order_id ) {
-        if ( ! $order_id ) return;
-        $order = wc_get_order( $order_id );
-        if ( ! $order ) return;
-        $user_id = $order->get_user_id();
-        if ( get_user_meta( $user_id, 'puzzling_crm_form_submitted', true ) ) {
-            echo '<h4>اطلاعات تکمیلی شما قبلاً دریافت شده است. به زودی پروژه شما در داشبورد قابل مشاهده خواهد بود.</h4>';
+    /**
+     * Handles the submission of the customer info form displayed after a WooCommerce purchase.
+     */
+    public function handle_customer_info_form() {
+        if ( ! isset( $_POST['puzzling_submit_customer_info'] ) || ! isset( $_POST['puzzling_customer_info_nonce'] ) ) {
             return;
         }
-        echo '<h2>لطفاً برای شروع پروژه، اطلاعات زیر را تکمیل کنید:</h2>';
-        ?>
-        <form id="puzzling-customer-info-form" action="<?php echo esc_url( get_permalink( get_page_by_title('PuzzlingCRM Dashboard') ) ); ?>" method="post" enctype="multipart/form-data">
-            <input type="hidden" name="puzzling_form_order_id" value="<?php echo esc_attr( $order_id ); ?>">
-            <?php wp_nonce_field( 'puzzling_save_customer_info', 'puzzling_customer_info_nonce' ); ?>
-            <p style="margin-bottom: 15px;">
-                <label for="business_name">نام کسب و کار:</label><br>
-                <input type="text" id="business_name" name="business_name" style="width: 100%; padding: 8px;" required>
-            </p>
-            <p style="margin-bottom: 15px;">
-                <label for="business_desc">توضیح کسب و کار:</label><br>
-                <textarea id="business_desc" name="business_desc" rows="5" style="width: 100%; padding: 8px;" required></textarea>
-            </p>
-            <p style="margin-bottom: 15px;">
-                <label for="business_logo">لوگو (اختیاری):</label><br>
-                <input type="file" id="business_logo" name="business_logo" accept="image/*">
-            </p>
-            <p>
-                <input type="submit" name="puzzling_submit_customer_info" value="ارسال اطلاعات و ورود به داشبورد">
-            </p>
-        </form>
-        <?php
+
+        if ( ! wp_verify_nonce( $_POST['puzzling_customer_info_nonce'], 'puzzling_save_customer_info' ) ) {
+            wp_die('Security check failed.');
+        }
+
+        $order_id = intval( $_POST['puzzling_form_order_id'] );
+        $order = wc_get_order( $order_id );
+
+        if ( ! $order ) {
+            return;
+        }
+
+        $user_id = $order->get_user_id();
+        // Ensure the logged-in user is the one who made the purchase
+        if ( ! $user_id || get_current_user_id() !== $user_id ) {
+             wp_die('You do not have permission to submit this form for this order.');
+        }
+        
+        // Prevent duplicate submissions
+        if ( get_user_meta( $user_id, 'puzzling_crm_form_submitted', true ) ) {
+            return;
+        }
+
+        $business_name = sanitize_text_field( $_POST['business_name'] );
+        $business_desc = sanitize_textarea_field( $_POST['business_desc'] );
+
+        // Create a new project for this customer
+        $project_id = wp_insert_post([
+            'post_title'    => $business_name,
+            'post_content'  => $business_desc,
+            'post_status'   => 'publish',
+            'post_author'   => $user_id,
+            'post_type'     => 'project',
+        ]);
+        
+        if ( $project_id && ! is_wp_error( $project_id ) ) {
+            // Handle logo upload
+            if ( ! empty( $_FILES['business_logo']['name'] ) ) {
+                require_once( ABSPATH . 'wp-admin/includes/image.php' );
+                require_once( ABSPATH . 'wp-admin/includes/file.php' );
+                require_once( ABSPATH . 'wp-admin/includes/media.php' );
+
+                $attachment_id = media_handle_upload( 'business_logo', $project_id );
+
+                if ( ! is_wp_error( $attachment_id ) ) {
+                    set_post_thumbnail( $project_id, $attachment_id );
+                }
+            }
+
+            // Mark the form as submitted for this user
+            update_user_meta( $user_id, 'puzzling_crm_form_submitted', true );
+            update_post_meta($project_id, '_order_id', $order_id);
+        }
+
+        // Redirect to the dashboard
+        $dashboard_page = get_page_by_title('PuzzlingCRM Dashboard');
+        if ( $dashboard_page ) {
+            wp_redirect( get_permalink( $dashboard_page->ID ) );
+            exit;
+        }
     }
 
-    public function run() {
-        // The plugin is running
+    /**
+     * Handles the creation of a new contract from the system manager dashboard.
+     */
+    public function handle_new_contract_form() {
+        if ( ! isset( $_POST['submit_contract'] ) || ! isset( $_POST['_wpnonce'] ) ) {
+            return;
+        }
+
+        if ( ! wp_verify_nonce( $_POST['_wpnonce'], 'puzzling_create_contract' ) ) {
+            wp_die('Security check failed.');
+        }
+
+        if ( ! current_user_can( 'manage_options' ) ) { // Or a more specific capability
+            wp_die('You do not have permission to create contracts.');
+        }
+
+        $project_id = intval($_POST['project_id']);
+        $payment_amounts = $_POST['payment_amount'] ?? [];
+        $payment_due_dates = $_POST['payment_due_date'] ?? [];
+
+        if ( empty($project_id) || empty($payment_amounts) || count($payment_amounts) !== count($payment_due_dates) ) {
+            // Handle error: redirect back with an error message
+            wp_redirect( add_query_arg('contract_error', 'data_invalid', wp_get_referer()) );
+            exit;
+        }
+        
+        $project = get_post($project_id);
+        if(!$project || $project->post_type !== 'project'){
+            wp_redirect( add_query_arg('contract_error', 'project_not_found', wp_get_referer()) );
+            exit;
+        }
+
+        $installments = [];
+        for ($i = 0; $i < count($payment_amounts); $i++) {
+            if ( !empty($payment_amounts[$i]) && !empty($payment_due_dates[$i]) ) {
+                 $installments[] = [
+                    'amount'   => sanitize_text_field($payment_amounts[$i]),
+                    'due_date' => sanitize_text_field($payment_due_dates[$i]),
+                    'status'   => 'pending',
+                ];
+            }
+        }
+        
+        if(empty($installments)){
+             wp_redirect( add_query_arg('contract_error', 'no_installments', wp_get_referer()) );
+            exit;
+        }
+
+        // Create the contract post
+        $contract_id = wp_insert_post([
+            'post_title'  => 'Contract for ' . get_the_title($project_id),
+            'post_type'   => 'contract',
+            'post_status' => 'publish',
+            'post_author' => $project->post_author, // Assign contract to the project's author (the client)
+        ]);
+
+        if ( ! is_wp_error($contract_id) ) {
+            // Save the project ID and installments as post meta
+            update_post_meta($contract_id, '_project_id', $project_id);
+            update_post_meta($contract_id, '_installments', $installments);
+
+            // Redirect back to the dashboard with a success message
+            $redirect_url = add_query_arg('contract_created', 'success', wp_get_referer());
+            wp_redirect($redirect_url);
+            exit;
+        }
+    }
+    
+    /**
+     * Handles saving the plugin settings from the system manager's dashboard.
+     */
+    public function handle_settings_form() {
+        if ( ! isset($_POST['puzzling_action']) || $_POST['puzzling_action'] !== 'save_settings' ) {
+            return;
+        }
+
+        if ( ! isset($_POST['_wpnonce']) || ! wp_verify_nonce($_POST['_wpnonce'], 'puzzling_save_settings') ) {
+            wp_die('Security check failed.');
+        }
+
+        if ( ! current_user_can('manage_options') ) {
+            wp_die('You do not have permission to save settings.');
+        }
+
+        if ( isset($_POST['puzzling_settings']) && is_array($_POST['puzzling_settings']) ) {
+            $settings_data = $_POST['puzzling_settings'];
+            $sanitized_settings = [];
+            foreach ($settings_data as $key => $value) {
+                $sanitized_settings[sanitize_key($key)] = sanitize_text_field($value);
+            }
+            PuzzlingCRM_Settings_Handler::update_settings($sanitized_settings);
+        }
+
+        // Redirect back with a success message
+        $redirect_url = add_query_arg(['view' => 'settings', 'settings_saved' => 'success'], wp_get_referer());
+        wp_redirect($redirect_url);
+        exit;
     }
 }
