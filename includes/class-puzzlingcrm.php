@@ -51,14 +51,13 @@ class PuzzlingCRM {
 
     /**
      * Enqueues scripts and styles.
-     * FINAL FIX: This function now reliably enqueues assets on the frontend
-     * without complex conditions, ensuring styles are always loaded.
+     * FINAL FIX (v2): Explicitly enqueues dashicons to override any theme/plugin that dequeues it.
      */
     public function enqueue_dashboard_assets() {
-        // We enqueue the assets directly without checking for shortcodes first.
-        // The CSS is scoped to a wrapper class, so it won't affect the rest of the site.
-        // This is the most reliable method for compatibility with all themes and plugins.
-        wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
+        // Forcefully load Dashicons on the frontend.
+        wp_enqueue_style( 'dashicons' );
+
+        wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', ['dashicons'], PUZZLINGCRM_VERSION );
         wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery'], PUZZLINGCRM_VERSION, true );
         
         wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [

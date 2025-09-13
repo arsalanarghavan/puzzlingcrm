@@ -1,15 +1,15 @@
 /*
  * PuzzlingCRM Stylesheet
- * Version: 2.1.0 (Poco-Inspired Revamp)
+ * Version: 2.2.0 (Button and Icon Fixes)
  */
 
 /* --- ریشه و متغیرهای اصلی --- */
 :root {
     --pzl-primary-color: #F0192A; /* رنگ قرمز سازمانی */
-    --pzl-secondary-color: #1D1E29; /* رنگ تیره برای متن و مکمل */
+    --pzl-secondary-color: #1D1E29; /* رنگ هاور دکمه‌ها و مکمل */
     --pzl-text-color: #212529;
     --pzl-text-light: #6c757d;
-    --pzl-body-bg: #f8f9fa; /* پس‌زمینه کمی روشن‌تر */
+    --pzl-body-bg: #f8f9fa;
     --pzl-card-bg: #ffffff;
     --pzl-border-color: #dee2e6;
     --pzl-success-color: #28a745;
@@ -17,9 +17,9 @@
     --pzl-danger-color: #dc3545;
     --pzl-info-color: #17a2b8;
     --pzl-font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --pzl-border-radius: 8px; /* گوشه‌های گردتر و مدرن‌تر */
+    --pzl-border-radius: 8px;
     --pzl-box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
-    --pzl-spacing: 25px; /* متغیر برای فاصله‌گذاری ثابت */
+    --pzl-spacing: 25px;
 }
 
 /* --- ساختار کلی و تایپوگرافی --- */
@@ -40,7 +40,6 @@
     gap: 10px;
     font-size: 24px;
 }
-/* اطمینان از نمایش آیکن‌ها */
 .puzzling-dashboard-wrapper h3 .dashicons {
     color: var(--pzl-primary-color);
 }
@@ -50,7 +49,6 @@
     text-decoration: none;
     transition: color 0.3s;
 }
-
 .puzzling-dashboard-wrapper a:hover {
     color: var(--pzl-secondary-color);
 }
@@ -64,7 +62,6 @@
     margin-bottom: var(--pzl-spacing);
     border: 1px solid var(--pzl-border-color);
 }
-
 .pzl-card-header {
     display: flex;
     justify-content: space-between;
@@ -75,15 +72,13 @@
     flex-wrap: wrap;
     gap: 15px;
 }
+.pzl-card-header h3 { margin: 0; }
 
-.pzl-card-header h3 {
-    margin: 0;
-}
-
-/* --- دکمه‌ها --- */
-.pzl-button {
+/* --- دکمه‌ها (اصلاح شده طبق درخواست) --- */
+.pzl-button, input[type="submit"], button {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     padding: 12px 28px;
     border-radius: var(--pzl-border-radius);
@@ -93,30 +88,13 @@
     border: none;
     transition: all 0.3s ease;
     font-size: 14px;
+    font-family: var(--pzl-font-family);
+    background-color: var(--pzl-primary-color) !important;
+    color: #ffffff !important;
 }
-.pzl-button-primary {
-    background: var(--pzl-primary-color);
-    color: #fff;
-}
-.pzl-button-primary:hover {
-    opacity: 0.85;
-    transform: translateY(-2px);
-}
-.pzl-button-secondary, form button[type="submit"].pzl-button-secondary {
-    background-color: var(--pzl-secondary-color);
-    color: #fff;
-}
-.pzl-button-secondary:hover {
-    background-color: #333;
-    transform: translateY(-2px);
-}
-/* دکمه فیلتر و حذف قرمز */
-.pzl-button-danger, form button[type="submit"] {
-    background-color: var(--pzl-danger-color);
-    color: #fff;
-}
-.pzl-button-danger:hover {
-    background-color: #c82333;
+.pzl-button:hover, input[type="submit"]:hover, button:hover {
+    background-color: var(--pzl-secondary-color) !important;
+    color: #ffffff !important;
     transform: translateY(-2px);
 }
 .pzl-button-sm {
@@ -130,21 +108,12 @@
     flex-direction: column;
     gap: 20px;
 }
-.pzl-form-row {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-.form-group {
-    flex: 1 1 100%;
-    margin-bottom: 15px; /* افزایش فاصله */
-}
-.form-group.half-width {
-    flex: 1 1 calc(50% - 10px);
-}
+.pzl-form-row { display: flex; gap: 20px; flex-wrap: wrap; }
+.form-group { flex: 1 1 100%; margin-bottom: 15px; }
+.form-group.half-width { flex: 1 1 calc(50% - 10px); }
 .form-group label {
     display: block;
-    margin-bottom: 10px; /* افزایش فاصله */
+    margin-bottom: 10px;
     font-weight: 600;
     color: var(--pzl-text-color);
     font-size: 14px;
@@ -158,7 +127,7 @@
 .form-group select,
 .form-group textarea {
     width: 100%;
-    padding: 14px 18px; /* پدینگ بیشتر */
+    padding: 14px 18px;
     border-radius: var(--pzl-border-radius);
     border: 1px solid var(--pzl-border-color);
     background-color: #fdfdfd;
@@ -174,26 +143,10 @@
     box-shadow: 0 0 0 3px rgba(240, 25, 42, 0.1);
     outline: none;
 }
-.form-group .description {
-    font-size: 13px;
-    color: var(--pzl-text-light);
-    margin-top: 8px;
-}
-.form-submit {
-    margin-top: 25px;
-    border-top: 1px solid var(--pzl-border-color);
-    padding-top: 25px;
-}
-.ltr-input {
-    direction: ltr;
-    text-align: left;
-}
-/* استایل برای آپلود فایل */
-.form-group input[type="file"] {
-    padding: 10px;
-    border: 1px dashed var(--pzl-border-color);
-    background-color: #fdfdfd;
-}
+.form-group .description { font-size: 13px; color: var(--pzl-text-light); margin-top: 8px; }
+.form-submit { margin-top: 25px; border-top: 1px solid var(--pzl-border-color); padding-top: 25px; }
+.ltr-input { direction: ltr; text-align: left; }
+.form-group input[type="file"] { padding: 10px; border: 1px dashed var(--pzl-border-color); background-color: #fdfdfd; }
 
 /* --- جداول --- */
 .pzl-table {
@@ -205,92 +158,24 @@
     border-radius: var(--pzl-border-radius);
     overflow: hidden;
 }
-.pzl-table th, .pzl-table td {
-    padding: 18px 20px; /* پدینگ بیشتر */
-    border-bottom: 1px solid var(--pzl-border-color);
-    text-align: right;
-    vertical-align: middle;
-}
-.pzl-table thead th {
-    background-color: #f8f9fa;
-    font-weight: 700;
-    color: var(--pzl-secondary-color);
-    border-bottom: 2px solid var(--pzl-border-color);
-}
-.pzl-table tbody tr {
-    transition: background-color 0.2s;
-}
-.pzl-table tbody tr:last-child td {
-    border-bottom: none;
-}
-.pzl-table tbody tr:hover {
-    background-color: #f1f3f5;
-}
-.pzl-table tbody td:first-child {
-    font-weight: 600;
-}
+.pzl-table th, .pzl-table td { padding: 18px 20px; border-bottom: 1px solid var(--pzl-border-color); text-align: right; vertical-align: middle; }
+.pzl-table thead th { background-color: #f8f9fa; font-weight: 700; color: var(--pzl-secondary-color); border-bottom: 2px solid var(--pzl-border-color); }
+.pzl-table tbody tr { transition: background-color 0.2s; }
+.pzl-table tbody tr:last-child td { border-bottom: none; }
+.pzl-table tbody tr:hover { background-color: #f1f3f5; }
+.pzl-table tbody td:first-child { font-weight: 600; }
 
 /* --- تب‌ها --- */
-.pzl-dashboard-tabs {
-    border-bottom: 1px solid var(--pzl-border-color);
-    margin-bottom: var(--pzl-spacing);
-    display: flex;
-    gap: 10px;
-}
-.pzl-tab {
-    padding: 12px 20px;
-    text-decoration: none;
-    color: var(--pzl-text-light);
-    border-bottom: 3px solid transparent;
-    margin-bottom: -1px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-.pzl-tab.active {
-    color: var(--pzl-primary-color);
-    border-bottom-color: var(--pzl-primary-color);
-}
+.pzl-dashboard-tabs { border-bottom: 1px solid var(--pzl-border-color); margin-bottom: var(--pzl-spacing); display: flex; gap: 10px; }
+.pzl-tab { padding: 12px 20px; text-decoration: none; color: var(--pzl-text-light); border-bottom: 3px solid transparent; margin-bottom: -1px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+.pzl-tab.active { color: var(--pzl-primary-color); border-bottom-color: var(--pzl-primary-color); }
 
 /* --- گزارش‌ها و آمار --- */
-.pzl-dashboard-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--pzl-spacing);
-    margin-bottom: var(--pzl-spacing);
-}
-.stat-widget-card {
-    color: #fff;
-    border-radius: var(--pzl-border-radius);
-    padding: var(--pzl-spacing);
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    box-shadow: var(--pzl-box-shadow);
-    transition: transform 0.3s, box-shadow 0.3s;
-    overflow: hidden;
-    position: relative;
-    border: none;
-}
-.stat-widget-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-}
-.stat-widget-icon {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 50%;
-    width: 64px;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.stat-widget-icon .dashicons {
-    font-size: 32px;
-    width: auto;
-    height: auto;
-}
+.pzl-dashboard-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--pzl-spacing); margin-bottom: var(--pzl-spacing); }
+.stat-widget-card { color: #fff; border-radius: var(--pzl-border-radius); padding: var(--pzl-spacing); display: flex; align-items: center; gap: 20px; box-shadow: var(--pzl-box-shadow); transition: transform 0.3s, box-shadow 0.3s; overflow: hidden; position: relative; border: none; }
+.stat-widget-card:hover { transform: translateY(-5px); box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
+.stat-widget-icon { background: rgba(255, 255, 255, 0.15); border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; }
+.stat-widget-icon .dashicons { font-size: 32px; width: auto; height: auto; }
 .stat-widget-content { display: flex; flex-direction: column; }
 .stat-number { font-size: 32px; font-weight: 700; line-height: 1; }
 .stat-title { font-size: 16px; opacity: 0.9; margin-top: 5px; }
@@ -299,51 +184,12 @@
 .gradient-3 { background: linear-gradient(45deg, #fca311, #ffc300); }
 .gradient-4 { background: linear-gradient(45deg, #2a9d8f, #90be6d); }
 
-/* استایل جدید برای بخش گزارش مالی */
-.finance-report-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--pzl-spacing);
-    margin-top: var(--pzl-spacing);
-}
-.report-card {
-    background: var(--pzl-card-bg);
-    padding: var(--pzl-spacing);
-    border-radius: var(--pzl-border-radius);
-    box-shadow: var(--pzl-box-shadow);
-    border: 1px solid var(--pzl-border-color);
-}
-.report-card h4 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 18px;
-    color: var(--pzl-secondary-color);
-}
-.report-card .stat-number {
-    font-size: 36px;
-    font-weight: 700;
-    color: var(--pzl-primary-color);
-    display: block;
-    margin-bottom: 5px;
-}
-.report-card .stat-label {
-    font-size: 14px;
-    color: var(--pzl-text-light);
-}
-
-.pzl-chart-container {
-    display: flex;
-    align-items: flex-end;
-    gap: 15px;
-    border: 1px solid var(--pzl-border-color);
-    padding: var(--pzl-spacing);
-    border-radius: var(--pzl-border-radius);
-    height: 300px;
-    background: #fff;
-}
+.finance-report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--pzl-spacing); margin-top: var(--pzl-spacing); }
+.report-card { background: var(--pzl-card-bg); padding: var(--pzl-spacing); border-radius: var(--pzl-border-radius); box-shadow: var(--pzl-box-shadow); border: 1px solid var(--pzl-border-color); }
+.report-card h4 { margin-top: 0; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-size: 18px; color: var(--pzl-secondary-color); }
+.report-card .stat-number { font-size: 36px; font-weight: 700; color: var(--pzl-primary-color); display: block; margin-bottom: 5px; }
+.report-card .stat-label { font-size: 14px; color: var(--pzl-text-light); }
+.pzl-chart-container { display: flex; align-items: flex-end; gap: 15px; border: 1px solid var(--pzl-border-color); padding: var(--pzl-spacing); border-radius: var(--pzl-border-radius); height: 300px; background: #fff; }
 .chart-bar-wrapper { flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: flex-end; }
 .chart-bar { background-color: var(--pzl-primary-color); width: 80%; max-width: 50px; margin: 0 auto; transition: all 0.3s; opacity: 0.8; border-radius: 4px 4px 0 0; }
 .chart-bar:hover { opacity: 1; transform: scaleY(1.05); }
