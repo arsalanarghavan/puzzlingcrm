@@ -1,6 +1,7 @@
 jQuery(document).ready(function($) {
     // Get nonce from localized script object for all AJAX requests
     var puzzling_ajax_nonce = puzzlingcrm_ajax_obj.nonce;
+    var puzzling_lang = puzzlingcrm_ajax_obj.lang;
 
     // --- Intelligent Installment Calculation ---
     $('#calculate-installments').on('click', function() {
@@ -127,7 +128,8 @@ jQuery(document).ready(function($) {
     $('.task-list').on('click', '.delete-task', function(e) {
         e.preventDefault();
         
-        if ( !confirm('آیا از حذف این تسک مطمئن هستید؟') ) return;
+        // Use the improved confirmation message from localized object
+        if ( !confirm(puzzling_lang.confirm_delete) ) return;
 
         var link = $(this);
         var taskItem = link.closest('.task-item');
@@ -198,7 +200,6 @@ jQuery(document).ready(function($) {
         var notificationItem = $(this);
         var notificationId = notificationItem.data('id');
         
-        // Immediately update UI for better UX
         notificationItem.removeClass('pzl-unread').addClass('pzl-read');
         var countEl = $('.pzl-notification-count');
         var currentCount = parseInt(countEl.text()) - 1;

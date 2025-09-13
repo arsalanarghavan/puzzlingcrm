@@ -3,7 +3,7 @@
  * Plugin Name:       PuzzlingCRM
  * Plugin URI:        https://Puzzlingco.com/
  * Description:       A complete CRM and Project Management solution for Social Marketing agencies.
- * Version:           0.0.3
+ * Version:           0.0.4
  * Author:            Arsalan Arghavan
  * Author URI:        https://ArsalanArghavan.ir/
  * License:           GPL v2 or later
@@ -17,20 +17,22 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 // Define Plugin Constants
-define( 'PUZZLINGCRM_VERSION', '1.0.0' );
+define( 'PUZZLINGCRM_VERSION', '1.0.1' );
 define( 'PUZZLINGCRM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PUZZLINGCRM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 /**
- * Checks if WooCommerce is active. If not, deactivates the CRM plugin.
+ * WooCommerce dependency check is no longer mandatory.
+ * The plugin will now fallback gracefully if WooCommerce is not present.
+ *
+ * function puzzling_check_dependencies() {
+ * if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) ) {
+ * deactivate_plugins( plugin_basename( __FILE__ ) );
+ * wp_die( esc_html__( 'PuzzlingCRM plugin requires WooCommerce to be installed and active. Please install WooCommerce first, then activate this plugin.', 'puzzlingcrm' ) );
+ * }
+ * }
+ * add_action( 'admin_init', 'puzzling_check_dependencies' );
  */
-function puzzling_check_dependencies() {
-    if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) ) {
-        deactivate_plugins( plugin_basename( __FILE__ ) );
-        wp_die( esc_html__( 'PuzzlingCRM plugin requires WooCommerce to be installed and active. Please install WooCommerce first, then activate this plugin.', 'puzzlingcrm' ) );
-    }
-}
-add_action( 'admin_init', 'puzzling_check_dependencies' );
 
 // Load plugin textdomain for translation.
 function puzzling_load_textdomain() {

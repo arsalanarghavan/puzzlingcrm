@@ -9,6 +9,18 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_mark_notification_read', [$this, 'mark_notification_read']);
     }
 
+    private function notify_all_admins($title, $args) {
+        $admins = get_users([
+            'role__in' => ['administrator', 'system_manager'],
+            'fields' => 'ID',
+        ]);
+
+        foreach ($admins as $admin_id) {
+            $notification_args = array_merge($args, ['user_id' => $admin_id]);
+            PuzzlingCRM_Logger::add($title, $notification_args);
+        }
+    }
+
     public function add_task() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
 
@@ -20,7 +32,6 @@ class PuzzlingCRM_Ajax_Handler {
         $priority_id = intval($_POST['priority']);
         $due_date = sanitize_text_field($_POST['due_date']);
         $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
-        // **FIXED: Security vulnerability - Check capability before assigning task**
         $assigned_to = isset($_POST['assigned_to']) && current_user_can('assign_tasks') ? intval($_POST['assigned_to']) : get_current_user_id();
 
         if (empty($project_id)) {
@@ -43,6 +54,8 @@ class PuzzlingCRM_Ajax_Handler {
         $this->send_task_assignment_email($assigned_to, $task_id);
         
         $project_title = get_the_title($project_id);
+        
+        // Notify the assigned user
         PuzzlingCRM_Logger::add('تسک جدید به شما محول شد', ['content' => "تسک '{$title}' در پروژه '{$project_title}' به شما تخصیص داده شد.", 'type' => 'notification', 'user_id' => $assigned_to, 'object_id' => $task_id]);
 
         $task = get_post($task_id);
@@ -85,7 +98,6 @@ class PuzzlingCRM_Ajax_Handler {
             wp_set_post_terms($task_id, $term['term_id'], 'task_status');
         }
 
-        // **NEW: Log this event**
         $status_text = $is_done ? 'انجام شده' : 'انجام نشده';
         PuzzlingCRM_Logger::add('وضعیت تسک به‌روز شد', ['content' => "وضعیت تسک '{$task->post_title}' به {$status_text} تغییر یافت.", 'type' => 'log', 'object_id' => $task_id]);
 
@@ -110,7 +122,6 @@ class PuzzlingCRM_Ajax_Handler {
         $result = wp_delete_post($task_id, true);
 
         if ( $result ) {
-            // **NEW: Log this event**
             PuzzlingCRM_Logger::add('تسک حذف شد', ['content' => "تسک '{$task_title}' توسط " . wp_get_current_user()->display_name . " حذف شد.", 'type' => 'log', 'object_id' => $task_id]);
             wp_send_json_success(['message' => 'تسک با موفقیت حذف شد.']);
         } else {

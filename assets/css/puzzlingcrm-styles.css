@@ -1,6 +1,6 @@
 /*
  * PuzzlingCRM Stylesheet
- * Version: 1.3.0 (Final UI Polish)
+ * Version: 1.3.1 (Final UI Polish & Refinements)
  */
 
 /* --- Variable Definitions --- */
@@ -25,7 +25,7 @@
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 5px 25px rgba(0, 0, 0, 0.07);
-    font-family: 'Vazirmatn', sans-serif;
+    /* Font will be inherited from the theme for consistency */
     color: var(--text-color);
 }
 .pzl-dashboard-section {

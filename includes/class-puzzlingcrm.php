@@ -28,6 +28,7 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-admin-menu.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cpt-manager.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-roles-manager.php';
+        require_once PUZZlingCRM_PLUGIN_DIR . 'includes/class-user-profile.php'; // Added User Profile class
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-shortcode-manager.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-frontend-dashboard.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-form-handler.php';
@@ -36,14 +37,15 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-settings-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-logger.php';
         
-        // Integrations
+        // SMS Interface and Integrations
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-sms-service-interface.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-zarinpal-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-melipayamak-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-parsgreen-handler.php';
     }
 
     private function define_hooks() {
-        // **MODIFIED: Added deactivation hook**
+        // Activation & Deactivation hooks
         register_activation_hook( PUZZLINGCRM_PLUGIN_DIR . 'puzzlingcrm.php', [ 'PuzzlingCRM_Installer', 'activate' ] );
         register_deactivation_hook( PUZZLINGCRM_PLUGIN_DIR . 'puzzlingcrm.php', [ 'PuzzlingCRM_Installer', 'deactivate' ] );
 
@@ -52,6 +54,7 @@ class PuzzlingCRM {
         new PuzzlingCRM_Admin_Menu();
         new PuzzlingCRM_CPT_Manager();
         new PuzzlingCRM_Roles_Manager();
+        new PuzzlingCRM_User_Profile(); // Instantiate User Profile class
         new PuzzlingCRM_Shortcode_Manager();
         new PuzzlingCRM_Form_Handler();
         new PuzzlingCRM_Ajax_Handler();
@@ -62,7 +65,7 @@ class PuzzlingCRM {
      * Conditionally enqueues scripts and styles.
      */
     public function enqueue_dashboard_assets() {
-        // **IMPROVED: Only load assets on the dashboard page**
+        // Only load assets on the dashboard page
         $dashboard_page_id = get_option('puzzling_dashboard_page_id');
         if ( is_page( $dashboard_page_id ) ) {
             wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
@@ -73,7 +76,7 @@ class PuzzlingCRM {
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce'),
                 'lang'     => [
-                    'confirm_delete' => __('Are you sure you want to delete this item?', 'puzzlingcrm'),
+                    'confirm_delete' => __('Are you sure you want to permanently delete this task? This action cannot be undone.', 'puzzlingcrm'),
                 ]
             ]);
         }

@@ -4,8 +4,6 @@
  *
  * This class is the central router for handling all GET and POST requests
  * for the plugin, including form submissions, payment processing, and deletions.
- * It ensures all actions are secure by checking nonces and user capabilities,
- * and sanitizes all incoming data before processing.
  *
  * @package PuzzlingCRM
  */
@@ -18,31 +16,42 @@ class PuzzlingCRM_Form_Handler {
      * Constructor. Hooks the main router and the ticket reply handler.
      */
     public function __construct() {
-        // A single hook to handle all POST and GET actions for the plugin
         add_action( 'init', [ $this, 'router' ] );
-        // A dedicated hook for handling admin-post actions like ticket replies
         add_action( 'admin_post_puzzling_ticket_reply', [ $this, 'handle_ticket_reply_form' ] );
     }
     
     /**
+     * Helper function to send a notification to all system administrators.
+     */
+    private function notify_all_admins($title, $args) {
+        $admins = get_users([
+            'role__in' => ['administrator', 'system_manager'],
+            'fields' => 'ID',
+        ]);
+
+        foreach ($admins as $admin_id) {
+            // Ensure the 'user_id' in args is set to the admin's ID for each notification
+            $notification_args = array_merge($args, ['user_id' => $admin_id]);
+            PuzzlingCRM_Logger::add($title, $notification_args);
+        }
+    }
+
+    /**
      * Main router to direct form submissions and GET actions to the correct handler.
-     * It handles security checks like nonces and user capabilities.
      */
     public function router() {
-        // First, handle GET actions which don't have a POST nonce.
         if (isset($_GET['puzzling_action'])) {
              $action = sanitize_key($_GET['puzzling_action']);
              switch ($action) {
                  case 'pay_installment':
                     $this->handle_payment_request();
-                    return; // Stop execution after handling
+                    return;
                  case 'verify_payment':
                     $this->handle_payment_verification();
-                    return; // Stop execution after handling
+                    return;
              }
         }
 
-        // Proceed to handle POST requests.
         if ( ! isset($_POST['puzzling_action']) || ! isset($_POST['_wpnonce']) ) {
             return;
         }
@@ -50,23 +59,19 @@ class PuzzlingCRM_Form_Handler {
         $action = sanitize_key($_POST['puzzling_action']);
         $item_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
         
-        // Construct the correct nonce action string. Some actions are item-specific.
         $nonce_action = 'puzzling_' . $action;
         if (in_array($action, ['edit_contract', 'delete_subscription', 'delete_appointment', 'delete_project'])) {
              $nonce_action .= '_' . $item_id;
         }
 
-        // 1. Verify nonce for security to prevent CSRF attacks.
         if (!wp_verify_nonce($_POST['_wpnonce'], $nonce_action)) {
             $this->redirect_with_notice('security_failed');
         }
 
-        // 2. Ensure user is logged in for all form submissions.
         if (!is_user_logged_in()) {
             $this->redirect_with_notice('permission_denied');
         }
 
-        // 3. Define and check capabilities for manager-specific actions.
         $manager_actions = [
             'manage_user', 'manage_project', 'delete_project', 'create_contract', 'edit_contract',
             'save_settings', 'manage_subscription_plan', 'assign_subscription',
@@ -80,40 +85,28 @@ class PuzzlingCRM_Form_Handler {
                     $this->$handler_method();
                 }
             } else {
-                // User is logged in but doesn't have the required role.
                 $this->redirect_with_notice('permission_denied');
             }
         } elseif ($action === 'new_ticket') {
-            // 'new_ticket' action is available to any logged-in user, so no capability check is needed here.
             $this->handle_new_ticket_form();
         }
     }
 
-    /**
-     * A centralized redirect function to avoid code repetition and ensure clean URLs.
-     *
-     * @param string $notice_key The key for the notification message.
-     * @param string $base_url   Optional base URL to redirect to. If empty, redirects to the referrer.
-     */
     private function redirect_with_notice($notice_key, $base_url = '') {
         $url = empty($base_url) ? wp_get_referer() : $base_url;
         if (!$url) {
-            $url = puzzling_get_dashboard_url(); // Fallback to the main dashboard
+            $url = puzzling_get_dashboard_url();
         }
-        // Clean up URL from any action parameters to prevent resubmission on refresh.
         $url = remove_query_arg(['puzzling_action', '_wpnonce', 'action', 'user_id', 'plan_id', 'sub_id', 'appt_id', 'project_id', 'contract_id', 'puzzling_notice', 'item_id'], $url);
         wp_redirect( add_query_arg('puzzling_notice', $notice_key, $url) );
         exit;
     }
 
-    /**
-     * Handles creation and updates for users (customers and staff).
-     */
     private function handle_manage_user() {
         $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
         $email = sanitize_email($_POST['email']);
         $display_name = sanitize_text_field($_POST['display_name']);
-        $password = $_POST['password']; // Let wp_insert/update_user handle the hashing
+        $password = $_POST['password'];
         $role = sanitize_key($_POST['role']);
 
         if (!is_email($email) || empty($display_name) || empty($role)) {
@@ -142,17 +135,12 @@ class PuzzlingCRM_Form_Handler {
         }
 
         if (is_wp_error($result)) {
-            // You can log the actual error for debugging: error_log($result->get_error_message());
             $this->redirect_with_notice('user_error_failed');
         } else {
             $this->redirect_with_notice($notice);
         }
     }
 
-    /**
-     * Handles creation and updates for projects.
-     * Includes notification logic for new projects.
-     */
     private function handle_manage_project() {
         $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
         $project_title = sanitize_text_field($_POST['project_title']);
@@ -176,9 +164,8 @@ class PuzzlingCRM_Form_Handler {
             $result = wp_update_post($post_data, true);
             $notice = 'project_updated_success';
         } else {
-            $result = wp_insert_post($post_data, true); // Pass true to get WP_Error on failure
+            $result = wp_insert_post($post_data, true);
             $notice = 'project_created_success';
-            // Send a notification to the customer when a new project is created for them.
             if (!is_wp_error($result)) {
                  PuzzlingCRM_Logger::add(
                     sprintf(__('پروژه جدید "%s" برای شما ثبت شد', 'puzzlingcrm'), $project_title),
@@ -199,15 +186,11 @@ class PuzzlingCRM_Form_Handler {
         }
     }
 
-    /**
-     * Handles project deletion.
-     */
     private function handle_delete_project() {
         $project_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
 
         if ($project_id > 0) {
-            // Future improvement: You might want to delete related contracts or tasks here as well.
-            $result = wp_delete_post($project_id, true); // true = force delete, bypasses trash
+            $result = wp_delete_post($project_id, true);
             if ($result) {
                 $this->redirect_with_notice('project_deleted_success');
             }
@@ -215,9 +198,6 @@ class PuzzlingCRM_Form_Handler {
         $this->redirect_with_notice('project_error_failed');
     }
 
-    /**
-     * Handles the intelligent contract creation form.
-     */
     private function handle_create_contract() {
         $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
         $payment_amounts = isset($_POST['payment_amount']) ? (array) $_POST['payment_amount'] : [];
@@ -265,9 +245,6 @@ class PuzzlingCRM_Form_Handler {
         }
     }
 
-    /**
-     * Handles editing an existing contract.
-     */
     private function handle_edit_contract() {
         $contract_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
         $payment_amounts = isset($_POST['payment_amount']) ? (array) $_POST['payment_amount'] : [];
@@ -287,7 +264,7 @@ class PuzzlingCRM_Form_Handler {
                     'amount'   => sanitize_text_field(str_replace(',', '', $payment_amounts[$i])),
                     'due_date' => sanitize_text_field($payment_due_dates[$i]),
                     'status'   => sanitize_key($payment_statuses[$i] ?? 'pending'),
-                    'ref_id'   => $old_installments[$i]['ref_id'] ?? '' // Preserve old reference ID
+                    'ref_id'   => $old_installments[$i]['ref_id'] ?? ''
                 ];
             }
         }
@@ -302,21 +279,17 @@ class PuzzlingCRM_Form_Handler {
         $this->redirect_with_notice('contract_updated_success');
     }
 
-    /**
-     * Handles saving settings from payment or SMS tabs.
-     */
     private function handle_save_settings() {
         if ( isset($_POST['puzzling_settings']) && is_array($_POST['puzzling_settings']) ) {
             $current_settings = PuzzlingCRM_Settings_Handler::get_all_settings();
             $new_settings = $_POST['puzzling_settings'];
             
-            // Sanitize each setting individually based on its expected type/format.
             $sanitized_settings = [];
             foreach ($new_settings as $key => $value) {
                 $key = sanitize_key($key);
                 if (is_array($value)) {
                      $sanitized_settings[$key] = array_map('sanitize_text_field', $value);
-                } else if (strpos($key, 'msg') !== false) { // Sanitize message templates as textareas
+                } else if (strpos($key, 'msg') !== false) {
                     $sanitized_settings[$key] = sanitize_textarea_field($value);
                 }
                 else {
@@ -330,9 +303,6 @@ class PuzzlingCRM_Form_Handler {
         $this->redirect_with_notice('settings_saved');
     }
 
-    /**
-     * Creates or updates a subscription plan.
-     */
     private function handle_manage_subscription_plan() {
         $plan_name = sanitize_text_field($_POST['plan_name']);
         $price = filter_var($_POST['price'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
@@ -357,9 +327,6 @@ class PuzzlingCRM_Form_Handler {
         $this->redirect_with_notice('plan_saved_success');
     }
 
-    /**
-     * Assigns a subscription plan to a customer.
-     */
     private function handle_assign_subscription() {
         $customer_id = intval($_POST['customer_id']);
         $plan_id = intval($_POST['plan_id']);
@@ -397,9 +364,6 @@ class PuzzlingCRM_Form_Handler {
         }
     }
 
-    /**
-     * Deletes a subscription.
-     */
     private function handle_delete_subscription() {
         $sub_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
         if ($sub_id > 0) {
@@ -409,9 +373,6 @@ class PuzzlingCRM_Form_Handler {
         $this->redirect_with_notice('sub_error_failed');
     }
 
-    /**
-     * Creates or updates an appointment.
-     */
     private function handle_manage_appointment() {
         $customer_id = intval($_POST['customer_id']);
         $title = sanitize_text_field($_POST['title']);
@@ -439,9 +400,6 @@ class PuzzlingCRM_Form_Handler {
         }
     }
 
-    /**
-     * Deletes an appointment.
-     */
     private function handle_delete_appointment() {
         $appt_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
         if ($appt_id > 0) {
@@ -451,9 +409,6 @@ class PuzzlingCRM_Form_Handler {
         $this->redirect_with_notice('appt_error_failed');
     }
     
-    /**
-     * Handles new ticket submission from any logged-in user.
-     */
     private function handle_new_ticket_form() {
         $title = sanitize_text_field( $_POST['ticket_title'] );
         $content = wp_kses_post( $_POST['ticket_content'] );
@@ -472,16 +427,16 @@ class PuzzlingCRM_Form_Handler {
 
         if ( ! is_wp_error( $ticket_id ) ) {
             wp_set_object_terms( $ticket_id, 'open', 'ticket_status' );
-            PuzzlingCRM_Logger::add(__('تیکت پشتیبانی جدید', 'puzzlingcrm'), ['content' => sprintf(__("یک تیکت جدید با موضوع '%s' توسط کاربر %s ارسال شد.", 'puzzlingcrm'), $title, wp_get_current_user()->display_name), 'type' => 'notification', 'user_id' => 1, 'object_id' => $ticket_id]);
+            $this->notify_all_admins(
+                __('تیکت پشتیبانی جدید', 'puzzlingcrm'), 
+                ['content' => sprintf(__("یک تیکت جدید با موضوع '%s' توسط کاربر %s ارسال شد.", 'puzzlingcrm'), $title, wp_get_current_user()->display_name), 'type' => 'notification', 'object_id' => $ticket_id]
+            );
             $this->redirect_with_notice('ticket_created_success');
         } else {
             $this->redirect_with_notice('ticket_error_failed');
         }
     }
 
-    /**
-     * Handles ticket replies from the admin-post hook for better security and structure.
-     */
     public function handle_ticket_reply_form() {
         if ( ! is_user_logged_in() || ! isset( $_POST['_wpnonce_ticket_reply'] ) || ! wp_verify_nonce( $_POST['_wpnonce_ticket_reply'], 'puzzling_ticket_reply_nonce' ) ) {
             wp_die(__('بررسی امنیتی ناموفق بود.', 'puzzlingcrm'));
@@ -497,7 +452,6 @@ class PuzzlingCRM_Form_Handler {
             wp_die(__('تیکت یافت نشد یا متن پاسخ خالی است.', 'puzzlingcrm'));
         }
         
-        // Security: Ensure user has permission to reply.
         if ( !$is_manager && $ticket->post_author != $current_user->ID ) {
             wp_die(__("شما اجازه پاسخ به این تیکت را ندارید.", 'puzzlingcrm'));
         }
@@ -511,16 +465,17 @@ class PuzzlingCRM_Form_Handler {
             'comment_approved' => 1
         ]);
 
-        // Update status and send notifications
         if ( $is_manager ) {
             if (isset($_POST['ticket_status'])) {
                 wp_set_object_terms( $ticket_id, sanitize_key($_POST['ticket_status']), 'ticket_status' );
             }
             PuzzlingCRM_Logger::add(__('پاسخ به تیکت شما', 'puzzlingcrm'), ['content' => sprintf(__("پشتیبانی به تیکت شما با موضوع '%s' پاسخ داد.", 'puzzlingcrm'), $ticket->post_title), 'type' => 'notification', 'user_id' => $ticket->post_author, 'object_id' => $ticket_id]);
         } else {
-            // If customer replies, change status to 'in-progress' and notify admin
             wp_set_object_terms( $ticket_id, 'in-progress', 'ticket_status' );
-            PuzzlingCRM_Logger::add(__('پاسخ مشتری به تیکت', 'puzzlingcrm'), ['content' => sprintf(__("مشتری به تیکت '%s' پاسخ داد.", 'puzzlingcrm'), $ticket->post_title), 'type' => 'notification', 'user_id' => 1, 'object_id' => $ticket_id]);
+            $this->notify_all_admins(
+                __('پاسخ مشتری به تیکت', 'puzzlingcrm'), 
+                ['content' => sprintf(__("مشتری به تیکت '%s' پاسخ داد.", 'puzzlingcrm'), $ticket->post_title), 'type' => 'notification', 'object_id' => $ticket_id]
+            );
         }
         
         $redirect_url = isset($_POST['redirect_to']) ? esc_url_raw($_POST['redirect_to']) : wp_get_referer();
@@ -528,10 +483,6 @@ class PuzzlingCRM_Form_Handler {
         exit;
     }
     
-    /**
-     * Initiates a payment request with the gateway.
-     * Converts Toman amount to Rial for the gateway.
-     */
     private function handle_payment_request() {
         $contract_id = isset($_GET['contract_id']) ? intval($_GET['contract_id']) : 0;
         $installment_index = isset($_GET['installment_index']) ? intval($_GET['installment_index']) : 0;
@@ -552,7 +503,7 @@ class PuzzlingCRM_Form_Handler {
         if (empty($merchant_id)) {
             $this->redirect_with_notice('gateway_not_configured');
         }
-        if ($amount_toman < 100) { // Zarinpal minimum is 100 Tomans
+        if ($amount_toman < 100) {
             $this->redirect_with_notice('invalid_amount');
         }
 
@@ -561,7 +512,6 @@ class PuzzlingCRM_Form_Handler {
         $project_title = get_the_title(get_post_meta($contract_id, '_project_id', true));
         $description = sprintf(__('پرداخت قسط شماره %d پروژه %s', 'puzzlingcrm'), ($installment_index + 1), $project_title);
         
-        // The create_payment_link method in CSM_Zarinpal_Handler handles the conversion to Rials
         $payment_link = $zarinpal->create_payment_link($amount_toman, $description, $callback_url);
 
         if ($payment_link) {
@@ -569,7 +519,6 @@ class PuzzlingCRM_Form_Handler {
                 wp_redirect($payment_link);
                 exit;
             }
-            // Fallback if headers are already sent
             echo "<script>window.location.href = '" . esc_url_raw($payment_link) . "';</script>";
             exit;
         } else {
@@ -577,9 +526,6 @@ class PuzzlingCRM_Form_Handler {
         }
     }
 
-    /**
-     * Verifies the payment after returning from the gateway.
-     */
     private function handle_payment_verification() {
         $dashboard_url = puzzling_get_dashboard_url();
         $contract_id = isset($_GET['contract_id']) ? intval($_GET['contract_id']) : 0;
@@ -604,7 +550,6 @@ class PuzzlingCRM_Form_Handler {
         $merchant_id = PuzzlingCRM_Settings_Handler::get_setting('zarinpal_merchant_id');
         $zarinpal = new CSM_Zarinpal_Handler($merchant_id);
         
-        // The verify_payment method also handles the conversion to Rials
         $verification = $zarinpal->verify_payment($amount_toman, $authority);
 
         if ( $verification && $verification['status'] === 'success' ) {
@@ -612,14 +557,14 @@ class PuzzlingCRM_Form_Handler {
             $installments[$installment_index]['ref_id'] = $verification['ref_id'];
             update_post_meta($contract_id, '_installments', $installments);
             
-            // Logging and Notification
             $contract = get_post($contract_id);
             $project_title = get_the_title(get_post_meta($contract_id, '_project_id', true));
             $customer = get_userdata($contract->post_author);
             
-            // Notify admins/system managers
-            PuzzlingCRM_Logger::add(__('پرداخت موفق قسط', 'puzzlingcrm'), ['content' => sprintf(__("مشتری '%s' یک قسط برای پروژه '%s' پرداخت کرد.", 'puzzlingcrm'), $customer->display_name, $project_title), 'type' => 'notification', 'user_id' => 1, 'object_id' => $contract_id]);
-            // Log for the customer's own records
+            $this->notify_all_admins(
+                __('پرداخت موفق قسط', 'puzzlingcrm'), 
+                ['content' => sprintf(__("مشتری '%s' یک قسط برای پروژه '%s' پرداخت کرد.", 'puzzlingcrm'), $customer->display_name, $project_title), 'type' => 'notification', 'object_id' => $contract_id]
+            );
             PuzzlingCRM_Logger::add(__('قسط با موفقیت پرداخت شد', 'puzzlingcrm'), ['content' => sprintf(__("پرداخت شما برای قسط پروژه '%s' موفقیت آمیز بود. کد رهگیری: %s", 'puzzlingcrm'), $project_title, $verification['ref_id']), 'type' => 'log', 'user_id' => $customer->ID, 'object_id' => $contract_id]);
 
             $this->redirect_with_notice('payment_success', $dashboard_url);

@@ -1,46 +1,45 @@
-// Add this to the __construct method:
-// add_action( 'init', [ $this, 'handle_edit_contract_form' ] );
+<?php
+if ( ! defined( 'ABSPATH' ) ) exit;
+if ( ! current_user_can('manage_options') ) return;
 
-public function handle_edit_contract_form() {
-    if ( ! isset( $_POST['submit_edit_contract'] ) || ! isset( $_POST['_wpnonce'] ) || ! isset( $_POST['contract_id'] ) ) {
-        return;
-    }
+global $puzzling_contract_id; // This global should be set by the template that includes this partial
+$contract_id = $puzzling_contract_id;
 
-    $contract_id = intval($_POST['contract_id']);
-    if ( ! wp_verify_nonce( $_POST['_wpnonce'], 'puzzling_edit_contract_' . $contract_id ) ) {
-        $this->redirect_with_notice('security_failed');
-    }
-
-    if ( ! current_user_can( 'manage_options' ) ) {
-        $this->redirect_with_notice('permission_denied');
-    }
-
-    $payment_amounts = isset($_POST['payment_amount']) ? (array) $_POST['payment_amount'] : [];
-    $payment_due_dates = isset($_POST['payment_due_date']) ? (array) $_POST['payment_due_date'] : [];
-    $payment_statuses = isset($_POST['payment_status']) ? (array) $_POST['payment_status'] : [];
-
-    if ( empty($payment_amounts) || count($payment_amounts) !== count($payment_due_dates) ) {
-        $this->redirect_with_notice('contract_error_data_invalid');
-    }
-
-    $installments = [];
-    for ($i = 0; $i < count($payment_amounts); $i++) {
-        if ( !empty($payment_amounts[$i]) && !empty($payment_due_dates[$i]) ) {
-             $installments[] = [
-                'amount'   => sanitize_text_field($payment_amounts[$i]),
-                'due_date' => sanitize_text_field($payment_due_dates[$i]),
-                'status'   => sanitize_text_field($payment_statuses[$i] ?? 'pending'),
-                'ref_id'   => '', // This should be preserved from the old data
-            ];
-        }
-    }
-    
-    if(empty($installments)){
-         $this->redirect_with_notice('contract_error_no_installments');
-    }
-    
-    update_post_meta($contract_id, '_installments', $installments);
-    
-    wp_redirect(add_query_arg('puzzling_notice', 'contract_updated_success', wp_get_referer()));
-    exit;
+$contract = get_post($contract_id);
+if (!$contract || $contract->post_type !== 'contract') {
+    echo '<p>' . esc_html__('Contract not found.', 'puzzlingcrm') . '</p>';
+    return;
 }
+
+$project_id = get_post_meta($contract_id, '_project_id', true);
+$installments = get_post_meta($contract_id, '_installments', true);
+$back_url = add_query_arg('view', 'contracts', puzzling_get_dashboard_url());
+
+?>
+<div class="pzl-form-container">
+    <a href="<?php echo esc_url($back_url); ?>" class="back-to-list-link">&larr; <?php esc_html_e('Back to Contracts List', 'puzzlingcrm'); ?></a>
+    <h3><?php printf(esc_html__('Editing Contract for Project: %s', 'puzzlingcrm'), get_the_title($project_id)); ?></h3>
+    
+    <form id="edit-contract-form" method="post">
+        <?php wp_nonce_field('puzzling_edit_contract_' . $contract_id, '_wpnonce'); ?>
+        <input type="hidden" name="puzzling_action" value="edit_contract">
+        <input type="hidden" name="item_id" value="<?php echo esc_attr($contract_id); ?>">
+
+        <h4><?php esc_html_e('Installment Plan', 'puzzlingcrm'); ?></h4>
+        <div id="payment-rows-container">
+            <?php if (is_array($installments)): foreach($installments as $index => $inst): ?>
+            <div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <input type="number" name="payment_amount[]" placeholder="<?php esc_attr_e('Amount (Toman)', 'puzzlingcrm'); ?>" style="flex-grow: 1; padding: 8px;" value="<?php echo esc_attr($inst['amount']); ?>" required>
+                <input type="date" name="payment_due_date[]" style="padding: 8px;" value="<?php echo esc_attr($inst['due_date']); ?>" required>
+                <select name="payment_status[]" style="padding: 8px;">
+                    <option value="pending" <?php selected($inst['status'], 'pending'); ?>><?php esc_html_e('Pending', 'puzzlingcrm'); ?></option>
+                    <option value="paid" <?php selected($inst['status'], 'paid'); ?>><?php esc_html_e('Paid', 'puzzlingcrm'); ?></option>
+                </select>
+            </div>
+            <?php endforeach; endif; ?>
+        </div>
+        
+        <hr style="margin: 20px 0;">
+        <button type="submit" name="submit_edit_contract" class="pzl-button pzl-button-primary" style="font-size: 16px;"><?php esc_html_e('Save Changes', 'puzzlingcrm'); ?></button>
+    </form>
+</div>

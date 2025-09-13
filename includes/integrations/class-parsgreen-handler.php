@@ -7,16 +7,13 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-class PuzzlingCRM_ParsGreen_Handler {
+class PuzzlingCRM_ParsGreen_Handler implements PuzzlingCRM_SMS_Service_Interface {
     private $signature;
     private $from;
     private $api_url = 'http://sms.parsgreen.ir/Api/SendSMS.asmx?WSDL';
 
     /**
      * Constructor.
-     *
-     * @param string $signature The API signature from ParsGreen.
-     * @param string $from      The sender number.
      */
     public function __construct( $signature, $from ) {
         $this->signature = $signature;
@@ -24,33 +21,32 @@ class PuzzlingCRM_ParsGreen_Handler {
     }
 
     /**
-     * Sends a simple SMS.
+     * Implements the send_sms method from the interface for simple text sending.
      *
-     * @param string $to      The recipient's mobile number.
+     * @param string $to The recipient's mobile number.
      * @param string $message The text message to send.
+     * @param array $params This parameter is ignored for ParsGreen simple text sending.
      * @return bool True on success, false on failure.
      */
-    public function send_sms( $to, $message ) {
+    public function send_sms( $to, $message, $params = [] ) {
         if ( empty( $this->signature ) || empty( $this->from ) ) {
-            error_log( 'PuzzlingCRM SMS Error: ParsGreen signature or sender number is not configured.' );
+            error_log( 'PuzzlingCRM SMS Error (ParsGreen): Signature or sender number is not configured.' );
             return false;
         }
 
-        // ParsGreen requires UTF-8 encoding
-        $message = mb_convert_encoding($message, "UTF-8");
+        $message_utf8 = mb_convert_encoding($message, "UTF-8");
 
         $parameters = [
             'signature' => $this->signature,
             'from'      => $this->from,
-            'to'        => [ $to ], // API expects an array of mobiles
-            'text'      => $message,
+            'to'        => [ $to ],
+            'text'      => $message_utf8,
             'isFlash'   => false,
             'udh'       => ''
         ];
 
-        // Check if SoapClient is available on the server
         if ( ! class_exists( 'SoapClient' ) ) {
-            error_log( 'PuzzlingCRM SMS Error: SoapClient class is not found. Please enable the PHP SOAP extension on your server.' );
+            error_log( 'PuzzlingCRM SMS Error: SoapClient class is not found. Please enable the PHP SOAP extension.' );
             return false;
         }
 
@@ -58,12 +54,11 @@ class PuzzlingCRM_ParsGreen_Handler {
             $client   = new SoapClient( $this->api_url, ['encoding' => 'UTF-8']);
             $response = $client->SendGroupSmsSimple( $parameters );
 
-            // According to ParsGreen docs, a positive number indicates success (it's the message ID)
             if ( isset($response->SendGroupSmsSimpleResult) && $response->SendGroupSmsSimpleResult > 0 ) {
                 return true;
             }
             
-            error_log( 'PuzzlingCRM SMS Error: ParsGreen API returned an error code: ' . ($response->SendGroupSmsSimpleResult ?? 'UNKNOWN') );
+            error_log( 'PuzzlingCRM SMS Error (ParsGreen): API returned an error code: ' . ($response->SendGroupSmsSimpleResult ?? 'UNKNOWN') );
             return false;
         } catch ( SoapFault $ex ) {
             error_log( 'PuzzlingCRM SMS Error (SoapFault): ' . $ex->faultstring );
