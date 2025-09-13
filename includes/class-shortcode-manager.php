@@ -6,20 +6,22 @@ class PuzzlingCRM_Shortcode_Manager {
     }
 
     public function register_shortcodes() {
-        // Main dashboard wrapper
-        add_shortcode( 'puzzling_dashboard', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_dashboard' ] );
-        
-        // --- System Manager Shortcodes ---
-        add_shortcode( 'puzzling_manage_projects', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_sm_manage_projects' ] ); 
-        add_shortcode( 'puzzling_sm_contracts', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_sm_contracts' ] ); 
-        add_shortcode( 'puzzling_settings_payment', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_settings_payment' ] );
-        add_shortcode( 'puzzling_settings_sms', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_settings_sms' ] );
+        // --- Wrapper & General ---
+        add_shortcode( 'puzzling_dashboard', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_dashboard_wrapper' ] );
 
-        // --- Finance Manager Shortcodes ---
-        add_shortcode( 'puzzling_fm_dashboard', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_fm_dashboard' ] );
+        // --- System Manager & Admin Shortcodes ---
+        add_shortcode( 'puzzling_customers', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_customers' ] );
+        add_shortcode( 'puzzling_staff', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_staff' ] );
+        add_shortcode( 'puzzling_projects', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_projects' ] );
+        add_shortcode( 'puzzling_contracts', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_contracts' ] );
+        add_shortcode( 'puzzling_tasks', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_tasks' ] );
+        add_shortcode( 'puzzling_subscriptions', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_subscriptions' ] );
+        add_shortcode( 'puzzling_appointments', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_appointments' ] );
+        add_shortcode( 'puzzling_reports', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_reports' ] );
+        add_shortcode( 'puzzling_settings', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_settings' ] );
 
         // --- Team Member Shortcodes ---
-        add_shortcode( 'puzzling_tm_tasks', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_tm_tasks' ] );
+        add_shortcode( 'puzzling_team_tasks', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_team_tasks' ] );
 
         // --- Client Shortcodes ---
         add_shortcode( 'puzzling_client_dashboard', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_client_dashboard' ] );

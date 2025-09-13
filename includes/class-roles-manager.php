@@ -2,7 +2,8 @@
 class PuzzlingCRM_Roles_Manager {
 
     public function __construct() {
-        add_action( 'admin_init', [ $this, 'block_dashboard_access' ] );
+        // This hook runs earlier and is more reliable for blocking
+        add_action( 'init', [ $this, 'block_dashboard_access' ] );
     }
 
     public function add_custom_roles() {
@@ -12,35 +13,24 @@ class PuzzlingCRM_Roles_Manager {
         remove_role('team_member');
 
         // Finance Manager
-        add_role( 'finance_manager', 'مدیر مالی', [
-            'read' => true,
-            'edit_posts' => false,
-            'view_puzzling_dashboard' => true,
-        ] );
+        add_role( 'finance_manager', 'مدیر مالی', ['read' => true] );
 
-        // System Manager
+        // System Manager (Can do almost everything)
         add_role( 'system_manager', 'مدیر سیستم', [
             'read' => true,
             'edit_posts' => true,
             'publish_posts' => true,
             'delete_posts' => true,
-            'manage_options' => true, // To access settings
+            'manage_options' => true, // Needed for many core functions
             'edit_tasks' => true,
             'delete_tasks' => true,
             'assign_tasks' => true,
-            'view_puzzling_dashboard' => true,
         ] );
 
-        // Team Member: Added specific capabilities for tasks
+        // Team Member
         add_role( 'team_member', 'عضو تیم', [
             'read' => true,
-            'edit_posts' => false,
             'edit_tasks' => true,
-            'publish_tasks' => true,
-            'edit_published_tasks' => true,
-            'delete_tasks' => true,
-            'delete_published_tasks' => true,
-            'view_puzzling_dashboard' => true,
         ] );
     }
 
@@ -49,17 +39,24 @@ class PuzzlingCRM_Roles_Manager {
             return;
         }
 
-        $user = wp_get_current_user();
-        $roles_to_block = ['finance_manager', 'system_manager', 'team_member', 'customer'];
+        // Redirect any user with these roles if they try to access wp-admin
+        if ( is_admin() ) {
+            $user = wp_get_current_user();
+            $roles_to_block = ['finance_manager', 'system_manager', 'team_member', 'customer'];
+            $user_roles = (array) $user->roles;
 
-        $user_roles = (array) $user->roles;
+            // Check if the user has any of the blocked roles
+            $has_blocked_role = !empty( array_intersect( $roles_to_block, $user_roles ) );
 
-        if ( ! empty( array_intersect( $roles_to_block, $user_roles ) ) ) {
-            if ( is_admin() && ! current_user_can('manage_options') ) {
+            // The ONLY exception is for the main administrator (super admin)
+            $is_super_admin = in_array('administrator', $user_roles);
+
+            if ( $has_blocked_role && !$is_super_admin ) {
                 $dashboard_page = get_page_by_title('PuzzlingCRM Dashboard');
                 if ($dashboard_page) {
                     wp_redirect( get_permalink($dashboard_page->ID) );
                 } else {
+                    // Fallback to home URL if dashboard page doesn't exist
                     wp_redirect( home_url() );
                 }
                 exit;
