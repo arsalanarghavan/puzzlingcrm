@@ -210,3 +210,28 @@
 .chart-bar { background-color: var(--pzl-primary-color); width: 80%; max-width: 50px; margin: 0 auto; transition: all 0.3s; opacity: 0.8; border-radius: 4px 4px 0 0; }
 .chart-bar:hover { opacity: 1; transform: scaleY(1.05); }
 .chart-label { font-size: 12px; margin-top: 8px; color: #555; }
+
+/* --- کادر هشدار برای حالت خالی --- */
+.pzl-empty-state {
+    background-color: #fff3f3;
+    border: 1px solid #fde2e2;
+    border-radius: var(--pzl-border-radius);
+    padding: 30px;
+    text-align: center;
+    margin-top: 20px;
+}
+.pzl-empty-state .fas {
+    font-size: 48px;
+    color: var(--pzl-danger-color);
+    margin-bottom: 15px;
+}
+.pzl-empty-state h4 {
+    font-size: 20px;
+    color: var(--pzl-secondary-color);
+    margin: 0 0 10px;
+}
+.pzl-empty-state p {
+    font-size: 15px;
+    color: var(--pzl-text-light);
+    margin: 0;
+}

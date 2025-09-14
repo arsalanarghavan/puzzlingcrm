@@ -12,18 +12,22 @@ $contracts = get_posts([
 ]);
 ?>
 <div class="pzl-dashboard-section">
-    <h3><span class="dashicons dashicons-media-text"></span> <?php esc_html_e('Your Contracts', 'puzzlingcrm'); ?></h3>
+    <h3><i class="fas fa-file-signature"></i> قراردادهای شما</h3>
 
     <?php if (empty($contracts)): ?>
-        <p><?php esc_html_e('You do not have any contracts yet.', 'puzzlingcrm'); ?></p>
+        <div class="pzl-empty-state">
+            <i class="fas fa-exclamation-circle"></i>
+            <h4>قراردادی یافت نشد</h4>
+            <p>شما در حال حاضر هیچ قرارداد فعالی ندارید.</p>
+        </div>
     <?php else: ?>
         <table class="pzl-table">
             <thead>
                 <tr>
-                    <th><?php esc_html_e('Contract For Project', 'puzzlingcrm'); ?></th>
-                    <th><?php esc_html_e('Total Amount', 'puzzlingcrm'); ?></th>
-                    <th><?php esc_html_e('Paid Amount', 'puzzlingcrm'); ?></th>
-                    <th><?php esc_html_e('Status', 'puzzlingcrm'); ?></th>
+                    <th>قرارداد برای پروژه</th>
+                    <th>مبلغ کل (تومان)</th>
+                    <th>مبلغ پرداخت شده (تومان)</th>
+                    <th>وضعیت</th>
                 </tr>
             </thead>
             <tbody>
@@ -49,7 +53,7 @@ $contracts = get_posts([
                     <td><?php echo esc_html(number_format($paid_amount)); ?></td>
                     <td>
                         <span class="pzl-status <?php echo $is_paid ? 'status-paid' : 'status-pending'; ?>">
-                            <?php echo $is_paid ? esc_html__('Paid in Full', 'puzzlingcrm') : esc_html__('In Progress', 'puzzlingcrm'); ?>
+                            <?php echo $is_paid ? 'تکمیل پرداخت' : 'در حال پرداخت'; ?>
                         </span>
                     </td>
                 </tr>

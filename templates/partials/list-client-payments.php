@@ -18,11 +18,30 @@ $contracts = get_posts([
     'posts_per_page' => -1,
 ]);
 
+$all_installments = [];
+if ($contracts) {
+    foreach ($contracts as $contract) {
+        $installments = get_post_meta($contract->ID, '_installments', true);
+        if (is_array($installments)) {
+            $project_title = get_the_title(get_post_meta($contract->ID, '_project_id', true));
+            foreach ($installments as $index => $installment) {
+                $installment['project_title'] = $project_title;
+                $installment['contract_id'] = $contract->ID;
+                $installment['installment_index'] = $index;
+                $all_installments[] = $installment;
+            }
+        }
+    }
+}
 ?>
 <div class="pzl-dashboard-section">
-    <h3><i class="fas fa-money-bill-wave" style="vertical-align: middle;"></i> وضعیت پرداخت‌ها و اقساط</h3>
-    <?php if (empty($contracts)) : ?>
-        <p>هیچ برنامه پرداختی برای شما ثبت نشده است.</p>
+    <h3><i class="fas fa-money-bill-wave"></i> وضعیت پرداخت‌ها و اقساط</h3>
+    <?php if (empty($all_installments)) : ?>
+        <div class="pzl-empty-state">
+            <i class="fas fa-exclamation-circle"></i>
+            <h4>برنامه پرداختی یافت نشد</h4>
+            <p>در حال حاضر هیچ برنامه پرداخت یا قسطی برای شما ثبت نشده است.</p>
+        </div>
     <?php else : ?>
     <table class="pzl-table">
         <thead>
@@ -36,52 +55,35 @@ $contracts = get_posts([
         </thead>
         <tbody>
             <?php
-            foreach ($contracts as $contract) {
-                $project_id = get_post_meta($contract->ID, '_project_id', true);
-                $project_title = get_the_title($project_id);
-                $installments = get_post_meta($contract->ID, '_installments', true);
+            foreach ($all_installments as $installment) {
+                $status = $installment['status'] ?? 'pending';
+                $status_text = ($status === 'paid') ? 'پرداخت شده' : 'در انتظار پرداخت';
+                $status_class = ($status === 'paid') ? 'status-paid' : 'status-pending';
+                
+                echo '<tr>';
+                echo '<td>' . esc_html($installment['project_title']) . '</td>';
+                echo '<td>' . esc_html(number_format($installment['amount'])) . '</td>';
+                echo '<td>' . esc_html(date_i18n('Y/m/d', strtotime($installment['due_date']))) . '</td>';
+                echo '<td><span class="pzl-status ' . esc_attr($status_class) . '">' . $status_text . '</span></td>';
+                echo '<td>';
+                if ($status === 'pending') {
+                    $nonce = wp_create_nonce('pay_installment_' . $installment['contract_id'] . '_' . $installment['installment_index']);
+                    $payment_url = add_query_arg([
+                        'puzzling_action' => 'pay_installment',
+                        'contract_id' => $installment['contract_id'],
+                        'installment_index' => $installment['installment_index'],
+                        '_wpnonce' => $nonce,
+                    ], get_permalink());
 
-                if (is_array($installments)) {
-                    foreach ($installments as $index => $installment) {
-                        $status = $installment['status'] ?? 'pending';
-                        $status_text = ($status === 'paid') ? 'پرداخت شده' : 'در انتظار پرداخت';
-                        $status_class = ($status === 'paid') ? 'status-paid' : 'status-pending';
-                        
-                        echo '<tr>';
-                        echo '<td>' . esc_html($project_title) . '</td>';
-                        echo '<td>' . esc_html(number_format($installment['amount'])) . '</td>';
-                        echo '<td>' . esc_html(date_i18n('Y/m/d', strtotime($installment['due_date']))) . '</td>';
-                        echo '<td><span class="pzl-status ' . esc_attr($status_class) . '">' . $status_text . '</span></td>';
-                        echo '<td>';
-                        if ($status === 'pending') {
-                            $nonce = wp_create_nonce('pay_installment_' . $contract->ID . '_' . $index);
-                            $payment_url = add_query_arg([
-                                'puzzling_action' => 'pay_installment',
-                                'contract_id' => $contract->ID,
-                                'installment_index' => $index,
-                                '_wpnonce' => $nonce,
-                            ], get_permalink());
-
-                            echo '<a href="' . esc_url($payment_url) . '" class="pzl-button">پرداخت آنلاین</a>';
-                        } else {
-                            echo '<span>—</span>';
-                        }
-                        echo '</td>';
-                        echo '</tr>';
-                    }
+                    echo '<a href="' . esc_url($payment_url) . '" class="pzl-button">پرداخت آنلاین</a>';
+                } else {
+                    echo '<span>—</span>';
                 }
+                echo '</td>';
+                echo '</tr>';
             }
             ?>
         </tbody>
     </table>
     <?php endif; ?>
 </div>
-<style>
-/* Styles for the table and status */
-.pzl-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-.pzl-table th, .pzl-table td { padding: 12px 15px; border: 1px solid #e0e0e0; text-align: right; vertical-align: middle; }
-.pzl-table th { background-color: #f9f9f9; font-weight: bold; }
-.pzl-status { display: inline-block; padding: 5px 10px; border-radius: 15px; font-size: 12px; color: #fff; min-width: 90px; text-align: center; }
-.status-paid { background-color: var(--pzl-success-color, #28a745); }
-.status-pending { background-color: var(--pzl-warning-color, #ffc107); color: #333; }
-</style>

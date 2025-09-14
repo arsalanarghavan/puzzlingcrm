@@ -1,6 +1,6 @@
 <?php
 /**
- * Client Dashboard Template (Redesigned with Tabs - Final Version)
+ * Client Dashboard Template (Redesigned without Tabs)
  *
  * @package PuzzlingCRM
  */
@@ -8,41 +8,91 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-$active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'overview';
+$current_view = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
 $base_url = puzzling_get_dashboard_url();
+
+// A map of views to their corresponding template files and titles
+$dashboard_pages = [
+    'overview'      => ['file' => 'client-overview.php', 'title' => 'نمای کلی', 'icon' => 'fa-tachometer-alt'],
+    'projects'      => ['file' => 'list-projects.php', 'title' => 'پروژه‌ها', 'icon' => 'fa-briefcase'],
+    'contracts'     => ['file' => 'page-client-contracts.php', 'title' => 'قراردادها', 'icon' => 'fa-file-signature'],
+    'invoices'      => ['file' => 'list-client-payments.php', 'title' => 'فاکتورها و پرداخت‌ها', 'icon' => 'fa-file-invoice-dollar'],
+    'pro_invoices'  => ['file' => 'page-client-pro-invoices.php', 'title' => 'پیش‌فاکتورها', 'icon' => 'fa-file-invoice'],
+    'appointments'  => ['file' => 'page-client-appointments.php', 'title' => 'قرار ملاقات', 'icon' => 'fa-calendar-check'],
+    'tickets'       => ['file' => 'list-tickets.php', 'title' => 'تیکت‌های پشتیبانی', 'icon' => 'fa-life-ring'],
+];
+
+$template_to_load = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . ($dashboard_pages[$current_view]['file'] ?? 'client-overview.php');
+
 ?>
-<div class="pzl-dashboard-tabs">
-    <a href="<?php echo esc_url(remove_query_arg('tab', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"><i class="fas fa-tachometer-alt"></i> <?php esc_html_e('Overview', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('tab', 'appointments', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'appointments' ? 'active' : ''; ?>"><i class="fas fa-calendar-check"></i> <?php esc_html_e('Schedule Appointment', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('tab', 'projects', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'projects' ? 'active' : ''; ?>"><i class="fas fa-briefcase"></i> <?php esc_html_e('Projects', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('tab', 'contracts', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'contracts' ? 'active' : ''; ?>"><i class="fas fa-file-signature"></i> <?php esc_html_e('Contracts', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('tab', 'invoices', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'invoices' ? 'active' : ''; ?>"><i class="fas fa-file-invoice"></i> <?php esc_html_e('Invoices', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('tab', 'pro_invoices', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'pro_invoices' ? 'active' : ''; ?>"><i class="fas fa-file-invoice-dollar"></i> <?php esc_html_e('Pro-forma Invoices', 'puzzlingcrm'); ?></a>
-    <a href="<?php echo esc_url(add_query_arg('tab', 'tickets', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'tickets' ? 'active' : ''; ?>"><i class="fas fa-life-ring"></i> <?php esc_html_e('Support Tickets', 'puzzlingcrm'); ?></a>
-</div>
+<div class="pzl-dashboard-content-wrapper">
+    <?php if ($current_view !== 'overview'): ?>
+        <a href="<?php echo esc_url($base_url); ?>" class="pzl-button back-to-dashboard-btn">&larr; بازگشت به داشبورد</a>
+    <?php endif; ?>
 
-<div class="pzl-dashboard-tab-content">
-<?php
-    // FIX: Switched to a more robust way of handling views to prevent logic errors.
-    $view_map = [
-        'appointments' => 'page-client-appointments.php',
-        'projects'     => 'list-projects.php',
-        'contracts'    => 'page-client-contracts.php',
-        'invoices'     => 'list-client-payments.php', // Corrected this line
-        'pro_invoices' => 'page-client-pro-invoices.php',
-        'tickets'      => 'list-tickets.php',
-        'overview'     => 'client-overview.php', // A placeholder for the default view
-    ];
-
-    $template_file = $view_map[$active_tab] ?? 'client-overview.php';
-    $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $template_file;
-
-    if (file_exists($template_path) && $active_tab !== 'overview') {
-        include $template_path;
+    <?php
+    // If a specific view is requested, load its template
+    if (isset($dashboard_pages[$current_view]) && file_exists($template_to_load)) {
+        include $template_to_load;
     } else {
-        // Default overview content
-        echo '<h3>' . sprintf(esc_html__('Welcome, %s!', 'puzzlingcrm'), wp_get_current_user()->display_name) . '</h3>';
-        echo '<p>' . esc_html__('This is your dashboard. You can use the tabs above to navigate through different sections.', 'puzzlingcrm') . '</p>';
+        // Otherwise, show the main dashboard grid
+    ?>
+        <h3><i class="fas fa-th-large"></i> داشبورد شما</h3>
+        <p>از طریق بخش‌های زیر می‌توانید به امکانات مختلف پنل خود دسترسی داشته باشید.</p>
+        <div class="pzl-dashboard-grid-nav">
+            <?php foreach ($dashboard_pages as $slug => $page):
+                if ($slug === 'overview') continue; // Don't show overview as a card
+                $page_url = add_query_arg('view', $slug, $base_url);
+            ?>
+                <a href="<?php echo esc_url($page_url); ?>" class="pzl-dashboard-nav-card">
+                    <i class="fas <?php echo esc_attr($page['icon']); ?>"></i>
+                    <span><?php echo esc_html($page['title']); ?></span>
+                </a>
+            <?php endforeach; ?>
+        </div>
+        <hr style="margin: 30px 0;">
+        <?php
+        // Also include the overview stats on the main dashboard page
+        include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/client-overview.php';
     }
-?>
+    ?>
 </div>
+
+<style>
+/* Add these styles to your main CSS file (puzzlingcrm-styles.css) */
+.pzl-dashboard-grid-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 25px;
+}
+.pzl-dashboard-nav-card {
+    background-color: var(--pzl-card-bg);
+    border: 1px solid var(--pzl-border-color);
+    border-radius: var(--pzl-border-radius);
+    padding: 25px;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: var(--pzl-box-shadow);
+}
+.pzl-dashboard-nav-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    border-color: var(--pzl-primary-color);
+}
+.pzl-dashboard-nav-card i {
+    font-size: 36px;
+    color: var(--pzl-primary-color);
+    margin-bottom: 15px;
+    display: block;
+}
+.pzl-dashboard-nav-card span {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--pzl-secondary-color);
+}
+.back-to-dashboard-btn {
+    margin-bottom: 25px;
+}
+</style>

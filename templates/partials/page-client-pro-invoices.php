@@ -12,17 +12,21 @@ $invoices = get_posts([
 ]);
 ?>
 <div class="pzl-dashboard-section">
-    <h3><span class="dashicons dashicons-text-page"></span> <?php esc_html_e('Your Pro-forma Invoices', 'puzzlingcrm'); ?></h3>
+    <h3><i class="fas fa-file-invoice"></i> پیش‌فاکتورهای شما</h3>
 
     <?php if (empty($invoices)): ?>
-        <p><?php esc_html_e('No pro-forma invoices found.', 'puzzlingcrm'); ?></p>
+        <div class="pzl-empty-state">
+            <i class="fas fa-exclamation-circle"></i>
+            <h4>موردی یافت نشد</h4>
+            <p>در حال حاضر هیچ پیش‌فاکتوری برای شما ثبت نشده است.</p>
+        </div>
     <?php else: ?>
         <table class="pzl-table">
             <thead>
                 <tr>
-                    <th><?php esc_html_e('Invoice Title', 'puzzlingcrm'); ?></th>
-                    <th><?php esc_html_e('Date Created', 'puzzlingcrm'); ?></th>
-                    <th><?php esc_html_e('Details', 'puzzlingcrm'); ?></th>
+                    <th>عنوان پیش‌فاکتور</th>
+                    <th>تاریخ ایجاد</th>
+                    <th>جزئیات</th>
                 </tr>
             </thead>
             <tbody>
@@ -30,7 +34,7 @@ $invoices = get_posts([
                 <tr>
                     <td><strong><?php echo esc_html($invoice->post_title); ?></strong></td>
                     <td><?php echo esc_html(get_the_date('Y/m/d', $invoice)); ?></td>
-                    <td><?php echo wp_kses_post(apply_filters('the_content', $invoice->post_content)); ?></td>
+                    <td><div class="pzl-invoice-content"><?php echo wp_kses_post(apply_filters('the_content', $invoice->post_content)); ?></div></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>

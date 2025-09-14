@@ -15,10 +15,9 @@ if ($current_user->ID === 0) {
     return;
 }
 
-// WP_Query arguments
 $args = [
     'post_type' => 'project',
-    'author' => $current_user->ID, // Only get projects for the logged-in user
+    'author' => $current_user->ID,
     'posts_per_page' => -1,
     'post_status' => 'publish',
 ];
@@ -30,10 +29,13 @@ $projects_query = new WP_Query($args);
     <h3><i class="fas fa-briefcase"></i> لیست پروژه‌های شما</h3>
     
     <?php if ($projects_query->have_posts()) : ?>
-        <ul>
+        <ul class="pzl-project-cards-list">
             <?php while ($projects_query->have_posts()) : $projects_query->the_post(); ?>
-                <li>
-                    <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                <li class="pzl-project-card">
+                    <a href="<?php the_permalink(); ?>">
+                        <i class="fas fa-folder-open"></i>
+                        <h4 class="project-title"><?php the_title(); ?></h4>
+                    </a>
                     <div class="project-excerpt">
                         <?php the_excerpt(); ?>
                     </div>
@@ -42,11 +44,10 @@ $projects_query = new WP_Query($args);
         </ul>
         <?php wp_reset_postdata(); ?>
     <?php else : ?>
-        <p>در حال حاضر هیچ پروژه‌ای برای شما تعریف نشده است.</p>
+        <div class="pzl-empty-state">
+            <i class="fas fa-exclamation-circle"></i>
+            <h4>پروژه‌ای یافت نشد</h4>
+            <p>بعد از تعریف پروژه توسط تیم پازلینگ، در این بخش برای شما نمایش داده خواهد شد.</p>
+        </div>
     <?php endif; ?>
 </div>
-<style>
-.puzzling-projects-list ul { list-style: none; padding: 0; }
-.puzzling-projects-list li { background: #f9f9f9; border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 4px; }
-.puzzling-projects-list li a { font-weight: bold; text-decoration: none; color: var(--pzl-secondary-color, #1D1E29); }
-</style>
