@@ -37,16 +37,19 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
         $due_date_class = '';
         if ($due_date) {
             $due_timestamp = strtotime($due_date);
-            $today_timestamp = strtotime('today');
-            $days_diff = ($due_timestamp - $today_timestamp) / (60 * 60 * 24);
-            
-            if ($days_diff < 0) {
-                $due_date_class = 'pzl-due-overdue';
-            } elseif ($days_diff < 2) { // Today or tomorrow
-                $due_date_class = 'pzl-due-near';
-            }
+            // --- FIX: Check if strtotime returns a valid timestamp before using it ---
+            if ($due_timestamp) {
+                $today_timestamp = strtotime('today');
+                $days_diff = ($due_timestamp - $today_timestamp) / (60 * 60 * 24);
+                
+                if ($days_diff < 0) {
+                    $due_date_class = 'pzl-due-overdue';
+                } elseif ($days_diff < 2) { // Today or tomorrow
+                    $due_date_class = 'pzl-due-near';
+                }
 
-             $due_date_html = '<span class="pzl-card-due-date ' . $due_date_class . '"><i class="far fa-calendar-alt"></i> ' . esc_html(date_i18n('M j', $due_timestamp)) . '</span>';
+                 $due_date_html = '<span class="pzl-card-due-date ' . $due_date_class . '"><i class="far fa-calendar-alt"></i> ' . esc_html(date_i18n('M j', $due_timestamp)) . '</span>';
+            }
         }
 
         // Sub-tasks count

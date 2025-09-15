@@ -1,21 +1,42 @@
 <?php
+/**
+ * PuzzlingCRM Roles and Capabilities Manager
+ *
+ * This class handles the creation and assignment of custom roles and capabilities.
+ *
+ * @package PuzzlingCRM
+ */
+
 class PuzzlingCRM_Roles_Manager {
 
     public function __construct() {
-        // This hook runs earlier and is more reliable for blocking
         add_action( 'init', [ $this, 'block_dashboard_access' ] );
     }
 
+    /**
+     * Adds custom roles and capabilities.
+     * **FIXED**: Now correctly adds custom capabilities to the 'administrator' role.
+     */
     public function add_custom_roles() {
-        // Remove existing roles to ensure capabilities are updated
+        // Remove existing roles to ensure capabilities are updated correctly on reactivation
         $this->remove_custom_roles();
+
+        // --- Add Custom Capabilities to Administrator ---
+        $admin_role = get_role('administrator');
+        if ($admin_role) {
+            $admin_role->add_cap('edit_tasks');
+            $admin_role->add_cap('delete_tasks');
+            $admin_role->add_cap('assign_tasks');
+        }
+        
+        // --- Define Custom Roles ---
 
         // Finance Manager
         add_role( 'finance_manager', 'مدیر مالی', [
             'read' => true,
-            'edit_posts' => true, // <-- دسترسی ویرایش قراردادها و سایر پست‌ها
-            'publish_posts' => true, // <-- دسترسی انتشار
-            'delete_posts' => true, // <-- دسترسی حذف
+            'edit_posts' => true,
+            'publish_posts' => true,
+            'delete_posts' => true,
         ] );
 
         // System Manager (Can do almost everything)
@@ -38,38 +59,45 @@ class PuzzlingCRM_Roles_Manager {
     }
 
     /**
-     * Removes the custom roles.
+     * Removes the custom roles and capabilities.
      * This is called on deactivation.
      */
     public function remove_custom_roles() {
+        // Remove capabilities from the administrator role
+        $admin_role = get_role('administrator');
+        if ($admin_role) {
+            $admin_role->remove_cap('edit_tasks');
+            $admin_role->remove_cap('delete_tasks');
+            $admin_role->remove_cap('assign_tasks');
+        }
+
+        // Remove the custom roles
         remove_role('finance_manager');
         remove_role('system_manager');
         remove_role('team_member');
     }
 
+    /**
+     * Blocks direct access to the WordPress admin area for custom roles.
+     */
     public function block_dashboard_access() {
         if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
             return;
         }
 
-        // Redirect any user with these roles if they try to access wp-admin
         if ( is_admin() ) {
             $user = wp_get_current_user();
             $roles_to_block = ['finance_manager', 'system_manager', 'team_member', 'customer'];
             $user_roles = (array) $user->roles;
 
-            // Check if the user has any of the blocked roles
             $has_blocked_role = !empty( array_intersect( $roles_to_block, $user_roles ) );
-
-            // The ONLY exception is for the main administrator (super admin)
             $is_super_admin = in_array('administrator', $user_roles);
 
             if ( $has_blocked_role && !$is_super_admin ) {
-                $dashboard_page_id = get_option('puzzling_dashboard_page_id');
-                if ($dashboard_page_id) {
-                    wp_redirect( get_permalink($dashboard_page_id) );
+                $dashboard_url = puzzling_get_dashboard_url();
+                if ($dashboard_url) {
+                    wp_redirect( $dashboard_url );
                 } else {
-                    // Fallback to home URL if dashboard page doesn't exist
                     wp_redirect( home_url() );
                 }
                 exit;

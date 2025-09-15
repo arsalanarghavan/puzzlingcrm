@@ -159,7 +159,8 @@ $tasks_per_page = 15;
             } else {
                 while($active_tasks_query->have_posts()) {
                     $active_tasks_query->the_post();
-                    echo puzzling_render_task_item(get_post());
+                    // **FIXED: Changed puzzling_render_task_item to puzzling_render_task_card**
+                    echo puzzling_render_task_card(get_post());
                 }
             }
             ?>
@@ -194,7 +195,8 @@ $tasks_per_page = 15;
             if (empty($done_tasks)) {
                 echo '<li class="no-tasks-message">' . esc_html__('You have not completed any tasks yet.', 'puzzlingcrm') . '</li>';
             } else {
-                foreach ($done_tasks as $task) { echo puzzling_render_task_item($task); }
+                // **FIXED: Changed puzzling_render_task_item to puzzling_render_task_card**
+                foreach ($done_tasks as $task) { echo puzzling_render_task_card($task); }
             }
             ?>
         </ul>

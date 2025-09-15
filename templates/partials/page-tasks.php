@@ -1,17 +1,27 @@
 <?php
 /**
- * Main Task Management Page Template - V3 (Fully Upgraded)
+ * Main Task Management Page Template - V3.1 (Corrected)
  * This template includes multiple views (Board, List, Calendar, Gantt, etc.)
  * and advanced features like bulk editing and swimlanes.
  * @package PuzzlingCRM
  */
 
 if (!defined('ABSPATH')) exit;
-if (!current_user_can('edit_tasks')) return;
+if (!current_user_can('edit_tasks')) {
+    echo '<p>شما دسترسی لازم برای مشاهده این بخش را ندارید.</p>';
+    return;
+}
 
-// Get active tab and view options
+// --- Get active tab and view options ---
 $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'board'; // Default to board view
 $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'none'; // For swimlanes
+
+// --- Pre-fetch data for filters and forms to avoid errors ---
+$staff_roles = ['system_manager', 'finance_manager', 'team_member', 'administrator'];
+$all_staff = get_users(['role__in' => $staff_roles, 'orderby' => 'display_name']);
+$all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC']);
+$all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
+$priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
 
 ?>
 <div class="pzl-dashboard-section" id="pzl-task-manager-page">
@@ -30,12 +40,8 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
     <?php if ($active_tab === 'new'): ?>
         <div class="pzl-card">
             <?php
-            // Fetch data for the form
-            $staff_roles = ['system_manager', 'finance_manager', 'team_member', 'administrator'];
-            $all_staff = get_users(['role__in' => $staff_roles]);
-            $all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish']);
-            $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
-            $all_tasks = get_posts(['post_type' => 'task', 'numberposts' => -1, 'orderby' => 'title', 'order' => 'ASC']);
+            // Additional data needed only for this form
+            $all_tasks_for_parent = get_posts(['post_type' => 'task', 'numberposts' => -1, 'orderby' => 'title', 'order' => 'ASC']);
             $task_templates = get_posts(['post_type' => 'pzl_task_template', 'numberposts' => -1]);
             ?>
             <div class="pzl-card-header">
@@ -71,7 +77,7 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
                         <label for="parent_id">وظیفه والد (برای ایجاد وظیفه فرعی)</label>
                         <select name="parent_id">
                             <option value="0">-- این یک وظیفه اصلی است --</option>
-                            <?php foreach ($all_tasks as $task) { echo '<option value="' . esc_attr($task->ID) . '">' . esc_html($task->post_title) . '</option>'; } ?>
+                            <?php foreach ($all_tasks_for_parent as $task) { echo '<option value="' . esc_attr($task->ID) . '">' . esc_html($task->post_title) . '</option>'; } ?>
                         </select>
                     </div>
                     <div class="form-group">
@@ -126,14 +132,7 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
             <div class="pzl-card-header">
                 <h3><i class="fas fa-list-ul"></i> لیست پیشرفته وظایف</h3>
             </div>
-            <?php
-            // Data for filters
-            $staff_roles = ['system_manager', 'finance_manager', 'team_member', 'administrator'];
-            $all_staff = get_users(['role__in' => $staff_roles]);
-            $all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1]);
-            $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false]);
-            $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
-            ?>
+            
             <div id="bulk-edit-container" class="pzl-card" style="display:none; margin-bottom: 20px; background: #f0f3f6;">
                 <h4>ویرایش دسته‌جمعی</h4>
                 <div class="pzl-form-row" style="align-items: flex-end;">
@@ -225,8 +224,7 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
             <div id="workflow-status-manager">
                 <ul id="status-sortable-list">
                     <?php
-                    $statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
-                    foreach ($statuses as $status) {
+                    foreach ($all_statuses as $status) { // Use the pre-fetched variable
                         echo '<li data-term-id="' . esc_attr($status->term_id) . '"><i class="fas fa-grip-vertical"></i> ' . esc_html($status->name) . ' <span class="delete-status-btn" data-term-id="' . esc_attr($status->term_id) . '">&times;</span></li>';
                     }
                     ?>
@@ -259,7 +257,7 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
             </div>
             
             <?php
-            $statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
+            $statuses = $all_statuses; // Use the pre-fetched variable
             
             if ($swimlane_by === 'none') {
                 echo '<div id="pzl-task-board">';
@@ -276,9 +274,9 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
                 echo '</div>';
             } else {
                 $groups = [];
-                if ($swimlane_by === 'assignee') $groups = get_users(['role__in' => ['system_manager', 'team_member', 'administrator', 'finance_manager']]);
-                elseif ($swimlane_by === 'project') $groups = get_posts(['post_type' => 'project', 'numberposts' => -1]);
-                elseif ($swimlane_by === 'priority') $groups = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
+                if ($swimlane_by === 'assignee') $groups = $all_staff;
+                elseif ($swimlane_by === 'project') $groups = $all_projects;
+                elseif ($swimlane_by === 'priority') $groups = $priorities;
 
                 foreach ($groups as $group) {
                     $group_id = ($swimlane_by === 'assignee' || $swimlane_by === 'project') ? $group->ID : $group->term_id;

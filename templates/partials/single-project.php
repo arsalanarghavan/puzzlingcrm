@@ -64,7 +64,8 @@ $dashboard_url = get_permalink(get_page_by_title('PuzzlingCRM Dashboard'));
             echo '<p>هیچ تسکی برای این پروژه ثبت نشده است.</p>';
         } else {
             foreach ($project_tasks as $task) {
-                echo puzzling_render_task_item($task);
+                // **FIXED: Changed puzzling_render_task_item to puzzling_render_task_card**
+                echo puzzling_render_task_card($task);
             }
         }
         ?>
