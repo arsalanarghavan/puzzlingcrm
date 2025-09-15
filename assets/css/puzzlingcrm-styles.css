@@ -619,3 +619,72 @@
     overflow-x: auto;
     padding-bottom: 10px;
 }
+
+/* --- Project Card Grid View --- */
+.pzl-projects-grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--pzl-spacing);
+    margin-top: 20px;
+}
+
+.pzl-project-card-item {
+    background-color: var(--pzl-card-bg);
+    border-radius: var(--pzl-border-radius);
+    box-shadow: var(--pzl-box-shadow);
+    border: 1px solid var(--pzl-border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.pzl-project-card-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.pzl-project-card-logo {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.pzl-project-card-logo img {
+    max-width: 60px;
+    height: auto;
+    border-radius: 50%;
+}
+
+.pzl-project-card-logo .fas {
+    font-size: 48px;
+    color: var(--pzl-primary-color);
+}
+
+.pzl-project-card-details {
+    text-align: center;
+    flex-grow: 1;
+}
+
+.pzl-project-card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--pzl-secondary-color);
+    margin: 0 0 10px;
+}
+
+.pzl-project-card-meta {
+    font-size: 13px;
+    color: var(--pzl-text-light);
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.pzl-project-card-actions {
+    margin-top: auto;
+    text-align: center;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}

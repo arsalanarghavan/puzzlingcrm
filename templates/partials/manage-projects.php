@@ -1,6 +1,6 @@
 <?php
 /**
- * Template for System Manager to Manage Projects (with Search, Filter, Edit, Delete)
+ * Template for System Manager to Manage Projects (with Search, Filter, Edit, Delete) - Card View
  * @package PuzzlingCRM
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -95,7 +95,7 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
             $paged = get_query_var('paged') ? get_query_var('paged') : 1;
             $args = [
                 'post_type' => 'project',
-                'posts_per_page' => 15,
+                'posts_per_page' => 12, // تعداد آیتم‌ها برای نمایش کارتی
                 'paged' => $paged,
             ];
             if (!empty($_GET['s'])) {
@@ -107,45 +107,61 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
             $projects_query = new WP_Query($args);
 
             if ($projects_query->have_posts()): ?>
-                <table class="pzl-table" id="projects-table">
-                    <thead>
-                        <tr>
-                            <th>عنوان پروژه</th>
-                            <th>مشتری</th>
-                            <th>تاریخ ایجاد</th>
-                            <th>قرارداد</th>
-                            <th>عملیات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php while($projects_query->have_posts()): $projects_query->the_post(); 
-                            $project_id = get_the_ID();
-                            $customer = get_userdata(get_the_author_meta('ID'));
-                            $edit_url = add_query_arg(['action' => 'edit', 'project_id' => $project_id]);
-                            $contract = get_posts(['post_type' => 'contract', 'meta_key' => '_project_id', 'meta_value' => $project_id, 'posts_per_page' => 1]);
-                            $contract_status = !empty($contract) ? '<span class="pzl-status status-paid">دارد</span>' : '<span class="pzl-status status-pending">ندارد</span>';
-                        ?>
-                        <tr>
-                            <td><strong><?php the_title(); ?></strong></td>
-                            <td><?php echo esc_html($customer->display_name); ?></td>
-                            <td><?php echo get_the_date('Y/m/d'); ?></td>
-                            <td><?php echo $contract_status; ?></td>
-                            <td>
-                                <a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-sm">ویرایش</a>
-                                <a href="#" class="delete-project pzl-button pzl-button-sm" 
+                <div class="pzl-projects-grid-view">
+                    <?php while($projects_query->have_posts()): $projects_query->the_post(); 
+                        $project_id = get_the_ID();
+                        $customer = get_userdata(get_the_author_meta('ID'));
+                        $edit_url = add_query_arg(['action' => 'edit', 'project_id' => $project_id]);
+                        $contract = get_posts(['post_type' => 'contract', 'meta_key' => '_project_id', 'meta_value' => $project_id, 'posts_per_page' => 1]);
+                        $contract_id = !empty($contract) ? $contract[0]->ID : 0;
+                        $contract_url = $contract_id ? add_query_arg(['view' => 'contracts', 'action' => 'edit', 'contract_id' => $contract_id], puzzling_get_dashboard_url()) : '#';
+                        
+                        // نکته: برای دسته‌بندی باید یک فیلد سفارشی به پروژه‌ها اضافه کنید
+                        $project_category = get_post_meta($project_id, '_project_category', true) ?: 'سرویس'; 
+                    ?>
+                    <div class="pzl-project-card-item">
+                        <div class="pzl-project-card-logo">
+                            <?php if (has_post_thumbnail()) : ?>
+                                <?php the_post_thumbnail('thumbnail'); ?>
+                            <?php else: ?>
+                                <i class="fas fa-folder-open"></i>
+                            <?php endif; ?>
+                        </div>
+                        <div class="pzl-project-card-details">
+                            <h4 class="pzl-project-card-title"><?php the_title(); ?></h4>
+                            <div class="pzl-project-card-meta">
+                                <span class="pzl-project-card-category"><?php echo esc_html($project_category); ?></span>
+                                <span class="pzl-project-card-date">تاریخ قرارداد: <?php echo $contract_id ? get_the_date('Y/m/d', $contract_id) : '---'; ?></span>
+                            </div>
+                        </div>
+                        <div class="pzl-project-card-actions">
+                            <a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-sm">ویرایش</a>
+                            <?php if ($contract_id): ?>
+                                <a href="<?php echo esc_url($contract_url); ?>" class="pzl-button pzl-button-sm">نمایش قرارداد</a>
+                            <?php endif; ?>
+                             <a href="#" class="delete-project pzl-button pzl-button-sm" 
                                data-project-id="<?php echo esc_attr($project_id); ?>" 
                                data-nonce="<?php echo esc_attr(wp_create_nonce('puzzling_delete_project_' . $project_id)); ?>">حذف</a>
-                            </td>
-                        </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-                <?php 
-                echo paginate_links(['total' => $projects_query->max_num_pages, 'current' => $paged]);
-                wp_reset_postdata(); 
-                ?>
+                        </div>
+                    </div>
+                    <?php endwhile; ?>
+                </div>
+                <div class="pagination">
+                    <?php 
+                    echo paginate_links([
+                        'total' => $projects_query->max_num_pages, 
+                        'current' => $paged,
+                        'format' => '?paged=%#%',
+                    ]);
+                    ?>
+                </div>
+                <?php wp_reset_postdata(); ?>
             <?php else: ?>
-                <p>هیچ پروژه‌ای با این مشخصات یافت نشد.</p>
+                 <div class="pzl-empty-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h4>پروژه‌ای یافت نشد</h4>
+                    <p>هیچ پروژه‌ای با این مشخصات یافت نشد. می‌توانید یک پروژه جدید ایجاد کنید.</p>
+                </div>
             <?php endif; ?>
         </div>
     <?php endif; ?>
