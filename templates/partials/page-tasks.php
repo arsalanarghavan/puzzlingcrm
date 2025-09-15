@@ -24,7 +24,7 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
             // Fetch data for the form
             $staff_roles = ['system_manager', 'finance_manager', 'team_member', 'administrator'];
             $all_staff = get_users(['role__in' => $staff_roles]);
-            $all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1]);
+            $all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish']);
             $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
             $all_tasks = get_posts(['post_type' => 'task', 'numberposts' => -1, 'orderby' => 'title', 'order' => 'ASC']);
             ?>
@@ -81,9 +81,15 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
                         <input type="date" name="due_date">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="task_labels">برچسب‌ها</label>
-                    <input type="text" name="task_labels" placeholder="برچسب‌ها را با کاما (,) جدا کنید">
+                <div class="pzl-form-row">
+                    <div class="form-group half-width">
+                        <label for="task_labels">برچسب‌ها</label>
+                        <input type="text" name="task_labels" placeholder="برچسب‌ها را با کاما (,) جدا کنید">
+                    </div>
+                    <div class="form-group half-width">
+                        <label for="task_cover_image">کاور وظیفه (اختیاری)</label>
+                        <input type="file" name="task_cover_image" accept="image/*">
+                    </div>
                 </div>
                  <div class="form-group">
                     <label for="task_attachments">پیوست فایل‌ها</label>
@@ -95,13 +101,12 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
             </form>
         </div>
     <?php elseif($active_tab === 'list'): ?>
-        <div class="pzl-card">
+         <div class="pzl-card">
             <div class="pzl-card-header">
                 <h3><i class="fas fa-list-ul"></i> لیست پیشرفته وظایف (در حال توسعه)</h3>
             </div>
             <p>این نما به یک جدول قابل مرتب‌سازی و فیلتر با قابلیت ویرایش درون‌خطی تبدیل خواهد شد.</p>
             <?php
-            // Current list view code can be a placeholder
             $paged = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
             $project_filter = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0;
             $staff_filter = isset($_GET['staff_id']) ? intval($_GET['staff_id']) : 0;
@@ -120,7 +125,7 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
             if (!empty($status_filter)) { $args['tax_query'][] = ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status_filter]; }
             $tasks_query = new WP_Query($args);
             ?>
-             <table class="pzl-table" style="margin-top: 20px;">
+            <table class="pzl-table" style="margin-top: 20px;">
                 <thead><tr><th>عنوان وظیفه</th><th>پروژه</th><th>تخصیص به</th><th>وضعیت</th><th>ددلاین</th></tr></thead>
                 <tbody>
                     <?php if ($tasks_query->have_posts()): while($tasks_query->have_posts()): $tasks_query->the_post();
@@ -140,22 +145,23 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
                     <?php endif; wp_reset_postdata(); ?>
                 </tbody>
             </table>
+            <div class="pagination">
+                <?php echo paginate_links(['total' => $tasks_query->max_num_pages, 'current' => $paged]); ?>
+            </div>
         </div>
     <?php elseif($active_tab === 'calendar'): ?>
         <div class="pzl-card">
             <div class="pzl-card-header">
-                <h3><i class="fas fa-calendar-alt"></i> نمای تقویم (در حال توسعه)</h3>
+                <h3><i class="fas fa-calendar-alt"></i> نمای تقویم</h3>
             </div>
-            <p>یک تقویم کامل در اینجا با استفاده از کتابخانه FullCalendar.js برای نمایش وظایف بر اساس ددلاین نمایش داده خواهد شد.</p>
             <div id="pzl-task-calendar"></div>
         </div>
     <?php elseif($active_tab === 'timeline'): ?>
         <div class="pzl-card">
             <div class="pzl-card-header">
-                <h3><i class="fas fa-stream"></i> نمای تایم‌لاین / گانت (در حال توسعه)</h3>
+                <h3><i class="fas fa-stream"></i> نمای تایم‌لاین / گانت</h3>
             </div>
-            <p>یک گانت چارت در اینجا برای نمایش وابستگی‌ها و زمان‌بندی وظایف در طول زمان پیاده‌سازی خواهد شد.</p>
-             <div id="pzl-task-gantt"></div>
+             <div id="pzl-task-gantt" style='width:100%; height:600px;'></div>
         </div>
     <?php elseif ($active_tab === 'workflow'): ?>
         <div class="pzl-card">
@@ -178,6 +184,7 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
                 </form>
             </div>
         </div>
+
     <?php else: // Board View (Default) with Swimlanes ?>
         <div class="pzl-task-board-container">
             <div class="pzl-tasks-filters pzl-card" style="margin-bottom: 20px; padding: 20px;">
@@ -217,7 +224,7 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
                         echo puzzling_render_task_card($task);
                     }
                     echo '</div>'; // end pzl-task-list
-                    echo '<div class="add-card-controls"><button class="add-card-btn"><i class="fas fa-plus"></i> افزودن کارت</button><div class="add-card-form" style="display: none;"><textarea placeholder="عنوان کارت..."></textarea><div class="add-card-actions"><button class="pzl-button pzl-button-sm submit-add-card">افزودن</button><button class="cancel-add-card" type="button">&times;</button></div></div></div>';
+                    echo '<div class="add-card-controls"><button class="add-card-btn"><i class="fas fa-plus"></i> افزودن کارت</button><div class="add-card-form" style="display: none;"><textarea placeholder="عنوان کارت..."></textarea><div class="add-card-actions"><button class="pzl-button pzl-button-sm submit-add-card">افزودن</button><button type="button" class="cancel-add-card">&times;</button></div></div></div>';
                     echo '</div>'; // end pzl-task-column
                 }
                 echo '</div>'; // end pzl-task-board

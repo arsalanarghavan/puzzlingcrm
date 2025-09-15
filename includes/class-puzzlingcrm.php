@@ -51,7 +51,7 @@ class PuzzlingCRM {
 
     /**
      * Enqueues scripts and styles.
-     * FINAL FIX (v3): Replaced Dashicons with Font Awesome for reliability.
+     * FINAL FIX (v4): Added FullCalendar and DHTMLX Gantt for advanced views.
      */
     public function enqueue_dashboard_assets() {
         // Enqueue Font Awesome from a reliable CDN
@@ -59,18 +59,42 @@ class PuzzlingCRM {
         
         wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
         
-        // Enqueue jQuery UI Sortable for the task board
+        // Enqueue jQuery UI Sortable & Datepicker
         wp_enqueue_script('jquery-ui-sortable');
+        wp_enqueue_script('jquery-ui-datepicker');
 
-        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable'], PUZZLINGCRM_VERSION, true );
+        // **NEW: Enqueue FullCalendar assets**
+        wp_enqueue_script('fullcalendar', 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js', ['jquery'], '6.1.11', true);
+
+        // **NEW: Enqueue DHTMLX Gantt assets**
+        wp_enqueue_script('dhtmlx-gantt', 'https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js', [], '8.0', true);
+        wp_enqueue_style('dhtmlx-gantt', 'https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css', [], '8.0');
+
+
+        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable', 'jquery-ui-datepicker', 'fullcalendar', 'dhtmlx-gantt'], PUZZLINGCRM_VERSION, true );
         
+        // Fetch users and labels for quick edit functionality
+        $all_users = get_users(['role__in' => ['team_member', 'system_manager', 'administrator']]);
+        $users_for_js = [];
+        foreach($all_users as $user) {
+            $users_for_js[] = ['id' => $user->ID, 'text' => $user->display_name];
+        }
+
+        $all_labels = get_terms(['taxonomy' => 'task_label', 'hide_empty' => false]);
+        $labels_for_js = [];
+        foreach($all_labels as $label) {
+            $labels_for_js[] = ['id' => $label->term_id, 'text' => $label->name];
+        }
+
         wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce'),
             'lang'     => [
                 'confirm_delete_task' => __('آیا از حذف این وظیفه مطمئن هستید؟ این عمل قابل بازگشت نیست.', 'puzzlingcrm'),
                 'confirm_delete_project' => __('آیا از حذف این پروژه مطمئن هستید؟ تمام قراردادها و اطلاعات مرتبط با آن نیز حذف خواهند شد. این عمل قابل بازگشت نیست.', 'puzzlingcrm'),
-            ]
+            ],
+            'users' => $users_for_js,
+            'labels' => $labels_for_js,
         ]);
     }
     

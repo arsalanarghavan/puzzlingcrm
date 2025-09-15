@@ -30,6 +30,9 @@ class PuzzlingCRM_Ajax_Handler {
 
         // **NEW: AJAX handler for Quick Edit**
         add_action('wp_ajax_puzzling_quick_edit_task', [$this, 'quick_edit_task']);
+
+        // **NEW: AJAX handler for Calendar/Gantt data**
+        add_action('wp_ajax_get_tasks_for_views', [$this, 'get_tasks_for_views']);
     }
     
     /**
@@ -121,6 +124,14 @@ class PuzzlingCRM_Ajax_Handler {
         }
         
         $this->_log_task_activity($task_id, sprintf('وظیفه را ایجاد کرد.'));
+
+        // **NEW: Handle Cover Image Upload**
+        if ( isset($_FILES['task_cover_image']) && $_FILES['task_cover_image']['error'] == 0 ) {
+            $attachment_id = media_handle_upload('task_cover_image', $task_id);
+            if (!is_wp_error($attachment_id)) {
+                set_post_thumbnail($task_id, $attachment_id);
+            }
+        }
 
         // Handle file attachments
         if ( ! empty($_FILES['task_attachments']) ) {
@@ -234,18 +245,18 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
         }
 
-        // **NEW: WORKFLOW RULES (Simple Example)**
-        // In a real implementation, this would read from a settings page.
-        $workflow_rules = [
-            'done' => ['system_manager'] // Only system_manager can move tasks to "Done"
-        ];
+        // **NEW: Advanced Workflow Rules**
+        $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+        $rules = $settings['workflow_rules'] ?? [];
         
         $task_id = intval($_POST['task_id']);
         $new_status_slug = sanitize_key($_POST['new_status_slug']);
         $user = wp_get_current_user();
-        
-        if (array_key_exists($new_status_slug, $workflow_rules)) {
-            $allowed_roles = $workflow_rules[$new_status_slug];
+
+        // Check if there are any rules for the destination status
+        if (isset($rules[$new_status_slug]) && !empty($rules[$new_status_slug])) {
+            $allowed_roles = $rules[$new_status_slug];
+            // If the user doesn't have any of the allowed roles, deny access
             if (empty(array_intersect($allowed_roles, $user->roles))) {
                 wp_send_json_error(['message' => 'شما اجازه انتقال وظیفه به این وضعیت را ندارید.']);
                 return;
@@ -635,20 +646,102 @@ class PuzzlingCRM_Ajax_Handler {
         
         $task_id = intval($_POST['task_id']);
         $field = sanitize_key($_POST['field']);
-        $value = sanitize_text_field($_POST['value']);
+        $value = $_POST['value']; // Sanitize based on field type
 
         switch ($field) {
             case 'title':
-                wp_update_post(['ID' => $task_id, 'post_title' => $value]);
-                $this->_log_task_activity($task_id, sprintf('عنوان وظیفه را به "%s" تغییر داد.', $value));
+                wp_update_post(['ID' => $task_id, 'post_title' => sanitize_text_field($value)]);
+                $this->_log_task_activity($task_id, sprintf('عنوان وظیفه را به "%s" تغییر داد.', sanitize_text_field($value)));
                 break;
             case 'due_date':
-                update_post_meta($task_id, '_due_date', $value);
-                 $this->_log_task_activity($task_id, sprintf('ددلاین را به "%s" تغییر داد.', $value));
+                update_post_meta($task_id, '_due_date', sanitize_text_field($value));
+                 $this->_log_task_activity($task_id, sprintf('ددلاین را به "%s" تغییر داد.', sanitize_text_field($value)));
                 break;
-            // Add cases for assignee, labels etc.
+            case 'assignee':
+                update_post_meta($task_id, '_assigned_to', intval($value));
+                $user = get_userdata(intval($value));
+                $this->_log_task_activity($task_id, sprintf('مسئول وظیفه را به "%s" تغییر داد.', $user->display_name));
+                break;
+            case 'labels':
+                $label_ids = array_map('intval', (array) $value);
+                wp_set_post_terms($task_id, $label_ids, 'task_label', false);
+                $this->_log_task_activity($task_id, 'برچسب‌های وظیفه را به‌روزرسانی کرد.');
+                break;
         }
 
-        wp_send_json_success(['message' => 'وظیفه به‌روزرسانی شد.']);
+        // Return the updated task card HTML for immediate refresh on the board
+        $task = get_post($task_id);
+        $task_html = function_exists('puzzling_render_task_card') ? puzzling_render_task_card($task) : '';
+        wp_send_json_success(['message' => 'وظیفه به‌روزرسانی شد.', 'task_html' => $task_html]);
+    }
+
+    /**
+     * NEW: Get tasks for calendar/timeline views
+     */
+    public function get_tasks_for_views() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_tasks')) {
+            wp_send_json_error();
+        }
+
+        $tasks_query = new WP_Query([
+            'post_type' => 'task',
+            'posts_per_page' => -1,
+        ]);
+        
+        $events = [];
+        $gantt_data = [];
+        $gantt_links = [];
+
+        if ($tasks_query->have_posts()) {
+            while ($tasks_query->have_posts()) {
+                $tasks_query->the_post();
+                $task_id = get_the_ID();
+                $due_date = get_post_meta($task_id, '_due_date', true);
+                $start_date = get_the_date('Y-m-d'); // Use post creation date as start for gantt
+
+                // Data for FullCalendar (only if due date exists)
+                if($due_date) {
+                    $events[] = [
+                        'id'    => $task_id,
+                        'title' => get_the_title(),
+                        'start' => $due_date,
+                        'allDay' => true,
+                        'url'   => '#', // To trigger modal
+                    ];
+                }
+
+                // Data for DHTMLX Gantt
+                if ($due_date) { // Gantt requires a start and end date
+                    $gantt_data[] = [
+                        'id'        => $task_id,
+                        'text'      => get_the_title(),
+                        'start_date'=> date('d-m-Y', strtotime($start_date)),
+                        'end_date'  => date('d-m-Y', strtotime($due_date)),
+                        'parent'    => get_post($task_id)->post_parent,
+                        'open'      => true,
+                    ];
+                }
+
+
+                if (get_post($task_id)->post_parent != 0) {
+                    $gantt_links[] = [
+                        'id' => 'link_' . $task_id,
+                        'source' => get_post($task_id)->post_parent,
+                        'target' => $task_id,
+                        'type' => '0' // Finish to Start
+                    ];
+                }
+            }
+        }
+        wp_reset_postdata();
+
+        wp_send_json_success([
+            'calendar_events' => $events,
+            'gantt_tasks' => [
+                'data' => $gantt_data,
+                'links' => $gantt_links
+            ]
+        ]);
     }
 }
