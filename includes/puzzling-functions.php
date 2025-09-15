@@ -31,10 +31,22 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
         $assigned_user_id = get_post_meta($task_id, '_assigned_to', true);
         $assignee_avatar = $assigned_user_id ? get_avatar($assigned_user_id, 24) : '';
         
+        // **NEW: Deadline Visual Indicators**
         $due_date = get_post_meta($task_id, '_due_date', true);
         $due_date_html = '';
+        $due_date_class = '';
         if ($due_date) {
-             $due_date_html = '<span class="pzl-card-due-date"><i class="far fa-calendar-alt"></i> ' . esc_html(date_i18n('M j', strtotime($due_date))) . '</span>';
+            $due_timestamp = strtotime($due_date);
+            $today_timestamp = strtotime('today');
+            $days_diff = ($due_timestamp - $today_timestamp) / (60 * 60 * 24);
+            
+            if ($days_diff < 0) {
+                $due_date_class = 'pzl-due-overdue';
+            } elseif ($days_diff < 2) { // Today or tomorrow
+                $due_date_class = 'pzl-due-near';
+            }
+
+             $due_date_html = '<span class="pzl-card-due-date ' . $due_date_class . '"><i class="far fa-calendar-alt"></i> ' . esc_html(date_i18n('M j', $due_timestamp)) . '</span>';
         }
 
         // Sub-tasks count
@@ -42,14 +54,13 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
         $subtask_count = count($subtasks);
         $subtask_html = $subtask_count > 0 ? '<span class="pzl-card-subtasks"><i class="fas fa-tasks"></i> ' . esc_html($subtask_count) . '</span>' : '';
 
-        // **NEW: Attachment and Comment count**
+        // Attachment and Comment count
         $attachment_ids = get_post_meta($task_id, '_task_attachments', true);
         $attachment_count = is_array($attachment_ids) ? count($attachment_ids) : 0;
         $attachment_html = $attachment_count > 0 ? '<span class="pzl-card-attachments"><i class="fas fa-paperclip"></i> ' . esc_html($attachment_count) . '</span>' : '';
         
         $comment_count = $task->comment_count;
         $comment_html = $comment_count > 0 ? '<span class="pzl-card-comments"><i class="far fa-comment"></i> ' . esc_html($comment_count) . '</span>' : '';
-
 
         // Labels
         $labels = wp_get_post_terms($task_id, 'task_label');
@@ -61,9 +72,17 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
             }
             $labels_html .= '</div>';
         }
+        
+        // **NEW: Cover Image**
+        $cover_html = '';
+        if (has_post_thumbnail($task_id)) {
+            $cover_html = '<div class="pzl-card-cover">' . get_the_post_thumbnail($task_id, 'medium') . '</div>';
+        }
+
 
         return sprintf(
             '<div class="pzl-task-card" data-task-id="%d">
+                %s
                 %s
                 <div class="pzl-card-priority %s" title="%s"></div>
                 <h4 class="pzl-card-title">%s</h4>
@@ -76,6 +95,7 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
                 </div>
             </div>',
             esc_attr($task_id),
+            $cover_html,
             $labels_html,
             esc_attr($priority_class),
             !empty($priority_terms) ? esc_attr($priority_terms[0]->name) : '',

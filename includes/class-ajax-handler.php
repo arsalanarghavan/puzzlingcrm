@@ -27,6 +27,9 @@ class PuzzlingCRM_Ajax_Handler {
         // **NEW: Advanced Task Features**
         add_action('wp_ajax_puzzling_manage_checklist', [$this, 'manage_checklist']);
         add_action('wp_ajax_puzzling_log_time', [$this, 'log_time']);
+
+        // **NEW: AJAX handler for Quick Edit**
+        add_action('wp_ajax_puzzling_quick_edit_task', [$this, 'quick_edit_task']);
     }
     
     /**
@@ -81,6 +84,7 @@ class PuzzlingCRM_Ajax_Handler {
         $parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : 0;
         $time_estimate = isset($_POST['time_estimate']) ? floatval($_POST['time_estimate']) : 0;
         $task_labels = isset($_POST['task_labels']) ? sanitize_text_field($_POST['task_labels']) : '';
+        $epic_id = isset($_POST['epic_id']) ? intval($_POST['epic_id']) : 0; // New Epic field
 
         if (empty($project_id)) {
             wp_send_json_error(['message' => 'لطفاً یک پروژه را برای تسک انتخاب کنید.']);
@@ -104,6 +108,9 @@ class PuzzlingCRM_Ajax_Handler {
         update_post_meta($task_id, '_assigned_to', $assigned_to);
         if (!empty($due_date)) update_post_meta($task_id, '_due_date', $due_date);
         if ($time_estimate > 0) update_post_meta($task_id, '_time_estimate', $time_estimate);
+        if ($epic_id > 0) {
+             update_post_meta($task_id, '_task_epic_id', $epic_id);
+        }
 
         // Set taxonomies
         wp_set_post_terms($task_id, [$priority_id], 'task_priority');
@@ -227,8 +234,24 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
         }
 
+        // **NEW: WORKFLOW RULES (Simple Example)**
+        // In a real implementation, this would read from a settings page.
+        $workflow_rules = [
+            'done' => ['system_manager'] // Only system_manager can move tasks to "Done"
+        ];
+        
         $task_id = intval($_POST['task_id']);
         $new_status_slug = sanitize_key($_POST['new_status_slug']);
+        $user = wp_get_current_user();
+        
+        if (array_key_exists($new_status_slug, $workflow_rules)) {
+            $allowed_roles = $workflow_rules[$new_status_slug];
+            if (empty(array_intersect($allowed_roles, $user->roles))) {
+                wp_send_json_error(['message' => 'شما اجازه انتقال وظیفه به این وضعیت را ندارید.']);
+                return;
+            }
+        }
+
         $task = get_post($task_id);
         $old_status_terms = wp_get_post_terms($task_id, 'task_status');
         $old_status_name = !empty($old_status_terms) ? $old_status_terms[0]->name : 'نامشخص';
@@ -599,5 +622,33 @@ class PuzzlingCRM_Ajax_Handler {
         } else {
             wp_send_json_error(['message' => 'خطا در حذف پروژه.']);
         }
+    }
+
+    /**
+     * NEW: Handles quick edits from the Kanban board.
+     */
+    public function quick_edit_task() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_tasks') || !isset($_POST['task_id']) || !isset($_POST['field'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+        
+        $task_id = intval($_POST['task_id']);
+        $field = sanitize_key($_POST['field']);
+        $value = sanitize_text_field($_POST['value']);
+
+        switch ($field) {
+            case 'title':
+                wp_update_post(['ID' => $task_id, 'post_title' => $value]);
+                $this->_log_task_activity($task_id, sprintf('عنوان وظیفه را به "%s" تغییر داد.', $value));
+                break;
+            case 'due_date':
+                update_post_meta($task_id, '_due_date', $value);
+                 $this->_log_task_activity($task_id, sprintf('ددلاین را به "%s" تغییر داد.', $value));
+                break;
+            // Add cases for assignee, labels etc.
+        }
+
+        wp_send_json_success(['message' => 'وظیفه به‌روزرسانی شد.']);
     }
 }

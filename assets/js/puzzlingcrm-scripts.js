@@ -82,8 +82,8 @@ jQuery(document).ready(function($) {
     });
 
     // --- Kanban Board: Drag and Drop ---
-    if ($('#pzl-task-board').length) {
-        $('#pzl-task-board .pzl-task-list').sortable({
+    if ($('#pzl-task-board, .pzl-swimlane-board').length) {
+        $('.pzl-task-list').sortable({
             connectWith: '.pzl-task-list',
             placeholder: 'pzl-task-card-placeholder',
             start: function(event, ui) {
@@ -109,7 +109,7 @@ jQuery(document).ready(function($) {
                     },
                     success: function(response) {
                         if (!response.success) {
-                            alert('خطا در به‌روزرسانی وضعیت.');
+                            alert('خطا در به‌روزرسانی وضعیت: ' + response.data.message);
                             $(this).sortable('cancel');
                         }
                     },
@@ -126,12 +126,12 @@ jQuery(document).ready(function($) {
     }
     
     // --- Quick Add Task Controls ---
-    $('.pzl-kanban-board').on('click', '.add-card-btn', function() {
+    $('.pzl-task-board-container').on('click', '.add-card-btn', function() {
         $(this).hide();
         $(this).siblings('.add-card-form').slideDown(200).find('textarea').focus();
     });
 
-    $('.pzl-kanban-board').on('click', '.cancel-add-card', function() {
+    $('.pzl-task-board-container').on('click', '.cancel-add-card', function() {
         var form = $(this).closest('.add-card-form');
         form.slideUp(200);
         form.siblings('.add-card-btn').show();
@@ -176,8 +176,8 @@ jQuery(document).ready(function($) {
         });
     }
 
-    $('.pzl-kanban-board').on('click', '.submit-add-card', function() { submitQuickAddTask($(this).closest('.add-card-form')); });
-    $('.pzl-kanban-board').on('keydown', '.add-card-form textarea', function(e) {
+    $('.pzl-task-board-container').on('click', '.submit-add-card', function() { submitQuickAddTask($(this).closest('.add-card-form')); });
+    $('.pzl-task-board-container').on('keydown', '.add-card-form textarea', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitQuickAddTask($(this).closest('.add-card-form')); }
     });
 
@@ -207,6 +207,10 @@ jQuery(document).ready(function($) {
 
     // Open Modal on card click
     $('#pzl-task-manager-page').on('click', '.pzl-task-card, .open-task-modal', function(e) {
+        // Prevent opening modal if clicking on an input or link inside the card
+        if ($(e.target).is('input, a, .quick-edit-btn')) {
+            return;
+        }
         e.preventDefault();
         openTaskModal($(this).data('task-id'));
     });
@@ -216,7 +220,6 @@ jQuery(document).ready(function($) {
         if ($(e.target).is('#pzl-close-modal-btn') || $(e.target).is('#pzl-task-modal-backdrop')) { closeTaskModal(); }
     });
     
-    // **NEW**: Handle opening task directly from URL
     const urlParams = new URLSearchParams(window.location.search);
     const openTaskId = urlParams.get('open_task_id');
     if (openTaskId) {
@@ -288,7 +291,7 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
             data: { action: 'puzzling_manage_checklist', security: puzzling_ajax_nonce, task_id: currentTaskId, sub_action: 'add', text: text },
-            success: function(response) {
+            success: function(response){
                 if(response.success){
                     location.reload(); // Simple refresh to show updated list
                 }
@@ -362,6 +365,56 @@ jQuery(document).ready(function($) {
             }
         });
     });
+
+    // --- NEW: Quick Edit on Kanban Cards ---
+    $('#pzl-task-manager-page').on('click', '.pzl-card-title', function(e) {
+        if ($(e.target).is('input')) return;
+        e.stopPropagation();
+        var titleElement = $(this);
+        var card = titleElement.closest('.pzl-task-card');
+        var currentTitle = titleElement.text().trim();
+        
+        // Prevent editing if already editing
+        if (card.find('.quick-edit-input').length > 0) return;
+
+        var inputHtml = `<input type="text" class="quick-edit-input" style="width: 100%;" value="${currentTitle}" />`;
+        titleElement.hide().after(inputHtml);
+        card.find('.quick-edit-input').focus().select();
+    });
+
+    $('#pzl-task-manager-page').on('blur keypress', '.quick-edit-input', function(e) {
+        if (e.type === 'blur' || (e.type === 'keypress' && e.which === 13)) {
+            var input = $(this);
+            var card = input.closest('.pzl-task-card');
+            var newTitle = input.val().trim();
+            var taskId = card.data('task-id');
+            var titleElement = card.find('.pzl-card-title');
+
+            if (newTitle && newTitle !== titleElement.text().trim()) {
+                $.ajax({
+                    url: puzzlingcrm_ajax_obj.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'puzzling_quick_edit_task',
+                        security: puzzling_ajax_nonce,
+                        task_id: taskId,
+                        field: 'title',
+                        value: newTitle
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            titleElement.text(newTitle);
+                        } else {
+                            alert('خطا در به‌روزرسانی وظیفه.');
+                        }
+                    }
+                });
+            }
+            titleElement.show();
+            input.remove();
+        }
+    });
+
 
     // --- Notification Center ---
     function fetchNotifications() {
@@ -445,4 +498,18 @@ jQuery(document).ready(function($) {
             }
         });
     });
+
+    // --- NEW: Initialize Calendar and Timeline Views (requires external libraries) ---
+    if ($('#pzl-task-calendar').length) {
+        // Example with a placeholder. You would need to load FullCalendar.js
+        console.log("Calendar view loaded. Initialize FullCalendar here.");
+        // var calendarEl = document.getElementById('pzl-task-calendar');
+        // var calendar = new FullCalendar.Calendar(calendarEl, { ... });
+        // calendar.render();
+    }
+    
+    if ($('#pzl-task-gantt').length) {
+        // Example with a placeholder. You would need to load a Gantt library.
+        console.log("Gantt view loaded. Initialize Gantt chart here.");
+    }
 });
