@@ -3,7 +3,7 @@
  * Plugin Name:       PuzzlingCRM
  * Plugin URI:        https://Puzzlingco.com/
  * Description:       A complete CRM and Project Management solution for Social Marketing agencies.
- * Version:           0.0.42
+ * Version:           0.0.43
  * Author:            Arsalan Arghavan
  * Author URI:        https://ArsalanArghavan.ir/
  * License:           GPL v2 or later
@@ -17,7 +17,7 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 // Define Plugin Constants
-define( 'PUZZLINGCRM_VERSION', '1.3.0' );
+define( 'PUZZLINGCRM_VERSION', '1.4.0' );
 define( 'PUZZLINGCRM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PUZZLINGCRM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -34,7 +34,7 @@ register_deactivation_hook( __FILE__, [ 'PuzzlingCRM_Installer', 'deactivate' ] 
  * Checks for required plugin dependencies.
  */
 function puzzling_check_dependencies() {
-    if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) || ! is_plugin_active( 'woocommerce-subscriptions/woocommerce-subscriptions.php' ) ) {
+    if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) ) {
         add_action( 'admin_notices', 'puzzling_dependency_notice' );
         deactivate_plugins( plugin_basename( __FILE__ ) );
         if ( isset( $_GET['activate'] ) ) {
@@ -52,7 +52,7 @@ function puzzling_dependency_notice() {
     <div class="notice notice-error">
         <p>
             <strong><?php esc_html_e( 'پلاگین PuzzlingCRM غیرفعال شد', 'puzzlingcrm' ); ?></strong><br>
-            <?php esc_html_e( 'این پلاگین نیازمند نصب و فعال بودن هر دو پلاگین WooCommerce و WooCommerce Subscriptions است. لطفاً ابتدا آن‌ها را فعال کرده و سپس PuzzlingCRM را فعال کنید.', 'puzzlingcrm' ); ?>
+            <?php esc_html_e( 'این پلاگین نیازمند نصب و فعال بودن پلاگین WooCommerce است. لطفاً ابتدا آن را فعال کرده و سپس PuzzlingCRM را فعال کنید.', 'puzzlingcrm' ); ?>
         </p>
     </div>
     <?php

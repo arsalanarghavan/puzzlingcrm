@@ -39,6 +39,7 @@ class PuzzlingCRM_Form_Handler {
      * Main router to direct form submissions and GET actions to the correct handler.
      */
     public function router() {
+        // Handle GET actions
         if (isset($_GET['puzzling_action'])) {
              $action = sanitize_key($_GET['puzzling_action']);
              switch ($action) {
@@ -48,21 +49,32 @@ class PuzzlingCRM_Form_Handler {
                  case 'verify_payment':
                     $this->handle_payment_verification();
                     return;
+                 case 'delete_form': // New GET handler for deleting forms
+                    $this->handle_delete_form();
+                    return;
              }
         }
 
+        // Handle POST actions
         if ( ! isset($_POST['puzzling_action']) ) {
             return;
         }
         
-        // Nonce check is done inside each handler where necessary
         $action = sanitize_key($_POST['puzzling_action']);
 
+        // Handle specific actions that don't need a standard nonce check yet
         if ($action === 'submit_automation_form') {
             $this->handle_submit_automation_form();
             return;
         }
 
+        // Handle form management from frontend
+        if ($action === 'manage_form') {
+            $this->handle_manage_form();
+            return;
+        }
+
+        // From here on, most actions will need a nonce
         if ( ! isset($_POST['_wpnonce']) ) {
             return;
         }
@@ -122,7 +134,7 @@ class PuzzlingCRM_Form_Handler {
         if (!$url) {
             $url = puzzling_get_dashboard_url();
         }
-        $url = remove_query_arg(['puzzling_action', '_wpnonce', 'action', 'user_id', 'plan_id', 'sub_id', 'appt_id', 'project_id', 'contract_id', 'puzzling_notice', 'item_id', 'invoice_id'], $url);
+        $url = remove_query_arg(['puzzling_action', '_wpnonce', 'action', 'user_id', 'plan_id', 'sub_id', 'appt_id', 'project_id', 'contract_id', 'puzzling_notice', 'item_id', 'invoice_id', 'form_id'], $url);
         wp_redirect( add_query_arg('puzzling_notice', $notice_key, $url) );
         exit;
     }
@@ -170,7 +182,8 @@ class PuzzlingCRM_Form_Handler {
 
         if (!is_wp_error($project_id)) {
             // Set project category (Service or Subscription)
-            $category = $product->is_type('subscription') ? 'اشتراک' : 'سرویس';
+            $is_subscription = class_exists('WC_Subscriptions') && wcs_product_is_subscription($product);
+            $category = $is_subscription ? 'اشتراک' : 'سرویس';
             update_post_meta($project_id, '_project_category', $category);
 
             // Now, create the contract automatically
@@ -198,6 +211,69 @@ class PuzzlingCRM_Form_Handler {
         }
     }
 
+    /**
+     * Handles creating and updating forms from the frontend dashboard.
+     */
+    private function handle_manage_form() {
+        if (!current_user_can('manage_options') || !isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_manage_form')) {
+            $this->redirect_with_notice('security_failed');
+        }
+        
+        $form_id = isset($_POST['form_id']) ? intval($_POST['form_id']) : 0;
+        $title = sanitize_text_field($_POST['form_title']);
+        $content = wp_kses_post($_POST['form_content']);
+        $fields = isset($_POST['form_fields']) ? (array) $_POST['form_fields'] : [];
+
+        if (empty($title)) {
+            $this->redirect_with_notice('form_error_title_required');
+        }
+
+        $post_data = [
+            'post_title' => $title,
+            'post_content' => $content,
+            'post_type' => 'pzl_form',
+            'post_status' => 'publish',
+            'post_author' => get_current_user_id()
+        ];
+        
+        if ($form_id > 0) {
+            $post_data['ID'] = $form_id;
+            $result = wp_update_post($post_data);
+        } else {
+            $result = wp_insert_post($post_data);
+        }
+
+        if ($result) {
+            $sanitized_fields = [];
+            if(!empty($fields)){
+                foreach ($fields as $field) {
+                    if (!empty($field['label'])) {
+                        $sanitized_fields[] = [
+                            'label' => sanitize_text_field($field['label']),
+                            'required' => isset($field['required'])
+                        ];
+                    }
+                }
+            }
+            update_post_meta($result, '_form_fields', $sanitized_fields);
+            $this->redirect_with_notice('form_saved_success');
+        } else {
+            $this->redirect_with_notice('form_error_failed');
+        }
+    }
+
+    /**
+     * Handles deleting forms from the frontend dashboard.
+     */
+    private function handle_delete_form() {
+        $form_id = isset($_GET['form_id']) ? intval($_GET['form_id']) : 0;
+        if (!current_user_can('manage_options') || !isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'puzzling_delete_form_' . $form_id)) {
+            $this->redirect_with_notice('security_failed');
+        }
+        
+        wp_delete_post($form_id, true); // True to force delete
+        $this->redirect_with_notice('form_deleted_success');
+    }
 
     private function handle_manage_user() {
         $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
@@ -259,6 +335,7 @@ class PuzzlingCRM_Form_Handler {
         $project_title = sanitize_text_field($_POST['project_title']);
         $project_content = wp_kses_post($_POST['project_content']);
         $customer_id = intval($_POST['customer_id']);
+        $project_category = sanitize_text_field($_POST['project_category']); // New field
 
         if(empty($project_title) || empty($customer_id)) {
             $this->redirect_with_notice('project_error_data_invalid');
@@ -295,6 +372,8 @@ class PuzzlingCRM_Form_Handler {
         if (is_wp_error($result)) {
             $this->redirect_with_notice('project_error_failed');
         } else {
+            $the_project_id = is_int($result) ? $result : $project_id;
+            update_post_meta($the_project_id, '_project_category', $project_category);
             $this->redirect_with_notice($notice);
         }
     }
