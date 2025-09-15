@@ -270,10 +270,15 @@ jQuery(document).ready(function($) {
         $('#pzl-task-modal-body').html('');
     }
 
-    $('#pzl-task-manager-page').on('click', '.pzl-task-card, .open-task-modal', function(e) {
-        if ($(e.target).closest('.quick-edit-popup, .quick-edit-input, a').length > 0) {
+    $('#pzl-task-manager-page').on('click', '.pzl-task-card', function(e) {
+        if ($(e.target).closest('.quick-edit-popup, .quick-edit-input, a, .quick-edit-assignee, .quick-edit-datepicker').length > 0) {
             return;
         }
+        e.preventDefault();
+        openTaskModal($(this).data('task-id'));
+    });
+    
+    $('#pzl-task-manager-page').on('click', '.open-task-modal', function(e) {
         e.preventDefault();
         openTaskModal($(this).data('task-id'));
     });
@@ -282,10 +287,10 @@ jQuery(document).ready(function($) {
         if ($(e.target).is('#pzl-close-modal-btn') || $(e.target).is('#pzl-task-modal-backdrop')) { closeTaskModal(); }
     });
     
-    const urlParams = new URLSearchParams(window.location.search);
-    const openTaskIdParam = urlParams.get('open_task_id');
-    if (openTaskIdParam) {
-        openTaskModal(openTaskIdParam);
+    const urlParamsInstance = new URLSearchParams(window.location.search);
+    const openTaskIdFromUrl = urlParamsInstance.get('open_task_id');
+    if (openTaskIdFromUrl) {
+        openTaskModal(openTaskIdFromUrl);
     }
 
     $('body').on('click', '.pzl-modal-tab-link', function(e){
@@ -349,7 +354,7 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
             data: { action: 'puzzling_manage_checklist', security: puzzling_ajax_nonce, task_id: currentTaskId, sub_action: 'add', text: text },
-            success: function(response){ if(response.success){ location.reload(); } }
+            success: function(response){ if(response.success){ openTaskModal(currentTaskId); } }
         });
     });
 
@@ -381,7 +386,7 @@ jQuery(document).ready(function($) {
             url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
             data: { action: 'puzzling_log_time', security: puzzling_ajax_nonce, task_id: currentTaskId, hours: hours, description: description },
             success: function(response){
-                if(response.success){ location.reload(); } 
+                if(response.success){ openTaskModal(currentTaskId); } 
                 else { alert('خطا: ' + response.data.message); }
             }
         });
@@ -409,6 +414,7 @@ jQuery(document).ready(function($) {
 
     // --- Advanced Quick Edit ---
     function saveQuickEdit(taskId, field, value, cardElement) {
+        cardElement.css('opacity', '0.5');
         $.ajax({
             url: puzzlingcrm_ajax_obj.ajax_url,
             type: 'POST',
@@ -416,9 +422,15 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     cardElement.replaceWith(response.data.task_html);
-                } else { alert('خطا در به‌روزرسانی: ' + response.data.message); }
+                } else { 
+                    alert('خطا در به‌روزرسانی: ' + response.data.message);
+                    cardElement.css('opacity', '1');
+                }
             },
-            error: function() { alert('خطای سرور در هنگام ویرایش سریع.'); }
+            error: function() {
+                alert('خطای سرور در هنگام ویرایش سریع.');
+                cardElement.css('opacity', '1');
+            }
         });
     }
 
@@ -459,7 +471,9 @@ jQuery(document).ready(function($) {
             dateFormat: 'yy-mm-dd',
             onClose: function(dateText) {
                 var taskId = card.data('task-id');
-                saveQuickEdit(taskId, 'due_date', dateText, card);
+                if (dateText) {
+                    saveQuickEdit(taskId, 'due_date', dateText, card);
+                }
                 dateElement.show();
                 $(this).remove();
             }
@@ -485,7 +499,7 @@ jQuery(document).ready(function($) {
             $(this).remove();
         });
     });
-
+    
     // --- Notification Center ---
     function fetchNotifications() {
         $.ajax({
@@ -563,6 +577,68 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) { listItem.remove(); } 
                 else { alert('خطا: ' + response.data.message); }
+            }
+        });
+    });
+
+    // --- Advanced Task Linking in Modal ---
+    $('body').on('focus', '#task-search-for-linking', function() {
+        if ($(this).data('select2')) return; // Prevent re-initialization
+        $(this).select2({
+            placeholder: 'جستجو بر اساس شناسه یا عنوان وظیفه...',
+            minimumInputLength: 2,
+            ajax: {
+                url: puzzlingcrm_ajax_obj.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return {
+                        action: 'puzzling_search_tasks_for_linking',
+                        security: puzzling_ajax_nonce,
+                        search: params.term,
+                        current_task_id: currentTaskId
+                    };
+                },
+                processResults: function(data) {
+                    return {
+                        results: data.data
+                    };
+                }
+            }
+        });
+    });
+
+    $('body').on('click', '#pzl-add-task-link-btn', function() {
+        var toTaskId = $('#task-search-for-linking').val();
+        var linkType = $('#new-link-type').val();
+        
+        if (!toTaskId || !linkType) {
+            alert('لطفا وظیفه و نوع پیوند را انتخاب کنید.');
+            return;
+        }
+        var btn = $(this);
+        btn.text('در حال افزودن...').prop('disabled', true);
+
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'puzzling_add_task_link',
+                security: puzzling_ajax_nonce,
+                from_task_id: currentTaskId,
+                to_task_id: toTaskId,
+                link_type: linkType
+            },
+            success: function(response) {
+                if (response.success) {
+                    openTaskModal(currentTaskId); // Refresh the modal content
+                } else {
+                    alert('خطا در افزودن پیوند.');
+                }
+            },
+            complete: function() {
+                btn.text('افزودن پیوند').prop('disabled', false);
             }
         });
     });

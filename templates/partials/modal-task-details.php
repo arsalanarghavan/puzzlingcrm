@@ -34,6 +34,7 @@ $activity_log = get_post_meta($task_id, '_task_activity_log', true) ?: [];
 <div class="pzl-modal-main-content">
     <div class="pzl-modal-tabs">
         <a href="#" class="pzl-modal-tab-link active" data-tab="tab-details"><i class="fas fa-info-circle"></i> جزئیات</a>
+        <a href="#" class="pzl-modal-tab-link" data-tab="tab-links"><i class="fas fa-link"></i> وظایف پیوند شده</a>
         <a href="#" class="pzl-modal-tab-link" data-tab="tab-checklist"><i class="fas fa-check-square"></i> چک‌لیست</a>
         <a href="#" class="pzl-modal-tab-link" data-tab="tab-time"><i class="fas fa-clock"></i> زمان</a>
         <a href="#" class="pzl-modal-tab-link" data-tab="tab-attachments"><i class="fas fa-paperclip"></i> پیوست‌ها</a>
@@ -68,6 +69,47 @@ $activity_log = get_post_meta($task_id, '_task_activity_log', true) ?: [];
             <textarea id="pzl-new-comment-text" placeholder="نظر خود را بنویسید... (@ برای منشن کردن)" rows="3"></textarea>
             <button id="pzl-submit-comment" class="pzl-button">ارسال نظر</button>
         </div>
+    </div>
+
+    <div id="tab-links" class="pzl-modal-tab-content" style="display:none;">
+        <h4><i class="fas fa-link"></i> وظایف پیوند شده</h4>
+        <div id="task-links-container">
+            <?php 
+            $linked_tasks = get_post_meta($task_id, '_task_links', true) ?: [];
+            if (empty($linked_tasks)) {
+                echo '<p>هیچ وظیفه پیوند شده‌ای وجود ندارد.</p>';
+            } else {
+                echo '<ul class="pzl-linked-task-list">';
+                foreach ($linked_tasks as $link) {
+                    $linked_post = get_post($link['task_id']);
+                    if ($linked_post) {
+                        echo '<li>';
+                        echo '<strong>' . esc_html($link['type']) . '</strong> ';
+                        echo '<a href="#" class="open-task-modal" data-task-id="'.esc_attr($link['task_id']).'">#' . esc_html($link['task_id']) . ': ' . esc_html($linked_post->post_title) . '</a>';
+                        echo '</li>';
+                    }
+                }
+                echo '</ul>';
+            }
+            ?>
+        </div>
+        <hr>
+        <h5>افزودن پیوند جدید</h5>
+        <div class="pzl-form-row">
+            <div class="form-group">
+                <label>نوع پیوند</label>
+                <select id="new-link-type">
+                    <option value="relates_to">مرتبط است با</option>
+                    <option value="blocks">جلوی انجام این را گرفته</option>
+                    <option value="is_blocked_by">انجامش توسط این مسدود شده</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex: 2;">
+                <label>جستجوی وظیفه</label>
+                <select id="task-search-for-linking" style="width: 100%;"></select>
+            </div>
+        </div>
+        <button id="pzl-add-task-link-btn" class="pzl-button">افزودن پیوند</button>
     </div>
 
     <div id="tab-checklist" class="pzl-modal-tab-content" style="display:none;">
