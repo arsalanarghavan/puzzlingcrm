@@ -44,32 +44,35 @@ jQuery(document).ready(function($) {
 
     // --- AJAX for Task Management ---
     
-    // Add New Task
+    // Add New Task (UPDATED for FormData/File Upload)
     $('#puzzling-add-task-form').on('submit', function(e) {
         e.preventDefault();
         var form = $(this);
-        var titleInput = form.find('input[name="title"]');
-        var title = titleInput.val();
+        var formData = new FormData(this); // Use FormData for file uploads
         
-        if (!title.trim()) {
-            alert('لطفاً عنوان تسک را وارد کنید.');
-            return;
-        }
+        // Add action and nonce to FormData
+        formData.append('action', 'puzzling_add_task');
+        formData.append('security', puzzling_ajax_nonce);
 
         $.ajax({
             url: puzzlingcrm_ajax_obj.ajax_url,
             type: 'POST',
-            data: form.serialize() + '&action=puzzling_add_task&security=' + puzzling_ajax_nonce,
+            data: formData,
+            processData: false, // Important for FormData
+            contentType: false, // Important for FormData
             beforeSend: function() {
                 form.find('button[type="submit"]').text('در حال افزودن...').prop('disabled', true);
             },
             success: function(response) {
                 if (response.success) {
-                    // Add the new card to the first column ('to-do')
-                    $('.pzl-task-column[data-status-slug="to-do"] .pzl-task-list').append(response.data.task_html);
-                    form.trigger('reset'); // Reset the form
-                    // Optionally, switch to the board view if not already there
-                    // window.location.href = removeURLParameter(window.location.href, 'tab');
+                    alert(response.data.message);
+                    // Refresh the page to see the new task and navigate to the board
+                    var dashboardUrl = new URL(window.location.href);
+                    dashboardUrl.searchParams.set('view', 'tasks');
+                    dashboardUrl.searchParams.set('tab', 'board');
+                    // Remove other params to avoid confusion
+                    dashboardUrl.searchParams.delete('action');
+                    window.location.href = dashboardUrl.href;
                 } else {
                     alert('خطا: ' + (response.data.message || 'خطای ناشناخته'));
                 }
@@ -124,6 +127,85 @@ jQuery(document).ready(function($) {
         }
     }).disableSelection();
     
+    // --- **NEW: Quick Add Task Controls** ---
+    $('.pzl-kanban-board').on('click', '.add-card-btn', function() {
+        $(this).hide();
+        $(this).siblings('.add-card-form').slideDown(200).find('textarea').focus();
+    });
+
+    $('.pzl-kanban-board').on('click', '.cancel-add-card', function() {
+        var form = $(this).closest('.add-card-form');
+        form.slideUp(200);
+        form.siblings('.add-card-btn').show();
+        form.find('textarea').val('');
+    });
+
+    function submitQuickAddTask(form) {
+        var textarea = form.find('textarea');
+        var title = textarea.val().trim();
+        
+        if (!title) {
+            textarea.focus();
+            return;
+        }
+
+        var column = form.closest('.kanban-column');
+        var statusSlug = column.data('status-slug');
+        var taskList = column.find('.kanban-task-list');
+
+        // Get project and staff from filters
+        var projectId = $('#kanban-project-filter').val();
+        var staffId = $('#kanban-staff-filter').val();
+
+        if (!projectId || !staffId) {
+            alert('برای استفاده از افزودن سریع، لطفاً ابتدا برد را بر اساس پروژه و کارمند فیلتر کنید.');
+            return;
+        }
+
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'puzzling_quick_add_task',
+                security: puzzling_ajax_nonce,
+                title: title,
+                status_slug: statusSlug,
+                project_id: projectId,
+                assigned_to: staffId
+            },
+            beforeSend: function() {
+                form.find('.submit-add-card').prop('disabled', true).text('...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    taskList.append(response.data.task_html);
+                    textarea.val('');
+                    textarea.focus(); // Ready for the next task
+                } else {
+                    alert('خطا: ' + (response.data.message || 'خطای ناشناخته'));
+                }
+            },
+            error: function() {
+                 alert('یک خطای ارتباطی رخ داد.');
+            },
+            complete: function() {
+                form.find('.submit-add-card').prop('disabled', false).text('افزودن');
+            }
+        });
+    }
+
+    $('.pzl-kanban-board').on('click', '.submit-add-card', function() {
+        submitQuickAddTask($(this).closest('.add-card-form'));
+    });
+
+    $('.pzl-kanban-board').on('keydown', '.add-card-form textarea', function(e) {
+        // Submit on Enter, create new line on Shift+Enter
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            submitQuickAddTask($(this).closest('.add-card-form'));
+        }
+    });
+
     // --- Task Modal ---
 
     function openTaskModal(taskId) {
@@ -166,7 +248,11 @@ jQuery(document).ready(function($) {
     });
 
     // Close Modal
-    $('#pzl-close-modal-btn, #pzl-task-modal-backdrop').on('click', closeTaskModal);
+    $('body').on('click', '#pzl-close-modal-btn, #pzl-task-modal-backdrop', function(e) {
+        if ($(e.target).is('#pzl-close-modal-btn') || $(e.target).is('#pzl-task-modal-backdrop')) {
+            closeTaskModal();
+        }
+    });
 
     // Edit/Save Task Description in Modal
     $('body').on('click', '#pzl-task-description-viewer', function() {
@@ -341,4 +427,84 @@ jQuery(document).ready(function($) {
     // Initial fetch and periodic check every 2 minutes
     fetchNotifications();
     setInterval(fetchNotifications, 120000);
+
+    // --- Workflow Status Management ---
+    if ($('#status-sortable-list').length) {
+        $('#status-sortable-list').sortable({
+            axis: 'y',
+            placeholder: 'ui-state-highlight',
+            stop: function(event, ui) {
+                var order = $(this).sortable('toArray', { attribute: 'data-term-id' });
+                $.ajax({
+                    url: puzzlingcrm_ajax_obj.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'puzzling_save_status_order',
+                        security: puzzling_ajax_nonce,
+                        order: order
+                    },
+                    success: function(response) {
+                        if (!response.success) {
+                            alert('خطا در ذخیره ترتیب.');
+                        }
+                    }
+                });
+            }
+        }).disableSelection();
+    }
+
+    // Add new status
+    $('#add-new-status-form').on('submit', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var newName = $('#new-status-name').val();
+        if (!newName.trim()) return;
+
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'puzzling_add_new_status',
+                security: puzzling_ajax_nonce,
+                name: newName
+            },
+            success: function(response) {
+                if (response.success) {
+                    var newStatusHTML = '<li data-term-id="' + response.data.term_id + '"><i class="fas fa-grip-vertical"></i> ' + response.data.name + ' <span class="delete-status-btn" data-term-id="' + response.data.term_id + '">&times;</span></li>';
+                    $('#status-sortable-list').append(newStatusHTML);
+                    form.trigger('reset');
+                } else {
+                    alert('خطا: ' + response.data.message);
+                }
+            }
+        });
+    });
+
+    // Delete status
+    $('#workflow-status-manager').on('click', '.delete-status-btn', function() {
+        if (!confirm('آیا از حذف این وضعیت مطمئن هستید؟ وظایف موجود در این وضعیت به اولین وضعیت ("To Do") منتقل خواهند شد.')) {
+            return;
+        }
+
+        var btn = $(this);
+        var termId = btn.data('term-id');
+        var listItem = btn.closest('li');
+
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'puzzling_delete_status',
+                security: puzzling_ajax_nonce,
+                term_id: termId
+            },
+            success: function(response) {
+                if (response.success) {
+                    listItem.remove();
+                } else {
+                    alert('خطا: ' + response.data.message);
+                }
+            }
+        });
+    });
 });

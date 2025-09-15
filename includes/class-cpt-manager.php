@@ -41,16 +41,19 @@ class PuzzlingCRM_CPT_Manager {
             'menu_icon'     => 'dashicons-portfolio',
         ]);
 
-        // Task CPT - **UPDATED**
+        // Task CPT - **UPDATED for Sub-tasks**
         register_post_type( 'task', [
             'labels'        => [
                 'name'          => __( 'Tasks', 'puzzlingcrm' ),
                 'singular_name' => __( 'Task', 'puzzlingcrm' ),
+                'add_new_item'  => __( 'Add New Task', 'puzzlingcrm' ),
+                'parent_item_colon' => __( 'Parent Task:', 'puzzlingcrm' ),
             ],
             'public'        => false,
             'show_ui'       => true,
+            'hierarchical'  => true, // <-- Enables parent-child relationships for sub-tasks
             'show_in_menu'  => false,
-            'supports'      => ['title', 'editor', 'author', 'custom-fields', 'comments'], // Added 'editor' and 'comments'
+            'supports'      => ['title', 'editor', 'author', 'custom-fields', 'comments', 'page-attributes'], // Added page-attributes for parent selection
         ]);
 
         // Contract CPT
@@ -117,11 +120,32 @@ class PuzzlingCRM_CPT_Manager {
 
     public function register_taxonomies() {
         // Task Status Taxonomy
-        register_taxonomy('task_status', 'task', ['label' => __( 'Task Status', 'puzzlingcrm' ), 'hierarchical' => true]);
+        register_taxonomy('task_status', 'task', ['label' => __( 'Task Status', 'puzzlingcrm' ), 'hierarchical' => true, 'show_in_rest' => true]);
         
         // Task Priority Taxonomy
-        register_taxonomy('task_priority', 'task', ['label' => __( 'Task Priority', 'puzzlingcrm' ), 'hierarchical' => true]);
+        register_taxonomy('task_priority', 'task', ['label' => __( 'Task Priority', 'puzzlingcrm' ), 'hierarchical' => true, 'show_in_rest' => true]);
         
+        // **NEW: Task Labels Taxonomy**
+        register_taxonomy('task_label', 'task', [
+            'label' => __( 'Labels', 'puzzlingcrm' ),
+            'hierarchical' => false, // <-- Makes it behave like tags
+            'rewrite' => ['slug' => 'task-label'],
+            'show_admin_column' => true,
+            'show_in_rest' => true,
+            'labels' => [
+                'name' => __( 'Labels', 'puzzlingcrm' ),
+                'singular_name' => __( 'Label', 'puzzlingcrm' ),
+                'search_items' => __( 'Search Labels', 'puzzlingcrm' ),
+                'all_items' => __( 'All Labels', 'puzzlingcrm' ),
+                'popular_items' => __( 'Popular Labels', 'puzzlingcrm' ),
+                'edit_item' => __( 'Edit Label', 'puzzlingcrm' ),
+                'update_item' => __( 'Update Label', 'puzzlingcrm' ),
+                'add_new_item' => __( 'Add New Label', 'puzzlingcrm' ),
+                'new_item_name' => __( 'New Label Name', 'puzzlingcrm' ),
+                'menu_name' => __( 'Labels', 'puzzlingcrm' ),
+            ]
+        ]);
+
         // Ticket Status Taxonomy
         register_taxonomy('ticket_status', 'ticket', ['label' => __( 'Ticket Status', 'puzzlingcrm' ), 'hierarchical' => true]);
     }

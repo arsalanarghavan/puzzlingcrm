@@ -6,7 +6,7 @@ if (!current_user_can('manage_options')) return;
 $staff_roles = ['system_manager', 'finance_manager', 'team_member', 'administrator'];
 $all_staff = get_users(['role__in' => $staff_roles, 'orderby' => 'display_name']);
 $all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC']);
-$task_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false]);
+$task_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
 $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
 
 // --- Handle Filtering ---
@@ -25,13 +25,13 @@ $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
                         <input type="search" name="s" placeholder="جستجوی عنوان وظیفه..." value="<?php echo esc_attr($search_query); ?>">
                     </div>
                     <div class="form-group">
-                        <select name="project_filter">
+                        <select name="project_filter" id="kanban-project-filter">
                             <option value="">همه پروژه‌ها</option>
                             <?php foreach ($all_projects as $project) { echo '<option value="' . esc_attr($project->ID) . '" ' . selected($project_filter, $project->ID, false) . '>' . esc_html($project->post_title) . '</option>'; } ?>
                         </select>
                     </div>
                     <div class="form-group">
-                        <select name="staff_filter">
+                        <select name="staff_filter" id="kanban-staff-filter">
                             <option value="">همه کارکنان</option>
                              <?php foreach ($all_staff as $staff) { echo '<option value="' . esc_attr($staff->ID) . '" ' . selected($staff_filter, $staff->ID, false) . '>' . esc_html($staff->display_name) . '</option>'; } ?>
                         </select>

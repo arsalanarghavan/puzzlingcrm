@@ -511,14 +511,6 @@
 .task-comment-date { font-size: 12px; color: #777; }
 .task-comment-form textarea { width: 100%; }
 
-/*
- * PuzzlingCRM Stylesheet
- * Version: 2.3.0 (Final Icon Color Fixes)
- */
-
-/* ... (تمام کدهای قبلی CSS در اینجا قرار دارند) ... */
-
-/* --- NEW: Kanban Board Styles --- */
 #pzl-task-board {
     display: flex;
     gap: 20px;
@@ -562,7 +554,6 @@
     margin: 0 0 10px;
 }
 
-/* --- NEW: Task Card Styles --- */
 .pzl-task-card {
     background-color: #fff;
     border-radius: var(--pzl-border-radius);
@@ -593,7 +584,7 @@
     font-weight: 600;
     font-size: 15px;
     margin: 0 0 15px 0;
-    padding-right: 20px; /* Space for priority dot */
+    padding-right: 20px;
 }
 
 .pzl-card-footer {
@@ -619,7 +610,6 @@
     height: 24px;
 }
 
-/* --- NEW: Task Modal Styles --- */
 #pzl-task-modal-backdrop {
     position: fixed;
     top: 0;
@@ -649,7 +639,7 @@
 #pzl-close-modal-btn {
     position: absolute;
     top: 15px;
-    left: 15px; /* Changed to left for LTR context */
+    left: 15px;
     background: none;
     border: none;
     font-size: 28px;
@@ -709,4 +699,128 @@
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+.pzl-task-card {
+    padding-bottom: 45px;
+}
+
+.pzl-card-labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.pzl-label {
+    background-color: #e9ecef;
+    color: #495057;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.pzl-card-footer {
+    position: absolute;
+    bottom: 10px;
+    left: 15px;
+    right: 15px;
+}
+
+.pzl-card-subtasks {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background-color: #f1f3f5;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+#workflow-status-manager {
+    margin-top: 20px;
+}
+#status-sortable-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+    border: 1px solid var(--pzl-border-color);
+    border-radius: var(--pzl-border-radius);
+    overflow: hidden;
+}
+#status-sortable-list li {
+    padding: 15px;
+    background-color: #fff;
+    border-bottom: 1px solid var(--pzl-border-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+}
+#status-sortable-list li:last-child {
+    border-bottom: none;
+}
+#status-sortable-list li .fa-grip-vertical {
+    cursor: move;
+    color: #adb5bd;
+}
+.delete-status-btn {
+    margin-left: auto;
+    cursor: pointer;
+    color: var(--pzl-danger-color);
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 50%;
+}
+.delete-status-btn:hover {
+    background-color: #ffe3e3;
+}
+.pzl-form-inline {
+    display: flex;
+    gap: 10px;
+}
+.pzl-form-inline input {
+    flex-grow: 1;
+}
+
+.add-card-controls {
+    margin-top: 10px;
+}
+.add-card-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--pzl-text-light);
+    padding: 8px;
+    border-radius: 5px;
+    width: 100%;
+    text-align: right;
+    transition: background-color 0.2s;
+}
+.add-card-btn:hover { 
+    background-color: #dfe1e6; 
+    color: var(--pzl-secondary-color);
+}
+.add-card-form textarea {
+    width: 100%;
+    min-height: 80px;
+    margin-bottom: 8px;
+    padding: 10px;
+    border-radius: var(--pzl-border-radius);
+    border: 1px solid var(--pzl-border-color);
+    resize: vertical;
+}
+.add-card-actions {
+    display: flex;
+    gap: 8px;
+}
+.cancel-add-card {
+    background: none !important;
+    border: none !important;
+    color: var(--pzl-text-light) !important;
+    font-size: 20px !important;
+    padding: 0 10px !important;
+}
+.cancel-add-card:hover {
+    color: var(--pzl-secondary-color) !important;
 }

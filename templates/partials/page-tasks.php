@@ -11,6 +11,7 @@ $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'board'; // Def
         <a href="<?php echo add_query_arg('tab', 'board', remove_query_arg(['tab', 's', 'project_id', 'staff_id', 'status'])); ?>" class="pzl-tab <?php echo $active_tab === 'board' ? 'active' : ''; ?>"> <i class="fas fa-columns"></i> نمای بُرد</a>
         <a href="<?php echo add_query_arg('tab', 'list', remove_query_arg('tab')); ?>" class="pzl-tab <?php echo $active_tab === 'list' ? 'active' : ''; ?>"> <i class="fas fa-list-ul"></i> نمای لیست</a>
         <a href="<?php echo add_query_arg('tab', 'new'); ?>" class="pzl-tab <?php echo $active_tab === 'new' ? 'active' : ''; ?>"> <i class="fas fa-plus"></i> افزودن وظیفه جدید</a>
+        <a href="<?php echo add_query_arg('tab', 'workflow'); ?>" class="pzl-tab <?php echo $active_tab === 'workflow' ? 'active' : ''; ?>"> <i class="fas fa-cogs"></i> مدیریت گردش‌کار</a>
     </div>
 
     <div class="pzl-dashboard-tab-content">
@@ -22,11 +23,12 @@ $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'board'; // Def
             $all_staff = get_users(['role__in' => $staff_roles]);
             $all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1]);
             $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
+            $all_tasks = get_posts(['post_type' => 'task', 'numberposts' => -1, 'orderby' => 'title', 'order' => 'ASC']);
             ?>
             <div class="pzl-card-header">
                 <h3><i class="fas fa-plus-circle"></i> افزودن وظیفه جدید</h3>
             </div>
-            <form id="puzzling-add-task-form" class="pzl-form">
+            <form id="puzzling-add-task-form" class="pzl-form" enctype="multipart/form-data">
                 <div class="pzl-form-row">
                     <div class="form-group" style="flex: 2;">
                         <label for="title">عنوان وظیفه</label>
@@ -43,6 +45,19 @@ $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'board'; // Def
                  <div class="form-group">
                     <label for="task_content">توضیحات وظیفه (اختیاری)</label>
                     <textarea name="content" rows="5" placeholder="جزئیات کامل وظیفه را در اینجا وارد کنید..."></textarea>
+                </div>
+                <div class="pzl-form-row">
+                     <div class="form-group">
+                        <label for="parent_id">وظیفه والد (برای ایجاد وظیفه فرعی)</label>
+                        <select name="parent_id">
+                            <option value="0">-- این یک وظیفه اصلی است --</option>
+                            <?php foreach ($all_tasks as $task) { echo '<option value="' . esc_attr($task->ID) . '">' . esc_html($task->post_title) . '</option>'; } ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="time_estimate">تخمین زمان (ساعت)</label>
+                        <input type="number" name="time_estimate" min="0" step="0.5" placeholder="مثال: 8">
+                    </div>
                 </div>
                 <div class="pzl-form-row">
                     <div class="form-group">
@@ -63,15 +78,23 @@ $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'board'; // Def
                         <input type="date" name="due_date">
                     </div>
                 </div>
+                <div class="form-group">
+                    <label for="task_labels">برچسب‌ها</label>
+                    <input type="text" name="task_labels" placeholder="برچسب‌ها را با کاما (,) جدا کنید">
+                </div>
+                 <div class="form-group">
+                    <label for="task_attachments">پیوست فایل‌ها</label>
+                    <input type="file" name="task_attachments[]" multiple>
+                </div>
                 <div class="form-submit">
                     <button type="submit" class="pzl-button">افزودن وظیفه</button>
                 </div>
             </form>
         </div>
-    <?php elseif($active_tab === 'list'): // List View (The old view) ?>
+    <?php elseif($active_tab === 'list'): ?>
          <div class="pzl-card">
             <?php
-            // Get filter parameters for the list view
+            // ... (The list view code remains the same for now)
             $paged = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
             $project_filter = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0;
             $staff_filter = isset($_GET['staff_id']) ? intval($_GET['staff_id']) : 0;
@@ -154,14 +177,35 @@ $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'board'; // Def
                 <?php echo paginate_links(['total' => $tasks_query->max_num_pages, 'current' => $paged]); ?>
             </div>
         </div>
+    <?php elseif ($active_tab === 'workflow'): ?>
+        <div class="pzl-card">
+            <div class="pzl-card-header">
+                <h3><i class="fas fa-cogs"></i> مدیریت وضعیت‌های گردش‌کار</h3>
+            </div>
+            <p>در این بخش می‌توانید ستون‌های برد کانبان (وضعیت‌های وظایف) را مدیریت کنید. می‌توانید وضعیت‌های جدید اضافه کرده یا ترتیب آن‌ها را تغییر دهید.</p>
+            <div id="workflow-status-manager">
+                <ul id="status-sortable-list">
+                    <?php
+                    $statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
+                    foreach ($statuses as $status) {
+                        echo '<li data-term-id="' . esc_attr($status->term_id) . '"><i class="fas fa-grip-vertical"></i> ' . esc_html($status->name) . ' <span class="delete-status-btn" data-term-id="' . esc_attr($status->term_id) . '">&times;</span></li>';
+                    }
+                    ?>
+                </ul>
+                <form id="add-new-status-form" class="pzl-form-inline">
+                    <input type="text" id="new-status-name" placeholder="نام وضعیت جدید" required>
+                    <button type="submit" class="pzl-button">افزودن وضعیت</button>
+                </form>
+            </div>
+        </div>
+
     <?php else: // Board View (Default) ?>
         <div class="pzl-task-board-container">
             <?php
             $statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
             if (empty(get_term_by('slug', 'to-do', 'task_status'))) {
-                // Ensure default terms exist for the board to function. This is a fallback.
-                 PuzzlingCRM_CPT_Manager::create_default_terms();
-                 $statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
+                PuzzlingCRM_CPT_Manager::create_default_terms();
+                $statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
             }
             ?>
             <div id="pzl-task-board">
@@ -173,6 +217,7 @@ $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'board'; // Def
                             $tasks_args = [
                                 'post_type' => 'task',
                                 'posts_per_page' => -1,
+                                'post_parent' => 0, // Only show parent tasks
                                 'tax_query' => [
                                     [
                                         'taxonomy' => 'task_status',
