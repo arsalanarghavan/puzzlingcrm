@@ -1,7 +1,7 @@
 jQuery(document).ready(function($) {
-    // Get nonce from localized script object for all AJAX requests
     var puzzling_ajax_nonce = puzzlingcrm_ajax_obj.nonce;
     var puzzling_lang = puzzlingcrm_ajax_obj.lang;
+    var currentTaskId = null; // To keep track of the open task in modal
 
     // --- Intelligent Installment Calculation ---
     $('#calculate-installments').on('click', function() {
@@ -59,22 +59,17 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: puzzlingcrm_ajax_obj.ajax_url,
             type: 'POST',
-            data: {
-                action: 'puzzling_add_task',
-                security: puzzling_ajax_nonce,
-                title: title,
-                priority: form.find('select[name="priority"]').val(),
-                due_date: form.find('input[name="due_date"]').val(),
-                project_id: form.find('select[name="project_id"]').val(),
-                assigned_to: form.find('select[name="assigned_to"]').val() || ''
-            },
+            data: form.serialize() + '&action=puzzling_add_task&security=' + puzzling_ajax_nonce,
             beforeSend: function() {
                 form.find('button[type="submit"]').text('در حال افزودن...').prop('disabled', true);
             },
             success: function(response) {
                 if (response.success) {
-                    $('#active-tasks-list').prepend(response.data.task_html);
-                    $('#active-tasks-list .no-tasks-message').remove();
+                    // Add the new card to the first column ('to-do')
+                    $('.pzl-task-column[data-status-slug="to-do"] .pzl-task-list').append(response.data.task_html);
+                    form.trigger('reset'); // Reset the form
+                    // Optionally, switch to the board view if not already there
+                    // window.location.href = removeURLParameter(window.location.href, 'tab');
                 } else {
                     alert('خطا: ' + (response.data.message || 'خطای ناشناخته'));
                 }
@@ -83,82 +78,173 @@ jQuery(document).ready(function($) {
                 alert('یک خطای ناشناخته در ارتباط با سرور رخ داد.');
             },
             complete: function() {
-                form.find('button[type="submit"]').text('افزودن').prop('disabled', false);
-                titleInput.val('');
+                form.find('button[type="submit"]').text('افزودن وظیفه').prop('disabled', false);
             }
         });
     });
 
-    // Update Task Status
-    $('.task-list').on('change', '.task-checkbox', function() {
-        var checkbox = $(this);
-        var taskItem = checkbox.closest('.task-item');
-        var taskId = taskItem.data('task-id');
-        var isDone = checkbox.is(':checked');
+    // --- Kanban Board: Drag and Drop ---
+    $('.pzl-task-list').sortable({
+        connectWith: '.pzl-task-list',
+        placeholder: 'pzl-task-card-placeholder',
+        start: function(event, ui) {
+            ui.placeholder.height(ui.item.outerHeight());
+        },
+        stop: function(event, ui) {
+            var taskCard = ui.item;
+            var taskId = taskCard.data('task-id');
+            var newStatusSlug = taskCard.closest('.pzl-task-column').data('status-slug');
 
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'puzzling_update_task_status',
-                security: puzzling_ajax_nonce,
-                task_id: taskId,
-                is_done: isDone
-            },
-            beforeSend: function() { taskItem.css('opacity', '0.5'); },
-            success: function(response) {
-                if(response.success) {
-                    var targetList = isDone ? '#done-tasks-list' : '#active-tasks-list';
-                    taskItem.toggleClass('status-done', isDone);
-                    $(targetList).prepend(taskItem);
-                } else {
-                    alert('خطا در به‌روزرسانی تسک.');
-                    checkbox.prop('checked', !isDone);
+            taskCard.css('opacity', '0.5'); // Visual feedback
+
+            $.ajax({
+                url: puzzlingcrm_ajax_obj.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'puzzling_update_task_status',
+                    security: puzzling_ajax_nonce,
+                    task_id: taskId,
+                    new_status_slug: newStatusSlug
+                },
+                success: function(response) {
+                    if (!response.success) {
+                        alert('خطا در به‌روزرسانی وضعیت. لطفا صفحه را رفرش کنید.');
+                        // Revert the change visually if API call fails
+                        $(this).sortable('cancel');
+                    }
+                },
+                error: function() {
+                     alert('خطای ارتباط با سرور.');
+                     $(this).sortable('cancel');
+                },
+                complete: function() {
+                     taskCard.css('opacity', '1');
                 }
-            },
-            error: function() {
-                alert('یک خطای ناشناخته در ارتباط با سرور رخ داد.');
-                checkbox.prop('checked', !isDone);
-            },
-            complete: function() { taskItem.css('opacity', '1'); }
-        });
-    });
+            });
+        }
+    }).disableSelection();
+    
+    // --- Task Modal ---
 
-    // Delete Task
-    $('.task-list').on('click', '.delete-task', function(e) {
-        e.preventDefault();
-        
-        if ( !confirm(puzzling_lang.confirm_delete_task) ) return;
-
-        var link = $(this);
-        var taskItem = link.closest('.task-item');
-        var taskId = taskItem.data('task-id');
+    function openTaskModal(taskId) {
+        currentTaskId = taskId;
+        $('#pzl-task-modal-backdrop, #pzl-task-modal-wrap').fadeIn(200);
+        $('#pzl-task-modal-body').html('<div class="pzl-loader"></div>');
 
         $.ajax({
             url: puzzlingcrm_ajax_obj.ajax_url,
             type: 'POST',
             data: {
-                action: 'puzzling_delete_task',
+                action: 'puzzling_get_task_details',
                 security: puzzling_ajax_nonce,
                 task_id: taskId
             },
-            beforeSend: function() { taskItem.css('opacity', '0.5'); },
             success: function(response) {
-                if(response.success) {
-                    taskItem.slideUp(function() { $(this).remove(); });
+                if (response.success) {
+                    $('#pzl-task-modal-body').html(response.data.html);
                 } else {
-                    alert('خطا: ' + (response.data.message || 'خطای ناشناخته'));
-                    taskItem.css('opacity', '1');
+                    $('#pzl-task-modal-body').html('<p>خطا در بارگذاری اطلاعات وظیفه.</p>');
                 }
             },
             error: function() {
-                alert('یک خطای ناشناخته در ارتباط با سرور رخ داد.');
-                taskItem.css('opacity', '1');
+                 $('#pzl-task-modal-body').html('<p>خطای ارتباط با سرور.</p>');
             }
+        });
+    }
+
+    function closeTaskModal() {
+        currentTaskId = null;
+        $('#pzl-task-modal-backdrop, #pzl-task-modal-wrap').fadeOut(200);
+        $('#pzl-task-modal-body').html('');
+    }
+
+    // Open Modal on card click
+    $('#pzl-task-board, .pzl-table').on('click', '.pzl-task-card, .open-task-modal', function(e) {
+        e.preventDefault();
+        var taskId = $(this).data('task-id');
+        openTaskModal(taskId);
+    });
+
+    // Close Modal
+    $('#pzl-close-modal-btn, #pzl-task-modal-backdrop').on('click', closeTaskModal);
+
+    // Edit/Save Task Description in Modal
+    $('body').on('click', '#pzl-task-description-viewer', function() {
+        $(this).hide();
+        $('#pzl-task-description-editor').show();
+    });
+     $('body').on('click', '#pzl-cancel-edit-content', function() {
+        $('#pzl-task-description-editor').hide();
+        $('#pzl-task-description-viewer').show();
+    });
+    $('body').on('click', '#pzl-save-task-content', function() {
+        var newContent = $('#pzl-task-content-input').val();
+        var button = $(this);
+        button.text('در حال ذخیره...').prop('disabled', true);
+
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'puzzling_save_task_content',
+                security: puzzling_ajax_nonce,
+                task_id: currentTaskId,
+                content: newContent
+            },
+            success: function(response) {
+                if (response.success) {
+                    var viewer = $('#pzl-task-description-viewer');
+                    viewer.html(response.data.new_content_html || '<p class="pzl-no-content">توضیحاتی برای این وظیفه ثبت نشده است. برای افزودن کلیک کنید.</p>');
+                    $('#pzl-task-description-editor').hide();
+                    viewer.show();
+                } else {
+                    alert('خطا در ذخیره‌سازی.');
+                }
+            },
+             error: function() {
+                alert('خطای ارتباط با سرور.');
+             },
+             complete: function() {
+                button.text('ذخیره').prop('disabled', false);
+             }
         });
     });
 
-    // --- AJAX for Project Deletion ---
+    // Add Comment
+    $('body').on('click', '#pzl-submit-comment', function() {
+        var commentText = $('#pzl-new-comment-text').val();
+        if (!commentText.trim()) return;
+        var button = $(this);
+        button.text('در حال ارسال...').prop('disabled', true);
+        
+        $.ajax({
+             url: puzzlingcrm_ajax_obj.ajax_url,
+             type: 'POST',
+             data: {
+                action: 'puzzling_add_task_comment',
+                security: puzzling_ajax_nonce,
+                task_id: currentTaskId,
+                comment_text: commentText
+             },
+             success: function(response) {
+                if (response.success) {
+                    $('.pzl-comment-list').append(response.data.comment_html);
+                    $('#pzl-new-comment-text').val('');
+                } else {
+                    alert('خطا در ثبت نظر.');
+                }
+             },
+             error: function() {
+                alert('خطای ارتباط با سرور.');
+             },
+             complete: function() {
+                button.text('ارسال نظر').prop('disabled', false);
+             }
+        });
+    });
+
+
+    // --- Project Deletion ---
     $('#projects-table').on('click', '.delete-project', function(e) {
         e.preventDefault();
         

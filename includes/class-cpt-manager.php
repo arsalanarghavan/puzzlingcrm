@@ -41,7 +41,7 @@ class PuzzlingCRM_CPT_Manager {
             'menu_icon'     => 'dashicons-portfolio',
         ]);
 
-        // Task CPT
+        // Task CPT - **UPDATED**
         register_post_type( 'task', [
             'labels'        => [
                 'name'          => __( 'Tasks', 'puzzlingcrm' ),
@@ -50,7 +50,7 @@ class PuzzlingCRM_CPT_Manager {
             'public'        => false,
             'show_ui'       => true,
             'show_in_menu'  => false,
-            'supports'      => ['title', 'editor', 'author', 'custom-fields'],
+            'supports'      => ['title', 'editor', 'author', 'custom-fields', 'comments'], // Added 'editor' and 'comments'
         ]);
 
         // Contract CPT

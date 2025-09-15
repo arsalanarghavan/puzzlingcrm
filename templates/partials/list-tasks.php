@@ -1,119 +1,95 @@
 <?php
-/**
- * Template for listing tickets for the current user (client or admin).
- * @package PuzzlingCRM
- */
-if ( ! defined( 'ABSPATH' ) ) exit;
+if (!defined('ABSPATH')) exit;
+if (!current_user_can('manage_options')) return;
 
-$current_user_id = get_current_user_id();
-$is_manager = current_user_can('manage_options');
+// --- Get Data for Filters ---
+$staff_roles = ['system_manager', 'finance_manager', 'team_member', 'administrator'];
+$all_staff = get_users(['role__in' => $staff_roles, 'orderby' => 'display_name']);
+$all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC']);
+$task_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false]);
+$priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
 
-// Handle single ticket view if an ID is provided
-$ticket_id_to_view = isset($_GET['ticket_id']) ? intval($_GET['ticket_id']) : 0;
-if ($ticket_id_to_view > 0) {
-    include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/single-ticket.php';
-    return; // Stop further execution to only show the single ticket view
-}
-
-// WP_Query arguments to fetch tickets
-$paged = get_query_var('paged') ? get_query_var('paged') : 1;
-$args = [
-    'post_type' => 'ticket',
-    'posts_per_page' => 10,
-    'post_status' => 'publish',
-    'paged' => $paged,
-    'orderby' => 'modified',
-    'order' => 'DESC',
-];
-// If user is not a manager, only get their own tickets
-if (!$is_manager) {
-    $args['author'] = $current_user_id;
-}
-$tickets_query = new WP_Query($args);
+// --- Handle Filtering ---
+$project_filter = isset($_GET['project_filter']) ? intval($_GET['project_filter']) : 0;
+$staff_filter = isset($_GET['staff_filter']) ? intval($_GET['staff_filter']) : 0;
+$search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
 ?>
-
-<div class="pzl-tickets-wrapper">
-    
-    <div class="pzl-new-ticket-form-container">
-        <h4><i class="fas fa-plus-circle"></i> ارسال تیکت جدید</h4>
-        <form id="puzzling-new-ticket-form" method="post" action="<?php echo esc_url( remove_query_arg(['ticket_id', 'puzzling_notice']) ); ?>">
-            <?php wp_nonce_field('puzzling_new_ticket_nonce', '_wpnonce'); ?>
-            <input type="hidden" name="puzzling_action" value="new_ticket">
-            <div class="form-group">
-                <label for="ticket_title">موضوع:</label>
-                <input type="text" id="ticket_title" name="ticket_title" required>
-            </div>
-            <div class="form-group">
-                <label for="ticket_content">پیام شما:</label>
-                <textarea id="ticket_content" name="ticket_content" rows="6" required></textarea>
-            </div>
-            <button type="submit" class="pzl-button">ارسال تیکت</button>
-        </form>
+<div class="pzl-dashboard-section">
+    <div class="pzl-tasks-header">
+        <h3><i class="fas fa-tasks"></i> مدیریت وظایف (نمای کانبان)</h3>
+        <div class="pzl-tasks-filters">
+            <form method="get" class="pzl-form">
+                <input type="hidden" name="view" value="tasks">
+                <div class="pzl-form-row">
+                    <div class="form-group">
+                        <input type="search" name="s" placeholder="جستجوی عنوان وظیفه..." value="<?php echo esc_attr($search_query); ?>">
+                    </div>
+                    <div class="form-group">
+                        <select name="project_filter">
+                            <option value="">همه پروژه‌ها</option>
+                            <?php foreach ($all_projects as $project) { echo '<option value="' . esc_attr($project->ID) . '" ' . selected($project_filter, $project->ID, false) . '>' . esc_html($project->post_title) . '</option>'; } ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <select name="staff_filter">
+                            <option value="">همه کارکنان</option>
+                             <?php foreach ($all_staff as $staff) { echo '<option value="' . esc_attr($staff->ID) . '" ' . selected($staff_filter, $staff->ID, false) . '>' . esc_html($staff->display_name) . '</option>'; } ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="pzl-button">فیلتر</button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <h4 style="margin-top: 30px;"><i class="fas fa-list-ul"></i> لیست تیکت‌ها</h4>
-    <?php if ($tickets_query->have_posts()) : ?>
-        <table class="pzl-table">
-            <thead>
-                <tr>
-                    <th>موضوع</th>
-                    <?php if ($is_manager) echo '<th>مشتری</th>'; ?>
-                    <th>آخرین بروزرسانی</th>
-                    <th>وضعیت</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php while ($tickets_query->have_posts()) : $tickets_query->the_post(); 
-                    $ticket_id = get_the_ID();
-                    $status_terms = get_the_terms($ticket_id, 'ticket_status');
-                    $status_name = !empty($status_terms) ? esc_html($status_terms[0]->name) : 'نامشخص';
-                    $status_slug = !empty($status_terms) ? esc_attr($status_terms[0]->slug) : 'default';
-                    $view_url = add_query_arg(['view' => 'tickets', 'ticket_id' => $ticket_id], remove_query_arg('paged'));
-                ?>
-                    <tr>
-                        <td>
-                            <a href="<?php echo esc_url($view_url); ?>">
-                                <?php the_title(); ?>
-                            </a>
-                        </td>
-                        <?php if ($is_manager): ?>
-                            <td><?php echo esc_html(get_the_author()); ?></td>
-                        <?php endif; ?>
-                        <td><?php echo esc_html(get_the_modified_date('Y/m/d H:i')); ?></td>
-                        <td><span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span></td>
-                        <td><a href="<?php echo esc_url($view_url); ?>" class="pzl-button pzl-button-sm">مشاهده</a></td>
-                    </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
+    <div class="pzl-kanban-board">
+        <?php foreach ($task_statuses as $status): ?>
+            <div class="kanban-column" data-status-slug="<?php echo esc_attr($status->slug); ?>">
+                <h4 class="kanban-column-title"><?php echo esc_html($status->name); ?></h4>
+                <ul class="kanban-task-list">
+                    <?php
+                    $args = [
+                        'post_type' => 'task',
+                        'posts_per_page' => -1,
+                        'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug]],
+                        'meta_query' => ['relation' => 'AND'],
+                    ];
+                    if ($project_filter > 0) { $args['meta_query'][] = ['key' => '_project_id', 'value' => $project_filter]; }
+                    if ($staff_filter > 0) { $args['meta_query'][] = ['key' => '_assigned_to', 'value' => $staff_filter]; }
+                    if (!empty($search_query)) { $args['s'] = $search_query; }
+                    
+                    $tasks_query = new WP_Query($args);
 
-        <div class="pagination">
-            <?php
-            echo paginate_links([
-                'base' => add_query_arg('paged', '%#%'),
-                'total' => $tickets_query->max_num_pages,
-                'current' => max( 1, $paged ),
-                'format' => '?paged=%#%',
-                'prev_text' => '« قبلی',
-                'next_text' => 'بعدی »',
-            ]);
-            ?>
-        </div>
-        <?php wp_reset_postdata(); ?>
-    <?php else : ?>
-        <p>هیچ تیکتی یافت نشد.</p>
-    <?php endif; ?>
+                    if ($tasks_query->have_posts()):
+                        while($tasks_query->have_posts()): $tasks_query->the_post();
+                            echo puzzling_render_task_card(get_post());
+                        endwhile;
+                    endif;
+                    wp_reset_postdata();
+                    ?>
+                </ul>
+                <div class="add-card-controls">
+                    <button class="add-card-btn"><i class="fas fa-plus"></i> افزودن کارت</button>
+                    <div class="add-card-form" style="display: none;">
+                        <textarea placeholder="عنوان کارت را وارد کنید..."></textarea>
+                        <div class="add-card-actions">
+                            <button class="pzl-button pzl-button-sm submit-add-card">افزودن</button>
+                            <button class="pzl-button pzl-button-sm cancel-add-card" type="button">&times;</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
 </div>
 
-<style>
-.pzl-new-ticket-form-container { background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; }
-.pzl-new-ticket-form-container .form-group { margin-bottom: 15px; }
-.pzl-new-ticket-form-container label { display: block; margin-bottom: 5px; font-weight: bold; }
-.pzl-new-ticket-form-container input[type="text"], .pzl-new-ticket-form-container textarea { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; }
-.pzl-status-badge { display: inline-block; padding: 4px 12px; border-radius: 15px; font-size: 12px; color: #fff; text-align: center; min-width: 90px;}
-.status-open { background-color: #0073aa; }
-.status-in-progress { background-color: var(--pzl-warning-color, #ffc107); color: #333; }
-.status-answered { background-color: var(--pzl-success-color, #28a745); }
-.status-closed { background-color: #777; }
-</style>
+<div id="task-detail-modal" class="pzl-modal-overlay" style="display: none;">
+    <div class="pzl-modal-content">
+        <button class="pzl-modal-close">&times;</button>
+        <div id="task-modal-body">
+            <div class="pzl-loader"></div>
+        </div>
+    </div>
+</div>

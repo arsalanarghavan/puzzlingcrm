@@ -7,6 +7,12 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_delete_task', [$this, 'delete_task']);
         add_action('wp_ajax_puzzling_get_notifications', [$this, 'get_notifications']);
         add_action('wp_ajax_puzzling_mark_notification_read', [$this, 'mark_notification_read']);
+
+        // New AJAX actions for Kanban board
+        add_action('wp_ajax_puzzling_get_task_details', [$this, 'get_task_details']);
+        add_action('wp_ajax_puzzling_save_task_content', [$this, 'save_task_content']);
+        add_action('wp_ajax_puzzling_add_task_comment', [$this, 'add_task_comment']);
+
     }
 
     private function notify_all_admins($title, $args) {
@@ -29,6 +35,7 @@ class PuzzlingCRM_Ajax_Handler {
         }
 
         $title = sanitize_text_field($_POST['title']);
+        $content = isset($_POST['content']) ? wp_kses_post($_POST['content']) : '';
         $priority_id = intval($_POST['priority']);
         $due_date = sanitize_text_field($_POST['due_date']);
         $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
@@ -38,7 +45,13 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'لطفاً یک پروژه را برای تسک انتخاب کنید.']);
         }
 
-        $task_id = wp_insert_post(['post_title' => $title, 'post_type' => 'task', 'post_status' => 'publish', 'post_author' => get_current_user_id()]);
+        $task_id = wp_insert_post([
+            'post_title' => $title, 
+            'post_content' => $content,
+            'post_type' => 'task', 
+            'post_status' => 'publish', 
+            'post_author' => get_current_user_id()
+        ]);
 
         if ( is_wp_error($task_id) ) {
             wp_send_json_error(['message' => 'خطا در ایجاد تسک.']);
@@ -49,7 +62,7 @@ class PuzzlingCRM_Ajax_Handler {
         if (!empty($due_date)) update_post_meta($task_id, '_due_date', $due_date);
 
         wp_set_post_terms($task_id, [$priority_id], 'task_priority');
-        wp_set_post_terms($task_id, 'to-do', 'task_status');
+        wp_set_post_terms($task_id, 'to-do', 'task_status'); // Default status
         
         $this->send_task_assignment_email($assigned_to, $task_id);
         
@@ -59,7 +72,7 @@ class PuzzlingCRM_Ajax_Handler {
         PuzzlingCRM_Logger::add('تسک جدید به شما محول شد', ['content' => "تسک '{$title}' در پروژه '{$project_title}' به شما تخصیص داده شد.", 'type' => 'notification', 'user_id' => $assigned_to, 'object_id' => $task_id]);
 
         $task = get_post($task_id);
-        $task_html = function_exists('puzzling_render_task_item') ? puzzling_render_task_item($task) : '';
+        $task_html = function_exists('puzzling_render_task_card') ? puzzling_render_task_card($task) : '';
         wp_send_json_success(['message' => 'تسک با موفقیت اضافه شد.', 'task_html' => $task_html]);
     }
     
@@ -84,24 +97,24 @@ class PuzzlingCRM_Ajax_Handler {
     public function update_task_status() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
 
-        if ( ! current_user_can('edit_tasks') || ! isset($_POST['task_id']) ) {
-            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        if ( ! current_user_can('edit_tasks') || ! isset($_POST['task_id']) || !isset($_POST['new_status_slug']) ) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
         }
 
         $task_id = intval($_POST['task_id']);
+        $new_status_slug = sanitize_key($_POST['new_status_slug']);
         $task = get_post($task_id);
-        $is_done = filter_var($_POST['is_done'], FILTER_VALIDATE_BOOLEAN);
 
-        $status_term = $is_done ? 'done' : 'to-do';
-        $term = term_exists($status_term, 'task_status');
+        $term = term_exists($new_status_slug, 'task_status');
         if ($term) {
             wp_set_post_terms($task_id, $term['term_id'], 'task_status');
+            
+            PuzzlingCRM_Logger::add('وضعیت تسک به‌روز شد', ['content' => "وضعیت تسک '{$task->post_title}' به '{$term['name']}' تغییر یافت.", 'type' => 'log', 'object_id' => $task_id]);
+
+            wp_send_json_success(['message' => 'وضعیت تسک به‌روزرسانی شد.']);
+        } else {
+             wp_send_json_error(['message' => 'وضعیت نامعتبر است.']);
         }
-
-        $status_text = $is_done ? 'انجام شده' : 'انجام نشده';
-        PuzzlingCRM_Logger::add('وضعیت تسک به‌روز شد', ['content' => "وضعیت تسک '{$task->post_title}' به {$status_text} تغییر یافت.", 'type' => 'log', 'object_id' => $task_id]);
-
-        wp_send_json_success(['message' => 'وضعیت تسک به‌روزرسانی شد.']);
     }
 
     public function delete_task() {
@@ -128,6 +141,117 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'خطا در حذف تسک.']);
         }
     }
+    
+    public function get_task_details() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!isset($_POST['task_id']) || !current_user_can('edit_tasks')) {
+            wp_send_json_error(['message' => 'خطای دسترسی.']);
+        }
+
+        $task_id = intval($_POST['task_id']);
+        $task = get_post($task_id);
+
+        if (!$task) {
+            wp_send_json_error(['message' => 'وظیفه یافت نشد.']);
+        }
+
+        ob_start();
+        ?>
+        <div class="pzl-modal-header">
+            <h3 id="pzl-modal-title"><?php echo esc_html($task->post_title); ?></h3>
+        </div>
+        <div class="pzl-modal-body">
+            <h4><i class="fas fa-align-left"></i> توضیحات</h4>
+            <div id="pzl-task-description-viewer">
+                <?php echo $task->post_content ? wpautop(wp_kses_post($task->post_content)) : '<p class="pzl-no-content">توضیحاتی برای این وظیفه ثبت نشده است. برای افزودن کلیک کنید.</p>'; ?>
+            </div>
+            <div id="pzl-task-description-editor" style="display: none;">
+                <textarea id="pzl-task-content-input" rows="6"><?php echo esc_textarea($task->post_content); ?></textarea>
+                <button id="pzl-save-task-content" class="pzl-button">ذخیره</button>
+                <button id="pzl-cancel-edit-content" class="pzl-button-secondary">انصراف</button>
+            </div>
+            <hr>
+            <h4><i class="fas fa-comments"></i> فعالیت و نظرات</h4>
+            <div class="pzl-task-comments">
+                <ul class="pzl-comment-list">
+                    <?php
+                    $comments = get_comments(['post_id' => $task_id, 'status' => 'approve', 'order' => 'ASC']);
+                    if ($comments) {
+                        foreach($comments as $comment) {
+                            echo '<li class="pzl-comment-item">';
+                            echo '<div class="pzl-comment-avatar">' . get_avatar($comment->user_id, 32) . '</div>';
+                            echo '<div class="pzl-comment-content"><p><strong>' . esc_html($comment->comment_author) . '</strong>: ' . wp_kses_post($comment->comment_content) . '</p><span class="pzl-comment-date">' . human_time_diff(strtotime($comment->comment_date), current_time('timestamp')) . ' پیش</span></div>';
+                            echo '</li>';
+                        }
+                    } else {
+                        echo '<p>هنوز نظری ثبت نشده است.</p>';
+                    }
+                    ?>
+                </ul>
+            </div>
+            <div class="pzl-add-comment-form">
+                <textarea id="pzl-new-comment-text" placeholder="نظر خود را بنویسید..." rows="3"></textarea>
+                <button id="pzl-submit-comment" class="pzl-button">ارسال نظر</button>
+            </div>
+        </div>
+        <?php
+        $html = ob_get_clean();
+        wp_send_json_success(['html' => $html]);
+    }
+    
+    public function save_task_content() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!isset($_POST['task_id']) || !isset($_POST['content']) || !current_user_can('edit_tasks')) {
+            wp_send_json_error(['message' => 'خطای دسترسی.']);
+        }
+        
+        $task_id = intval($_POST['task_id']);
+        $content = wp_kses_post($_POST['content']);
+
+        $result = wp_update_post(['ID' => $task_id, 'post_content' => $content], true);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => 'خطا در ذخیره‌سازی.']);
+        } else {
+            wp_send_json_success(['new_content_html' => wpautop($content)]);
+        }
+    }
+    
+    public function add_task_comment() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!isset($_POST['task_id']) || !isset($_POST['comment_text']) || !current_user_can('edit_tasks')) {
+            wp_send_json_error(['message' => 'خطای دسترسی.']);
+        }
+        
+        $task_id = intval($_POST['task_id']);
+        $comment_text = wp_kses_post($_POST['comment_text']);
+        $user = wp_get_current_user();
+        
+        $comment_id = wp_insert_comment([
+            'comment_post_ID' => $task_id,
+            'comment_author' => $user->display_name,
+            'comment_author_email' => $user->user_email,
+            'comment_content' => $comment_text,
+            'user_id' => $user->ID,
+            'comment_approved' => 1,
+        ]);
+
+        if ($comment_id) {
+            $comment = get_comment($comment_id);
+             ob_start();
+             echo '<li class="pzl-comment-item">';
+             echo '<div class="pzl-comment-avatar">' . get_avatar($comment->user_id, 32) . '</div>';
+             echo '<div class="pzl-comment-content"><p><strong>' . esc_html($comment->comment_author) . '</strong>: ' . wp_kses_post($comment->comment_content) . '</p><span class="pzl-comment-date">' . human_time_diff(strtotime($comment->comment_date), current_time('timestamp')) . ' پیش</span></div>';
+             echo '</li>';
+             $comment_html = ob_get_clean();
+             wp_send_json_success(['comment_html' => $comment_html]);
+        } else {
+             wp_send_json_error(['message' => 'خطا در ثبت نظر.']);
+        }
+    }
+
+
+    // --- Other existing functions ---
     
     public function get_notifications() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');

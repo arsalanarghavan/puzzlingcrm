@@ -235,3 +235,478 @@
     color: var(--pzl-text-light);
     margin: 0;
 }
+
+/* --- Kanban Board Styles --- */
+.pzl-kanban-board {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding-bottom: 20px;
+    min-height: 70vh;
+}
+
+.kanban-column {
+    flex: 0 0 320px; /* Fixed width for columns */
+    background-color: #f4f5f7;
+    border-radius: var(--pzl-border-radius);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.kanban-column-title {
+    font-size: 16px;
+    font-weight: 600;
+    padding: 0 5px 15px;
+    border-bottom: 2px solid var(--pzl-border-color);
+    margin-bottom: 15px;
+}
+
+.kanban-task-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    min-height: 100px; /* To allow dropping on empty lists */
+    flex-grow: 1;
+}
+
+.kanban-card {
+    background-color: #ffffff;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    cursor: grab;
+    border-left: 4px solid transparent;
+}
+
+.kanban-card:hover {
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+.kanban-card-title {
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.kanban-card-meta {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.project-tag, .priority-tag {
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.project-tag {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.priority-tag.priority-high { background-color: #ffe3e3; color: #dc3545; }
+.priority-tag.priority-medium { background-color: #fff3cd; color: #ffc107; }
+.priority-tag.priority-low { background-color: #d1e7dd; color: #198754; }
+
+.kanban-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--pzl-text-light);
+}
+.due-date .fas {
+    margin-left: 4px;
+}
+
+.ui-sortable-placeholder {
+    background-color: #e0e0e0;
+    border: 2px dashed #cccccc;
+    height: 80px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
+/* --- Kanban Board Filters & Header --- */
+.pzl-tasks-header {
+    margin-bottom: 25px;
+}
+.pzl-tasks-filters .pzl-form-row {
+    align-items: flex-end;
+    gap: 15px;
+}
+.pzl-tasks-filters .form-group {
+    margin-bottom: 0;
+}
+
+/* --- Kanban Board Styles --- */
+.pzl-kanban-board {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding-bottom: 20px;
+    min-height: 70vh;
+}
+.kanban-column {
+    flex: 0 0 320px;
+    background-color: #f4f5f7;
+    border-radius: var(--pzl-border-radius);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+}
+.kanban-column-title {
+    font-size: 16px;
+    font-weight: 600;
+    padding: 0 5px 15px;
+    border-bottom: 2px solid var(--pzl-border-color);
+    margin-bottom: 15px;
+}
+.kanban-task-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    min-height: 100px;
+    flex-grow: 1;
+}
+.kanban-card {
+    background-color: #ffffff;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    cursor: grab;
+    border-left: 4px solid transparent;
+}
+.kanban-card:hover {
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+.kanban-card-title {
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+.kanban-card-meta {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+.project-tag, .priority-tag {
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+.project-tag { background-color: #e9ecef; color: #495057; }
+.priority-tag.priority-high { background-color: #ffe3e3; color: #dc3545; }
+.priority-tag.priority-medium { background-color: #fff3cd; color: #ffc107; }
+.priority-tag.priority-low { background-color: #d1e7dd; color: #198754; }
+.kanban-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--pzl-text-light);
+}
+.due-date .fas { margin-left: 4px; }
+.ui-sortable-placeholder {
+    background-color: #e0e0e0;
+    border: 2px dashed #cccccc;
+    height: 80px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+.add-card-controls {
+    margin-top: 10px;
+}
+.add-card-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--pzl-text-light);
+    padding: 8px;
+    border-radius: 5px;
+    width: 100%;
+    text-align: right;
+}
+.add-card-btn:hover { background-color: #dfe1e6; }
+.add-card-form textarea {
+    width: 100%;
+    min-height: 80px;
+    margin-bottom: 8px;
+}
+.add-card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* --- Task Detail Modal Styles --- */
+.pzl-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.pzl-modal-content {
+    background-color: #f4f5f7;
+    padding: 30px;
+    border-radius: var(--pzl-border-radius);
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+}
+.pzl-modal-close {
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #666;
+}
+.pzl-loader {
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid var(--pzl-primary-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 50px auto;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.task-modal-header h3 { margin-top: 0; }
+.task-modal-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    margin: 20px 0;
+    border: 1px solid var(--pzl-border-color);
+}
+.task-modal-meta-item strong { display: block; margin-bottom: 5px; color: var(--pzl-text-light); }
+.task-modal-description { background: #fff; padding: 20px; border-radius: 5px; border: 1px solid var(--pzl-border-color); }
+.task-modal-comments h4 { margin-top: 30px; }
+.task-comment-list { list-style: none; padding: 0; margin: 0; }
+.task-comment { background: #fff; padding: 15px; border-radius: 5px; border: 1px solid var(--pzl-border-color); margin-bottom: 10px; }
+.task-comment-author { font-weight: bold; margin-bottom: 5px; }
+.task-comment-date { font-size: 12px; color: #777; }
+.task-comment-form textarea { width: 100%; }
+
+/*
+ * PuzzlingCRM Stylesheet
+ * Version: 2.3.0 (Final Icon Color Fixes)
+ */
+
+/* ... (تمام کدهای قبلی CSS در اینجا قرار دارند) ... */
+
+/* --- NEW: Kanban Board Styles --- */
+#pzl-task-board {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding-bottom: 20px;
+    min-height: 70vh;
+}
+
+.pzl-task-column {
+    flex: 1 1 320px;
+    min-width: 320px;
+    max-width: 320px;
+    background-color: #f4f5f7;
+    border-radius: var(--pzl-border-radius);
+    display: flex;
+    flex-direction: column;
+}
+
+.pzl-column-header {
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--pzl-secondary-color);
+    border-bottom: 2px solid var(--pzl-border-color);
+}
+
+.pzl-task-list {
+    padding: 10px;
+    flex-grow: 1;
+    min-height: 100px;
+    transition: background-color 0.2s ease;
+}
+.ui-sortable-helper {
+    transform: rotate(4deg);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+.pzl-task-card-placeholder {
+    background-color: rgba(0,0,0,0.05);
+    border: 2px dashed var(--pzl-border-color);
+    border-radius: var(--pzl-border-radius);
+    margin: 0 0 10px;
+}
+
+/* --- NEW: Task Card Styles --- */
+.pzl-task-card {
+    background-color: #fff;
+    border-radius: var(--pzl-border-radius);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 15px;
+    margin-bottom: 10px;
+    cursor: grab;
+    position: relative;
+    border: 1px solid var(--pzl-border-color);
+}
+.pzl-task-card:active {
+    cursor: grabbing;
+}
+
+.pzl-card-priority {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+.priority-high { background-color: var(--pzl-danger-color); }
+.priority-medium { background-color: var(--pzl-warning-color); }
+.priority-low { background-color: var(--pzl-success-color); }
+
+.pzl-card-title {
+    font-weight: 600;
+    font-size: 15px;
+    margin: 0 0 15px 0;
+    padding-right: 20px; /* Space for priority dot */
+}
+
+.pzl-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--pzl-text-light);
+}
+.pzl-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.pzl-card-due-date, .pzl-card-project {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.pzl-card-assignee img {
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+}
+
+/* --- NEW: Task Modal Styles --- */
+#pzl-task-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    z-index: 1000;
+}
+#pzl-task-modal-wrap {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 800px;
+    z-index: 1001;
+}
+#pzl-task-modal-content {
+    background-color: #fff;
+    border-radius: var(--pzl-border-radius);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    position: relative;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+#pzl-close-modal-btn {
+    position: absolute;
+    top: 15px;
+    left: 15px; /* Changed to left for LTR context */
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--pzl-text-light);
+    line-height: 1;
+}
+#pzl-task-modal-body {
+    padding: 30px 40px;
+}
+.pzl-modal-header h3 {
+    margin: 0;
+    font-size: 24px;
+    border-bottom: 1px solid var(--pzl-border-color);
+    padding-bottom: 20px;
+}
+.pzl-modal-body h4 {
+    margin-top: 30px;
+    margin-bottom: 15px;
+}
+#pzl-task-description-viewer {
+    cursor: pointer;
+}
+.pzl-no-content {
+    color: var(--pzl-text-light);
+    border: 2px dashed var(--pzl-border-color);
+    padding: 20px;
+    border-radius: var(--pzl-border-radius);
+    text-align: center;
+}
+#pzl-task-description-editor button {
+    margin-top: 10px;
+}
+.pzl-comment-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.pzl-comment-item {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.pzl-comment-content { flex: 1; }
+.pzl-comment-content p { margin: 0; }
+.pzl-comment-date { font-size: 12px; color: var(--pzl-text-light); }
+.pzl-add-comment-form { margin-top: 20px; }
+.pzl-loader {
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid var(--pzl-primary-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 50px auto;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

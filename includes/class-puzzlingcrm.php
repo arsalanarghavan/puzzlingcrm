@@ -58,7 +58,11 @@ class PuzzlingCRM {
         wp_enqueue_style( 'font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css', [], '6.5.1' );
         
         wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
-        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery'], PUZZLINGCRM_VERSION, true );
+        
+        // Enqueue jQuery UI Sortable for the task board
+        wp_enqueue_script('jquery-ui-sortable');
+
+        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable'], PUZZLINGCRM_VERSION, true );
         
         wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [
             'ajax_url' => admin_url('admin-ajax.php'),

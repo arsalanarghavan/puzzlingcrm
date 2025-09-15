@@ -2,13 +2,14 @@
 if (!defined('ABSPATH')) exit;
 
 // Get active tab
-$active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'list';
+$active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'board'; // Default to board view
 ?>
 <div class="pzl-dashboard-section">
     <h3><i class="fas fa-tasks"></i> مدیریت وظایف</h3>
 
     <div class="pzl-dashboard-tabs">
-        <a href="<?php echo remove_query_arg('tab'); ?>" class="pzl-tab <?php echo $active_tab === 'list' ? 'active' : ''; ?>"> <i class="fas fa-list-ul"></i> لیست وظایف</a>
+        <a href="<?php echo add_query_arg('tab', 'board', remove_query_arg(['tab', 's', 'project_id', 'staff_id', 'status'])); ?>" class="pzl-tab <?php echo $active_tab === 'board' ? 'active' : ''; ?>"> <i class="fas fa-columns"></i> نمای بُرد</a>
+        <a href="<?php echo add_query_arg('tab', 'list', remove_query_arg('tab')); ?>" class="pzl-tab <?php echo $active_tab === 'list' ? 'active' : ''; ?>"> <i class="fas fa-list-ul"></i> نمای لیست</a>
         <a href="<?php echo add_query_arg('tab', 'new'); ?>" class="pzl-tab <?php echo $active_tab === 'new' ? 'active' : ''; ?>"> <i class="fas fa-plus"></i> افزودن وظیفه جدید</a>
     </div>
 
@@ -39,6 +40,10 @@ $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'list';
                         </select>
                     </div>
                 </div>
+                 <div class="form-group">
+                    <label for="task_content">توضیحات وظیفه (اختیاری)</label>
+                    <textarea name="content" rows="5" placeholder="جزئیات کامل وظیفه را در اینجا وارد کنید..."></textarea>
+                </div>
                 <div class="pzl-form-row">
                     <div class="form-group">
                         <label for="assigned_to">تخصیص به</label>
@@ -63,8 +68,8 @@ $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'list';
                 </div>
             </form>
         </div>
-    <?php else: // List View (Default) ?>
-        <div class="pzl-card">
+    <?php elseif($active_tab === 'list'): // List View (The old view) ?>
+         <div class="pzl-card">
             <?php
             // Get filter parameters for the list view
             $paged = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
@@ -90,6 +95,7 @@ $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'list';
             </div>
             <form method="get" class="pzl-form">
                 <input type="hidden" name="view" value="tasks">
+                <input type="hidden" name="tab" value="list">
                 <div class="pzl-form-row" style="align-items: flex-end;">
                     <div class="form-group">
                         <label>پروژه</label>
@@ -133,7 +139,7 @@ $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'list';
                         $status_terms = get_the_terms(get_the_ID(), 'task_status');
                     ?>
                         <tr>
-                            <td><?php the_title(); ?></td>
+                            <td><a href="#" class="open-task-modal" data-task-id="<?php echo get_the_ID(); ?>"><?php the_title(); ?></a></td>
                             <td><?php echo $project_id ? get_the_title($project_id) : '---'; ?></td>
                             <td><?php echo $assigned_id ? get_the_author_meta('display_name', $assigned_id) : '---'; ?></td>
                             <td><?php echo !empty($status_terms) ? esc_html($status_terms[0]->name) : '---'; ?></td>
@@ -148,6 +154,55 @@ $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'list';
                 <?php echo paginate_links(['total' => $tasks_query->max_num_pages, 'current' => $paged]); ?>
             </div>
         </div>
+    <?php else: // Board View (Default) ?>
+        <div class="pzl-task-board-container">
+            <?php
+            $statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
+            if (empty(get_term_by('slug', 'to-do', 'task_status'))) {
+                // Ensure default terms exist for the board to function. This is a fallback.
+                 PuzzlingCRM_CPT_Manager::create_default_terms();
+                 $statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
+            }
+            ?>
+            <div id="pzl-task-board">
+                <?php foreach ($statuses as $status): ?>
+                    <div class="pzl-task-column" data-status-slug="<?php echo esc_attr($status->slug); ?>">
+                        <h4 class="pzl-column-header"><?php echo esc_html($status->name); ?></h4>
+                        <div class="pzl-task-list">
+                            <?php
+                            $tasks_args = [
+                                'post_type' => 'task',
+                                'posts_per_page' => -1,
+                                'tax_query' => [
+                                    [
+                                        'taxonomy' => 'task_status',
+                                        'field' => 'slug',
+                                        'terms' => $status->slug,
+                                    ],
+                                ],
+                                'orderby' => 'menu_order date',
+                                'order' => 'ASC',
+                            ];
+                            $tasks_in_column = get_posts($tasks_args);
+                            foreach ($tasks_in_column as $task) {
+                                echo puzzling_render_task_card($task);
+                            }
+                            ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
     <?php endif; ?>
+    </div>
+</div>
+
+<div id="pzl-task-modal-backdrop" style="display: none;"></div>
+<div id="pzl-task-modal-wrap" style="display: none;">
+    <div id="pzl-task-modal-content">
+        <button id="pzl-close-modal-btn">&times;</button>
+        <div id="pzl-task-modal-body">
+            <div class="pzl-loader"></div>
+        </div>
     </div>
 </div>
