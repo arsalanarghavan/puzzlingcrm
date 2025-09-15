@@ -47,6 +47,10 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                     <label for="project_content">توضیحات پروژه:</label>
                     <?php wp_editor($project_to_edit ? $project_to_edit->post_content : '', 'project_content', ['textarea_rows' => 10]); ?>
                 </div>
+                 <div class="form-group">
+                    <label for="project_category">دسته‌بندی پروژه (اختیاری):</label>
+                    <input type="text" id="project_category" name="project_category" value="<?php echo $project_to_edit ? esc_attr(get_post_meta($project_to_edit->ID, '_project_category', true)) : ''; ?>" placeholder="مثال: خدمت یا اشتراک">
+                </div>
                 <div class="form-group">
                     <label for="project_files">فایل‌های پیوست:</label>
                     <input type="file" id="project_files" name="project_files[]" multiple>
@@ -116,8 +120,7 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                         $contract_id = !empty($contract) ? $contract[0]->ID : 0;
                         $contract_url = $contract_id ? add_query_arg(['view' => 'contracts', 'action' => 'edit', 'contract_id' => $contract_id], puzzling_get_dashboard_url()) : '#';
                         
-                        // نکته: برای دسته‌بندی باید یک فیلد سفارشی به پروژه‌ها اضافه کنید
-                        $project_category = get_post_meta($project_id, '_project_category', true) ?: 'سرویس'; 
+                        $project_category = get_post_meta($project_id, '_project_category', true) ?: '---'; 
                     ?>
                     <div class="pzl-project-card-item">
                         <div class="pzl-project-card-logo">

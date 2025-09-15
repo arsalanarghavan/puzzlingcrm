@@ -19,9 +19,24 @@ class PuzzlingCRM_CPT_Manager {
         add_action( 'init', [ $this, 'register_taxonomies' ], 0 );
         add_action( 'add_meta_boxes', [ $this, 'add_task_meta_boxes' ] );
         add_action( 'save_post_task', [ $this, 'save_task_meta_boxes' ] );
+        add_action( 'add_meta_boxes', [ $this, 'add_form_meta_boxes' ] );
+        add_action( 'save_post_pzl_form', [ $this, 'save_form_meta_boxes' ] );
     }
 
     public function register_post_types() {
+
+        // **NEW: Form CPT**
+        register_post_type( 'pzl_form', [
+            'labels'        => [
+                'name'          => __( 'Forms', 'puzzlingcrm' ),
+                'singular_name' => __( 'Form', 'puzzlingcrm' ),
+                'add_new_item'  => __( 'Add New Form', 'puzzlingcrm' ),
+            ],
+            'public'        => false,
+            'show_ui'       => true,
+            'show_in_menu'  => false,
+            'supports'      => ['title', 'editor', 'author'],
+        ]);
 
         // Epic CPT
         register_post_type( 'epic', [
@@ -224,6 +239,92 @@ class PuzzlingCRM_CPT_Manager {
             'default'
         );
     }
+    
+    /**
+     * Adds meta boxes for form builder.
+     */
+    public function add_form_meta_boxes() {
+        add_meta_box(
+            'puzzling_form_builder_meta_box',
+            __('Form Fields', 'puzzlingcrm'),
+            [$this, 'render_form_builder_meta_box'],
+            'pzl_form',
+            'normal',
+            'high'
+        );
+    }
+
+    /**
+     * Renders the content of the form builder meta box.
+     */
+    public function render_form_builder_meta_box($post) {
+        wp_nonce_field('puzzling_save_form_fields', 'puzzling_form_fields_nonce');
+        $fields = get_post_meta($post->ID, '_form_fields', true);
+        ?>
+        <div id="puzzling-form-builder">
+            <p><?php _e('Add the fields required for this form. This information will be used to create the project description.', 'puzzlingcrm'); ?></p>
+            <div id="form-fields-container">
+                <?php if ( ! empty( $fields ) && is_array($fields) ): foreach ($fields as $index => $field): ?>
+                    <div class="form-field-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" name="form_fields[<?php echo $index; ?>][label]" value="<?php echo esc_attr($field['label']); ?>" placeholder="<?php _e('Field Label', 'puzzlingcrm'); ?>" style="flex-grow: 1;">
+                        <label><input type="checkbox" name="form_fields[<?php echo $index; ?>][required]" value="1" <?php checked($field['required'], true); ?>> <?php _e('Required', 'puzzlingcrm'); ?></label>
+                        <button type="button" class="button remove-field"><?php _e('Remove', 'puzzlingcrm'); ?></button>
+                    </div>
+                <?php endforeach; endif; ?>
+            </div>
+            <button type="button" id="add-form-field" class="button button-primary"><?php _e('Add Field', 'puzzlingcrm'); ?></button>
+        </div>
+        <script>
+            jQuery(document).ready(function($) {
+                let fieldIndex = <?php echo is_array($fields) ? count($fields) : 0; ?>;
+                $('#add-form-field').on('click', function() {
+                    $('#form-fields-container').append(`
+                        <div class="form-field-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <input type="text" name="form_fields[${fieldIndex}][label]" placeholder="<?php _e('Field Label', 'puzzlingcrm'); ?>" style="flex-grow: 1;">
+                            <label><input type="checkbox" name="form_fields[${fieldIndex}][required]" value="1"> <?php _e('Required', 'puzzlingcrm'); ?></label>
+                            <button type="button" class="button remove-field"><?php _e('Remove', 'puzzlingcrm'); ?></button>
+                        </div>
+                    `);
+                    fieldIndex++;
+                });
+                $('#form-fields-container').on('click', '.remove-field', function() {
+                    $(this).closest('.form-field-row').remove();
+                });
+            });
+        </script>
+        <?php
+    }
+    
+     /**
+     * Saves the data from the form builder meta box.
+     */
+    public function save_form_meta_boxes($post_id) {
+        if (!isset($_POST['puzzling_form_fields_nonce']) || !wp_verify_nonce($_POST['puzzling_form_fields_nonce'], 'puzzling_save_form_fields')) {
+            return;
+        }
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
+        if (isset($_POST['form_fields']) && is_array($_POST['form_fields'])) {
+            $sanitized_fields = [];
+            foreach ($_POST['form_fields'] as $field) {
+                if (!empty($field['label'])) {
+                    $sanitized_fields[] = [
+                        'label' => sanitize_text_field($field['label']),
+                        'required' => isset($field['required'])
+                    ];
+                }
+            }
+            update_post_meta($post_id, '_form_fields', $sanitized_fields);
+        } else {
+             delete_post_meta($post_id, '_form_fields');
+        }
+    }
+
 
     /**
      * Renders the content of the task details meta box.

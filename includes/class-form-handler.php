@@ -51,11 +51,22 @@ class PuzzlingCRM_Form_Handler {
              }
         }
 
-        if ( ! isset($_POST['puzzling_action']) || ! isset($_POST['_wpnonce']) ) {
+        if ( ! isset($_POST['puzzling_action']) ) {
+            return;
+        }
+        
+        // Nonce check is done inside each handler where necessary
+        $action = sanitize_key($_POST['puzzling_action']);
+
+        if ($action === 'submit_automation_form') {
+            $this->handle_submit_automation_form();
             return;
         }
 
-        $action = sanitize_key($_POST['puzzling_action']);
+        if ( ! isset($_POST['_wpnonce']) ) {
+            return;
+        }
+
         $item_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
         
         $nonce_action = 'puzzling_' . $action;
@@ -115,6 +126,78 @@ class PuzzlingCRM_Form_Handler {
         wp_redirect( add_query_arg('puzzling_notice', $notice_key, $url) );
         exit;
     }
+
+    /**
+     * Handles the submission of the post-purchase automation form.
+     */
+    private function handle_submit_automation_form() {
+        $form_id = intval($_POST['form_id']);
+        $token = sanitize_key($_POST['token']);
+
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_submit_automation_form_' . $token)) {
+            wp_die('خطای امنیتی.');
+        }
+
+        $token_data = get_post_meta($form_id, '_automation_token_' . $token, true);
+
+        if (empty($token_data)) {
+            wp_die('لینک نامعتبر است یا قبلاً استفاده شده.');
+        }
+        
+        // All checks passed, now create the project and contract
+        $customer_id = $token_data['customer_id'];
+        $product_id = $token_data['product_id'];
+        $product = wc_get_product($product_id);
+        $customer = get_userdata($customer_id);
+
+        $project_title = sprintf('پروژه %s - %s', $product->get_name(), $customer->display_name);
+        
+        $project_content = "این پروژه به صورت خودکار پس از خرید محصول ایجاد شده است.\n\n";
+        $project_content .= "اطلاعات تکمیلی از فرم:\n";
+        if (isset($_POST['form_fields']) && is_array($_POST['form_fields'])) {
+            foreach ($_POST['form_fields'] as $label => $value) {
+                $project_content .= sprintf("- **%s:** %s\n", sanitize_text_field($label), sanitize_text_field($value));
+            }
+        }
+
+        $project_id = wp_insert_post([
+            'post_title'    => $project_title,
+            'post_content'  => $project_content,
+            'post_author'   => $customer_id,
+            'post_status'   => 'publish',
+            'post_type'     => 'project',
+        ]);
+
+        if (!is_wp_error($project_id)) {
+            // Set project category (Service or Subscription)
+            $category = $product->is_type('subscription') ? 'اشتراک' : 'سرویس';
+            update_post_meta($project_id, '_project_category', $category);
+
+            // Now, create the contract automatically
+            $contract_id = wp_insert_post([
+                'post_title' => sprintf('قرارداد برای: %s', $project_title),
+                'post_type' => 'contract',
+                'post_status' => 'publish',
+                'post_author' => $customer_id
+            ]);
+
+            if (!is_wp_error($contract_id)) {
+                update_post_meta($contract_id, '_project_id', $project_id);
+                // Note: No installments are created automatically. Admin needs to do this.
+            }
+
+            // Clean up the used token
+            delete_post_meta($form_id, '_automation_token_' . $token);
+            
+            // Redirect to dashboard with success message
+            $dashboard_url = puzzling_get_dashboard_url();
+            wp_redirect(add_query_arg('puzzling_notice', 'project_created_success', $dashboard_url));
+            exit;
+        } else {
+             wp_die('خطا در ایجاد پروژه.');
+        }
+    }
+
 
     private function handle_manage_user() {
         $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;

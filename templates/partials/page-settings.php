@@ -11,6 +11,7 @@ $base_url = remove_query_arg('puzzling_notice');
         <a href="<?php echo add_query_arg('tab', 'sms', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'sms' ? 'active' : ''; ?>"><i class="fas fa-sms"></i> سامانه پیامک</a>
         <a href="<?php echo add_query_arg('tab', 'workflow', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'workflow' ? 'active' : ''; ?>"><i class="fas fa-project-diagram"></i> گردش کار</a>
         <a href="<?php echo add_query_arg('tab', 'automations', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'automations' ? 'active' : ''; ?>"><i class="fas fa-robot"></i> اتوماسیون</a>
+        <a href="<?php echo add_query_arg('tab', 'forms', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'forms' ? 'active' : ''; ?>"><i class="fas fa-clipboard-list"></i> فرم‌ها</a>
     </div>
 
     <div class="pzl-dashboard-tab-content">
@@ -19,11 +20,11 @@ $base_url = remove_query_arg('puzzling_notice');
         if ( $active_tab == 'sms' ) {
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-sms.php';
         } elseif ( $active_tab == 'workflow' ) {
-            // Assuming you have created this file for workflow rules
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-workflow.php';
         } elseif ( $active_tab == 'automations' ) {
-            // Assuming you have created this file for automations
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-automations.php';
+        } elseif ( $active_tab == 'forms' ) {
+            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-forms.php';
         } else {
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-payment.php';
         }

@@ -57,6 +57,7 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-settings-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-logger.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-agile-handler.php'; // **NEW: Agile Handler**
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-automation-handler.php'; // **NEW: Automation Handler**
         
         // SMS Interface and Integrations
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-sms-service-interface.php';
@@ -81,7 +82,8 @@ class PuzzlingCRM {
         new PuzzlingCRM_Form_Handler();
         new PuzzlingCRM_Ajax_Handler();
         new PuzzlingCRM_Cron_Handler();
-        new PuzzlingCRM_Agile_Handler(); // **NEW: Initialize Agile Handler**
+        new PuzzlingCRM_Agile_Handler();
+        new PuzzlingCRM_Automation_Handler(); // **NEW: Initialize Automation Handler**
     }
 
     /**
