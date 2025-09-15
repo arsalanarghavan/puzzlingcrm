@@ -34,13 +34,22 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
         $due_date = get_post_meta($task_id, '_due_date', true);
         $due_date_html = '';
         if ($due_date) {
-             $due_date_html = '<span class="pzl-card-due-date"><i class="fas fa-calendar-alt"></i> ' . esc_html(date_i18n('M j', strtotime($due_date))) . '</span>';
+             $due_date_html = '<span class="pzl-card-due-date"><i class="far fa-calendar-alt"></i> ' . esc_html(date_i18n('M j', strtotime($due_date))) . '</span>';
         }
 
         // Sub-tasks count
         $subtasks = get_children(['post_parent' => $task_id, 'post_type' => 'task']);
         $subtask_count = count($subtasks);
         $subtask_html = $subtask_count > 0 ? '<span class="pzl-card-subtasks"><i class="fas fa-tasks"></i> ' . esc_html($subtask_count) . '</span>' : '';
+
+        // **NEW: Attachment and Comment count**
+        $attachment_ids = get_post_meta($task_id, '_task_attachments', true);
+        $attachment_count = is_array($attachment_ids) ? count($attachment_ids) : 0;
+        $attachment_html = $attachment_count > 0 ? '<span class="pzl-card-attachments"><i class="fas fa-paperclip"></i> ' . esc_html($attachment_count) . '</span>' : '';
+        
+        $comment_count = $task->comment_count;
+        $comment_html = $comment_count > 0 ? '<span class="pzl-card-comments"><i class="far fa-comment"></i> ' . esc_html($comment_count) . '</span>' : '';
+
 
         // Labels
         $labels = wp_get_post_terms($task_id, 'task_label');
@@ -56,12 +65,11 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
         return sprintf(
             '<div class="pzl-task-card" data-task-id="%d">
                 %s
-                <div class="pzl-card-priority %s"></div>
+                <div class="pzl-card-priority %s" title="%s"></div>
                 <h4 class="pzl-card-title">%s</h4>
                 <div class="pzl-card-footer">
                     <div class="pzl-card-meta">
-                        %s
-                        %s
+                        %s %s %s %s
                         %s
                     </div>
                     <div class="pzl-card-assignee">%s</div>
@@ -70,10 +78,13 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
             esc_attr($task_id),
             $labels_html,
             esc_attr($priority_class),
+            !empty($priority_terms) ? esc_attr($priority_terms[0]->name) : '',
             esc_html($task->post_title),
             $due_date_html,
+            $attachment_html,
+            $comment_html,
             $subtask_html,
-            $project_title ? '<span class="pzl-card-project"><i class="fas fa-folder"></i> ' . esc_html($project_title) . '</span>' : '',
+            $project_title ? '<span class="pzl-card-project"><i class="far fa-folder"></i> ' . esc_html($project_title) . '</span>' : '',
             $assignee_avatar
         );
     }

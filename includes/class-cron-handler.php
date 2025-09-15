@@ -16,6 +16,7 @@ class PuzzlingCRM_Cron_Handler {
         }
         
         add_action( 'puzzling_daily_reminder_hook', [ $this, 'send_payment_reminders' ] );
+        add_action( 'puzzling_daily_reminder_hook', [ $this, 'send_task_reminders' ] ); // **NEW ACTION**
     }
 
     /**
@@ -54,7 +55,7 @@ class PuzzlingCRM_Cron_Handler {
 
         if ( !$sms_handler ) {
             set_transient('puzzling_sms_not_configured', true, DAY_IN_SECONDS);
-            error_log('PuzzlingCRM Cron: No active and correctly configured SMS service found.');
+            error_log('PuzzlingCRM Cron: No active and correctly configured SMS service found for payment reminders.');
             return;
         }
 
@@ -71,11 +72,7 @@ class PuzzlingCRM_Cron_Handler {
             $installments = get_post_meta( $contract_post->ID, '_installments', true );
             $customer_id = $contract_post->post_author;
             
-            // Decoupled phone number logic
             $customer_phone = get_user_meta($customer_id, 'puzzling_phone_number', true);
-            if (empty($customer_phone) && class_exists('WooCommerce')) {
-                $customer_phone = get_user_meta($customer_id, 'billing_phone', true);
-            }
 
             if ( empty($installments) || ! is_array($installments) || empty($customer_phone) ) {
                 continue;
@@ -88,7 +85,7 @@ class PuzzlingCRM_Cron_Handler {
                         $due_date->setTime(0, 0, 0);
                         
                         $interval = $today->diff($due_date);
-                        if ($interval->invert) continue; // Skip past due dates for reminders
+                        if ($interval->invert) continue; 
 
                         $days_left = $interval->days;
                         $amount_formatted = number_format($installment['amount']);
@@ -118,9 +115,7 @@ class PuzzlingCRM_Cron_Handler {
                             }
 
                             if (!empty($message_or_pattern)) {
-                                if ($sms_handler->send_sms($customer_phone, $message_or_pattern, $params)) {
-                                    error_log("PuzzlingCRM Cron SUCCESS: {$days_left}-day reminder SMS sent to {$customer_phone} for contract ID {$contract_post->ID}.");
-                                }
+                                $sms_handler->send_sms($customer_phone, $message_or_pattern, $params);
                             }
                         }
                     } catch (Exception $e) {
@@ -128,6 +123,87 @@ class PuzzlingCRM_Cron_Handler {
                     }
                 }
             }
+        }
+    }
+    
+    /**
+     * Sends email notifications for upcoming or overdue tasks.
+     */
+    public function send_task_reminders() {
+        $today_str = date('Y-m-d');
+        $tomorrow_str = date('Y-m-d', strtotime('+1 day'));
+
+        $tasks_due_soon = get_posts([
+            'post_type' => 'task',
+            'posts_per_page' => -1,
+            'meta_query' => [
+                'relation' => 'OR',
+                // Overdue tasks
+                [
+                    'key' => '_due_date',
+                    'value' => $today_str,
+                    'compare' => '<',
+                    'type' => 'DATE'
+                ],
+                // Tasks due today or tomorrow
+                [
+                    'key' => '_due_date',
+                    'value' => [$today_str, $tomorrow_str],
+                    'compare' => 'IN',
+                    'type' => 'DATE'
+                ]
+            ],
+            'tax_query' => [
+                [
+                    'taxonomy' => 'task_status',
+                    'field' => 'slug',
+                    'terms' => 'done',
+                    'operator' => 'NOT IN'
+                ]
+            ]
+        ]);
+
+        if (empty($tasks_due_soon)) {
+            return;
+        }
+        
+        $reminders_by_user = [];
+
+        // Group tasks by assigned user
+        foreach ($tasks_due_soon as $task) {
+            $assigned_to = get_post_meta($task->ID, '_assigned_to', true);
+            if ($assigned_to) {
+                if (!isset($reminders_by_user[$assigned_to])) {
+                    $reminders_by_user[$assigned_to] = [];
+                }
+                $reminders_by_user[$assigned_to][] = $task;
+            }
+        }
+
+        // Send one summary email per user
+        foreach ($reminders_by_user as $user_id => $tasks) {
+            $user = get_userdata($user_id);
+            if (!$user) continue;
+
+            $to = $user->user_email;
+            $subject = 'یادآوری وظایف PuzzlingCRM';
+            
+            $body = '<p>سلام ' . esc_html($user->display_name) . '،</p>';
+            $body .= '<p>این یک یادآوری برای وظایف زیر است که ددلاین آن‌ها نزدیک یا گذشته است:</p>';
+            $body .= '<ul>';
+
+            foreach ($tasks as $task) {
+                $due_date = get_post_meta($task->ID, '_due_date', true);
+                $status_text = (strtotime($due_date) < strtotime($today_str)) ? '<strong style="color:red;">(گذشته)</strong>' : '';
+                $body .= sprintf('<li><strong>%s</strong> - تاریخ سررسید: %s %s</li>', esc_html($task->post_title), esc_html($due_date), $status_text);
+            }
+
+            $body .= '</ul>';
+            $body .= '<p>لطفاً برای مدیریت وظایف خود به داشبورد مراجعه کنید.</p>';
+            $body .= '<p><a href="' . esc_url(puzzling_get_dashboard_url()) . '">رفتن به داشبورد</a></p>';
+            
+            $headers = ['Content-Type: text/html; charset=UTF-8'];
+            wp_mail($to, $subject, $body, $headers);
         }
     }
 }

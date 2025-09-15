@@ -8,23 +8,49 @@ class PuzzlingCRM_Ajax_Handler {
 
     public function __construct() {
         add_action('wp_ajax_puzzling_add_task', [$this, 'add_task']);
-        add_action('wp_ajax_puzzling_quick_add_task', [$this, 'quick_add_task']); // **NEW ACTION**
+        add_action('wp_ajax_puzzling_quick_add_task', [$this, 'quick_add_task']);
         add_action('wp_ajax_puzzling_update_task_status', [$this, 'update_task_status']);
         add_action('wp_ajax_puzzling_delete_task', [$this, 'delete_task']);
         add_action('wp_ajax_puzzling_get_notifications', [$this, 'get_notifications']);
         add_action('wp_ajax_puzzling_mark_notification_read', [$this, 'mark_notification_read']);
 
-        // New AJAX actions for Kanban board
+        // Kanban board actions
         add_action('wp_ajax_puzzling_get_task_details', [$this, 'get_task_details']);
         add_action('wp_ajax_puzzling_save_task_content', [$this, 'save_task_content']);
         add_action('wp_ajax_puzzling_add_task_comment', [$this, 'add_task_comment']);
         
-        // **NEW: Workflow Management Actions**
+        // Workflow Management Actions
         add_action('wp_ajax_puzzling_save_status_order', [$this, 'save_status_order']);
         add_action('wp_ajax_puzzling_add_new_status', [$this, 'add_new_status']);
         add_action('wp_ajax_puzzling_delete_status', [$this, 'delete_status']);
 
+        // **NEW: Advanced Task Features**
+        add_action('wp_ajax_puzzling_manage_checklist', [$this, 'manage_checklist']);
+        add_action('wp_ajax_puzzling_log_time', [$this, 'log_time']);
     }
+    
+    /**
+     * Logs an activity to a task's metadata.
+     * @param int $task_id The ID of the task.
+     * @param string $activity_text The description of the activity.
+     */
+    private function _log_task_activity($task_id, $activity_text) {
+        $activity_log = get_post_meta($task_id, '_task_activity_log', true);
+        if (!is_array($activity_log)) {
+            $activity_log = [];
+        }
+        $current_user = wp_get_current_user();
+        $new_log_entry = [
+            'user_id' => $current_user->ID,
+            'user_name' => $current_user->display_name,
+            'text' => $activity_text,
+            'time' => current_time('mysql'),
+        ];
+        // Add to the beginning of the array
+        array_unshift($activity_log, $new_log_entry);
+        update_post_meta($task_id, '_task_activity_log', $activity_log);
+    }
+
 
     private function notify_all_admins($title, $args) {
         $admins = get_users([
@@ -52,7 +78,6 @@ class PuzzlingCRM_Ajax_Handler {
         $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
         $assigned_to = isset($_POST['assigned_to']) && current_user_can('assign_tasks') ? intval($_POST['assigned_to']) : get_current_user_id();
         
-        // **NEW: Handle new fields**
         $parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : 0;
         $time_estimate = isset($_POST['time_estimate']) ? floatval($_POST['time_estimate']) : 0;
         $task_labels = isset($_POST['task_labels']) ? sanitize_text_field($_POST['task_labels']) : '';
@@ -67,7 +92,7 @@ class PuzzlingCRM_Ajax_Handler {
             'post_type' => 'task', 
             'post_status' => 'publish', 
             'post_author' => get_current_user_id(),
-            'post_parent' => $parent_id, // Set parent task
+            'post_parent' => $parent_id,
         ]);
 
         if ( is_wp_error($task_id) ) {
@@ -82,11 +107,13 @@ class PuzzlingCRM_Ajax_Handler {
 
         // Set taxonomies
         wp_set_post_terms($task_id, [$priority_id], 'task_priority');
-        wp_set_post_terms($task_id, 'to-do', 'task_status'); // Default status
+        wp_set_post_terms($task_id, 'to-do', 'task_status');
         if (!empty($task_labels)) {
             $labels_array = array_map('trim', explode(',', $task_labels));
             wp_set_post_terms($task_id, $labels_array, 'task_label');
         }
+        
+        $this->_log_task_activity($task_id, sprintf('وظیفه را ایجاد کرد.'));
 
         // Handle file attachments
         if ( ! empty($_FILES['task_attachments']) ) {
@@ -106,6 +133,7 @@ class PuzzlingCRM_Ajax_Handler {
                     $attachment_id = media_handle_upload("upload_file", $task_id);
                     if (!is_wp_error($attachment_id)) {
                         $attachment_ids[] = $attachment_id;
+                        $this->_log_task_activity($task_id, sprintf('فایل "%s" را پیوست کرد.', esc_html($files['name'][$key])));
                     }
                 }
             }
@@ -118,7 +146,6 @@ class PuzzlingCRM_Ajax_Handler {
         
         $project_title = get_the_title($project_id);
         
-        // Notify the assigned user
         PuzzlingCRM_Logger::add('تسک جدید به شما محول شد', ['content' => "تسک '{$title}' در پروژه '{$project_title}' به شما تخصیص داده شد.", 'type' => 'notification', 'user_id' => $assigned_to, 'object_id' => $task_id]);
 
         $task = get_post($task_id);
@@ -154,17 +181,16 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'خطا در ایجاد تسک.']);
         }
 
-        // Apply context-based and default data
         update_post_meta($task_id, '_project_id', $project_id);
         update_post_meta($task_id, '_assigned_to', $assigned_to);
-
         wp_set_post_terms($task_id, $status_slug, 'task_status');
         
-        // Set a default priority (e.g., 'medium')
         $medium_priority = get_term_by('slug', 'medium', 'task_priority');
         if ($medium_priority) {
             wp_set_post_terms($task_id, $medium_priority->term_id, 'task_priority');
         }
+
+        $this->_log_task_activity($task_id, sprintf('وظیفه را به صورت سریع ایجاد کرد.'));
 
         $this->send_task_assignment_email($assigned_to, $task_id);
         
@@ -204,12 +230,15 @@ class PuzzlingCRM_Ajax_Handler {
         $task_id = intval($_POST['task_id']);
         $new_status_slug = sanitize_key($_POST['new_status_slug']);
         $task = get_post($task_id);
+        $old_status_terms = wp_get_post_terms($task_id, 'task_status');
+        $old_status_name = !empty($old_status_terms) ? $old_status_terms[0]->name : 'نامشخص';
 
         $term = get_term_by('slug', $new_status_slug, 'task_status');
         if ($term) {
             wp_set_post_terms($task_id, $term->term_id, 'task_status');
             
-            PuzzlingCRM_Logger::add('وضعیت تسک به‌روز شد', ['content' => "وضعیت تسک '{$task->post_title}' به '{$term->name}' تغییر یافت.", 'type' => 'log', 'object_id' => $task_id]);
+            $log_message = sprintf('وضعیت وظیفه را از "%s" به "%s" تغییر داد.', $old_status_name, $term->name);
+            $this->_log_task_activity($task_id, $log_message);
 
             wp_send_json_success(['message' => 'وضعیت تسک به‌روزرسانی شد.']);
         } else {
@@ -231,7 +260,7 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'شما اجازه حذف این تسک را ندارید.']);
         }
 
-        $task_title = $task->post_title; // Save title before deleting
+        $task_title = $task->post_title;
         $result = wp_delete_post($task_id, true);
 
         if ( $result ) {
@@ -254,48 +283,11 @@ class PuzzlingCRM_Ajax_Handler {
         if (!$task) {
             wp_send_json_error(['message' => 'وظیفه یافت نشد.']);
         }
-
+        
         ob_start();
-        ?>
-        <div class="pzl-modal-header">
-            <h3 id="pzl-modal-title"><?php echo esc_html($task->post_title); ?></h3>
-        </div>
-        <div class="pzl-modal-body">
-            <h4><i class="fas fa-align-left"></i> توضیحات</h4>
-            <div id="pzl-task-description-viewer">
-                <?php echo $task->post_content ? wpautop(wp_kses_post($task->post_content)) : '<p class="pzl-no-content">توضیحاتی برای این وظیفه ثبت نشده است. برای افزودن کلیک کنید.</p>'; ?>
-            </div>
-            <div id="pzl-task-description-editor" style="display: none;">
-                <textarea id="pzl-task-content-input" rows="6"><?php echo esc_textarea($task->post_content); ?></textarea>
-                <button id="pzl-save-task-content" class="pzl-button">ذخیره</button>
-                <button id="pzl-cancel-edit-content" class="pzl-button-secondary">انصراف</button>
-            </div>
-            <hr>
-            <h4><i class="fas fa-comments"></i> فعالیت و نظرات</h4>
-            <div class="pzl-task-comments">
-                <ul class="pzl-comment-list">
-                    <?php
-                    $comments = get_comments(['post_id' => $task_id, 'status' => 'approve', 'order' => 'ASC']);
-                    if ($comments) {
-                        foreach($comments as $comment) {
-                            echo '<li class="pzl-comment-item">';
-                            echo '<div class="pzl-comment-avatar">' . get_avatar($comment->user_id, 32) . '</div>';
-                            echo '<div class="pzl-comment-content"><p><strong>' . esc_html($comment->comment_author) . '</strong>: ' . wp_kses_post($comment->comment_content) . '</p><span class="pzl-comment-date">' . human_time_diff(strtotime($comment->comment_date), current_time('timestamp')) . ' پیش</span></div>';
-                            echo '</li>';
-                        }
-                    } else {
-                        echo '<p>هنوز نظری ثبت نشده است.</p>';
-                    }
-                    ?>
-                </ul>
-            </div>
-            <div class="pzl-add-comment-form">
-                <textarea id="pzl-new-comment-text" placeholder="نظر خود را بنویسید..." rows="3"></textarea>
-                <button id="pzl-submit-comment" class="pzl-button">ارسال نظر</button>
-            </div>
-        </div>
-        <?php
+        include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/modal-task-details.php';
         $html = ob_get_clean();
+        
         wp_send_json_success(['html' => $html]);
     }
     
@@ -309,6 +301,8 @@ class PuzzlingCRM_Ajax_Handler {
         $content = wp_kses_post($_POST['content']);
 
         $result = wp_update_post(['ID' => $task_id, 'post_content' => $content], true);
+        
+        $this->_log_task_activity($task_id, 'توضیحات وظیفه را به‌روزرسانی کرد.');
 
         if (is_wp_error($result)) {
             wp_send_json_error(['message' => 'خطا در ذخیره‌سازی.']);
@@ -337,6 +331,29 @@ class PuzzlingCRM_Ajax_Handler {
         ]);
 
         if ($comment_id) {
+            $this->_log_task_activity($task_id, sprintf('یک نظر جدید ثبت کرد: "%s"', esc_html(wp_trim_words($comment_text, 10))));
+            
+            // Handle mentions
+            preg_match_all('/@(\w+)/', $comment_text, $matches);
+            if (!empty($matches[1])) {
+                $mentioned_logins = array_unique($matches[1]);
+                foreach ($mentioned_logins as $login) {
+                    $mentioned_user = get_user_by('login', $login);
+                    if ($mentioned_user) {
+                         PuzzlingCRM_Logger::add(
+                            sprintf('شما در تسک "%s" منشن شدید', get_the_title($task_id)), 
+                            [
+                                'content' => sprintf('%s شما را در یک نظر منشن کرد.', $user->display_name),
+                                'type' => 'notification', 
+                                'user_id' => $mentioned_user->ID, 
+                                'object_id' => $task_id
+                            ]
+                        );
+                    }
+                }
+            }
+
+
             $comment = get_comment($comment_id);
              ob_start();
              echo '<li class="pzl-comment-item">';
@@ -350,6 +367,86 @@ class PuzzlingCRM_Ajax_Handler {
         }
     }
 
+    public function manage_checklist() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_tasks') || !isset($_POST['task_id']) || !isset($_POST['sub_action'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $task_id = intval($_POST['task_id']);
+        $sub_action = sanitize_key($_POST['sub_action']);
+        $checklist = get_post_meta($task_id, '_task_checklist', true);
+        if (!is_array($checklist)) {
+            $checklist = [];
+        }
+
+        switch ($sub_action) {
+            case 'add':
+                $text = sanitize_text_field($_POST['text']);
+                if (empty($text)) wp_send_json_error(['message' => 'متن نمی‌تواند خالی باشد.']);
+                $item_id = 'item_' . time();
+                $checklist[$item_id] = ['text' => $text, 'checked' => false];
+                $this->_log_task_activity($task_id, sprintf('آیتم چک‌لیست "%s" را اضافه کرد.', $text));
+                break;
+
+            case 'toggle':
+                $item_id = sanitize_key($_POST['item_id']);
+                if (isset($checklist[$item_id])) {
+                    $checklist[$item_id]['checked'] = !$checklist[$item_id]['checked'];
+                    $log_action = $checklist[$item_id]['checked'] ? 'کامل' : 'ناکامل';
+                    $this->_log_task_activity($task_id, sprintf('وضعیت آیتم چک‌لیست "%s" را به %s تغییر داد.', $checklist[$item_id]['text'], $log_action));
+                }
+                break;
+
+            case 'delete':
+                $item_id = sanitize_key($_POST['item_id']);
+                if (isset($checklist[$item_id])) {
+                    $this->_log_task_activity($task_id, sprintf('آیتم چک‌لیست "%s" را حذف کرد.', $checklist[$item_id]['text']));
+                    unset($checklist[$item_id]);
+                }
+                break;
+        }
+
+        update_post_meta($task_id, '_task_checklist', $checklist);
+        wp_send_json_success(['checklist' => $checklist]);
+    }
+
+    public function log_time() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_tasks') || !isset($_POST['task_id']) || !isset($_POST['hours'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $task_id = intval($_POST['task_id']);
+        $hours = floatval($_POST['hours']);
+        $description = sanitize_text_field($_POST['description']);
+        
+        if ($hours <= 0) {
+            wp_send_json_error(['message' => 'ساعت وارد شده باید بزرگتر از صفر باشد.']);
+        }
+        
+        $time_logs = get_post_meta($task_id, '_task_time_logs', true);
+        if (!is_array($time_logs)) {
+            $time_logs = [];
+        }
+        
+        $current_user = wp_get_current_user();
+        $new_log = [
+            'user_id' => $current_user->ID,
+            'user_name' => $current_user->display_name,
+            'hours' => $hours,
+            'description' => $description,
+            'date' => current_time('mysql'),
+        ];
+        
+        $time_logs[] = $new_log;
+        update_post_meta($task_id, '_task_time_logs', $time_logs);
+        
+        $this->_log_task_activity($task_id, sprintf('%.2f ساعت زمان ثبت کرد.', $hours));
+
+        wp_send_json_success(['new_log' => $new_log, 'total_hours' => array_sum(wp_list_pluck($time_logs, 'hours'))]);
+    }
+
     public function save_status_order() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options') || !isset($_POST['order'])) {
@@ -361,7 +458,7 @@ class PuzzlingCRM_Ajax_Handler {
             global $wpdb;
             $wpdb->update($wpdb->terms, ['term_order' => $index + 1], ['term_id' => $term_id]);
         }
-
+        clean_term_cache(array_values($order), 'task_status');
         wp_send_json_success(['message' => 'ترتیب وضعیت‌ها ذخیره شد.']);
     }
 
@@ -385,7 +482,8 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success([
             'message' => 'وضعیت جدید اضافه شد.',
             'term_id' => $result['term_id'],
-            'name' => $name
+            'name' => $name,
+            'slug' => get_term($result['term_id'])->slug
         ]);
     }
 
@@ -397,22 +495,14 @@ class PuzzlingCRM_Ajax_Handler {
 
         $term_id = intval($_POST['term_id']);
         
-        // Find the "To Do" term to move tasks to
         $default_term = get_term_by('slug', 'to-do', 'task_status');
-        if (!$default_term) {
-            wp_send_json_error(['message' => 'وضعیت پیش‌فرض "To Do" یافت نشد. نمی‌توان وضعیت را حذف کرد.']);
+        if (!$default_term || $default_term->term_id == $term_id) {
+            wp_send_json_error(['message' => 'وضعیت پیش‌فرض "To Do" یافت نشد یا در حال حذف آن هستید.']);
         }
 
-        // Reassign posts to the default term
         $args = array(
             'post_type' => 'task',
-            'tax_query' => array(
-                array(
-                    'taxonomy' => 'task_status',
-                    'field' => 'term_id',
-                    'terms' => $term_id,
-                ),
-            ),
+            'tax_query' => [['taxonomy' => 'task_status','field' => 'term_id','terms' => $term_id]],
             'posts_per_page' => -1,
         );
         $tasks_to_reassign = get_posts($args);
@@ -436,7 +526,7 @@ class PuzzlingCRM_Ajax_Handler {
         $args = [
             'post_type' => 'puzzling_log',
             'author' => $user_id,
-            'posts_per_page' => 5,
+            'posts_per_page' => 10,
             'meta_query' => [ ['key' => '_log_type', 'value' => 'notification'] ]
         ];
         $notifications = get_posts($args);
@@ -452,7 +542,17 @@ class PuzzlingCRM_Ajax_Handler {
         foreach ($notifications as $note) {
             $is_read = get_post_meta($note->ID, '_is_read', true);
             $read_class = ($is_read == '1') ? 'pzl-read' : 'pzl-unread';
-            $html .= sprintf( '<li data-id="%d" class="%s">%s <small>%s</small></li>', esc_attr($note->ID), esc_attr($read_class), esc_html($note->post_title), esc_html(human_time_diff(get_the_time('U', $note->ID), current_time('timestamp')) . ' پیش') );
+            $object_id = get_post_meta($note->ID, '_related_object_id', true);
+            $link = $object_id ? add_query_arg(['view' => 'tasks', 'open_task_id' => $object_id], puzzling_get_dashboard_url()) : '#';
+
+            $html .= sprintf(
+                '<li data-id="%d" class="%s"><a href="%s">%s <small>%s</small></a></li>',
+                esc_attr($note->ID),
+                esc_attr($read_class),
+                esc_url($link),
+                esc_html($note->post_title),
+                esc_html(human_time_diff(get_the_time('U', $note->ID), current_time('timestamp')) . ' پیش')
+            );
         }
         
         wp_send_json_success(['count' => $unread_count, 'html' => $html]);
