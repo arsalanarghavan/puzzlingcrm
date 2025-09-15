@@ -1,14 +1,17 @@
 <?php
 /**
- * Template for the Task Details Modal Content.
- * Loaded via AJAX.
+ * Template for the Task Details Modal Content - V2 (Upgraded)
+ * Loaded via AJAX. Includes new Agile fields and actions.
  * @package PuzzlingCRM
  */
 if (!defined('ABSPATH')) exit;
 
 global $post;
-$post = $task;
-setup_postdata($post);
+// It's safer to use the passed $task variable directly instead of relying on global $post
+if (isset($task)) {
+    $post = $task;
+    setup_postdata($post);
+}
 
 // --- Task Data ---
 $project_id = get_post_meta($task_id, '_project_id', true);
@@ -17,6 +20,7 @@ $assigned_user_id = get_post_meta($task_id, '_assigned_to', true);
 $assignee = get_userdata($assigned_user_id);
 $due_date = get_post_meta($task_id, '_due_date', true);
 $time_estimate = get_post_meta($task_id, '_time_estimate', true);
+$story_points = get_post_meta($task_id, '_story_points', true); // **NEW**
 $checklist = get_post_meta($task_id, '_task_checklist', true) ?: [];
 $attachments = get_post_meta($task_id, '_task_attachments', true) ?: [];
 $time_logs = get_post_meta($task_id, '_task_time_logs', true) ?: [];
@@ -28,6 +32,11 @@ $activity_log = get_post_meta($task_id, '_task_activity_log', true) ?: [];
     <h3 id="pzl-modal-title"><?php echo esc_html($task->post_title); ?></h3>
     <div class="pzl-modal-subtitle">
         در پروژه: <a href="#"><?php echo esc_html($project_title); ?></a>
+    </div>
+    <div class="pzl-modal-actions">
+        <button id="pzl-save-as-template-btn" class="pzl-button pzl-button-sm">
+            <i class="fas fa-clone"></i> ذخیره به عنوان قالب
+        </button>
     </div>
 </div>
 
@@ -47,7 +56,7 @@ $activity_log = get_post_meta($task_id, '_task_activity_log', true) ?: [];
             <?php echo $task->post_content ? wpautop(wp_kses_post($task->post_content)) : '<p class="pzl-no-content">توضیحاتی برای این وظیفه ثبت نشده است. برای افزودن کلیک کنید.</p>'; ?>
         </div>
         <div id="pzl-task-description-editor" style="display: none;">
-            <textarea id="pzl-task-content-input" rows="6"><?php echo esc_textarea($task->post_content); ?></textarea>
+            <textarea id="pzl-task-content-input" class="pzl-textarea" rows="6"><?php echo esc_textarea($task->post_content); ?></textarea>
             <button id="pzl-save-task-content" class="pzl-button">ذخیره</button>
             <button type="button" id="pzl-cancel-edit-content" class="pzl-button-secondary">انصراف</button>
         </div>
@@ -59,7 +68,7 @@ $activity_log = get_post_meta($task_id, '_task_activity_log', true) ?: [];
                 $comments = get_comments(['post_id' => $task_id, 'status' => 'approve', 'order' => 'ASC']);
                 if ($comments) {
                     foreach($comments as $comment) {
-                        echo '<li class="pzl-comment-item"><div class="pzl-comment-avatar">' . get_avatar($comment->user_id, 32) . '</div><div class="pzl-comment-content"><p><strong>' . esc_html($comment->comment_author) . '</strong>: ' . wp_kses_post($comment->comment_content) . '</p><span class="pzl-comment-date">' . human_time_diff(strtotime($comment->comment_date), current_time('timestamp')) . ' پیش</span></div></li>';
+                        echo '<li class="pzl-comment-item"><div class="pzl-comment-avatar">' . get_avatar($comment->user_id, 32) . '</div><div class="pzl-comment-content"><p><strong>' . esc_html($comment->comment_author) . '</strong>: ' . wp_kses_post(wpautop($comment->comment_content)) . '</p><span class="pzl-comment-date">' . human_time_diff(strtotime($comment->comment_date), current_time('timestamp')) . ' پیش</span></div></li>';
                     }
                 } else { echo '<p>هنوز نظری ثبت نشده است.</p>'; }
                 ?>
@@ -188,6 +197,10 @@ $activity_log = get_post_meta($task_id, '_task_activity_log', true) ?: [];
     <div class="pzl-sidebar-item">
         <strong>اولویت:</strong>
         <span><?php the_terms($task_id, 'task_priority'); ?></span>
+    </div>
+    <div class="pzl-sidebar-item">
+        <strong>امتیاز داستان:</strong>
+        <span><?php echo !empty($story_points) ? esc_html($story_points) : '---'; ?></span>
     </div>
      <div class="pzl-sidebar-item">
         <strong>برچسب‌ها:</strong>

@@ -3,7 +3,7 @@
  * PuzzlingCRM Custom Post Type & Taxonomy Manager
  *
  * This class handles the registration of all custom post types and taxonomies
- * required for the plugin to function.
+ * required for the plugin to function, including new Agile features.
  *
  * @package PuzzlingCRM
  */
@@ -23,7 +23,7 @@ class PuzzlingCRM_CPT_Manager {
 
     public function register_post_types() {
 
-        // Epic CPT (NEW)
+        // Epic CPT
         register_post_type( 'epic', [
             'labels'        => [
                 'name'          => __( 'Epics', 'puzzlingcrm' ),
@@ -36,6 +36,30 @@ class PuzzlingCRM_CPT_Manager {
             'rewrite'       => ['slug' => 'epic'],
             'show_in_rest'  => true,
             'supports'      => ['title', 'editor', 'author', 'custom-fields'],
+        ]);
+
+        // **NEW: Sprint CPT**
+        register_post_type( 'pzl_sprint', [
+            'labels'        => [
+                'name'          => __( 'Sprints', 'puzzlingcrm' ),
+                'singular_name' => __( 'Sprint', 'puzzlingcrm' ),
+            ],
+            'public'        => false,
+            'show_ui'       => true,
+            'show_in_menu'  => false, // Will be managed via the Scrum Board page
+            'supports'      => ['title', 'author', 'custom-fields'],
+        ]);
+
+        // **NEW: Task Template CPT**
+        register_post_type( 'pzl_task_template', [
+            'labels'        => [
+                'name'          => __( 'Task Templates', 'puzzlingcrm' ),
+                'singular_name' => __( 'Task Template', 'puzzlingcrm' ),
+            ],
+            'public'        => false,
+            'show_ui'       => true,
+            'show_in_menu'  => false, // Will be managed via the main task interface
+            'supports'      => ['title', 'editor', 'custom-fields'],
         ]);
         
         // Project CPT
@@ -58,7 +82,7 @@ class PuzzlingCRM_CPT_Manager {
             'menu_icon'     => 'dashicons-portfolio',
         ]);
 
-        // Task CPT - **UPDATED for Sub-tasks & Covers**
+        // Task CPT
         register_post_type( 'task', [
             'labels'        => [
                 'name'          => __( 'Tasks', 'puzzlingcrm' ),
@@ -68,9 +92,9 @@ class PuzzlingCRM_CPT_Manager {
             ],
             'public'        => false,
             'show_ui'       => true,
-            'hierarchical'  => true, // <-- Enables parent-child relationships for sub-tasks
+            'hierarchical'  => true,
             'show_in_menu'  => false,
-            'supports'      => ['title', 'editor', 'author', 'custom-fields', 'comments', 'page-attributes', 'thumbnail'], // Added thumbnail for Cover Images
+            'supports'      => ['title', 'editor', 'author', 'custom-fields', 'comments', 'page-attributes', 'thumbnail'],
         ]);
 
         // Contract CPT
@@ -142,10 +166,10 @@ class PuzzlingCRM_CPT_Manager {
         // Task Priority Taxonomy
         register_taxonomy('task_priority', 'task', ['label' => __( 'Task Priority', 'puzzlingcrm' ), 'hierarchical' => true, 'show_in_rest' => true]);
         
-        // **NEW: Task Labels Taxonomy**
+        // Task Labels Taxonomy
         register_taxonomy('task_label', 'task', [
             'label' => __( 'Labels', 'puzzlingcrm' ),
-            'hierarchical' => false, // <-- Makes it behave like tags
+            'hierarchical' => false,
             'rewrite' => ['slug' => 'task-label'],
             'show_admin_column' => true,
             'show_in_rest' => true,
@@ -163,10 +187,10 @@ class PuzzlingCRM_CPT_Manager {
             ]
         ]);
 
-        // **NEW: Task Components Taxonomy**
+        // Task Components Taxonomy
         register_taxonomy('task_component', 'task', [
             'label' => __( 'Components', 'puzzlingcrm' ),
-            'hierarchical' => true, // Makes it behave like categories
+            'hierarchical' => true,
             'rewrite' => ['slug' => 'task-component'],
             'show_admin_column' => true,
             'show_in_rest' => true,
@@ -188,13 +212,13 @@ class PuzzlingCRM_CPT_Manager {
     }
     
     /**
-     * NEW: Adds meta boxes for advanced task relationships.
+     * Adds meta boxes for advanced task details.
      */
     public function add_task_meta_boxes() {
         add_meta_box(
-            'puzzling_task_links_meta_box',
-            __('Linked Tasks & Epic', 'puzzlingcrm'),
-            [$this, 'render_task_links_meta_box'],
+            'puzzling_task_details_meta_box',
+            __('Task Details', 'puzzlingcrm'),
+            [$this, 'render_task_details_meta_box'],
             'task',
             'side',
             'default'
@@ -202,10 +226,10 @@ class PuzzlingCRM_CPT_Manager {
     }
 
     /**
-     * NEW: Renders the content of the task links meta box.
+     * Renders the content of the task details meta box.
      */
-    public function render_task_links_meta_box($post) {
-        wp_nonce_field('puzzling_save_task_links', 'puzzling_task_links_nonce');
+    public function render_task_details_meta_box($post) {
+        wp_nonce_field('puzzling_save_task_details', 'puzzling_task_details_nonce');
 
         // Epic Selection
         $epics = get_posts(['post_type' => 'epic', 'numberposts' => -1]);
@@ -218,18 +242,17 @@ class PuzzlingCRM_CPT_Manager {
         }
         echo '</select><hr>';
 
-        // Task Linking
-        $linked_tasks = get_post_meta($post->ID, '_task_links', true) ?: [];
-        echo '<p><strong>' . __('Task Links', 'puzzlingcrm') . '</strong></p>';
-        // (UI for adding/viewing linked tasks would be added here via JS, for now we save it)
-        echo '<p class="description">' . __('Advanced task linking can be managed via API or future UI updates.', 'puzzlingcrm') . '</p>';
+        // Story Points
+        $story_points = get_post_meta($post->ID, '_story_points', true);
+        echo '<p><strong>' . __('Story Points', 'puzzlingcrm') . '</strong></p>';
+        echo '<input type="number" name="story_points" value="' . esc_attr($story_points) . '" style="width:100%;" />';
     }
 
     /**
-     * NEW: Saves the data from the task links meta box.
+     * Saves the data from the task details meta box.
      */
     public function save_task_meta_boxes($post_id) {
-        if (!isset($_POST['puzzling_task_links_nonce']) || !wp_verify_nonce($_POST['puzzling_task_links_nonce'], 'puzzling_save_task_links')) {
+        if (!isset($_POST['puzzling_task_details_nonce']) || !wp_verify_nonce($_POST['puzzling_task_details_nonce'], 'puzzling_save_task_details')) {
             return;
         }
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
@@ -242,6 +265,11 @@ class PuzzlingCRM_CPT_Manager {
         // Save Epic
         if (isset($_POST['task_epic_id'])) {
             update_post_meta($post_id, '_task_epic_id', intval($_POST['task_epic_id']));
+        }
+
+        // Save Story Points
+        if (isset($_POST['story_points'])) {
+            update_post_meta($post_id, '_story_points', sanitize_text_field($_POST['story_points']));
         }
     }
 

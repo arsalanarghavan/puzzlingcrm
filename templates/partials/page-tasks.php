@@ -1,9 +1,18 @@
 <?php
+/**
+ * Main Task Management Page Template - V3 (Fully Upgraded)
+ * This template includes multiple views (Board, List, Calendar, Gantt, etc.)
+ * and advanced features like bulk editing and swimlanes.
+ * @package PuzzlingCRM
+ */
+
 if (!defined('ABSPATH')) exit;
+if (!current_user_can('edit_tasks')) return;
 
 // Get active tab and view options
 $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'board'; // Default to board view
-$swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'none'; // New for swimlanes
+$swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'none'; // For swimlanes
+
 ?>
 <div class="pzl-dashboard-section" id="pzl-task-manager-page">
     <h3><i class="fas fa-tasks"></i> مدیریت وظایف</h3>
@@ -27,11 +36,19 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
             $all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish']);
             $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
             $all_tasks = get_posts(['post_type' => 'task', 'numberposts' => -1, 'orderby' => 'title', 'order' => 'ASC']);
+            $task_templates = get_posts(['post_type' => 'pzl_task_template', 'numberposts' => -1]);
             ?>
             <div class="pzl-card-header">
                 <h3><i class="fas fa-plus-circle"></i> افزودن وظیفه جدید</h3>
             </div>
             <form id="puzzling-add-task-form" class="pzl-form" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="template_id">استفاده از قالب:</label>
+                    <select name="template_id" id="task-template-selector">
+                        <option value="">-- بدون قالب --</option>
+                        <?php foreach ($task_templates as $template) { echo '<option value="' . esc_attr($template->ID) . '">' . esc_html($template->post_title) . '</option>'; } ?>
+                    </select>
+                </div>
                 <div class="pzl-form-row">
                     <div class="form-group" style="flex: 2;">
                         <label for="title">عنوان وظیفه</label>
@@ -60,6 +77,10 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
                     <div class="form-group">
                         <label for="time_estimate">تخمین زمان (ساعت)</label>
                         <input type="number" name="time_estimate" min="0" step="0.5" placeholder="مثال: 8">
+                    </div>
+                     <div class="form-group">
+                        <label for="story_points">امتیاز داستان (Story Points)</label>
+                        <input type="number" name="story_points" min="0" placeholder="مثال: 5">
                     </div>
                 </div>
                 <div class="pzl-form-row">
@@ -101,32 +122,63 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
             </form>
         </div>
     <?php elseif($active_tab === 'list'): ?>
-         <div class="pzl-card">
+        <div class="pzl-card">
             <div class="pzl-card-header">
-                <h3><i class="fas fa-list-ul"></i> لیست پیشرفته وظایف (در حال توسعه)</h3>
+                <h3><i class="fas fa-list-ul"></i> لیست پیشرفته وظایف</h3>
             </div>
-            <p>این نما به یک جدول قابل مرتب‌سازی و فیلتر با قابلیت ویرایش درون‌خطی تبدیل خواهد شد.</p>
             <?php
-            $paged = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
-            $project_filter = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0;
-            $staff_filter = isset($_GET['staff_id']) ? intval($_GET['staff_id']) : 0;
-            $status_filter = isset($_GET['status']) ? sanitize_key($_GET['status']) : '';
+            // Data for filters
             $staff_roles = ['system_manager', 'finance_manager', 'team_member', 'administrator'];
             $all_staff = get_users(['role__in' => $staff_roles]);
             $all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1]);
             $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false]);
-            
-            $args = [
-                'post_type' => 'task', 'posts_per_page' => 20, 'paged' => $paged,
-                'meta_query' => ['relation' => 'AND'], 'tax_query' => ['relation' => 'AND'],
-            ];
-            if ($project_filter > 0) { $args['meta_query'][] = ['key' => '_project_id', 'value' => $project_filter]; }
-            if ($staff_filter > 0) { $args['meta_query'][] = ['key' => '_assigned_to', 'value' => $staff_filter]; }
-            if (!empty($status_filter)) { $args['tax_query'][] = ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status_filter]; }
+            $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
+            ?>
+            <div id="bulk-edit-container" class="pzl-card" style="display:none; margin-bottom: 20px; background: #f0f3f6;">
+                <h4>ویرایش دسته‌جمعی</h4>
+                <div class="pzl-form-row" style="align-items: flex-end;">
+                    <div class="form-group">
+                        <label>تغییر وضعیت به:</label>
+                        <select id="bulk-status">
+                            <option value="">-- انتخاب --</option>
+                            <?php foreach($all_statuses as $status) { echo '<option value="'.$status->slug.'">'.$status->name.'</option>'; } ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>تخصیص به:</label>
+                        <select id="bulk-assignee">
+                            <option value="">-- انتخاب --</option>
+                            <?php foreach($all_staff as $staff) { echo '<option value="'.$staff->ID.'">'.$staff->display_name.'</option>'; } ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>تغییر اولویت به:</label>
+                        <select id="bulk-priority">
+                            <option value="">-- انتخاب --</option>
+                            <?php foreach($priorities as $p) { echo '<option value="'.$p->term_id.'">'.$p->name.'</option>'; } ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" id="apply-bulk-edit" class="pzl-button">اعمال</button>
+                        <button type="button" id="cancel-bulk-edit" class="pzl-button-secondary" style="background: #6c757d !important;">انصراف</button>
+                    </div>
+                </div>
+            </div>
+
+            <?php
+            // Query for tasks list
+            $paged = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
+            $args = ['post_type' => 'task', 'posts_per_page' => 20, 'paged' => $paged, 'meta_query' => ['relation' => 'AND'], 'tax_query' => ['relation' => 'AND']];
+            if (!empty($_GET['project_id'])) $args['meta_query'][] = ['key' => '_project_id', 'value' => intval($_GET['project_id'])];
+            if (!empty($_GET['staff_id'])) $args['meta_query'][] = ['key' => '_assigned_to', 'value' => intval($_GET['staff_id'])];
+            if (!empty($_GET['status'])) $args['tax_query'][] = ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => sanitize_key($_GET['status'])];
             $tasks_query = new WP_Query($args);
             ?>
-            <table class="pzl-table" style="margin-top: 20px;">
-                <thead><tr><th>عنوان وظیفه</th><th>پروژه</th><th>تخصیص به</th><th>وضعیت</th><th>ددلاین</th></tr></thead>
+            <table class="pzl-table" id="tasks-list-table">
+                <thead><tr>
+                    <th><input type="checkbox" id="select-all-tasks"></th>
+                    <th>عنوان وظیفه</th><th>پروژه</th><th>تخصیص به</th><th>وضعیت</th><th>ددلاین</th>
+                </tr></thead>
                 <tbody>
                     <?php if ($tasks_query->have_posts()): while($tasks_query->have_posts()): $tasks_query->the_post();
                         $project_id = get_post_meta(get_the_ID(), '_project_id', true);
@@ -134,6 +186,7 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
                         $status_terms = get_the_terms(get_the_ID(), 'task_status');
                     ?>
                         <tr>
+                            <td><input type="checkbox" class="task-checkbox" value="<?php echo get_the_ID(); ?>"></td>
                             <td><a href="#" class="open-task-modal" data-task-id="<?php echo get_the_ID(); ?>"><?php the_title(); ?></a></td>
                             <td><?php echo $project_id ? get_the_title($project_id) : '---'; ?></td>
                             <td><?php echo $assigned_id ? get_the_author_meta('display_name', $assigned_id) : '---'; ?></td>
@@ -141,7 +194,7 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
                             <td><?php echo get_post_meta(get_the_ID(), '_due_date', true); ?></td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="5">هیچ وظیفه‌ای با این فیلترها یافت نشد.</td></tr>
+                        <tr><td colspan="6">هیچ وظیفه‌ای با این فیلترها یافت نشد.</td></tr>
                     <?php endif; wp_reset_postdata(); ?>
                 </tbody>
             </table>
@@ -168,7 +221,7 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
             <div class="pzl-card-header">
                 <h3><i class="fas fa-cogs"></i> مدیریت وضعیت‌های گردش‌کار</h3>
             </div>
-            <p>در این بخش می‌توانید ستون‌های برد کانبان (وضعیت‌های وظایف) را مدیریت کنید. می‌توانید وضعیت‌های جدید اضافه کرده یا ترتیب آن‌ها را تغییر دهید.</p>
+            <p>در این بخش می‌توانید ستون‌های برد کانبان (وضعیت‌های وظایف) را مدیریت کنید.</p>
             <div id="workflow-status-manager">
                 <ul id="status-sortable-list">
                     <?php
@@ -214,30 +267,18 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
                     echo '<div class="pzl-task-column" data-status-slug="' . esc_attr($status->slug) . '">';
                     echo '<h4 class="pzl-column-header">' . esc_html($status->name) . '</h4>';
                     echo '<div class="pzl-task-list">';
-                    $tasks_args = [
-                        'post_type' => 'task', 'posts_per_page' => -1, 'post_parent' => 0,
-                        'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug]],
-                        'orderby' => 'menu_order date', 'order' => 'ASC',
-                    ];
-                    $tasks_in_column = get_posts($tasks_args);
-                    foreach ($tasks_in_column as $task) {
-                        echo puzzling_render_task_card($task);
-                    }
-                    echo '</div>'; // end pzl-task-list
+                    $tasks_in_column = get_posts(['post_type' => 'task', 'posts_per_page' => -1, 'post_parent' => 0, 'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug]], 'orderby' => 'menu_order date', 'order' => 'ASC']);
+                    foreach ($tasks_in_column as $task) echo puzzling_render_task_card($task);
+                    echo '</div>';
                     echo '<div class="add-card-controls"><button class="add-card-btn"><i class="fas fa-plus"></i> افزودن کارت</button><div class="add-card-form" style="display: none;"><textarea placeholder="عنوان کارت..."></textarea><div class="add-card-actions"><button class="pzl-button pzl-button-sm submit-add-card">افزودن</button><button type="button" class="cancel-add-card">&times;</button></div></div></div>';
-                    echo '</div>'; // end pzl-task-column
+                    echo '</div>';
                 }
-                echo '</div>'; // end pzl-task-board
+                echo '</div>';
             } else {
-                // Logic to generate swimlanes
                 $groups = [];
-                if ($swimlane_by === 'assignee') {
-                    $groups = get_users(['role__in' => ['system_manager', 'team_member', 'administrator', 'finance_manager']]);
-                } elseif ($swimlane_by === 'project') {
-                    $groups = get_posts(['post_type' => 'project', 'numberposts' => -1]);
-                } elseif ($swimlane_by === 'priority') {
-                    $groups = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
-                }
+                if ($swimlane_by === 'assignee') $groups = get_users(['role__in' => ['system_manager', 'team_member', 'administrator', 'finance_manager']]);
+                elseif ($swimlane_by === 'project') $groups = get_posts(['post_type' => 'project', 'numberposts' => -1]);
+                elseif ($swimlane_by === 'priority') $groups = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
 
                 foreach ($groups as $group) {
                     $group_id = ($swimlane_by === 'assignee' || $swimlane_by === 'project') ? $group->ID : $group->term_id;
@@ -252,29 +293,17 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
                         echo '<h4 class="pzl-column-header">' . esc_html($status->name) . '</h4>';
                         echo '<div class="pzl-task-list">';
                         
-                        $tasks_args = [
-                            'post_type' => 'task', 'posts_per_page' => -1, 'post_parent' => 0,
-                            'tax_query' => [['relation' => 'AND', ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug]]],
-                            'meta_query' => [],
-                            'orderby' => 'menu_order date', 'order' => 'ASC',
-                        ];
-                        
-                        if ($swimlane_by === 'assignee') {
-                             $tasks_args['meta_query'][] = ['key' => '_assigned_to', 'value' => $group_id];
-                        } elseif ($swimlane_by === 'project') {
-                            $tasks_args['meta_query'][] = ['key' => '_project_id', 'value' => $group_id];
-                        } elseif ($swimlane_by === 'priority') {
-                            $tasks_args['tax_query'][0][] = ['taxonomy' => 'task_priority', 'field' => 'term_id', 'terms' => $group_id];
-                        }
+                        $tasks_args = ['post_type' => 'task', 'posts_per_page' => -1, 'post_parent' => 0, 'tax_query' => [['relation' => 'AND', ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug]]], 'meta_query' => [], 'orderby' => 'menu_order date', 'order' => 'ASC'];
+                        if ($swimlane_by === 'assignee') $tasks_args['meta_query'][] = ['key' => '_assigned_to', 'value' => $group_id];
+                        elseif ($swimlane_by === 'project') $tasks_args['meta_query'][] = ['key' => '_project_id', 'value' => $group_id];
+                        elseif ($swimlane_by === 'priority') $tasks_args['tax_query'][0][] = ['taxonomy' => 'task_priority', 'field' => 'term_id', 'terms' => $group_id];
                         
                         $tasks_in_group = get_posts($tasks_args);
-                        foreach ($tasks_in_group as $task) {
-                            echo puzzling_render_task_card($task);
-                        }
+                        foreach ($tasks_in_group as $task) echo puzzling_render_task_card($task);
                         
-                        echo '</div></div>'; // end task-list & task-column
+                        echo '</div></div>';
                     }
-                    echo '</div></div>'; // end swimlane-board & swimlane
+                    echo '</div></div>';
                 }
             }
             ?>

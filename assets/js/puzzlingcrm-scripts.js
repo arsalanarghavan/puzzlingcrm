@@ -61,7 +61,6 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    // DHTMLX Gantt uses a different date format, so we need to reformat it.
                     response.data.gantt_tasks.data.forEach(function(task) {
                         task.start_date = new Date(task.start_date);
                         task.end_date = new Date(task.end_date);
@@ -583,7 +582,7 @@ jQuery(document).ready(function($) {
 
     // --- Advanced Task Linking in Modal ---
     $('body').on('focus', '#task-search-for-linking', function() {
-        if ($(this).data('select2')) return; // Prevent re-initialization
+        if ($(this).data('select2')) return;
         $(this).select2({
             placeholder: 'جستجو بر اساس شناسه یا عنوان وظیفه...',
             minimumInputLength: 2,
@@ -632,7 +631,7 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    openTaskModal(currentTaskId); // Refresh the modal content
+                    openTaskModal(currentTaskId);
                 } else {
                     alert('خطا در افزودن پیوند.');
                 }
@@ -641,5 +640,137 @@ jQuery(document).ready(function($) {
                 btn.text('افزودن پیوند').prop('disabled', false);
             }
         });
+    });
+
+    // --- NEW: Bulk Task Editing ---
+    $('#select-all-tasks').on('change', function() {
+        $('.task-checkbox').prop('checked', $(this).prop('checked')).trigger('change');
+    });
+
+    $('#tasks-list-table').on('change', '.task-checkbox', function() {
+        if ($('.task-checkbox:checked').length > 0) {
+            $('#bulk-edit-container').slideDown();
+        } else {
+            $('#bulk-edit-container').slideUp();
+        }
+    });
+    
+    $('#cancel-bulk-edit').on('click', function(){
+        $('#bulk-edit-container').slideUp();
+        $('.task-checkbox, #select-all-tasks').prop('checked', false);
+    });
+
+    $('#apply-bulk-edit').on('click', function() {
+        var taskIds = $('.task-checkbox:checked').map(function() { return $(this).val(); }).get();
+        if (taskIds.length === 0) {
+            alert('لطفاً حداقل یک وظیفه را انتخاب کنید.');
+            return;
+        }
+
+        var bulkActions = {
+            status: $('#bulk-status').val(),
+            assignee: $('#bulk-assignee').val(),
+            priority: $('#bulk-priority').val(),
+        };
+
+        $(this).text('در حال اعمال...').prop('disabled', true);
+
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'puzzling_bulk_edit_tasks',
+                security: puzzling_ajax_nonce,
+                task_ids: taskIds,
+                bulk_actions: bulkActions
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert(response.data.message);
+                    window.location.reload();
+                } else {
+                    alert('خطا: ' + response.data.message);
+                }
+            },
+            error: function() {
+                alert('خطای سرور.');
+            },
+            complete: function() {
+                $('#apply-bulk-edit').text('اعمال').prop('disabled', false);
+            }
+        });
+    });
+    
+    // --- NEW: Scrum Board & Backlog ---
+    if ($('.pzl-scrum-board-wrapper').length) {
+        var projectId = $('#project_filter_scrum').val();
+        if(projectId > 0){
+            var backlogContainer = $('#backlog-column .pzl-scrum-task-list');
+            backlogContainer.html('<div class="pzl-loader"></div>');
+            $.ajax({
+                url: puzzlingcrm_ajax_obj.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'puzzling_get_backlog_tasks',
+                    security: puzzling_ajax_nonce,
+                    project_id: projectId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        backlogContainer.html(response.data.html);
+                    }
+                }
+            });
+        }
+        
+        $('.pzl-scrum-task-list').sortable({
+            connectWith: '.pzl-scrum-task-list',
+            placeholder: 'pzl-task-card-placeholder',
+            stop: function(event, ui) {
+                var taskId = ui.item.data('task-id');
+                var sprintId = ui.item.closest('.pzl-scrum-task-list').data('sprint-id');
+                
+                ui.item.css('opacity', '0.5');
+                $.post(puzzlingcrm_ajax_obj.ajax_url, {
+                    action: 'puzzling_add_task_to_sprint',
+                    security: puzzling_ajax_nonce,
+                    task_id: taskId,
+                    sprint_id: sprintId
+                }).done(function(){
+                    ui.item.css('opacity', '1');
+                }).fail(function(){
+                    $(this).sortable('cancel');
+                    ui.item.css('opacity', '1');
+                });
+            }
+        }).disableSelection();
+    }
+    
+    // --- NEW: Save Task as Template ---
+    $('body').on('click', '#pzl-save-as-template-btn', function() {
+        var templateName = prompt("لطفاً یک نام برای این قالب وارد کنید:", $('#pzl-modal-title').text());
+        if (templateName && templateName.trim() !== '') {
+            $(this).prop('disabled', true);
+            $.ajax({
+                url: puzzlingcrm_ajax_obj.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'puzzling_save_task_as_template',
+                    security: puzzling_ajax_nonce,
+                    task_id: currentTaskId,
+                    template_name: templateName
+                },
+                success: function(response) {
+                    if(response.success){
+                         alert(response.data.message);
+                    } else {
+                         alert('خطا: ' + response.data.message);
+                    }
+                },
+                complete: function(){
+                    $('#pzl-save-as-template-btn').prop('disabled', false);
+                }
+            });
+        }
     });
 });
