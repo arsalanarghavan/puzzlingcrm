@@ -10,7 +10,7 @@
 class PuzzlingCRM_Roles_Manager {
 
     public function __construct() {
-        add_action( 'init', [ $this, 'block_dashboard_access' ] );
+        // add_action( 'init', [ $this, 'block_dashboard_access' ] ); // HIGHLIGHT: This line is commented out to disable redirection.
     }
 
     /**
@@ -79,6 +79,7 @@ class PuzzlingCRM_Roles_Manager {
 
     /**
      * Blocks direct access to the WordPress admin area for custom roles.
+     * HIGHLIGHT: This function is no longer called from the constructor.
      */
     public function block_dashboard_access() {
         if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {

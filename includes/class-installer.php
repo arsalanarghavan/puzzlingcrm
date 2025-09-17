@@ -30,8 +30,8 @@ class PuzzlingCRM_Installer {
         // Flush rewrite rules to make CPT URLs work correctly
         flush_rewrite_rules();
 
-        // Create the frontend dashboard page and store its ID
-        self::create_dashboard_page();
+        // HIGHLIGHT: The creation of the dashboard page is now disabled.
+        // self::create_dashboard_page();
     }
     
     /**
@@ -51,6 +51,7 @@ class PuzzlingCRM_Installer {
     /**
      * Creates the frontend dashboard page if it doesn't exist
      * and stores its ID in the options table.
+     * HIGHLIGHT: This function is no longer called on activation.
      */
     private static function create_dashboard_page() {
         $dashboard_page_id = get_option('puzzling_dashboard_page_id', 0);

@@ -131,8 +131,9 @@ class PuzzlingCRM_Form_Handler {
 
     private function redirect_with_notice($notice_key, $base_url = '') {
         $url = empty($base_url) ? wp_get_referer() : $base_url;
+        // HIGHLIGHT: If wp_get_referer() is null (e.g., direct access), redirect to home page.
         if (!$url) {
-            $url = puzzling_get_dashboard_url();
+            $url = home_url('/');
         }
         $url = remove_query_arg(['puzzling_action', '_wpnonce', 'action', 'user_id', 'plan_id', 'sub_id', 'appt_id', 'project_id', 'contract_id', 'puzzling_notice', 'item_id', 'invoice_id', 'form_id'], $url);
         wp_redirect( add_query_arg('puzzling_notice', $notice_key, $url) );
@@ -202,10 +203,8 @@ class PuzzlingCRM_Form_Handler {
             // Clean up the used token
             delete_post_meta($form_id, '_automation_token_' . $token);
             
-            // Redirect to dashboard with success message
-            $dashboard_url = puzzling_get_dashboard_url();
-            wp_redirect(add_query_arg('puzzling_notice', 'project_created_success', $dashboard_url));
-            exit;
+            // HIGHLIGHT: Redirect to the referrer page (where the user was)
+            $this->redirect_with_notice('project_created_success');
         } else {
              wp_die('خطا در ایجاد پروژه.');
         }
@@ -642,7 +641,8 @@ class PuzzlingCRM_Form_Handler {
         }
 
         $zarinpal = new CSM_Zarinpal_Handler($merchant_id);
-        $callback_url = add_query_arg(['puzzling_action' => 'verify_payment', 'contract_id' => $contract_id, 'installment_index' => $installment_index], puzzling_get_dashboard_url());
+        // HIGHLIGHT: The callback URL now points back to the referring page.
+        $callback_url = add_query_arg(['puzzling_action' => 'verify_payment', 'contract_id' => $contract_id, 'installment_index' => $installment_index], wp_get_referer());
         $project_title = get_the_title(get_post_meta($contract_id, '_project_id', true));
         $description = sprintf(__('پرداخت قسط شماره %d پروژه %s', 'puzzlingcrm'), ($installment_index + 1), $project_title);
         
@@ -661,23 +661,23 @@ class PuzzlingCRM_Form_Handler {
     }
 
     private function handle_payment_verification() {
-        $dashboard_url = puzzling_get_dashboard_url();
+        $referrer_url = wp_get_referer();
         $contract_id = isset($_GET['contract_id']) ? intval($_GET['contract_id']) : 0;
         $installment_index = isset($_GET['installment_index']) ? intval($_GET['installment_index']) : 0;
         $authority = isset($_GET['Authority']) ? sanitize_text_field($_GET['Authority']) : '';
         $status = isset($_GET['Status']) ? sanitize_text_field($_GET['Status']) : '';
 
         if (empty($contract_id) || empty($authority) || empty($status)) {
-            $this->redirect_with_notice('payment_failed_verification', $dashboard_url);
+            $this->redirect_with_notice('payment_failed_verification', $referrer_url);
         }
         
         if ( $status !== 'OK' ) {
-            $this->redirect_with_notice('payment_cancelled', $dashboard_url);
+            $this->redirect_with_notice('payment_cancelled', $referrer_url);
         }
 
         $installments = get_post_meta($contract_id, '_installments', true);
         if (!is_array($installments) || !isset($installments[$installment_index])) {
-            $this->redirect_with_notice('payment_failed_verification', $dashboard_url);
+            $this->redirect_with_notice('payment_failed_verification', $referrer_url);
         }
         
         $amount_toman = (int) $installments[$installment_index]['amount'];
@@ -701,9 +701,9 @@ class PuzzlingCRM_Form_Handler {
             );
             PuzzlingCRM_Logger::add(__('قسط با موفقیت پرداخت شد', 'puzzlingcrm'), ['content' => sprintf(__("پرداخت شما برای قسط پروژه '%s' موفقیت آمیز بود. کد رهگیری: %s", 'puzzlingcrm'), $project_title, $verification['ref_id']), 'type' => 'log', 'user_id' => $customer->ID, 'object_id' => $contract_id]);
 
-            $this->redirect_with_notice('payment_success', $dashboard_url);
+            $this->redirect_with_notice('payment_success', $referrer_url);
         } else {
-            $this->redirect_with_notice('payment_failed_verification', $dashboard_url);
+            $this->redirect_with_notice('payment_failed_verification', $referrer_url);
         }
     }
 
