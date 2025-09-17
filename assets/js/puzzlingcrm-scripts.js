@@ -1,826 +1,839 @@
-jQuery(document).ready(function($) {
-    var puzzling_ajax_nonce = puzzlingcrm_ajax_obj.nonce;
-    var puzzling_lang = puzzlingcrm_ajax_obj.lang;
-    var currentTaskId = null;
+<?php
+/**
+ * PuzzlingCRM AJAX Handler
+ *
+ * Handles all AJAX requests for the plugin, including task management,
+ * notifications, workflow, and new Agile/bulk editing features.
+ *
+ * @package PuzzlingCRM
+ */
 
-    // --- FINAL FIX: AJAX Staff Profile Management with SweetAlert-style notice ---
-    $('body').on('submit', 'form#pzl-staff-form', function(e) {
-        e.preventDefault();
-        var form = $(this);
-        var submitButton = form.find('button[type="submit"]');
-        var originalButtonText = submitButton.text();
-        var formData = new FormData(this);
+// Make sure to require the necessary WordPress file upload handling functions
+require_once(ABSPATH . 'wp-admin/includes/file.php');
+require_once(ABSPATH . 'wp-admin/includes/media.php');
+require_once(ABSPATH . 'wp-admin/includes/image.php');
+
+class PuzzlingCRM_Ajax_Handler {
+
+    public function __construct() {
+        // Standard Task Actions
+        add_action('wp_ajax_puzzling_add_task', [$this, 'add_task']);
+        add_action('wp_ajax_puzzling_quick_add_task', [$this, 'quick_add_task']);
+        add_action('wp_ajax_puzzling_update_task_status', [$this, 'update_task_status']);
+        add_action('wp_ajax_puzzling_delete_task', [$this, 'delete_task']);
+
+        // Notification Actions
+        add_action('wp_ajax_puzzling_get_notifications', [$this, 'get_notifications']);
+        add_action('wp_ajax_puzzling_mark_notification_read', [$this, 'mark_notification_read']);
+
+        // Kanban Board & Modal Actions
+        add_action('wp_ajax_puzzling_get_task_details', [$this, 'get_task_details']);
+        add_action('wp_ajax_puzzling_save_task_content', [$this, 'save_task_content']);
+        add_action('wp_ajax_puzzling_add_task_comment', [$this, 'add_task_comment']);
         
-        formData.append('action', 'puzzling_manage_staff_ajax');
-        formData.append('_wpnonce', form.find('#_wpnonce').val() || puzzling_ajax_nonce);
+        // Workflow Management Actions
+        add_action('wp_ajax_puzzling_save_status_order', [$this, 'save_status_order']);
+        add_action('wp_ajax_puzzling_add_new_status', [$this, 'add_new_status']);
+        add_action('wp_ajax_puzzling_delete_status', [$this, 'delete_status']);
 
-        form.find('.pzl-ajax-notice').remove();
+        // Advanced Task Features
+        add_action('wp_ajax_puzzling_manage_checklist', [$this, 'manage_checklist']);
+        add_action('wp_ajax_puzzling_log_time', [$this, 'log_time']);
+        add_action('wp_ajax_puzzling_quick_edit_task', [$this, 'quick_edit_task']);
 
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url,
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            beforeSend: function() {
-                submitButton.text('در حال ذخیره...').prop('disabled', true);
-            },
-            success: function(response) {
-                var noticeClass = response.success ? 'pzl-alert-success' : 'pzl-alert-error';
-                var noticeHtml = '<div class="pzl-alert ' + noticeClass + ' pzl-ajax-notice" style="margin-top: 20px;">' + response.data.message + '</div>';
-                
-                var noticeElement = $(noticeHtml).appendTo(form.find('.form-submit')).fadeIn();
-                
-                setTimeout(function(){
-                    noticeElement.fadeOut(function(){ $(this).remove(); });
-                }, 4000);
+        // Advanced Views Data
+        add_action('wp_ajax_get_tasks_for_views', [$this, 'get_tasks_for_views']);
 
-                if (response.success && form.find('input[name="user_id"]').val() == 0) {
-                   setTimeout(function(){
-                       window.location.reload(); // Reload only for new user creation
-                   }, 2000);
-                }
-            },
-            error: function() {
-                var errorHtml = '<div class="pzl-alert pzl-alert-error pzl-ajax-notice" style="margin-top: 20px;">یک خطای ناشناخته رخ داد.</div>';
-                $(errorHtml).appendTo(form.find('.form-submit')).fadeIn();
-            },
-            complete: function() {
-                // This block will always run
-                submitButton.text(originalButtonText).prop('disabled', false);
-            }
-        });
-    });
-
-
-    // --- NEW: Initialize Calendar View ---
-    var calendarEl = document.getElementById('pzl-task-calendar');
-    if (calendarEl && typeof FullCalendar !== 'undefined') {
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-            locale: 'fa',
-            initialView: 'dayGridMonth',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,listWeek'
-            },
-            events: function(fetchInfo, successCallback, failureCallback) {
-                $.ajax({
-                    url: puzzlingcrm_ajax_obj.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'get_tasks_for_views',
-                        security: puzzling_ajax_nonce
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            successCallback(response.data.calendar_events);
-                        } else {
-                            failureCallback('Error fetching tasks');
-                        }
-                    },
-                    error: function() {
-                        failureCallback('Server error');
-                    }
-                });
-            },
-            eventClick: function(info) {
-                info.jsEvent.preventDefault();
-                if (info.event.id) {
-                    openTaskModal(info.event.id);
-                }
-            }
-        });
-        calendar.render();
-    }
-
-    // --- NEW: Initialize Gantt View ---
-    var ganttEl = document.getElementById('pzl-task-gantt');
-    if (ganttEl && typeof gantt !== 'undefined') {
-        gantt.config.date_format = "%Y-%m-%d";
-        gantt.config.order_branch = true;
-        gantt.config.order_branch_free = true;
-        gantt.init(ganttEl);
+        // Advanced Task Linking
+        add_action('wp_ajax_puzzling_add_task_link', [$this, 'add_task_link']);
+        add_action('wp_ajax_puzzling_remove_task_link', [$this, 'remove_task_link']);
+        add_action('wp_ajax_puzzling_search_tasks_for_linking', [$this, 'search_tasks_for_linking']);
         
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'get_tasks_for_views',
-                security: puzzling_ajax_nonce
-            },
-            success: function(response) {
-                if (response.success) {
-                    response.data.gantt_tasks.data.forEach(function(task) {
-                        task.start_date = new Date(task.start_date);
-                        task.end_date = new Date(task.end_date);
-                    });
-                    gantt.parse(response.data.gantt_tasks);
-                }
-            }
-        });
-    }
-
-    // --- Intelligent Installment Calculation ---
-    $('#calculate-installments').on('click', function() {
-        var totalAmount = parseFloat($('#total_amount').val().replace(/,/g, ''));
-        var totalInstallments = parseInt($('#total_installments').val());
-        var intervalDays = parseInt($('#installment_interval').val());
-        var startDateStr = $('#start_date').val();
-
-        if (isNaN(totalAmount) || isNaN(totalInstallments) || isNaN(intervalDays) || !startDateStr) {
-            alert('لطفاً تمام فیلدهای محاسبه‌گر اقساط را به درستی پر کنید.');
-            return;
-        }
-
-        var installmentAmount = Math.round(totalAmount / totalInstallments);
-        var startDate = new Date(startDateStr);
+        // Project Deletion
+        add_action('wp_ajax_puzzling_delete_project', [$this, 'delete_project']);
         
-        var previewContainer = $('#installments-preview-container');
-        var hiddenContainer = $('#payment-rows-container');
+        // **NEW: Bulk Edit & Task Template Actions**
+        add_action('wp_ajax_puzzling_bulk_edit_tasks', [$this, 'bulk_edit_tasks']);
+        add_action('wp_ajax_puzzling_save_task_as_template', [$this, 'save_task_as_template']);
         
-        previewContainer.html('<table class="pzl-table"><thead><tr><th>#</th><th>مبلغ قسط (تومان)</th><th>تاریخ سررسید</th></tr></thead><tbody></tbody></table>');
-        hiddenContainer.html('');
+        // **NEW: AJAX Staff Management**
+        add_action('wp_ajax_puzzling_manage_staff_ajax', [$this, 'manage_staff_ajax']);
 
-        var tableBody = previewContainer.find('tbody');
-
-        for (var i = 0; i < totalInstallments; i++) {
-            var dueDate = new Date(startDate);
-            dueDate.setDate(startDate.getDate() + (i * intervalDays));
-            
-            var displayDate = dueDate.toLocaleDateString('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' });
-            var inputDate = dueDate.getFullYear() + '-' + ('0' + (dueDate.getMonth() + 1)).slice(-2) + '-' + ('0' + dueDate.getDate()).slice(-2);
-            var formattedAmount = installmentAmount.toLocaleString('en-US');
-
-            tableBody.append(`<tr><td>${i + 1}</td><td>${formattedAmount}</td><td>${displayDate}</td></tr>`);
-            hiddenContainer.append(`
-                <input type="hidden" name="payment_amount[]" value="${installmentAmount}">
-                <input type="hidden" name="payment_due_date[]" value="${inputDate}">
-            `);
-        }
-    });
-
-    // --- AJAX for Task Management ---
-    $('#puzzling-add-task-form').on('submit', function(e) {
-        e.preventDefault();
-        var form = $(this);
-        var formData = new FormData(this);
-        
-        formData.append('action', 'puzzling_add_task');
-        formData.append('security', puzzling_ajax_nonce);
-
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url,
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            beforeSend: function() {
-                form.find('button[type="submit"]').text('در حال افزودن...').prop('disabled', true);
-            },
-            success: function(response) {
-                if (response.success) {
-                    alert(response.data.message);
-                    window.location.reload();
-                } else {
-                    alert('خطا: ' + (response.data.message || 'خطای ناشناخته'));
-                }
-            },
-            error: function() {
-                alert('یک خطای ناشناخته در ارتباط با سرور رخ داد.');
-            },
-            complete: function() {
-                form.find('button[type="submit"]').text('افزودن وظیفه').prop('disabled', false);
-            }
-        });
-    });
-
-    // --- Kanban Board: Drag and Drop ---
-    if ($('#pzl-task-board, .pzl-swimlane-board').length) {
-        $('.pzl-task-list').sortable({
-            connectWith: '.pzl-task-list',
-            placeholder: 'pzl-task-card-placeholder',
-            start: function(event, ui) {
-                ui.placeholder.height(ui.item.outerHeight());
-                 $('body').addClass('is-dragging');
-            },
-            stop: function(event, ui) {
-                 $('body').removeClass('is-dragging');
-                var taskCard = ui.item;
-                var taskId = taskCard.data('task-id');
-                var newStatusSlug = taskCard.closest('.pzl-task-column').data('status-slug');
-
-                taskCard.css('opacity', '0.5');
-
-                $.ajax({
-                    url: puzzlingcrm_ajax_obj.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'puzzling_update_task_status',
-                        security: puzzling_ajax_nonce,
-                        task_id: taskId,
-                        new_status_slug: newStatusSlug
-                    },
-                    success: function(response) {
-                        if (!response.success) {
-                            alert('خطا در به‌روزرسانی وضعیت: ' + response.data.message);
-                            $(this).sortable('cancel');
-                        }
-                    },
-                    error: function() {
-                         alert('خطای ارتباط با سرور.');
-                         $(this).sortable('cancel');
-                    },
-                    complete: function() {
-                         taskCard.css('opacity', '1');
-                    }
-                });
-            }
-        }).disableSelection();
+        // **NEW: Custom SMS Sending**
+        add_action('wp_ajax_puzzling_send_custom_sms', [$this, 'send_custom_sms']);
     }
     
-    // --- Quick Add Task Controls ---
-    $('.pzl-task-board-container').on('click', '.add-card-btn', function() {
-        $(this).hide();
-        $(this).siblings('.add-card-form').slideDown(200).find('textarea').focus();
-    });
+    /**
+     * AJAX handler for managing staff profiles.
+     */
+    public function manage_staff_ajax() {
+        check_ajax_referer('puzzling_manage_user', '_wpnonce');
 
-    $('.pzl-task-board-container').on('click', '.cancel-add-card', function() {
-        var form = $(this).closest('.add-card-form');
-        form.slideUp(200);
-        form.siblings('.add-card-btn').show();
-        form.find('textarea').val('');
-    });
+        $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
 
-    function submitQuickAddTask(form) {
-        var textarea = form.find('textarea');
-        var title = textarea.val().trim();
-        if (!title) { textarea.focus(); return; }
-
-        var column = form.closest('.pzl-task-column');
-        var statusSlug = column.data('status-slug');
-        var taskList = column.find('.pzl-task-list');
-
-        var projectId = new URLSearchParams(window.location.search).get('project_filter') || 0;
-        var staffId = new URLSearchParams(window.location.search).get('staff_filter') || 0;
-
-        if (!projectId || !staffId) {
-            alert('برای استفاده از افزودن سریع، لطفاً ابتدا برد را بر اساس پروژه و کارمند فیلتر کنید.');
-            return;
+        if (!current_user_can('edit_user', $user_id) && $user_id !== 0) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم برای ویرایش این کاربر را ندارید.']);
         }
-
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'puzzling_quick_add_task', security: puzzling_ajax_nonce,
-                title: title, status_slug: statusSlug, project_id: projectId, assigned_to: staffId
-            },
-            beforeSend: function() { form.find('.submit-add-card').prop('disabled', true).text('...'); },
-            success: function(response) {
-                if (response.success) {
-                    taskList.append(response.data.task_html);
-                    textarea.val('').focus();
-                } else {
-                    alert('خطا: ' + (response.data.message || 'خطای ناشناخته'));
-                }
-            },
-            error: function() { alert('یک خطای ارتباطی رخ داد.'); },
-            complete: function() { form.find('.submit-add-card').prop('disabled', false).text('افزودن'); }
-        });
-    }
-
-    $('.pzl-task-board-container').on('click', '.submit-add-card', function() { submitQuickAddTask($(this).closest('.add-card-form')); });
-    $('.pzl-task-board-container').on('keydown', '.add-card-form textarea', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitQuickAddTask($(this).closest('.add-card-form')); }
-    });
-
-    // --- Task Modal ---
-    function openTaskModal(taskId) {
-        if (!taskId) return;
-        currentTaskId = taskId;
-        $('#pzl-task-modal-backdrop, #pzl-task-modal-wrap').fadeIn(200);
-        $('#pzl-task-modal-body').html('<div class="pzl-loader"></div>');
-
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
-            data: { action: 'puzzling_get_task_details', security: puzzling_ajax_nonce, task_id: taskId },
-            success: function(response) {
-                if (response.success) { $('#pzl-task-modal-body').html(response.data.html); } 
-                else { $('#pzl-task-modal-body').html('<p>خطا در بارگذاری اطلاعات وظیفه.</p>'); }
-            },
-            error: function() { $('#pzl-task-modal-body').html('<p>خطای ارتباط با سرور.</p>'); }
-        });
-    }
-
-    function closeTaskModal() {
-        currentTaskId = null;
-        $('#pzl-task-modal-backdrop, #pzl-task-modal-wrap').fadeOut(200);
-        $('#pzl-task-modal-body').html('');
-    }
-
-    $('#pzl-task-manager-page').on('click', '.pzl-task-card', function(e) {
-        if ($(e.target).closest('.quick-edit-popup, .quick-edit-input, a, .quick-edit-assignee, .quick-edit-datepicker').length > 0) {
-            return;
-        }
-        e.preventDefault();
-        openTaskModal($(this).data('task-id'));
-    });
-    
-    $('#pzl-task-manager-page').on('click', '.open-task-modal', function(e) {
-        e.preventDefault();
-        openTaskModal($(this).data('task-id'));
-    });
-
-    $('body').on('click', '#pzl-close-modal-btn, #pzl-task-modal-backdrop', function(e) {
-        if ($(e.target).is('#pzl-close-modal-btn') || $(e.target).is('#pzl-task-modal-backdrop')) { closeTaskModal(); }
-    });
-    
-    const urlParamsInstance = new URLSearchParams(window.location.search);
-    const openTaskIdFromUrl = urlParamsInstance.get('open_task_id');
-    if (openTaskIdFromUrl) {
-        openTaskModal(openTaskIdFromUrl);
-    }
-
-    $('body').on('click', '.pzl-modal-tab-link', function(e){
-        e.preventDefault();
-        var tabId = $(this).data('tab');
-        $('.pzl-modal-tab-link').removeClass('active');
-        $(this).addClass('active');
-        $('.pzl-modal-tab-content').hide();
-        $('#' + tabId).show();
-    });
-    
-    $('body').on('click', '#pzl-task-description-viewer', function() { $(this).hide(); $('#pzl-task-description-editor').show(); });
-    $('body').on('click', '#pzl-cancel-edit-content', function() { $('#pzl-task-description-editor').hide(); $('#pzl-task-description-viewer').show(); });
-    $('body').on('click', '#pzl-save-task-content', function() {
-        var newContent = $('#pzl-task-content-input').val();
-        var button = $(this);
-        button.text('در حال ذخیره...').prop('disabled', true);
-
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
-            data: { action: 'puzzling_save_task_content', security: puzzling_ajax_nonce, task_id: currentTaskId, content: newContent },
-            success: function(response) {
-                if (response.success) {
-                    var viewer = $('#pzl-task-description-viewer');
-                    viewer.html(response.data.new_content_html || '<p class="pzl-no-content">توضیحاتی ثبت نشده.</p>');
-                    $('#pzl-task-description-editor').hide();
-                    viewer.show();
-                } else { alert('خطا در ذخیره‌سازی.'); }
-            },
-            error: function() { alert('خطای ارتباط با سرور.'); },
-            complete: function() { button.text('ذخیره').prop('disabled', false); }
-        });
-    });
-
-    $('body').on('click', '#pzl-submit-comment', function() {
-        var commentText = $('#pzl-new-comment-text').val();
-        if (!commentText.trim()) return;
-        var button = $(this);
-        button.text('در حال ارسال...').prop('disabled', true);
         
-        $.ajax({
-             url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
-             data: { action: 'puzzling_add_task_comment', security: puzzling_ajax_nonce, task_id: currentTaskId, comment_text: commentText },
-             success: function(response) {
-                if (response.success) {
-                    $('.pzl-comment-list').append(response.data.comment_html);
-                    $('#pzl-new-comment-text').val('');
-                } else { alert('خطا در ثبت نظر.'); }
-             },
-             error: function() { alert('خطای ارتباط با سرور.'); },
-             complete: function() { button.text('ارسال نظر').prop('disabled', false); }
-        });
-    });
+        // This logic is moved from class-form-handler.php
+        $email = sanitize_email($_POST['email']);
+        $first_name = sanitize_text_field($_POST['first_name']);
+        $last_name = sanitize_text_field($_POST['last_name']);
+        $password = $_POST['password'];
+        $role = sanitize_key($_POST['role']);
+        $position_id = isset($_POST['organizational_position']) ? intval($_POST['organizational_position']) : 0;
 
-    $('body').on('submit', '#pzl-add-checklist-item-form', function(e){
-        e.preventDefault();
-        var input = $(this).find('input[type="text"]');
-        var text = input.val().trim();
-        if(!text) return;
-
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
-            data: { action: 'puzzling_manage_checklist', security: puzzling_ajax_nonce, task_id: currentTaskId, sub_action: 'add', text: text },
-            success: function(response){ if(response.success){ openTaskModal(currentTaskId); } }
-        });
-    });
-
-    $('body').on('change', '.pzl-checklist-item input[type="checkbox"]', function(){
-        var itemId = $(this).closest('.pzl-checklist-item').data('item-id');
-        $.post(puzzlingcrm_ajax_obj.ajax_url, { action: 'puzzling_manage_checklist', security: puzzling_ajax_nonce, task_id: currentTaskId, sub_action: 'toggle', item_id: itemId });
-    });
-
-    $('body').on('click', '.pzl-delete-checklist-item', function(){
-        if(!confirm('آیا از حذف این آیتم مطمئن هستید؟')) return;
-        var item = $(this).closest('.pzl-checklist-item');
-        var itemId = item.data('item-id');
-        item.css('opacity', '0.5');
-
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
-            data: { action: 'puzzling_manage_checklist', security: puzzling_ajax_nonce, task_id: currentTaskId, sub_action: 'delete', item_id: itemId },
-            success: function(response){ if(response.success) item.remove(); else item.css('opacity', '1'); }
-        });
-    });
-
-    $('body').on('submit', '#pzl-log-time-form', function(e){
-        e.preventDefault();
-        var form = $(this);
-        var hours = form.find('input[name="hours"]').val();
-        var description = form.find('input[name="description"]').val();
-
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
-            data: { action: 'puzzling_log_time', security: puzzling_ajax_nonce, task_id: currentTaskId, hours: hours, description: description },
-            success: function(response){
-                if(response.success){ openTaskModal(currentTaskId); } 
-                else { alert('خطا: ' + response.data.message); }
-            }
-        });
-    });
-
-    // --- Project Deletion ---
-    $('#projects-table').on('click', '.delete-project', function(e) {
-        e.preventDefault();
-        if ( !confirm(puzzling_lang.confirm_delete_project) ) return;
-        var link = $(this);
-        var projectRow = link.closest('tr');
-        var projectId = link.data('project-id');
-        var nonce = link.data('nonce');
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
-            data: { action: 'puzzling_delete_project', security: puzzling_ajax_nonce, _wpnonce: nonce, project_id: projectId },
-            beforeSend: function() { projectRow.css('opacity', '0.5'); },
-            success: function(response) {
-                if(response.success) { projectRow.slideUp(function() { $(this).remove(); }); } 
-                else { alert('خطا: ' + (response.data.message || 'خطای ناشناخته')); projectRow.css('opacity', '1'); }
-            },
-            error: function() { alert('یک خطای ناشناخته رخ داد.'); projectRow.css('opacity', '1'); }
-        });
-    });
-
-    // --- Advanced Quick Edit ---
-    function saveQuickEdit(taskId, field, value, cardElement) {
-        cardElement.css('opacity', '0.5');
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url,
-            type: 'POST',
-            data: { action: 'puzzling_quick_edit_task', security: puzzling_ajax_nonce, task_id: taskId, field: field, value: value },
-            success: function(response) {
-                if (response.success) {
-                    cardElement.replaceWith(response.data.task_html);
-                } else { 
-                    alert('خطا در به‌روزرسانی: ' + response.data.message);
-                    cardElement.css('opacity', '1');
-                }
-            },
-            error: function() {
-                alert('خطای سرور در هنگام ویرایش سریع.');
-                cardElement.css('opacity', '1');
-            }
-        });
-    }
-
-    $('#pzl-task-manager-page').on('click', '.pzl-card-title', function(e) {
-        e.stopPropagation();
-        var titleElement = $(this);
-        var card = titleElement.closest('.pzl-task-card');
-        if (card.find('.quick-edit-input').length) return;
-        var currentTitle = titleElement.text().trim();
-        var inputHtml = `<input type="text" class="quick-edit-input" style="width: 100%;" value="${currentTitle}" />`;
-        titleElement.hide().after(inputHtml);
-        card.find('.quick-edit-input').focus().select();
-    });
-
-    $('#pzl-task-manager-page').on('blur keypress', '.quick-edit-input', function(e) {
-        if (e.type === 'blur' || (e.type === 'keypress' && e.which === 13)) {
-            var input = $(this);
-            var card = input.closest('.pzl-task-card');
-            var taskId = card.data('task-id');
-            var newTitle = input.val().trim();
-            var titleElement = card.find('.pzl-card-title');
-            if (newTitle && newTitle !== titleElement.text().trim()) {
-                saveQuickEdit(taskId, 'title', newTitle, card);
-            }
-            titleElement.show();
-            input.remove();
+        if (!is_email($email) || empty($first_name) || empty($last_name) || empty($role)) {
+            wp_send_json_error(['message' => 'لطفاً فیلدهای ضروری (نام، نام خانوادگی، ایمیل و نقش) را پر کنید.']);
         }
-    });
-
-    $('#pzl-task-manager-page').on('click', '.pzl-card-due-date', function(e) {
-        e.stopPropagation();
-        var dateElement = $(this);
-        var card = dateElement.closest('.pzl-task-card');
-        if (card.find('.quick-edit-datepicker').length) return;
-        var input = $('<input type="text" class="quick-edit-datepicker" style="width: 100px;" />');
-        dateElement.hide().after(input);
-        input.datepicker({
-            dateFormat: 'yy-mm-dd',
-            onClose: function(dateText) {
-                var taskId = card.data('task-id');
-                if (dateText) {
-                    saveQuickEdit(taskId, 'due_date', dateText, card);
-                }
-                dateElement.show();
-                $(this).remove();
-            }
-        }).focus();
-    });
-
-    $('#pzl-task-manager-page').on('click', '.pzl-card-assignee', function(e) {
-        e.stopPropagation();
-        var assigneeElement = $(this);
-        var card = assigneeElement.closest('.pzl-task-card');
-        if (card.find('.quick-edit-assignee').length) return;
-        var select = $('<select class="quick-edit-assignee"></select>');
-        puzzlingcrm_ajax_obj.users.forEach(function(user) {
-            select.append(`<option value="${user.id}">${user.text}</option>`);
-        });
-        assigneeElement.hide().after(select);
-        select.focus();
-        select.on('change blur', function() {
-            var taskId = card.data('task-id');
-            var newAssigneeId = $(this).val();
-            saveQuickEdit(taskId, 'assignee', newAssigneeId, card);
-            assigneeElement.show();
-            $(this).remove();
-        });
-    });
-    
-    // --- Notification Center ---
-    function fetchNotifications() {
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
-            data: { action: 'puzzling_get_notifications', security: puzzling_ajax_nonce },
-            success: function(response) {
-                if (response.success) {
-                    $('.pzl-notification-panel ul').html(response.data.html);
-                    var count = parseInt(response.data.count);
-                    if (count > 0) {
-                        $('.pzl-notification-count').text(count).show();
-                    } else {
-                        $('.pzl-notification-count').hide();
-                    }
-                }
-            }
-        });
-    }
-
-    $('.pzl-notification-bell').on('click', function(e) { e.stopPropagation(); $('.pzl-notification-panel').toggle(); });
-    $(document).on('click', function() { $('.pzl-notification-panel').hide(); });
-    $('.pzl-notification-panel').on('click', function(e) { e.stopPropagation(); });
-
-    $('.pzl-notification-panel').on('click', 'li.pzl-unread', function() {
-        var item = $(this);
-        var id = item.data('id');
-        item.removeClass('pzl-unread').addClass('pzl-read');
-        var countEl = $('.pzl-notification-count');
-        var currentCount = parseInt(countEl.text()) - 1;
-        if (currentCount > 0) { countEl.text(currentCount); } 
-        else { countEl.hide(); }
-        $.post(puzzlingcrm_ajax_obj.ajax_url, { action: 'puzzling_mark_notification_read', security: puzzling_ajax_nonce, id: id });
-    });
-
-    fetchNotifications();
-    setInterval(fetchNotifications, 120000);
-
-    // --- Workflow Status Management ---
-    if ($('#status-sortable-list').length) {
-        $('#status-sortable-list').sortable({
-            axis: 'y', placeholder: 'ui-state-highlight',
-            stop: function(event, ui) {
-                var order = $(this).sortable('toArray', { attribute: 'data-term-id' });
-                $.post(puzzlingcrm_ajax_obj.ajax_url, { action: 'puzzling_save_status_order', security: puzzling_ajax_nonce, order: order });
-            }
-        }).disableSelection();
-    }
-
-    $('#add-new-status-form').on('submit', function(e) {
-        e.preventDefault();
-        var form = $(this);
-        var newName = $('#new-status-name').val().trim();
-        if (!newName) return;
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
-            data: { action: 'puzzling_add_new_status', security: puzzling_ajax_nonce, name: newName },
-            success: function(response) {
-                if (response.success) {
-                    var newStatusHTML = '<li data-term-id="' + response.data.term_id + '"><i class="fas fa-grip-vertical"></i> ' + response.data.name + ' <span class="delete-status-btn" data-term-id="' + response.data.term_id + '">&times;</span></li>';
-                    $('#status-sortable-list').append(newStatusHTML);
-                    form.trigger('reset');
-                } else { alert('خطا: ' + response.data.message); }
-            }
-        });
-    });
-
-    $('#workflow-status-manager').on('click', '.delete-status-btn', function() {
-        if (!confirm('آیا از حذف این وضعیت مطمئن هستید؟ وظایف به ستون "To Do" منتقل خواهند شد.')) return;
-        var btn = $(this);
-        var termId = btn.data('term-id');
-        var listItem = btn.closest('li');
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
-            data: { action: 'puzzling_delete_status', security: puzzling_ajax_nonce, term_id: termId },
-            success: function(response) {
-                if (response.success) { listItem.remove(); } 
-                else { alert('خطا: ' + response.data.message); }
-            }
-        });
-    });
-
-    // --- Advanced Task Linking in Modal ---
-    $('body').on('focus', '#task-search-for-linking', function() {
-        if ($(this).data('select2')) return;
-        $(this).select2({
-            placeholder: 'جستجو بر اساس شناسه یا عنوان وظیفه...',
-            minimumInputLength: 2,
-            ajax: {
-                url: puzzlingcrm_ajax_obj.ajax_url,
-                type: 'POST',
-                dataType: 'json',
-                delay: 250,
-                data: function(params) {
-                    return {
-                        action: 'puzzling_search_tasks_for_linking',
-                        security: puzzling_ajax_nonce,
-                        search: params.term,
-                        current_task_id: currentTaskId
-                    };
-                },
-                processResults: function(data) {
-                    return {
-                        results: data.data
-                    };
-                }
-            }
-        });
-    });
-
-    $('body').on('click', '#pzl-add-task-link-btn', function() {
-        var toTaskId = $('#task-search-for-linking').val();
-        var linkType = $('#new-link-type').val();
-        
-        if (!toTaskId || !linkType) {
-            alert('لطفا وظیفه و نوع پیوند را انتخاب کنید.');
-            return;
+        if ($user_id === 0 && empty($password)) {
+            wp_send_json_error(['message' => 'برای کاربر جدید، وارد کردن رمز عبور ضروری است.']);
         }
-        var btn = $(this);
-        btn.text('در حال افزودن...').prop('disabled', true);
 
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'puzzling_add_task_link',
-                security: puzzling_ajax_nonce,
-                from_task_id: currentTaskId,
-                to_task_id: toTaskId,
-                link_type: linkType
-            },
-            success: function(response) {
-                if (response.success) {
-                    openTaskModal(currentTaskId);
-                } else {
-                    alert('خطا در افزودن پیوند.');
-                }
-            },
-            complete: function() {
-                btn.text('افزودن پیوند').prop('disabled', false);
-            }
-        });
-    });
+        $user_data = [
+            'user_email' => $email, 'first_name' => $first_name, 'last_name' => $last_name,
+            'display_name' => trim($first_name . ' ' . $last_name), 'role' => $role
+        ];
+        if (!empty($password)) $user_data['user_pass'] = $password;
 
-    // --- NEW: Bulk Task Editing ---
-    $('#select-all-tasks').on('change', function() {
-        $('.task-checkbox').prop('checked', $(this).prop('checked')).trigger('change');
-    });
-
-    $('#tasks-list-table').on('change', '.task-checkbox', function() {
-        if ($('.task-checkbox:checked').length > 0) {
-            $('#bulk-edit-container').slideDown();
+        if ($user_id > 0) {
+            $user_data['ID'] = $user_id;
+            $result = wp_update_user($user_data);
+            $message = 'پروفایل با موفقیت به‌روزرسانی شد.';
         } else {
-            $('#bulk-edit-container').slideUp();
-        }
-    });
-    
-    $('#cancel-bulk-edit').on('click', function(){
-        $('#bulk-edit-container').slideUp();
-        $('.task-checkbox, #select-all-tasks').prop('checked', false);
-    });
-
-    $('#apply-bulk-edit').on('click', function() {
-        var taskIds = $('.task-checkbox:checked').map(function() { return $(this).val(); }).get();
-        if (taskIds.length === 0) {
-            alert('لطفاً حداقل یک وظیفه را انتخاب کنید.');
-            return;
+            if (email_exists($email)) wp_send_json_error(['message' => 'کاربری با این ایمیل از قبل وجود دارد.']);
+            $user_data['user_login'] = $email;
+            $result = wp_insert_user($user_data);
+            $message = 'کاربر جدید با موفقیت ایجاد شد.';
         }
 
-        var bulkActions = {
-            status: $('#bulk-status').val(),
-            assignee: $('#bulk-assignee').val(),
-            priority: $('#bulk-priority').val(),
-        };
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => 'خطا در ذخیره‌سازی اطلاعات کاربر.']);
+        } else {
+            $the_user_id = is_int($result) ? $result : $user_id;
 
-        $(this).text('در حال اعمال...').prop('disabled', true);
-
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'puzzling_bulk_edit_tasks',
-                security: puzzling_ajax_nonce,
-                task_ids: taskIds,
-                bulk_actions: bulkActions
-            },
-            success: function(response) {
-                if (response.success) {
-                    alert(response.data.message);
-                    window.location.reload();
-                } else {
-                    alert('خطا: ' + response.data.message);
+            // Save all custom meta fields
+            foreach ($_POST as $key => $value) {
+                if (strpos($key, 'pzl_') === 0) {
+                    update_user_meta($the_user_id, $key, sanitize_text_field($value));
                 }
-            },
-            error: function() {
-                alert('خطای سرور.');
-            },
-            complete: function() {
-                $('#apply-bulk-edit').text('اعمال').prop('disabled', false);
             }
-        });
-    });
-    
-    // --- NEW: Scrum Board & Backlog ---
-    if ($('.pzl-scrum-board-wrapper').length) {
-        var projectId = $('#project_filter_scrum').val();
-        if(projectId > 0){
-            var backlogContainer = $('#backlog-column .pzl-scrum-task-list');
-            backlogContainer.html('<div class="pzl-loader"></div>');
-            $.ajax({
-                url: puzzlingcrm_ajax_obj.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'puzzling_get_backlog_tasks',
-                    security: puzzling_ajax_nonce,
-                    project_id: projectId
-                },
-                success: function(response) {
-                    if (response.success) {
-                        backlogContainer.html(response.data.html);
-                    }
+            
+            // Set organizational position term
+            wp_set_object_terms($the_user_id, $position_id, 'organizational_position', false);
+
+            // Handle profile picture upload
+            if (!empty($_FILES['pzl_profile_picture']['name'])) {
+                $attachment_id = media_handle_upload('pzl_profile_picture', 0);
+                if (!is_wp_error($attachment_id)) {
+                    update_user_meta($the_user_id, 'pzl_profile_picture_id', $attachment_id);
                 }
-            });
-        }
-        
-        $('.pzl-scrum-task-list').sortable({
-            connectWith: '.pzl-scrum-task-list',
-            placeholder: 'pzl-task-card-placeholder',
-            stop: function(event, ui) {
-                var taskId = ui.item.data('task-id');
-                var sprintId = ui.item.closest('.pzl-scrum-task-list').data('sprint-id');
-                
-                ui.item.css('opacity', '0.5');
-                $.post(puzzlingcrm_ajax_obj.ajax_url, {
-                    action: 'puzzling_add_task_to_sprint',
-                    security: puzzling_ajax_nonce,
-                    task_id: taskId,
-                    sprint_id: sprintId
-                }).done(function(){
-                    ui.item.css('opacity', '1');
-                }).fail(function(){
-                    $(this).sortable('cancel');
-                    ui.item.css('opacity', '1');
-                });
             }
-        }).disableSelection();
+            
+            wp_send_json_success(['message' => $message]);
+        }
     }
     
-    // --- NEW: Save Task as Template ---
-    $('body').on('click', '#pzl-save-as-template-btn', function() {
-        var templateName = prompt("لطفاً یک نام برای این قالب وارد کنید:", $('#pzl-modal-title').text());
-        if (templateName && templateName.trim() !== '') {
-            $(this).prop('disabled', true);
-            $.ajax({
-                url: puzzlingcrm_ajax_obj.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'puzzling_save_task_as_template',
-                    security: puzzling_ajax_nonce,
-                    task_id: currentTaskId,
-                    template_name: templateName
-                },
-                success: function(response) {
-                    if(response.success){
-                         alert(response.data.message);
-                    } else {
-                         alert('خطا: ' + response.data.message);
-                    }
-                },
-                complete: function(){
-                    $('#pzl-save-as-template-btn').prop('disabled', false);
-                }
-            });
+    /**
+     * Logs an activity to a task's metadata.
+     * @param int $task_id The ID of the task.
+     * @param string $activity_text The description of the activity.
+     */
+    private function _log_task_activity($task_id, $activity_text) {
+        $activity_log = get_post_meta($task_id, '_task_activity_log', true);
+        if (!is_array($activity_log)) {
+            $activity_log = [];
         }
-    });
-});
+        $current_user = wp_get_current_user();
+        $new_log_entry = [
+            'user_id' => $current_user->ID,
+            'user_name' => $current_user->display_name,
+            'text' => $activity_text,
+            'time' => current_time('mysql'),
+        ];
+        array_unshift($activity_log, $new_log_entry);
+        update_post_meta($task_id, '_task_activity_log', $activity_log);
+    }
+
+    private function notify_all_admins($title, $args) {
+        $admins = get_users([
+            'role__in' => ['administrator', 'system_manager'],
+            'fields' => 'ID',
+        ]);
+
+        foreach ($admins as $admin_id) {
+            $notification_args = array_merge($args, ['user_id' => $admin_id]);
+            PuzzlingCRM_Logger::add($title, $notification_args);
+        }
+    }
+
+    /**
+     * Executes automation rules based on a trigger.
+     */
+    private function execute_automations($trigger, $task_id, $trigger_value = null) {
+        $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+        $automations = $settings['automations'] ?? [];
+
+        foreach ($automations as $automation) {
+            $rule_trigger = $automation['trigger'] ?? '';
+            $rule_action = $automation['action'] ?? '';
+            $rule_value = $automation['value'] ?? '';
+            
+            $trigger_condition_met = ($rule_trigger === $trigger);
+
+            if ($trigger_condition_met) {
+                switch ($rule_action) {
+                    case 'change_status':
+                        $term = get_term_by('slug', $rule_value, 'task_status');
+                        if ($term) {
+                            wp_set_post_terms($task_id, $term->term_id, 'task_status');
+                            $this->_log_task_activity($task_id, sprintf('وضعیت به صورت خودکار به "%s" تغییر کرد.', $term->name));
+                        }
+                        break;
+                    case 'assign_user':
+                        $user_id = intval($rule_value);
+                        if (get_user_by('ID', $user_id)) {
+                            update_post_meta($task_id, '_assigned_to', $user_id);
+                            $this->_log_task_activity($task_id, sprintf('وظیفه به صورت خودکار به "%s" تخصیص داده شد.', get_the_author_meta('display_name', $user_id)));
+                        }
+                        break;
+                    case 'add_comment':
+                        wp_insert_comment([
+                            'comment_post_ID' => $task_id,
+                            'comment_content' => $rule_value,
+                            'user_id' => 0,
+                            'comment_author' => 'سیستم اتوماسیون',
+                            'comment_author_email' => 'system@puzzling.com',
+                            'comment_approved' => 1,
+                        ]);
+                        $this->_log_task_activity($task_id, 'یک کامنت خودکار توسط سیستم ثبت شد.');
+                        break;
+                }
+            }
+        }
+    }
+
+    public function add_task() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+
+        if ( ! current_user_can('edit_tasks') || ! isset($_POST['title']) ) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
+        }
+
+        $title = sanitize_text_field($_POST['title']);
+        $content = isset($_POST['content']) ? wp_kses_post($_POST['content']) : '';
+        $priority_id = intval($_POST['priority']);
+        $due_date = sanitize_text_field($_POST['due_date']);
+        $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
+        $assigned_to = isset($_POST['assigned_to']) && current_user_can('assign_tasks') ? intval($_POST['assigned_to']) : get_current_user_id();
+        $parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : 0;
+        $time_estimate = isset($_POST['time_estimate']) ? floatval($_POST['time_estimate']) : 0;
+        $task_labels = isset($_POST['task_labels']) ? sanitize_text_field($_POST['task_labels']) : '';
+        $story_points = isset($_POST['story_points']) ? sanitize_text_field($_POST['story_points']) : '';
+
+
+        if (empty($project_id)) {
+            wp_send_json_error(['message' => 'لطفاً یک پروژه را برای تسک انتخاب کنید.']);
+        }
+
+        $task_id = wp_insert_post([
+            'post_title' => $title, 
+            'post_content' => $content,
+            'post_type' => 'task', 
+            'post_status' => 'publish', 
+            'post_author' => get_current_user_id(),
+            'post_parent' => $parent_id,
+        ]);
+
+        if ( is_wp_error($task_id) ) {
+            wp_send_json_error(['message' => 'خطا در ایجاد تسک.']);
+        }
+        
+        // Save metadata
+        update_post_meta($task_id, '_project_id', $project_id);
+        update_post_meta($task_id, '_assigned_to', $assigned_to);
+        if (!empty($due_date)) update_post_meta($task_id, '_due_date', $due_date);
+        if ($time_estimate > 0) update_post_meta($task_id, '_time_estimate', $time_estimate);
+        if (!empty($story_points)) update_post_meta($task_id, '_story_points', $story_points);
+
+        // Set taxonomies
+        wp_set_post_terms($task_id, [$priority_id], 'task_priority');
+        wp_set_post_terms($task_id, 'to-do', 'task_status');
+        if (!empty($task_labels)) {
+            $labels_array = array_map('trim', explode(',', $task_labels));
+            wp_set_post_terms($task_id, $labels_array, 'task_label');
+        }
+        
+        $this->_log_task_activity($task_id, 'وظیفه را ایجاد کرد.');
+
+        if ( isset($_FILES['task_cover_image']) && $_FILES['task_cover_image']['error'] == 0 ) {
+            $attachment_id = media_handle_upload('task_cover_image', $task_id);
+            if (!is_wp_error($attachment_id)) {
+                set_post_thumbnail($task_id, $attachment_id);
+            }
+        }
+
+        if ( ! empty($_FILES['task_attachments']) ) {
+            $files = $_FILES['task_attachments'];
+            $attachment_ids = [];
+
+            foreach ($files['name'] as $key => $value) {
+                if ($files['name'][$key]) {
+                    $file = ['name' => $files['name'][$key], 'type' => $files['type'][$key], 'tmp_name' => $files['tmp_name'][$key], 'error' => $files['error'][$key], 'size' => $files['size'][$key]];
+                    $_FILES = ["upload_file" => $file];
+                    $attachment_id = media_handle_upload("upload_file", $task_id);
+                    if (!is_wp_error($attachment_id)) {
+                        $attachment_ids[] = $attachment_id;
+                        $this->_log_task_activity($task_id, sprintf('فایل "%s" را پیوست کرد.', esc_html($files['name'][$key])));
+                    }
+                }
+            }
+            if (!empty($attachment_ids)) {
+                 update_post_meta($task_id, '_task_attachments', $attachment_ids);
+                 $this->execute_automations('file_attached', $task_id);
+            }
+        }
+        
+        $this->send_task_assignment_email($assigned_to, $task_id);
+        
+        $project_title = get_the_title($project_id);
+        
+        PuzzlingCRM_Logger::add('تسک جدید به شما محول شد', ['content' => "تسک '{$title}' در پروژه '{$project_title}' به شما تخصیص داده شد.", 'type' => 'notification', 'user_id' => $assigned_to, 'object_id' => $task_id]);
+
+        wp_send_json_success(['message' => 'تسک با موفقیت اضافه شد.']);
+    }
+
+    public function quick_add_task() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+
+        if ( ! current_user_can('edit_tasks') || ! isset($_POST['title']) ) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
+        }
+
+        $title = sanitize_text_field($_POST['title']);
+        $status_slug = sanitize_key($_POST['status_slug']);
+        $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
+        $assigned_to = isset($_POST['assigned_to']) ? intval($_POST['assigned_to']) : 0;
+        
+        if (empty($project_id) || empty($assigned_to)) {
+             wp_send_json_error(['message' => 'برای افزودن سریع، لطفاً ابتدا برد را بر اساس پروژه و کارمند فیلتر کنید.']);
+        }
+
+        $task_id = wp_insert_post(['post_title' => $title, 'post_type' => 'task', 'post_status' => 'publish', 'post_author' => get_current_user_id()]);
+
+        if ( is_wp_error($task_id) ) {
+            wp_send_json_error(['message' => 'خطا در ایجاد تسک.']);
+        }
+
+        update_post_meta($task_id, '_project_id', $project_id);
+        update_post_meta($task_id, '_assigned_to', $assigned_to);
+        wp_set_post_terms($task_id, $status_slug, 'task_status');
+        
+        $medium_priority = get_term_by('slug', 'medium', 'task_priority');
+        if ($medium_priority) {
+            wp_set_post_terms($task_id, $medium_priority->term_id, 'task_priority');
+        }
+
+        $this->_log_task_activity($task_id, 'وظیفه را به صورت سریع ایجاد کرد.');
+        $this->send_task_assignment_email($assigned_to, $task_id);
+        
+        $project_title = get_the_title($project_id);
+        PuzzlingCRM_Logger::add('تسک جدید به شما محول شد', ['content' => "تسک '{$title}' در پروژه '{$project_title}' به شما تخصیص داده شد.", 'type' => 'notification', 'user_id' => $assigned_to, 'object_id' => $task_id]);
+
+        $task_html = function_exists('puzzling_render_task_card') ? puzzling_render_task_card(get_post($task_id)) : '';
+        wp_send_json_success(['message' => 'تسک سریع با موفقیت اضافه شد.', 'task_html' => $task_html]);
+    }
+    
+    private function send_task_assignment_email($user_id, $task_id) {
+        $user = get_userdata($user_id);
+        $task = get_post($task_id);
+        if (!$user || !$task) return;
+
+        $project_title = get_the_title(get_post_meta($task_id, '_project_id', true));
+        $dashboard_url = function_exists('puzzling_get_dashboard_url') ? puzzling_get_dashboard_url() : home_url();
+        
+        $to = $user->user_email;
+        $subject = 'یک تسک جدید به شما تخصیص داده شد: ' . $task->post_title;
+        $body  = '<p>سلام ' . esc_html($user->display_name) . '،</p>';
+        $body .= '<p>یک تسک جدید در پروژه <strong>' . esc_html($project_title) . '</strong> به شما محول شده است:</p>';
+        $body .= '<ul><li><strong>عنوان تسک:</strong> ' . esc_html($task->post_title) . '</li></ul>';
+        $body .= '<p>برای مشاهده جزئیات به داشبورد مراجعه کنید:</p>';
+        $body .= '<p><a href="' . esc_url($dashboard_url) . '">رفتن به داشبورد</a></p>';
+        
+        wp_mail($to, $subject, $body, ['Content-Type: text/html; charset=UTF-8']);
+    }
+    
+    public function update_task_status() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+
+        if ( ! current_user_can('edit_tasks') || ! isset($_POST['task_id']) || !isset($_POST['new_status_slug']) ) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
+        }
+
+        $rules = PuzzlingCRM_Settings_Handler::get_setting('workflow_rules', []);
+        $task_id = intval($_POST['task_id']);
+        $new_status_slug = sanitize_key($_POST['new_status_slug']);
+        $user = wp_get_current_user();
+
+        if (isset($rules[$new_status_slug]) && !empty($rules[$new_status_slug])) {
+            if (empty(array_intersect($rules[$new_status_slug], $user->roles))) {
+                wp_send_json_error(['message' => 'شما اجازه انتقال وظیفه به این وضعیت را ندارید.']);
+                return;
+            }
+        }
+
+        $old_status_terms = wp_get_post_terms($task_id, 'task_status');
+        $old_status_name = !empty($old_status_terms) ? $old_status_terms[0]->name : 'نامشخص';
+        $term = get_term_by('slug', $new_status_slug, 'task_status');
+
+        if ($term) {
+            wp_set_post_terms($task_id, $term->term_id, 'task_status');
+            $this->_log_task_activity($task_id, sprintf('وضعیت وظیفه را از "%s" به "%s" تغییر داد.', $old_status_name, $term->name));
+            $this->execute_automations('status_changed', $task_id, $new_status_slug);
+            wp_send_json_success(['message' => 'وضعیت تسک به‌روزرسانی شد.']);
+        } else {
+             wp_send_json_error(['message' => 'وضعیت نامعتبر است.']);
+        }
+    }
+
+    public function delete_task() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+
+        if ( ! current_user_can('delete_tasks') || ! isset($_POST['task_id']) ) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $task_id = intval($_POST['task_id']);
+        $task = get_post($task_id);
+
+        if ( !$task || ( !current_user_can('manage_options') && $task->post_author != get_current_user_id() ) ) {
+            wp_send_json_error(['message' => 'شما اجازه حذف این تسک را ندارید.']);
+        }
+
+        $result = wp_delete_post($task_id, true);
+
+        if ( $result ) {
+            PuzzlingCRM_Logger::add('تسک حذف شد', ['content' => "تسک '{$task->post_title}' توسط " . wp_get_current_user()->display_name . " حذف شد.", 'type' => 'log', 'object_id' => $task_id]);
+            wp_send_json_success(['message' => 'تسک با موفقیت حذف شد.']);
+        } else {
+            wp_send_json_error(['message' => 'خطا در حذف تسک.']);
+        }
+    }
+    
+    public function get_task_details() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!isset($_POST['task_id']) || !current_user_can('edit_tasks')) {
+            wp_send_json_error(['message' => 'خطای دسترسی.']);
+        }
+
+        $task_id = intval($_POST['task_id']);
+        $task = get_post($task_id);
+
+        if (!$task) {
+            wp_send_json_error(['message' => 'وظیفه یافت نشد.']);
+        }
+        
+        ob_start();
+        include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/modal-task-details.php';
+        $html = ob_get_clean();
+        
+        wp_send_json_success(['html' => $html]);
+    }
+    
+    public function save_task_content() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!isset($_POST['task_id']) || !isset($_POST['content']) || !current_user_can('edit_tasks')) {
+            wp_send_json_error(['message' => 'خطای دسترسی.']);
+        }
+        
+        $task_id = intval($_POST['task_id']);
+        $content = wp_kses_post($_POST['content']);
+        $result = wp_update_post(['ID' => $task_id, 'post_content' => $content], true);
+        
+        $this->_log_task_activity($task_id, 'توضیحات وظیفه را به‌روزرسانی کرد.');
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => 'خطا در ذخیره‌سازی.']);
+        } else {
+            wp_send_json_success(['new_content_html' => wpautop($content)]);
+        }
+    }
+    
+    public function add_task_comment() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!isset($_POST['task_id']) || !isset($_POST['comment_text']) || !current_user_can('edit_tasks')) {
+            wp_send_json_error(['message' => 'خطای دسترسی.']);
+        }
+        
+        $task_id = intval($_POST['task_id']);
+        $comment_text = wp_kses_post($_POST['comment_text']);
+        $user = wp_get_current_user();
+        
+        $comment_id = wp_insert_comment([
+            'comment_post_ID' => $task_id, 'comment_author' => $user->display_name,
+            'comment_author_email' => $user->user_email, 'comment_content' => $comment_text,
+            'user_id' => $user->ID, 'comment_approved' => 1,
+        ]);
+
+        if ($comment_id) {
+            $this->_log_task_activity($task_id, sprintf('یک نظر جدید ثبت کرد: "%s"', esc_html(wp_trim_words($comment_text, 10))));
+            
+            preg_match_all('/@(\w+)/', $comment_text, $matches);
+            if (!empty($matches[1])) {
+                foreach (array_unique($matches[1]) as $login) {
+                    if ($mentioned_user = get_user_by('login', $login)) {
+                         PuzzlingCRM_Logger::add(sprintf('شما در تسک "%s" منشن شدید', get_the_title($task_id)), ['content' => sprintf('%s شما را در یک نظر منشن کرد.', $user->display_name), 'type' => 'notification', 'user_id' => $mentioned_user->ID, 'object_id' => $task_id]);
+                    }
+                }
+            }
+            $this->execute_automations('comment_added', $task_id);
+
+            $comment = get_comment($comment_id);
+            ob_start();
+            echo '<li class="pzl-comment-item"><div class="pzl-comment-avatar">' . get_avatar($comment->user_id, 32) . '</div><div class="pzl-comment-content"><p><strong>' . esc_html($comment->comment_author) . '</strong>: ' . wp_kses_post($comment->comment_content) . '</p><span class="pzl-comment-date">' . human_time_diff(strtotime($comment->comment_date), current_time('timestamp')) . ' پیش</span></div></li>';
+            wp_send_json_success(['comment_html' => ob_get_clean()]);
+        } else {
+             wp_send_json_error(['message' => 'خطا در ثبت نظر.']);
+        }
+    }
+
+    public function manage_checklist() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_tasks') || !isset($_POST['task_id']) || !isset($_POST['sub_action'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $task_id = intval($_POST['task_id']);
+        $sub_action = sanitize_key($_POST['sub_action']);
+        $checklist = get_post_meta($task_id, '_task_checklist', true) ?: [];
+
+        switch ($sub_action) {
+            case 'add':
+                $text = sanitize_text_field($_POST['text']);
+                if (empty($text)) wp_send_json_error(['message' => 'متن نمی‌تواند خالی باشد.']);
+                $checklist['item_' . time()] = ['text' => $text, 'checked' => false];
+                $this->_log_task_activity($task_id, sprintf('آیتم چک‌لیست "%s" را اضافه کرد.', $text));
+                break;
+            case 'toggle':
+                $item_id = sanitize_key($_POST['item_id']);
+                if (isset($checklist[$item_id])) {
+                    $checklist[$item_id]['checked'] = !$checklist[$item_id]['checked'];
+                    $log_action = $checklist[$item_id]['checked'] ? 'کامل' : 'ناکامل';
+                    $this->_log_task_activity($task_id, sprintf('وضعیت آیتم چک‌لیست "%s" را به %s تغییر داد.', $checklist[$item_id]['text'], $log_action));
+                }
+                break;
+            case 'delete':
+                $item_id = sanitize_key($_POST['item_id']);
+                if (isset($checklist[$item_id])) {
+                    $this->_log_task_activity($task_id, sprintf('آیتم چک‌لیست "%s" را حذف کرد.', $checklist[$item_id]['text']));
+                    unset($checklist[$item_id]);
+                }
+                break;
+        }
+
+        update_post_meta($task_id, '_task_checklist', $checklist);
+        wp_send_json_success(['checklist' => $checklist]);
+    }
+
+    public function log_time() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_tasks') || !isset($_POST['task_id']) || !isset($_POST['hours'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $task_id = intval($_POST['task_id']);
+        $hours = floatval($_POST['hours']);
+        $description = sanitize_text_field($_POST['description']);
+        if ($hours <= 0) wp_send_json_error(['message' => 'ساعت وارد شده باید بزرگتر از صفر باشد.']);
+        
+        $time_logs = get_post_meta($task_id, '_task_time_logs', true) ?: [];
+        $current_user = wp_get_current_user();
+        $new_log = ['user_id' => $current_user->ID, 'user_name' => $current_user->display_name, 'hours' => $hours, 'description' => $description, 'date' => current_time('mysql')];
+        $time_logs[] = $new_log;
+        update_post_meta($task_id, '_task_time_logs', $time_logs);
+        
+        $this->_log_task_activity($task_id, sprintf('%.2f ساعت زمان ثبت کرد.', $hours));
+
+        wp_send_json_success(['new_log' => $new_log, 'total_hours' => array_sum(wp_list_pluck($time_logs, 'hours'))]);
+    }
+
+    public function save_status_order() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options') || !isset($_POST['order'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+        global $wpdb;
+        foreach ($_POST['order'] as $index => $term_id) {
+            $wpdb->update($wpdb->terms, ['term_order' => $index + 1], ['term_id' => $term_id]);
+        }
+        clean_term_cache(array_values($_POST['order']), 'task_status');
+        wp_send_json_success(['message' => 'ترتیب وضعیت‌ها ذخیره شد.']);
+    }
+
+    public function add_new_status() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options') || !isset($_POST['name'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $name = sanitize_text_field($_POST['name']);
+        if (empty($name)) wp_send_json_error(['message' => 'نام وضعیت نمی‌تواند خالی باشد.']);
+
+        $result = wp_insert_term($name, 'task_status');
+        if (is_wp_error($result)) wp_send_json_error(['message' => $result->get_error_message()]);
+
+        wp_send_json_success(['message' => 'وضعیت جدید اضافه شد.', 'term_id' => $result['term_id'], 'name' => $name, 'slug' => get_term($result['term_id'])->slug]);
+    }
+
+    public function delete_status() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options') || !isset($_POST['term_id'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $term_id = intval($_POST['term_id']);
+        $default_term = get_term_by('slug', 'to-do', 'task_status');
+        if (!$default_term || $default_term->term_id == $term_id) {
+            wp_send_json_error(['message' => 'وضعیت پیش‌فرض "To Do" یافت نشد یا در حال حذف آن هستید.']);
+        }
+
+        foreach (get_posts(['post_type' => 'task', 'tax_query' => [['taxonomy' => 'task_status','field' => 'term_id','terms' => $term_id]], 'posts_per_page' => -1]) as $task) {
+            wp_set_object_terms($task->ID, $default_term->term_id, 'task_status');
+        }
+
+        $result = wp_delete_term($term_id, 'task_status');
+        if (is_wp_error($result)) wp_send_json_error(['message' => $result->get_error_message()]);
+
+        wp_send_json_success(['message' => 'وضعیت حذف شد.']);
+    }
+
+    public function get_notifications() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        
+        $user_id = get_current_user_id();
+        $args = ['post_type' => 'puzzling_log', 'author' => $user_id, 'posts_per_page' => 10, 'meta_query' => [['key' => '_log_type', 'value' => 'notification']]];
+        $notifications = get_posts($args);
+        $unread_count = count(get_posts(array_merge($args, ['meta_query' => ['relation' => 'AND', ['key' => '_log_type', 'value' => 'notification'], ['key' => '_is_read', 'value' => '0']]])));
+
+        if (empty($notifications)) {
+            wp_send_json_success(['count' => 0, 'html' => '<li class="pzl-no-notifications">هیچ اعلانی وجود ندارد.</li>']);
+        }
+
+        $html = '';
+        foreach ($notifications as $note) {
+            $is_read = get_post_meta($note->ID, '_is_read', true);
+            $link = add_query_arg(['view' => 'tasks', 'open_task_id' => get_post_meta($note->ID, '_related_object_id', true)], puzzling_get_dashboard_url());
+            $html .= sprintf('<li data-id="%d" class="%s"><a href="%s">%s <small>%s</small></a></li>', esc_attr($note->ID), ($is_read == '1' ? 'pzl-read' : 'pzl-unread'), esc_url($link), esc_html($note->post_title), esc_html(human_time_diff(get_the_time('U', $note->ID), current_time('timestamp')) . ' پیش'));
+        }
+        
+        wp_send_json_success(['count' => $unread_count, 'html' => $html]);
+    }
+
+    public function mark_notification_read() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (isset($_POST['id'])) {
+            $note = get_post(intval($_POST['id']));
+            if ($note && $note->post_author == get_current_user_id()) {
+                update_post_meta($note->ID, '_is_read', '1');
+                wp_send_json_success(['message' => 'خوانده شد.']);
+            }
+        }
+        wp_send_json_error(['message' => 'خطا.']);
+    }
+    
+    public function delete_project() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if ( ! current_user_can('delete_posts') || ! isset($_POST['project_id']) || !isset($_POST['_wpnonce']) ) wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        
+        $project_id = intval($_POST['project_id']);
+        if ( ! wp_verify_nonce( $_POST['_wpnonce'], 'puzzling_delete_project_' . $project_id ) ) wp_send_json_error(['message' => 'خطای امنیتی.']);
+        
+        $project = get_post($project_id);
+        if ( !$project || $project->post_type !== 'project' ) wp_send_json_error(['message' => 'پروژه یافت نشد.']);
+        
+        if ( wp_delete_post($project_id, true) ) {
+            PuzzlingCRM_Logger::add('پروژه حذف شد', ['content' => "پروژه '{$project->post_title}' توسط " . wp_get_current_user()->display_name . " حذف شد.", 'type' => 'log']);
+            wp_send_json_success(['message' => 'پروژه با موفقیت حذف شد.']);
+        } else {
+            wp_send_json_error(['message' => 'خطا در حذف پروژه.']);
+        }
+    }
+
+    public function quick_edit_task() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_tasks') || !isset($_POST['task_id']) || !isset($_POST['field'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+        
+        $task_id = intval($_POST['task_id']);
+        $field = sanitize_key($_POST['field']);
+        $value = $_POST['value'];
+
+        switch ($field) {
+            case 'title':
+                wp_update_post(['ID' => $task_id, 'post_title' => sanitize_text_field($value)]);
+                $this->_log_task_activity($task_id, sprintf('عنوان وظیفه را به "%s" تغییر داد.', sanitize_text_field($value)));
+                break;
+            case 'due_date':
+                update_post_meta($task_id, '_due_date', sanitize_text_field($value));
+                $this->_log_task_activity($task_id, sprintf('ددلاین را به "%s" تغییر داد.', sanitize_text_field($value)));
+                break;
+            case 'assignee':
+                update_post_meta($task_id, '_assigned_to', intval($value));
+                $this->_log_task_activity($task_id, sprintf('مسئول وظیفه را به "%s" تغییر داد.', get_userdata(intval($value))->display_name));
+                break;
+        }
+
+        $task_html = function_exists('puzzling_render_task_card') ? puzzling_render_task_card(get_post($task_id)) : '';
+        wp_send_json_success(['message' => 'وظیفه به‌روزرسانی شد.', 'task_html' => $task_html]);
+    }
+
+    public function get_tasks_for_views() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_tasks')) wp_send_json_error();
+
+        $tasks = new WP_Query(['post_type' => 'task', 'posts_per_page' => -1]);
+        $events = $gantt_data = $gantt_links = [];
+
+        if ($tasks->have_posts()) {
+            while ($tasks->have_posts()) {
+                $tasks->the_post();
+                $due_date = get_post_meta(get_the_ID(), '_due_date', true);
+                if($due_date) {
+                    $events[] = ['id' => get_the_ID(), 'title' => get_the_title(), 'start' => $due_date, 'allDay' => true];
+                    $gantt_data[] = ['id' => get_the_ID(), 'text' => get_the_title(), 'start_date' => get_the_date('Y-m-d'), 'end_date' => $due_date, 'parent' => get_post()->post_parent, 'open' => true];
+                }
+                if (get_post()->post_parent != 0) {
+                    $gantt_links[] = ['id' => 'link_' . get_the_ID(), 'source' => get_post()->post_parent, 'target' => get_the_ID(), 'type' => '0'];
+                }
+            }
+        }
+        wp_reset_postdata();
+
+        wp_send_json_success(['calendar_events' => $events, 'gantt_tasks' => ['data' => $gantt_data, 'links' => $gantt_links]]);
+    }
+
+    public function search_tasks_for_linking() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_tasks')) wp_send_json_error();
+
+        $tasks = new WP_Query(['post_type' => 'task', 'posts_per_page' => 10, 's' => sanitize_text_field($_POST['search']), 'post__not_in' => [intval($_POST['current_task_id'])]]);
+        $results = [];
+        if ($tasks->have_posts()) {
+            while ($tasks->have_posts()) { $tasks->the_post(); $results[] = ['id' => get_the_ID(), 'text' => '#' . get_the_ID() . ': ' . get_the_title()]; }
+        }
+        wp_reset_postdata();
+        wp_send_json_success($results);
+    }
+
+    public function add_task_link() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_tasks')) wp_send_json_error();
+
+        $from_id = intval($_POST['from_task_id']);
+        $to_id = intval($_POST['to_task_id']);
+        $type = sanitize_key($_POST['link_type']);
+
+        $links = get_post_meta($from_id, '_task_links', true) ?: [];
+        $links[] = ['type' => $type, 'task_id' => $to_id];
+        update_post_meta($from_id, '_task_links', $links);
+
+        $inverse_map = ['blocks' => 'is_blocked_by', 'is_blocked_by' => 'blocks', 'relates_to' => 'relates_to'];
+        $inverse_links = get_post_meta($to_id, '_task_links', true) ?: [];
+        $inverse_links[] = ['type' => $inverse_map[$type], 'task_id' => $from_id];
+        update_post_meta($to_id, '_task_links', $inverse_links);
+        
+        $this->_log_task_activity($from_id, sprintf('وظیفه را به #%d با نوع "%s" پیوند داد.', $to_id, $type));
+        $this->_log_task_activity($to_id, sprintf('وظیفه به #%d با نوع "%s" پیوند داده شد.', $from_id, $inverse_map[$type]));
+
+        wp_send_json_success();
+    }
+
+    public function bulk_edit_tasks() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+
+        if ( ! current_user_can('edit_tasks') || ! isset($_POST['task_ids']) || ! is_array($_POST['task_ids']) ) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
+        }
+
+        $task_ids = array_map('intval', $_POST['task_ids']);
+        $actions = $_POST['bulk_actions'];
+
+        foreach ($task_ids as $task_id) {
+            if (!empty($actions['status'])) wp_set_post_terms($task_id, sanitize_key($actions['status']), 'task_status');
+            if (!empty($actions['assignee'])) update_post_meta($task_id, '_assigned_to', intval($actions['assignee']));
+            if (!empty($actions['priority'])) wp_set_post_terms($task_id, intval($actions['priority']), 'task_priority');
+        }
+        
+        wp_send_json_success(['message' => 'وظایف با موفقیت به‌روزرسانی شدند.']);
+    }
+    
+    public function save_task_as_template() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if ( ! current_user_can('edit_tasks') || ! isset($_POST['task_id']) || !isset($_POST['template_name']) ) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $task_id = intval($_POST['task_id']);
+        $template_name = sanitize_text_field($_POST['template_name']);
+        $source_task = get_post($task_id);
+
+        if (!$source_task) wp_send_json_error(['message' => 'وظیفه منبع یافت نشد.']);
+
+        $template_id = wp_insert_post(['post_title' => $template_name, 'post_content' => $source_task->post_content, 'post_type' => 'pzl_task_template', 'post_status' => 'publish']);
+
+        if (is_wp_error($template_id)) wp_send_json_error(['message' => 'خطا در ایجاد قالب.']);
+        
+        $priority = wp_get_post_terms($task_id, 'task_priority');
+        if(!is_wp_error($priority) && !empty($priority)) update_post_meta($template_id, '_template_priority', $priority[0]->term_id);
+        
+        update_post_meta($template_id, '_template_story_points', get_post_meta($task_id, '_story_points', true));
+        update_post_meta($template_id, '_template_checklist', get_post_meta($task_id, '_task_checklist', true));
+
+        wp_send_json_success(['message' => 'قالب با موفقیت ذخیره شد.']);
+    }
+
+    public function send_custom_sms() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+
+        if ( ! current_user_can('manage_options') || ! isset($_POST['user_id']) || ! isset($_POST['message']) ) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
+        }
+
+        try {
+            $user_id = intval($_POST['user_id']);
+            $message = sanitize_textarea_field($_POST['message']);
+            $user_phone = get_user_meta($user_id, 'puzzling_phone_number', true);
+
+            if (empty($user_phone)) {
+                wp_send_json_error(['message' => 'شماره موبایل برای این کاربر ثبت نشده است.']);
+            }
+
+            if (empty($message)) {
+                wp_send_json_error(['message' => 'متن پیام نمی‌تواند خالی باشد.']);
+            }
+            
+            $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+            $sms_handler = PuzzlingCRM_Cron_Handler::get_sms_handler($settings);
+
+            if (!$sms_handler) {
+                wp_send_json_error(['message' => 'سرویس پیامک به درستی پیکربندی نشده است. لطفاً به بخش تنظیمات مراجعه کنید.']);
+            }
+
+            $success = $sms_handler->send_sms($user_phone, $message);
+
+            if ($success) {
+                PuzzlingCRM_Logger::add('ارسال پیامک دستی', [
+                    'content' => "یک پیامک دستی به کاربر با شناسه {$user_id} ارسال شد.",
+                    'type' => 'log'
+                ]);
+                wp_send_json_success(['message' => 'پیامک با موفقیت ارسال شد.']);
+            } else {
+                wp_send_json_error(['message' => 'خطا در ارسال پیامک. لطفاً تنظیمات سرویس پیامک و لاگ‌های سرور را بررسی کنید.']);
+            }
+        } catch (Exception $e) {
+            error_log('PuzzlingCRM SMS Error: ' . $e->getMessage());
+            wp_send_json_error(['message' => 'یک خطای سیستمی در هنگام ارسال پیامک رخ داد. جزئیات خطا در لاگ سرور ثبت شد.']);
+        }
+    }
+}

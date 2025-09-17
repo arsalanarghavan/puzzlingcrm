@@ -58,6 +58,9 @@ class PuzzlingCRM_Ajax_Handler {
         
         // **NEW: AJAX Staff Management**
         add_action('wp_ajax_puzzling_manage_staff_ajax', [$this, 'manage_staff_ajax']);
+
+        // **NEW: Custom SMS Sending**
+        add_action('wp_ajax_puzzling_send_custom_sms', [$this, 'send_custom_sms']);
     }
     
     /**
@@ -788,5 +791,49 @@ class PuzzlingCRM_Ajax_Handler {
         update_post_meta($template_id, '_template_checklist', get_post_meta($task_id, '_task_checklist', true));
 
         wp_send_json_success(['message' => 'قالب با موفقیت ذخیره شد.']);
+    }
+
+    public function send_custom_sms() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+
+        if ( ! current_user_can('manage_options') || ! isset($_POST['user_id']) || ! isset($_POST['message']) ) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
+        }
+
+        try {
+            $user_id = intval($_POST['user_id']);
+            $message = sanitize_textarea_field($_POST['message']);
+            $user_phone = get_user_meta($user_id, 'puzzling_phone_number', true);
+
+            if (empty($user_phone)) {
+                wp_send_json_error(['message' => 'شماره موبایل برای این کاربر ثبت نشده است.']);
+            }
+
+            if (empty($message)) {
+                wp_send_json_error(['message' => 'متن پیام نمی‌تواند خالی باشد.']);
+            }
+            
+            $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+            $sms_handler = PuzzlingCRM_Cron_Handler::get_sms_handler($settings);
+
+            if (!$sms_handler) {
+                wp_send_json_error(['message' => 'سرویس پیامک به درستی پیکربندی نشده است. لطفاً به بخش تنظیمات مراجعه کنید.']);
+            }
+
+            $success = $sms_handler->send_sms($user_phone, $message);
+
+            if ($success) {
+                PuzzlingCRM_Logger::add('ارسال پیامک دستی', [
+                    'content' => "یک پیامک دستی به کاربر با شناسه {$user_id} ارسال شد.",
+                    'type' => 'log'
+                ]);
+                wp_send_json_success(['message' => 'پیامک با موفقیت ارسال شد.']);
+            } else {
+                wp_send_json_error(['message' => 'خطا در ارسال پیامک. لطفاً تنظیمات سرویس پیامک و لاگ‌های سرور را بررسی کنید.']);
+            }
+        } catch (Exception $e) {
+            error_log('PuzzlingCRM SMS Error: ' . $e->getMessage());
+            wp_send_json_error(['message' => 'یک خطای سیستمی در هنگام ارسال پیامک رخ داد. جزئیات خطا در لاگ سرور ثبت شد.']);
+        }
     }
 }

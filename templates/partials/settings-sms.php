@@ -32,16 +32,20 @@ $active_service = $settings['sms_service'] ?? 'melipayamak';
         <div id="melipayamak-settings" class="sms-provider-settings" style="display: <?php echo $active_service === 'melipayamak' ? 'block' : 'none'; ?>;">
             <h5>تنظیمات پنل ملی‌پیامک</h5>
             <div class="form-group">
-                <label for="melipayamak_api_key">کلید API:</label>
-                <input type="text" id="melipayamak_api_key" name="puzzling_settings[melipayamak_api_key]" value="<?php echo esc_attr($settings['melipayamak_api_key'] ?? ''); ?>" class="ltr-input">
+                <label for="melipayamak_username">نام کاربری:</label>
+                <input type="text" id="melipayamak_username" name="puzzling_settings[melipayamak_username]" value="<?php echo esc_attr($settings['melipayamak_username'] ?? ''); ?>" class="ltr-input">
+            </div>
+            <div class="form-group">
+                <label for="melipayamak_password">رمز عبور:</label>
+                <input type="password" id="melipayamak_password" name="puzzling_settings[melipayamak_password]" value="<?php echo esc_attr($settings['melipayamak_password'] ?? ''); ?>" class="ltr-input">
             </div>
             <div class="form-group">
                 <label for="melipayamak_sender_number">شماره خط فرستنده:</label>
                 <input type="text" id="melipayamak_sender_number" name="puzzling_settings[melipayamak_sender_number]" value="<?php echo esc_attr($settings['melipayamak_sender_number'] ?? ''); ?>" class="ltr-input" placeholder="مثال: 3000...">
             </div>
-            <h6>کدهای پترن پیامک</h6>
+            <h6>کدهای پترن پیامک (ارسال از خط خدماتی)</h6>
             <p class="description">کد الگوهای ساخته شده در پنل را وارد کنید. متغیر مورد استفاده باید <code>%amount%</code> باشد.</p>
-            <div class="form-group"><label for="pattern_3_days">الگوی یادآوری ۳ روز قبل:</label><input type="text" id="pattern_3_days" name="puzzling_settings[pattern_3_days]" value="<?php echo esc_attr($settings['pattern_3_days'] ?? ''); ?>" class="ltr-input" placeholder="مثال: 98ab76c"></div>
+            <div class="form-group"><label for="pattern_3_days">الگوی یادآوری ۳ روز قبل:</label><input type="text" id="pattern_3_days" name="puzzling_settings[pattern_3_days]" value="<?php echo esc_attr($settings['pattern_3_days'] ?? ''); ?>" class="ltr-input" placeholder="مثال: 12345"></div>
             <div class="form-group"><label for="pattern_1_day">الگوی یادآوری ۱ روز قبل:</label><input type="text" id="pattern_1_day" name="puzzling_settings[pattern_1_day]" value="<?php echo esc_attr($settings['pattern_1_day'] ?? ''); ?>" class="ltr-input"></div>
             <div class="form-group"><label for="pattern_due_today">الگوی یادآوری روز سررسید:</label><input type="text" id="pattern_due_today" name="puzzling_settings[pattern_due_today]" value="<?php echo esc_attr($settings['pattern_due_today'] ?? ''); ?>" class="ltr-input"></div>
         </div>

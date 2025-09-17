@@ -25,16 +25,17 @@ class PuzzlingCRM_Cron_Handler {
      * @param array $settings The plugin's settings array.
      * @return PuzzlingCRM_SMS_Service_Interface|null The handler instance or null if not configured.
      */
-    private function get_sms_handler( $settings ) {
+    public static function get_sms_handler( $settings ) {
         $active_service = $settings['sms_service'] ?? null;
         $handler = null;
 
         switch ($active_service) {
             case 'melipayamak':
-                $api_key = $settings['melipayamak_api_key'] ?? '';
+                $username = $settings['melipayamak_username'] ?? '';
+                $password = $settings['melipayamak_password'] ?? '';
                 $sender_number = $settings['melipayamak_sender_number'] ?? '';
-                if ($api_key && $sender_number) {
-                    $handler = new CSM_Melipayamak_Handler($api_key, $settings['melipayamak_api_secret'] ?? '', $sender_number);
+                if ($username && $password && $sender_number) {
+                    $handler = new CSM_Melipayamak_Handler($username, $password, $sender_number);
                 }
                 break;
             case 'parsgreen':
@@ -51,7 +52,7 @@ class PuzzlingCRM_Cron_Handler {
 
     public function send_payment_reminders() {
         $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
-        $sms_handler = $this->get_sms_handler($settings);
+        $sms_handler = self::get_sms_handler($settings);
 
         if ( !$sms_handler ) {
             set_transient('puzzling_sms_not_configured', true, DAY_IN_SECONDS);

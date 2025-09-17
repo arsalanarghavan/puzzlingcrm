@@ -89,11 +89,34 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
                             <td><?php echo esc_html($user->user_email); ?></td>
                             <td><?php echo !empty($user->roles) ? esc_html(wp_roles()->roles[$user->roles[0]]['name']) : '---'; ?></td>
                             <td><?php echo date_i18n('Y/m/d', strtotime($user->user_registered)); ?></td>
-                            <td><a href="<?php echo add_query_arg(['action' => 'edit', 'user_id' => $user->ID]); ?>" class="pzl-button pzl-button-sm">ویرایش</a></td>
+                            <td>
+                                <a href="<?php echo add_query_arg(['action' => 'edit', 'user_id' => $user->ID]); ?>" class="pzl-button pzl-button-sm">ویرایش</a>
+                                <button class="pzl-button pzl-button-sm send-sms-btn" data-user-id="<?php echo esc_attr($user->ID); ?>" data-user-name="<?php echo esc_attr($user->display_name); ?>"><i class="fas fa-sms"></i></button>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
     <?php endif; ?>
+</div>
+
+<div id="pzl-sms-modal-backdrop" style="display: none;"></div>
+<div id="pzl-sms-modal-wrap" style="display: none;">
+    <div id="pzl-sms-modal-content">
+        <button id="pzl-close-sms-modal-btn">&times;</button>
+        <div id="pzl-sms-modal-body">
+            <h3>ارسال پیامک به <span id="sms-modal-user-name"></span></h3>
+            <form id="pzl-send-sms-form">
+                <div class="form-group">
+                    <label for="sms_message">متن پیام:</label>
+                    <textarea id="sms_message" name="sms_message" rows="5" required></textarea>
+                </div>
+                <input type="hidden" id="sms-modal-user-id" name="user_id">
+                <div class="form-submit">
+                    <button type="submit" class="pzl-button">ارسال پیامک</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>

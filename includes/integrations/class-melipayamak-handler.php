@@ -1,7 +1,7 @@
 <?php
 /**
  * PuzzlingCRM Melipayamak SMS Handler
- * Implements the SMS Service Interface.
+ * Implements the SMS Service Interface using the legacy REST API (username/password).
  *
  * @package PuzzlingCRM
  */
@@ -14,69 +14,95 @@ if ( ! interface_exists('PuzzlingCRM_SMS_Service_Interface') ) {
 }
 
 class CSM_Melipayamak_Handler implements PuzzlingCRM_SMS_Service_Interface {
-    private $api_key;
-    private $api_secret;
+    private $username;
+    private $password;
     private $sender_number;
-    private $api_url = 'https://rest.melipayamak.com/v1/send/pattern';
+    private $api_base_url = 'https://rest.payamak-panel.com/api/SendSMS/%s';
 
-    public function __construct( $api_key, $api_secret, $sender_number ) {
-        $this->api_key = $api_key;
-        $this->api_secret = $api_secret;
+    public function __construct( $username, $password, $sender_number ) {
+        $this->username = $username;
+        $this->password = $password;
         $this->sender_number = $sender_number;
     }
     
     /**
-     * Sends an SMS message using a pattern.
+     * Sends an SMS message.
+     * If $params is provided, it sends a pattern-based SMS (BaseServiceNumber).
+     * Otherwise, it sends a simple text message (SendSMS).
      *
      * @param string $to The recipient's mobile number.
-     * @param string $message This will be the pattern code for Melipayamak.
-     * @param array $params The parameters to be replaced in the pattern (e.g., ['amount' => '10000']).
+     * @param string $message The text message OR the bodyId for pattern.
+     * @param array $params The parameters for pattern-based SMS.
      * @return bool True on success, false on failure.
      */
     public function send_sms( $to, $message, $params = [] ) {
-        $pattern_code = $message; // For this provider, 'message' is the pattern code.
-
-        if (empty($this->sender_number) || empty($this->api_key) || empty($pattern_code)) {
-            error_log('PuzzlingCRM SMS Error (Melipayamak): API Key, Sender number, or Pattern Code is not configured.');
+        if (empty($this->sender_number) || empty($this->username) || empty($this->password)) {
+            error_log('PuzzlingCRM SMS Error (Melipayamak): Username, Password, or Sender number is not configured.');
             return false;
         }
 
-        // Melipayamak expects values to be a string, so we need to format the params
-        $values = [];
-        foreach ($params as $key => $value) {
-            $values[$key] = (string)$value;
-        }
+        $data = [];
+        $endpoint = '';
 
-        $body = [
-            'pattern_code' => $pattern_code,
-            'originator'   => $this->sender_number,
-            'recipient'    => $to,
-            'values'       => $values,
-        ];
+        // Check if this is a pattern-based send or a simple send
+        if (!empty($params)) {
+            // --- This is a pattern-based SMS ---
+            $endpoint = 'BaseServiceNumber';
+            $bodyId = $message;
+            $text = '';
+
+            // The legacy API expects parameters to be a single string separated by ';'
+            if (isset($params['amount'])) {
+                $text = (string) $params['amount'];
+            }
+            
+            $data = [
+                'username' => $this->username,
+                'password' => $this->password,
+                'to'       => $to,
+                'bodyId'   => $bodyId,
+                'text'     => $text,
+            ];
+
+        } else {
+            // --- This is a simple text SMS ---
+            $endpoint = 'SendSMS';
+            $data = [
+                'username' => $this->username,
+                'password' => $this->password,
+                'to'       => $to,
+                'from'     => $this->sender_number,
+                'text'     => $message,
+                'isflash'  => false
+            ];
+        }
+        
+        $api_url = sprintf($this->api_base_url, $endpoint);
         
         $args = [
             'method' => 'POST',
             'headers' => [
-                'Content-Type'  => 'application/json',
-                'Authorization' => 'AccessKey ' . $this->api_key
+                'Content-Type'  => 'application/x-www-form-urlencoded',
             ],
-            'body' => json_encode($body),
+            'body' => http_build_query($data),
             'timeout' => 30,
         ];
 
-        $response = wp_remote_post( $this->api_url, $args );
+        $response = wp_remote_post( $api_url, $args );
 
         if ( is_wp_error( $response ) ) {
             error_log('PuzzlingCRM SMS Error (Melipayamak): ' . $response->get_error_message());
             return false;
         }
         
-        $response_code = wp_remote_retrieve_response_code($response);
-        if ($response_code >= 300) {
-             error_log('PuzzlingCRM SMS Error: Melipayamak API returned status ' . $response_code . ' with body: ' . wp_remote_retrieve_body($response));
-             return false;
-        }
+        $response_body = wp_remote_retrieve_body($response);
+        $result = json_decode($response_body);
 
-        return true;
+        if (isset($result->Value) && is_numeric($result->Value) && $result->Value > 0) {
+            return true;
+        } else {
+            error_log('PuzzlingCRM SMS Error: Melipayamak API returned an error: ' . $response_body);
+            return false;
+        }
     }
 }
