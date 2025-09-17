@@ -3,6 +3,56 @@ jQuery(document).ready(function($) {
     var puzzling_lang = puzzlingcrm_ajax_obj.lang;
     var currentTaskId = null;
 
+    // --- FINAL FIX: AJAX Staff Profile Management with SweetAlert-style notice ---
+    $('body').on('submit', 'form#pzl-staff-form', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var submitButton = form.find('button[type="submit"]');
+        var originalButtonText = submitButton.text();
+        var formData = new FormData(this);
+        
+        formData.append('action', 'puzzling_manage_staff_ajax');
+        formData.append('_wpnonce', form.find('#_wpnonce').val() || puzzling_ajax_nonce);
+
+        form.find('.pzl-ajax-notice').remove();
+
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            beforeSend: function() {
+                submitButton.text('در حال ذخیره...').prop('disabled', true);
+            },
+            success: function(response) {
+                var noticeClass = response.success ? 'pzl-alert-success' : 'pzl-alert-error';
+                var noticeHtml = '<div class="pzl-alert ' + noticeClass + ' pzl-ajax-notice" style="margin-top: 20px;">' + response.data.message + '</div>';
+                
+                var noticeElement = $(noticeHtml).appendTo(form.find('.form-submit')).fadeIn();
+                
+                setTimeout(function(){
+                    noticeElement.fadeOut(function(){ $(this).remove(); });
+                }, 4000);
+
+                if (response.success && form.find('input[name="user_id"]').val() == 0) {
+                   setTimeout(function(){
+                       window.location.reload(); // Reload only for new user creation
+                   }, 2000);
+                }
+            },
+            error: function() {
+                var errorHtml = '<div class="pzl-alert pzl-alert-error pzl-ajax-notice" style="margin-top: 20px;">یک خطای ناشناخته رخ داد.</div>';
+                $(errorHtml).appendTo(form.find('.form-submit')).fadeIn();
+            },
+            complete: function() {
+                // This block will always run
+                submitButton.text(originalButtonText).prop('disabled', false);
+            }
+        });
+    });
+
+
     // --- NEW: Initialize Calendar View ---
     var calendarEl = document.getElementById('pzl-task-calendar');
     if (calendarEl && typeof FullCalendar !== 'undefined') {

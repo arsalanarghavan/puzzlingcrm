@@ -29,7 +29,7 @@ class PuzzlingCRM_User_Profile {
         add_action( 'personal_options_update', [ $this, 'save_custom_profile_fields' ] );
         add_action( 'edit_user_profile_update', [ $this, 'save_custom_profile_fields' ] );
         
-        // Make sure the form can handle file uploads
+        // Make the form can handle file uploads
         add_action( 'user_edit_form_tag', function(){ echo 'enctype="multipart/form-data"'; });
     }
 
@@ -50,34 +50,33 @@ class PuzzlingCRM_User_Profile {
             'contact_info' => [ 'title' => 'اطلاعات تماس و ارتباطی', 'fields' => [
                 'mobile_phone' => ['label' => 'شماره موبایل', 'type' => 'tel'],
                 'landline_phone' => ['label' => 'تلفن ثابت', 'type' => 'tel'],
-                'address' => ['label' => 'آدرس محل سکونت', 'type' => 'textarea'],
+                'address' => ['label' => 'آدرس محل سکونت', 'type' => 'textarea', 'full_width' => true],
                 'emergency_contact_1_name' => ['label' => 'نام مخاطب اضطراری ۱', 'type' => 'text'],
                 'emergency_contact_1_phone' => ['label' => 'شماره مخاطب اضطراری ۱', 'type' => 'tel'],
                 'emergency_contact_2_name' => ['label' => 'نام مخاطب اضطراری ۲', 'type' => 'text'],
                 'emergency_contact_2_phone' => ['label' => 'شماره مخاطب اضطراری ۲', 'type' => 'tel'],
             ]],
             'job_info' => [ 'title' => 'اطلاعات شغلی / سازمانی', 'fields' => [
+                'organizational_position' => ['label' => 'جایگاه سازمانی (عنوان شغلی)', 'type' => 'position_select'],
+                'department' => ['label' => 'دپارتمان', 'type' => 'text'],
                 'personnel_code' => ['label' => 'کد پرسنلی', 'type' => 'text'],
+                'direct_manager' => ['label' => 'مدیر مستقیم', 'type' => 'text'],
                 'hire_date' => ['label' => 'تاریخ استخدام', 'type' => 'date'],
                 'contract_type' => ['label' => 'نوع قرارداد', 'type' => 'select', 'options' => ['' => 'انتخاب کنید', 'permanent' => 'رسمی', 'contractual' => 'پیمانی', 'project' => 'پروژه‌ای']],
                 'job_status' => ['label' => 'وضعیت شغلی', 'type' => 'select', 'options' => ['' => 'انتخاب کنید', 'active' => 'فعال', 'on_leave' => 'مرخصی', 'mission' => 'ماموریت']],
             ]],
             'financial_info' => [ 'title' => 'اطلاعات مالی و حقوقی', 'fields' => [
-                'bank_account_number' => ['label' => 'شماره حساب بانکی', 'type' => 'text'],
-                'bank_name' => ['label' => 'نام بانک', 'type' => 'text'], 'iban' => ['label' => 'شماره شبا', 'type' => 'text'],
-                'salary_details' => ['label' => 'حقوق و مزایا', 'type' => 'textarea'], 'deductions' => ['label' => 'کسورات', 'type' => 'textarea'],
+                'bank_account_number' => ['label' => 'شماره حساب', 'type' => 'text'], 'bank_name' => ['label' => 'نام بانک', 'type' => 'text'],
+                'iban' => ['label' => 'شماره شبا', 'type' => 'text'], 'salary_details' => ['label' => 'حقوق و مزایا', 'type' => 'textarea'],
+                'deductions' => ['label' => 'کسورات', 'type' => 'textarea'],
             ]],
             'insurance_legal_info' => [ 'title' => 'اطلاعات بیمه و قانونی', 'fields' => [
                 'insurance_number' => ['label' => 'شماره بیمه', 'type' => 'text'], 'tax_file_number' => ['label' => 'شماره پرونده مالیاتی', 'type' => 'text'],
                 'insurance_history' => ['label' => 'سوابق بیمه‌ای', 'type' => 'textarea'],
             ]],
             'professional_history' => [ 'title' => 'سوابق حرفه‌ای و آموزشی', 'fields' => [
-                'education' => ['label' => 'تحصیلات', 'type' => 'textarea'], 'training_courses' => ['label' => 'دوره‌های آموزشی', 'type' => 'textarea'],
+                'education' => ['label' => 'تحصیلات', 'type' => 'textarea'], 'training_courses' => ['label' => 'دوره‌ها', 'type' => 'textarea'],
                 'skills_certificates' => ['label' => 'مهارت‌ها و گواهینامه‌ها', 'type' => 'textarea'], 'previous_jobs' => ['label' => 'سوابق کاری قبلی', 'type' => 'textarea'],
-            ]],
-            'admin_info' => [ 'title' => 'اطلاعات داخلی و اداری', 'fields' => [
-                'personnel_card_id' => ['label' => 'شناسه ورود', 'type' => 'text'], 'system_access' => ['label' => 'دسترسی‌های سیستمی', 'type' => 'textarea'],
-                'delivered_equipment' => ['label' => 'ابزارهای کاری تحویل‌شده', 'type' => 'textarea'],
             ]],
         ];
     }
@@ -93,7 +92,7 @@ class PuzzlingCRM_User_Profile {
                 <td>
                     <?php echo get_avatar($user->ID, 96); ?>
                     <input type="file" name="pzl_profile_picture" id="pzl_profile_picture" accept="image/*">
-                    <p class="description">یک تصویر مربعی آپلود کنید.</p>
+                    <p class="description">برای بهترین نمایش، از یک تصویر با نسبت ۹ در ۱۶ استفاده کنید.</p>
                 </td>
             </tr>
         </table>
@@ -121,6 +120,17 @@ class PuzzlingCRM_User_Profile {
                                 }
                                 echo '</select>';
                                 break;
+                            case 'position_select':
+                                $positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false]);
+                                $current_pos = wp_get_object_terms($user->ID, 'organizational_position', ['fields' => 'ids']);
+                                $current_pos_id = !empty($current_pos) ? $current_pos[0] : 0;
+                                echo '<select name="organizational_position" id="organizational_position">';
+                                echo '<option value="">-- بدون جایگاه --</option>';
+                                foreach($positions as $pos){
+                                    echo '<option value="' . esc_attr($pos->term_id) . '" ' . selected($current_pos_id, $pos->term_id, false) . '>' . esc_html($pos->name) . '</option>';
+                                }
+                                echo '</select>';
+                                break;
                             default:
                                 echo '<input type="' . esc_attr($field['type']) . '" name="' . esc_attr($meta_key) . '" id="' . esc_attr($meta_key) . '" value="' . esc_attr($value) . '" class="regular-text" />';
                         }
@@ -138,11 +148,17 @@ class PuzzlingCRM_User_Profile {
 
         foreach ($this->profile_fields as $section) {
             foreach ($section['fields'] as $field_key => $field) {
+                if ($field['type'] === 'position_select') continue; // Handled separately
                 $meta_key = 'pzl_' . $field_key;
                 if (isset($_POST[$meta_key])) {
                     update_user_meta($user_id, $meta_key, sanitize_text_field($_POST[$meta_key]));
                 }
             }
+        }
+
+        // Save organizational position
+        if (isset($_POST['organizational_position'])) {
+            wp_set_object_terms($user_id, intval($_POST['organizational_position']), 'organizational_position', false);
         }
         
         // Handle profile picture upload
@@ -152,11 +168,34 @@ class PuzzlingCRM_User_Profile {
             require_once(ABSPATH . 'wp-admin/includes/media.php');
 
             $attachment_id = media_handle_upload('pzl_profile_picture', 0);
-            if (is_wp_error($attachment_id)) {
-                // Handle error
-            } else {
+            if (!is_wp_error($attachment_id)) {
                 update_user_meta($user_id, 'pzl_profile_picture_id', $attachment_id);
             }
         }
     }
 }
+
+// Add a filter to use our custom profile picture as the avatar
+add_filter('get_avatar_url', function($url, $id_or_email, $args) {
+    $user_id = 0;
+    if (is_numeric($id_or_email)) {
+        $user_id = (int) $id_or_email;
+    } elseif (is_object($id_or_email)) {
+        if (!empty($id_or_email->user_id)) {
+            $user_id = (int) $id_or_email->user_id;
+        }
+    } else {
+        $user = get_user_by('email', $id_or_email);
+        $user_id = $user ? $user->ID : 0;
+    }
+
+    if ($user_id === 0) return $url;
+
+    $attachment_id = get_user_meta($user_id, 'pzl_profile_picture_id', true);
+    if ($attachment_id) {
+        $image_url = wp_get_attachment_image_url($attachment_id, 'thumbnail');
+        if ($image_url) return $image_url;
+    }
+
+    return $url;
+}, 10, 3);

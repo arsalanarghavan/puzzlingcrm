@@ -55,6 +55,80 @@ class PuzzlingCRM_Ajax_Handler {
         // **NEW: Bulk Edit & Task Template Actions**
         add_action('wp_ajax_puzzling_bulk_edit_tasks', [$this, 'bulk_edit_tasks']);
         add_action('wp_ajax_puzzling_save_task_as_template', [$this, 'save_task_as_template']);
+        
+        // **NEW: AJAX Staff Management**
+        add_action('wp_ajax_puzzling_manage_staff_ajax', [$this, 'manage_staff_ajax']);
+    }
+    
+    /**
+     * AJAX handler for managing staff profiles.
+     */
+    public function manage_staff_ajax() {
+        check_ajax_referer('puzzling_manage_user', '_wpnonce');
+
+        $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+
+        if (!current_user_can('edit_user', $user_id) && $user_id !== 0) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم برای ویرایش این کاربر را ندارید.']);
+        }
+        
+        // This logic is moved from class-form-handler.php
+        $email = sanitize_email($_POST['email']);
+        $first_name = sanitize_text_field($_POST['first_name']);
+        $last_name = sanitize_text_field($_POST['last_name']);
+        $password = $_POST['password'];
+        $role = sanitize_key($_POST['role']);
+        $position_id = isset($_POST['organizational_position']) ? intval($_POST['organizational_position']) : 0;
+
+        if (!is_email($email) || empty($first_name) || empty($last_name) || empty($role)) {
+            wp_send_json_error(['message' => 'لطفاً فیلدهای ضروری (نام، نام خانوادگی، ایمیل و نقش) را پر کنید.']);
+        }
+        if ($user_id === 0 && empty($password)) {
+            wp_send_json_error(['message' => 'برای کاربر جدید، وارد کردن رمز عبور ضروری است.']);
+        }
+
+        $user_data = [
+            'user_email' => $email, 'first_name' => $first_name, 'last_name' => $last_name,
+            'display_name' => trim($first_name . ' ' . $last_name), 'role' => $role
+        ];
+        if (!empty($password)) $user_data['user_pass'] = $password;
+
+        if ($user_id > 0) {
+            $user_data['ID'] = $user_id;
+            $result = wp_update_user($user_data);
+            $message = 'پروفایل با موفقیت به‌روزرسانی شد.';
+        } else {
+            if (email_exists($email)) wp_send_json_error(['message' => 'کاربری با این ایمیل از قبل وجود دارد.']);
+            $user_data['user_login'] = $email;
+            $result = wp_insert_user($user_data);
+            $message = 'کاربر جدید با موفقیت ایجاد شد.';
+        }
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => 'خطا در ذخیره‌سازی اطلاعات کاربر.']);
+        } else {
+            $the_user_id = is_int($result) ? $result : $user_id;
+
+            // Save all custom meta fields
+            foreach ($_POST as $key => $value) {
+                if (strpos($key, 'pzl_') === 0) {
+                    update_user_meta($the_user_id, $key, sanitize_text_field($value));
+                }
+            }
+            
+            // Set organizational position term
+            wp_set_object_terms($the_user_id, $position_id, 'organizational_position', false);
+
+            // Handle profile picture upload
+            if (!empty($_FILES['pzl_profile_picture']['name'])) {
+                $attachment_id = media_handle_upload('pzl_profile_picture', 0);
+                if (!is_wp_error($attachment_id)) {
+                    update_user_meta($the_user_id, 'pzl_profile_picture_id', $attachment_id);
+                }
+            }
+            
+            wp_send_json_success(['message' => $message]);
+        }
     }
     
     /**
