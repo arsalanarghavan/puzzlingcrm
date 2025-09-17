@@ -9,7 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $current_view = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
-$base_url = puzzling_get_dashboard_url();
+// Use the current page URL as the base, removing any existing query parameters.
+$base_url = get_permalink();
 
 // A map of views to their corresponding template files and titles
 $dashboard_pages = [

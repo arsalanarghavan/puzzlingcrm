@@ -5,11 +5,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! function_exists( 'puzzling_get_dashboard_url' ) ) {
     function puzzling_get_dashboard_url() {
-        $dashboard_page_id = get_option( 'puzzling_dashboard_page_id', 0 );
-        if ( $dashboard_page_id && get_post_status( $dashboard_page_id ) === 'publish' ) {
-            return get_permalink( $dashboard_page_id );
+        // Return the permalink of the current page.
+        // This makes the function context-aware for shortcodes.
+        if ( is_singular() ) {
+            return get_permalink( get_the_ID() );
         }
-        return home_url( '/' );
+        // Fallback for archives or other pages by returning the current URL.
+        global $wp;
+        return home_url( add_query_arg( [], $wp->request ) );
     }
 }
 

@@ -96,6 +96,9 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
             </form>
 
             <?php
+            // Save the current page's URL before starting the custom loop
+            $base_page_url = get_permalink();
+
             $paged = get_query_var('paged') ? get_query_var('paged') : 1;
             $args = [
                 'post_type' => 'project',
@@ -118,7 +121,9 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                         $edit_url = add_query_arg(['action' => 'edit', 'project_id' => $project_id]);
                         $contract = get_posts(['post_type' => 'contract', 'meta_key' => '_project_id', 'meta_value' => $project_id, 'posts_per_page' => 1]);
                         $contract_id = !empty($contract) ? $contract[0]->ID : 0;
-                        $contract_url = $contract_id ? add_query_arg(['view' => 'contracts', 'action' => 'edit', 'contract_id' => $contract_id], puzzling_get_dashboard_url()) : '#';
+                        
+                        // Use the saved base URL to ensure links point to the correct page
+                        $contract_url = $contract_id ? add_query_arg(['view' => 'contracts', 'action' => 'edit', 'contract_id' => $contract_id], $base_page_url) : '#';
                         
                         $project_category = get_post_meta($project_id, '_project_category', true) ?: '---'; 
                     ?>
