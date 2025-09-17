@@ -179,36 +179,28 @@ class PuzzlingCRM_CPT_Manager {
             'show_admin_column' => true,
             'show_in_rest' => true,
             'labels' => [
-                'name' => __( 'Labels', 'puzzlingcrm' ),
-                'singular_name' => __( 'Label', 'puzzlingcrm' ),
-                'search_items' => __( 'Search Labels', 'puzzlingcrm' ),
-                'all_items' => __( 'All Labels', 'puzzlingcrm' ),
-                'popular_items' => __( 'Popular Labels', 'puzzlingcrm' ),
-                'edit_item' => __( 'Edit Label', 'puzzlingcrm' ),
-                'update_item' => __( 'Update Label', 'puzzlingcrm' ),
-                'add_new_item' => __( 'Add New Label', 'puzzlingcrm' ),
-                'new_item_name' => __( 'New Label Name', 'puzzlingcrm' ),
-                'menu_name' => __( 'Labels', 'puzzlingcrm' ),
+                'name' => __( 'Labels', 'puzzlingcrm' ), 'singular_name' => __( 'Label', 'puzzlingcrm' ),
+                'search_items' => __( 'Search Labels', 'puzzlingcrm' ), 'all_items' => __( 'All Labels', 'puzzlingcrm' ),
+                'popular_items' => __( 'Popular Labels', 'puzzlingcrm' ), 'edit_item' => __( 'Edit Label', 'puzzlingcrm' ),
+                'update_item' => __( 'Update Label', 'puzzlingcrm' ), 'add_new_item' => __( 'Add New Label', 'puzzlingcrm' ),
+                'new_item_name' => __( 'New Label Name', 'puzzlingcrm' ), 'menu_name' => __( 'Labels', 'puzzlingcrm' ),
             ]
         ]);
 
-        // Task Components Taxonomy
-        register_taxonomy('task_component', 'task', [
-            'label' => __( 'Components', 'puzzlingcrm' ),
+        // Organizational Position Taxonomy (for users)
+        register_taxonomy('organizational_position', 'user', [
+            'label' => __( 'Organizational Positions', 'puzzlingcrm' ),
+            'public' => false,
+            'show_ui' => true,
+            'show_in_menu' => false, // Will be added to a custom settings page
             'hierarchical' => true,
-            'rewrite' => ['slug' => 'task-component'],
-            'show_admin_column' => true,
-            'show_in_rest' => true,
+            'rewrite' => false,
             'labels' => [
-                'name' => __( 'Components', 'puzzlingcrm' ),
-                'singular_name' => __( 'Component', 'puzzlingcrm' ),
-                'search_items' => __( 'Search Components', 'puzzlingcrm' ),
-                'all_items' => __( 'All Components', 'puzzlingcrm' ),
-                'edit_item' => __( 'Edit Component', 'puzzlingcrm' ),
-                'update_item' => __( 'Update Component', 'puzzlingcrm' ),
-                'add_new_item' => __( 'Add New Component', 'puzzlingcrm' ),
-                'new_item_name' => __( 'New Component Name', 'puzzlingcrm' ),
-                'menu_name' => __( 'Components', 'puzzlingcrm' ),
+                'name' => __( 'جایگاه‌های شغلی', 'puzzlingcrm' ), 'singular_name' => __( 'جایگاه شغلی', 'puzzlingcrm' ),
+                'search_items' => __( 'جستجوی جایگاه', 'puzzlingcrm' ), 'all_items' => __( 'تمام جایگاه‌ها', 'puzzlingcrm' ),
+                'edit_item' => __( 'ویرایش جایگاه', 'puzzlingcrm' ), 'update_item' => __( 'بروزرسانی جایگاه', 'puzzlingcrm' ),
+                'add_new_item' => __( 'افزودن جایگاه جدید', 'puzzlingcrm' ), 'new_item_name' => __( 'نام جایگاه جدید', 'puzzlingcrm' ),
+                'menu_name' => __( 'جایگاه‌های شغلی', 'puzzlingcrm' ),
             ]
         ]);
 
@@ -216,27 +208,13 @@ class PuzzlingCRM_CPT_Manager {
         register_taxonomy('ticket_status', 'ticket', ['label' => __( 'Ticket Status', 'puzzlingcrm' ), 'hierarchical' => true]);
     }
     
-    /**
-     * Adds meta boxes for advanced task details.
-     */
     public function add_task_meta_boxes() {
-        add_meta_box(
-            'puzzling_task_details_meta_box',
-            __('Task Details', 'puzzlingcrm'),
-            [$this, 'render_task_details_meta_box'],
-            'task',
-            'side',
-            'default'
-        );
+        add_meta_box('puzzling_task_details_meta_box', __('Task Details', 'puzzlingcrm'), [$this, 'render_task_details_meta_box'], 'task', 'side', 'default');
     }
 
-    /**
-     * Renders the content of the task details meta box.
-     */
     public function render_task_details_meta_box($post) {
         wp_nonce_field('puzzling_save_task_details', 'puzzling_task_details_nonce');
 
-        // Epic Selection
         $epics = get_posts(['post_type' => 'epic', 'numberposts' => -1]);
         $current_epic = get_post_meta($post->ID, '_task_epic_id', true);
         echo '<p><strong>' . __('Epic', 'puzzlingcrm') . '</strong></p>';
@@ -247,60 +225,37 @@ class PuzzlingCRM_CPT_Manager {
         }
         echo '</select><hr>';
 
-        // Story Points
         $story_points = get_post_meta($post->ID, '_story_points', true);
         echo '<p><strong>' . __('Story Points', 'puzzlingcrm') . '</strong></p>';
         echo '<input type="number" name="story_points" value="' . esc_attr($story_points) . '" style="width:100%;" />';
     }
 
-    /**
-     * Saves the data from the task details meta box.
-     */
     public function save_task_meta_boxes($post_id) {
-        if (!isset($_POST['puzzling_task_details_nonce']) || !wp_verify_nonce($_POST['puzzling_task_details_nonce'], 'puzzling_save_task_details')) {
-            return;
-        }
-        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-            return;
-        }
-        if (!current_user_can('edit_post', $post_id)) {
-            return;
-        }
+        if (!isset($_POST['puzzling_task_details_nonce']) || !wp_verify_nonce($_POST['puzzling_task_details_nonce'], 'puzzling_save_task_details')) return;
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+        if (!current_user_can('edit_post', $post_id)) return;
 
-        // Save Epic
-        if (isset($_POST['task_epic_id'])) {
-            update_post_meta($post_id, '_task_epic_id', intval($_POST['task_epic_id']));
-        }
-
-        // Save Story Points
-        if (isset($_POST['story_points'])) {
-            update_post_meta($post_id, '_story_points', sanitize_text_field($_POST['story_points']));
-        }
+        if (isset($_POST['task_epic_id'])) update_post_meta($post_id, '_task_epic_id', intval($_POST['task_epic_id']));
+        if (isset($_POST['story_points'])) update_post_meta($post_id, '_story_points', sanitize_text_field($_POST['story_points']));
     }
 
     public static function create_default_terms() {
         // Task Statuses
         $task_statuses = [__('To Do', 'puzzlingcrm') => 'to-do', __('In Progress', 'puzzlingcrm') => 'in-progress', __('Done', 'puzzlingcrm') => 'done'];
         foreach ($task_statuses as $name => $slug) {
-            if ( ! term_exists( $slug, 'task_status' ) ) {
-                wp_insert_term( $name, 'task_status', ['slug' => $slug] );
-            }
+            if ( ! term_exists( $slug, 'task_status' ) ) wp_insert_term( $name, 'task_status', ['slug' => $slug] );
         }
         
         // Task Priorities
         $task_priorities = [__('High', 'puzzlingcrm') => 'high', __('Medium', 'puzzlingcrm') => 'medium', __('Low', 'puzzlingcrm') => 'low'];
         foreach ($task_priorities as $name => $slug) {
-            if ( ! term_exists( $slug, 'task_priority' ) ) {
-                wp_insert_term( $name, 'task_priority', ['slug' => $slug] );
-            }
+            if ( ! term_exists( $slug, 'task_priority' ) ) wp_insert_term( $name, 'task_priority', ['slug' => $slug] );
         }
         
         // Ticket Statuses
         $ticket_statuses = [__('Open', 'puzzlingcrm') => 'open', __('In Progress', 'puzzlingcrm') => 'in-progress', __('Answered', 'puzzlingcrm') => 'answered', __('Closed', 'puzzlingcrm') => 'closed'];
         foreach ($ticket_statuses as $name => $slug) {
-            if ( ! term_exists( $slug, 'ticket_status' ) ) {
-                wp_insert_term( $name, 'ticket_status', ['slug' => $slug] );
-            }
+            if ( ! term_exists( $slug, 'ticket_status' ) ) wp_insert_term( $name, 'ticket_status', ['slug' => $slug] );
         }
     }
 }

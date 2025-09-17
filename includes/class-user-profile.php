@@ -2,8 +2,7 @@
 /**
  * PuzzlingCRM User Profile Handler
  *
- * This class adds custom fields to user profiles, like a dedicated phone number field,
- * removing the hard dependency on WooCommerce. It also handles phone number synchronization.
+ * This class adds custom fields to user profiles, including a profile picture.
  *
  * @package PuzzlingCRM
  */
@@ -15,123 +14,149 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PuzzlingCRM_User_Profile {
 
     /**
-     * @var string[] List of phone number meta keys to sync.
+     * Holds the definitions for all custom profile fields.
+     * @var array
      */
-    private $phone_meta_keys = ['puzzling_phone_number', 'wpyarud_phone', 'user_phone_number', 'billing_phone'];
+    private $profile_fields = [];
 
     /**
      * Constructor. Hooks into WordPress actions.
      */
     public function __construct() {
-        // Add the custom field to user profile pages (for admins editing users)
-        add_action( 'show_user_profile', [ $this, 'add_custom_user_profile_fields' ] );
-        add_action( 'edit_user_profile', [ $this, 'add_custom_user_profile_fields' ] );
-
-        // Save the custom field data and sync it
-        add_action( 'personal_options_update', [ $this, 'save_and_sync_user_profile_fields' ] );
-        add_action( 'edit_user_profile_update', [ $this, 'save_and_sync_user_profile_fields' ] );
+        $this->define_profile_fields();
+        add_action( 'show_user_profile', [ $this, 'render_custom_profile_fields' ] );
+        add_action( 'edit_user_profile', [ $this, 'render_custom_profile_fields' ] );
+        add_action( 'personal_options_update', [ $this, 'save_custom_profile_fields' ] );
+        add_action( 'edit_user_profile_update', [ $this, 'save_custom_profile_fields' ] );
         
-        // Sync on new user registration
-        add_action( 'user_register', [ $this, 'sync_on_registration' ] );
-        
-        // One-time sync for all existing users
-        add_action( 'admin_init', [ $this, 'run_one_time_sync_for_all_users' ] );
+        // Make sure the form can handle file uploads
+        add_action( 'user_edit_form_tag', function(){ echo 'enctype="multipart/form-data"'; });
     }
 
     /**
-     * Add the "Phone Number" field to the user profile page.
-     *
-     * @param WP_User $user The user object being edited.
+     * Defines all the custom fields for the user profile.
      */
-    public function add_custom_user_profile_fields( $user ) {
+    private function define_profile_fields() {
+        $this->profile_fields = [
+            'identity_info' => [ 'title' => 'اطلاعات هویتی', 'fields' => [
+                'father_name' => ['label' => 'نام پدر', 'type' => 'text'],
+                'birth_date' => ['label' => 'تاریخ تولد', 'type' => 'date'],
+                'national_id' => ['label' => 'کد ملی', 'type' => 'text'],
+                'id_number' => ['label' => 'شماره شناسنامه', 'type' => 'text'],
+                'id_issue_place' => ['label' => 'محل صدور', 'type' => 'text'],
+                'marital_status' => ['label' => 'وضعیت تأهل', 'type' => 'select', 'options' => ['' => 'انتخاب کنید', 'single' => 'مجرد', 'married' => 'متاهل']],
+                'children_count' => ['label' => 'تعداد فرزندان', 'type' => 'number'],
+            ]],
+            'contact_info' => [ 'title' => 'اطلاعات تماس و ارتباطی', 'fields' => [
+                'mobile_phone' => ['label' => 'شماره موبایل', 'type' => 'tel'],
+                'landline_phone' => ['label' => 'تلفن ثابت', 'type' => 'tel'],
+                'address' => ['label' => 'آدرس محل سکونت', 'type' => 'textarea'],
+                'emergency_contact_1_name' => ['label' => 'نام مخاطب اضطراری ۱', 'type' => 'text'],
+                'emergency_contact_1_phone' => ['label' => 'شماره مخاطب اضطراری ۱', 'type' => 'tel'],
+                'emergency_contact_2_name' => ['label' => 'نام مخاطب اضطراری ۲', 'type' => 'text'],
+                'emergency_contact_2_phone' => ['label' => 'شماره مخاطب اضطراری ۲', 'type' => 'tel'],
+            ]],
+            'job_info' => [ 'title' => 'اطلاعات شغلی / سازمانی', 'fields' => [
+                'personnel_code' => ['label' => 'کد پرسنلی', 'type' => 'text'],
+                'hire_date' => ['label' => 'تاریخ استخدام', 'type' => 'date'],
+                'contract_type' => ['label' => 'نوع قرارداد', 'type' => 'select', 'options' => ['' => 'انتخاب کنید', 'permanent' => 'رسمی', 'contractual' => 'پیمانی', 'project' => 'پروژه‌ای']],
+                'job_status' => ['label' => 'وضعیت شغلی', 'type' => 'select', 'options' => ['' => 'انتخاب کنید', 'active' => 'فعال', 'on_leave' => 'مرخصی', 'mission' => 'ماموریت']],
+            ]],
+            'financial_info' => [ 'title' => 'اطلاعات مالی و حقوقی', 'fields' => [
+                'bank_account_number' => ['label' => 'شماره حساب بانکی', 'type' => 'text'],
+                'bank_name' => ['label' => 'نام بانک', 'type' => 'text'], 'iban' => ['label' => 'شماره شبا', 'type' => 'text'],
+                'salary_details' => ['label' => 'حقوق و مزایا', 'type' => 'textarea'], 'deductions' => ['label' => 'کسورات', 'type' => 'textarea'],
+            ]],
+            'insurance_legal_info' => [ 'title' => 'اطلاعات بیمه و قانونی', 'fields' => [
+                'insurance_number' => ['label' => 'شماره بیمه', 'type' => 'text'], 'tax_file_number' => ['label' => 'شماره پرونده مالیاتی', 'type' => 'text'],
+                'insurance_history' => ['label' => 'سوابق بیمه‌ای', 'type' => 'textarea'],
+            ]],
+            'professional_history' => [ 'title' => 'سوابق حرفه‌ای و آموزشی', 'fields' => [
+                'education' => ['label' => 'تحصیلات', 'type' => 'textarea'], 'training_courses' => ['label' => 'دوره‌های آموزشی', 'type' => 'textarea'],
+                'skills_certificates' => ['label' => 'مهارت‌ها و گواهینامه‌ها', 'type' => 'textarea'], 'previous_jobs' => ['label' => 'سوابق کاری قبلی', 'type' => 'textarea'],
+            ]],
+            'admin_info' => [ 'title' => 'اطلاعات داخلی و اداری', 'fields' => [
+                'personnel_card_id' => ['label' => 'شناسه ورود', 'type' => 'text'], 'system_access' => ['label' => 'دسترسی‌های سیستمی', 'type' => 'textarea'],
+                'delivered_equipment' => ['label' => 'ابزارهای کاری تحویل‌شده', 'type' => 'textarea'],
+            ]],
+        ];
+    }
+
+    public function render_custom_profile_fields($user) {
+        if (!current_user_can('edit_user', $user->ID)) return;
+        
+        echo '<h2>اطلاعات تکمیلی PuzzlingCRM</h2>';
         ?>
-        <h3><?php esc_html_e( 'PuzzlingCRM Information', 'puzzlingcrm' ); ?></h3>
         <table class="form-table">
             <tr>
-                <th><label for="puzzling_phone_number"><?php esc_html_e( 'Phone Number', 'puzzlingcrm' ); ?></label></th>
+                <th><label for="pzl_profile_picture">عکس پروفایل</label></th>
                 <td>
-                    <input type="text" name="puzzling_phone_number" id="puzzling_phone_number" value="<?php echo esc_attr( get_user_meta( $user->ID, 'puzzling_phone_number', true ) ); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e( 'This phone number will be used for SMS notifications and will be synced across all phone fields.', 'puzzlingcrm' ); ?></p>
+                    <?php echo get_avatar($user->ID, 96); ?>
+                    <input type="file" name="pzl_profile_picture" id="pzl_profile_picture" accept="image/*">
+                    <p class="description">یک تصویر مربعی آپلود کنید.</p>
                 </td>
             </tr>
         </table>
         <?php
-    }
 
-    /**
-     * Save the custom phone number field and sync it across all defined fields.
-     *
-     * @param int $user_id The ID of the user being saved.
-     */
-    public function save_and_sync_user_profile_fields( $user_id ) {
-        if ( ! current_user_can( 'edit_user', $user_id ) ) {
-            return false;
+        foreach ($this->profile_fields as $section) {
+            echo '<h3>' . esc_html($section['title']) . '</h3>';
+            echo '<table class="form-table">';
+            foreach ($section['fields'] as $field_key => $field) {
+                $meta_key = 'pzl_' . $field_key;
+                $value = get_user_meta($user->ID, $meta_key, true);
+                ?>
+                <tr>
+                    <th><label for="<?php echo esc_attr($meta_key); ?>"><?php echo esc_html($field['label']); ?></label></th>
+                    <td>
+                        <?php
+                        switch ($field['type']) {
+                            case 'textarea':
+                                echo '<textarea name="' . esc_attr($meta_key) . '" id="' . esc_attr($meta_key) . '" rows="5" cols="30" class="regular-text">' . esc_textarea($value) . '</textarea>';
+                                break;
+                            case 'select':
+                                echo '<select name="' . esc_attr($meta_key) . '" id="' . esc_attr($meta_key) . '">';
+                                foreach ($field['options'] as $opt_val => $opt_label) {
+                                    echo '<option value="' . esc_attr($opt_val) . '" ' . selected($value, $opt_val, false) . '>' . esc_html($opt_label) . '</option>';
+                                }
+                                echo '</select>';
+                                break;
+                            default:
+                                echo '<input type="' . esc_attr($field['type']) . '" name="' . esc_attr($meta_key) . '" id="' . esc_attr($meta_key) . '" value="' . esc_attr($value) . '" class="regular-text" />';
+                        }
+                        ?>
+                    </td>
+                </tr>
+                <?php
+            }
+            echo '</table>';
         }
+    }
+    
+    public function save_custom_profile_fields($user_id) {
+        if (!current_user_can('edit_user', $user_id)) return;
 
-        $phone_number_to_sync = null;
-
-        // Find the phone number from the submitted form data
-        foreach ($this->phone_meta_keys as $key) {
-            if ( isset( $_POST[$key] ) && ! empty( $_POST[$key] ) ) {
-                $phone_number_to_sync = sanitize_text_field( $_POST[$key] );
-                break;
+        foreach ($this->profile_fields as $section) {
+            foreach ($section['fields'] as $field_key => $field) {
+                $meta_key = 'pzl_' . $field_key;
+                if (isset($_POST[$meta_key])) {
+                    update_user_meta($user_id, $meta_key, sanitize_text_field($_POST[$meta_key]));
+                }
             }
         }
         
-        if ( $phone_number_to_sync !== null ) {
-            $this->sync_phone_for_user( $user_id, $phone_number_to_sync );
-        }
-    }
-    
-    /**
-     * Syncs phone number for newly registered users.
-     *
-     * @param int $user_id The ID of the newly registered user.
-     */
-    public function sync_on_registration( $user_id ) {
-        $this->save_and_sync_user_profile_fields( $user_id );
-    }
+        // Handle profile picture upload
+        if (!empty($_FILES['pzl_profile_picture']['name'])) {
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+            require_once(ABSPATH . 'wp-admin/includes/media.php');
 
-    /**
-     * Central function to update all phone meta keys for a user.
-     *
-     * @param int $user_id The user's ID.
-     * @param string $phone_number The phone number to save.
-     */
-    private function sync_phone_for_user( $user_id, $phone_number ) {
-        foreach ( $this->phone_meta_keys as $key ) {
-            update_user_meta( $user_id, $key, $phone_number );
-        }
-    }
-    
-    /**
-     * Runs a one-time process to sync phone numbers for all existing users.
-     * This will only run once.
-     */
-    public function run_one_time_sync_for_all_users() {
-        if ( get_option('puzzling_phone_sync_completed') ) {
-            return;
-        }
-
-        $users = get_users(['fields' => 'ID']);
-        foreach ($users as $user_id) {
-            $phone_to_sync = null;
-            // Find the first available phone number for the user
-            foreach ($this->phone_meta_keys as $key) {
-                $phone = get_user_meta($user_id, $key, true);
-                if (!empty($phone)) {
-                    $phone_to_sync = $phone;
-                    break;
-                }
-            }
-
-            // If a phone number was found, sync it
-            if ($phone_to_sync) {
-                $this->sync_phone_for_user($user_id, $phone_to_sync);
+            $attachment_id = media_handle_upload('pzl_profile_picture', 0);
+            if (is_wp_error($attachment_id)) {
+                // Handle error
+            } else {
+                update_user_meta($user_id, 'pzl_profile_picture_id', $attachment_id);
             }
         }
-
-        // Mark the sync as complete to prevent it from running again
-        update_option('puzzling_phone_sync_completed', true);
     }
 }
