@@ -30,8 +30,7 @@ $actions = [
     <p class="description">قوانین خودکار برای فرآیندهای تکراری تعریف کنید. برای مثال: "اگر وضعیت به 'نیاز به بازبینی' تغییر کرد، وظیفه را به مدیر سیستم تخصیص بده."</p>
     
     <form id="puzzling-automations-form" method="post" class="pzl-form" style="margin-top: 20px;">
-        <?php wp_nonce_field('puzzling_save_settings'); ?>
-        <input type="hidden" name="puzzling_action" value="save_settings">
+        <?php wp_nonce_field('puzzling_save_settings_nonce', 'security'); ?>
 
         <div id="automations-container">
             <?php 

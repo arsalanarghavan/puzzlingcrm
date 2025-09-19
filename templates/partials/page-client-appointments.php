@@ -11,9 +11,8 @@ if (!current_user_can('customer')) return;
     <p>لطفاً برای درخواست قرار ملاقات جدید، فرم زیر را تکمیل کنید. ما درخواست شما را بررسی کرده و زمان‌بندی را با شما هماهنگ خواهیم کرد.</p>
 
     <div class="pzl-form-container">
-        <form method="post">
-            <input type="hidden" name="puzzling_action" value="request_appointment">
-            <?php wp_nonce_field('puzzling_request_appointment', '_wpnonce'); ?>
+        <form method="post" id="pzl-client-appointment-form">
+            <?php wp_nonce_field('puzzling_request_appointment_nonce', 'security'); ?>
 
             <div class="form-group">
                 <label for="appointment_title">موضوع:</label>

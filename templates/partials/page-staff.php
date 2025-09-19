@@ -64,9 +64,8 @@ $profile_fields = [
         </div>
 
         <form method="post" class="pzl-form" id="pzl-staff-form" enctype="multipart/form-data">
-            <input type="hidden" name="puzzling_action" value="manage_user">
             <input type="hidden" name="user_id" value="<?php echo esc_attr($user_id); ?>">
-            <?php wp_nonce_field('puzzling_manage_user'); ?>
+            <?php wp_nonce_field('puzzling_manage_user_nonce', 'security'); ?>
             
             <div class="pzl-card">
                 <div class="pzl-profile-main-info">

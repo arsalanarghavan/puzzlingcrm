@@ -21,9 +21,8 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                 <a href="<?php echo remove_query_arg(['action', 'project_id']); ?>" class="pzl-button">&larr; بازگشت به لیست پروژه‌ها</a>
             </div>
 
-            <form method="post" class="pzl-form" enctype="multipart/form-data">
-                <?php wp_nonce_field('puzzling_manage_project'); ?>
-                <input type="hidden" name="puzzling_action" value="manage_project">
+            <form method="post" class="pzl-form" id="pzl-project-form" enctype="multipart/form-data">
+                <?php wp_nonce_field('puzzling_manage_project_nonce', 'security'); ?>
                 <input type="hidden" name="project_id" value="<?php echo esc_attr($project_id); ?>">
 
                 <div class="form-group">
@@ -115,7 +114,7 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
 
             if ($projects_query->have_posts()): ?>
                 <div class="pzl-projects-grid-view">
-                    <?php while($projects_query->have_posts()): $projects_query->the_post(); 
+                    <?php while($projects_query->have_posts()): $projects_query->the_post();
                         $project_id = get_the_ID();
                         $customer = get_userdata(get_the_author_meta('ID'));
                         $edit_url = add_query_arg(['action' => 'edit', 'project_id' => $project_id]);
@@ -125,7 +124,7 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                         // Use the saved base URL to ensure links point to the correct page
                         $contract_url = $contract_id ? add_query_arg(['view' => 'contracts', 'action' => 'edit', 'contract_id' => $contract_id], $base_page_url) : '#';
                         
-                        $project_category = get_post_meta($project_id, '_project_category', true) ?: '---'; 
+                        $project_category = get_post_meta($project_id, '_project_category', true) ?: '---';
                     ?>
                     <div class="pzl-project-card-item">
                         <div class="pzl-project-card-logo">
@@ -147,17 +146,17 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                             <?php if ($contract_id): ?>
                                 <a href="<?php echo esc_url($contract_url); ?>" class="pzl-button pzl-button-sm">نمایش قرارداد</a>
                             <?php endif; ?>
-                             <a href="#" class="delete-project pzl-button pzl-button-sm" 
-                               data-project-id="<?php echo esc_attr($project_id); ?>" 
+                             <a href="#" class="delete-project pzl-button pzl-button-sm"
+                               data-project-id="<?php echo esc_attr($project_id); ?>"
                                data-nonce="<?php echo esc_attr(wp_create_nonce('puzzling_delete_project_' . $project_id)); ?>">حذف</a>
                         </div>
                     </div>
                     <?php endwhile; ?>
                 </div>
                 <div class="pagination">
-                    <?php 
+                    <?php
                     echo paginate_links([
-                        'total' => $projects_query->max_num_pages, 
+                        'total' => $projects_query->max_num_pages,
                         'current' => $paged,
                         'format' => '?paged=%#%',
                     ]);

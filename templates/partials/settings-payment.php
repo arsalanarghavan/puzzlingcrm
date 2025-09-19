@@ -16,8 +16,7 @@ $zarinpal_merchant_id = $settings['zarinpal_merchant_id'] ?? '';
     <h4><i class="fas fa-cogs"></i> تنظیمات درگاه پرداخت زرین‌پال</h4>
     <p class="description">برای اتصال سایت به درگاه پرداخت، مرچنت کد دریافت شده از زرین‌پال را در فیلد زیر وارد کنید.</p>
     <form id="puzzling-payment-settings-form" method="post" class="pzl-form" style="margin-top: 20px;">
-        <?php wp_nonce_field('puzzling_save_settings'); ?>
-        <input type="hidden" name="puzzling_action" value="save_settings">
+        <?php wp_nonce_field('puzzling_save_settings_nonce', 'security'); ?>
 
         <div class="form-group">
             <label for="zarinpal_merchant_id">مرچنت کد زرین‌پال:</label>

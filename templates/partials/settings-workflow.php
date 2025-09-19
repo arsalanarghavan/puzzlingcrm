@@ -20,8 +20,7 @@ $roles = get_editable_roles();
     <div class="pzl-card">
         <h5>قوانین دسترسی به ستون‌های کانبان</h5>
         <form id="puzzling-workflow-settings-form" method="post" class="pzl-form" style="margin-top: 20px;">
-            <?php wp_nonce_field('puzzling_save_settings'); ?>
-            <input type="hidden" name="puzzling_action" value="save_settings">
+            <?php wp_nonce_field('puzzling_save_settings_nonce', 'security'); ?>
             <table class="pzl-table">
                 <thead>
                     <tr><th>وضعیت (ستون مقصد)</th><th>نقش‌های کاربری مجاز</th></tr>

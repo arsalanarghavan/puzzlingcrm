@@ -34,9 +34,8 @@ if ($ticket_id_to_view > 0) {
             <div class="pzl-card-header">
                 <h3><i class="fas fa-plus-circle"></i> ارسال تیکت جدید</h3>
             </div>
-            <form id="puzzling-new-ticket-form" method="post" class="pzl-form" action="<?php echo esc_url( remove_query_arg(['ticket_id', 'puzzling_notice']) ); ?>">
-                <?php wp_nonce_field('puzzling_new_ticket_nonce', '_wpnonce'); ?>
-                <input type="hidden" name="puzzling_action" value="new_ticket">
+            <form id="puzzling-new-ticket-form" method="post" class="pzl-form">
+                <?php wp_nonce_field('puzzling_new_ticket_nonce', 'security'); ?>
                 <div class="form-group">
                     <label for="ticket_title">موضوع:</label>
                     <input type="text" id="ticket_title" name="ticket_title" required>

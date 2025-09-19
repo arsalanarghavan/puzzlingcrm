@@ -17,9 +17,8 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
                 <h3><?php echo $invoice_id > 0 ? 'ویرایش پیش‌فاکتور' : 'ایجاد پیش‌فاکتور جدید'; ?></h3>
                 <a href="<?php echo remove_query_arg(['action', 'invoice_id']); ?>" class="pzl-button">&larr; بازگشت به لیست</a>
             </div>
-            <form method="post" class="pzl-form">
-                <?php wp_nonce_field('puzzling_manage_pro_invoice'); ?>
-                <input type="hidden" name="puzzling_action" value="manage_pro_invoice">
+            <form method="post" class="pzl-form" id="pzl-pro-invoice-form">
+                <?php wp_nonce_field('puzzling_manage_pro_invoice_nonce', 'security'); ?>
                 <input type="hidden" name="item_id" value="<?php echo esc_attr($invoice_id); ?>">
 
                 <div class="form-group">

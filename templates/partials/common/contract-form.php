@@ -5,8 +5,7 @@ if ( ! current_user_can('manage_options') ) return;
 <div class="pzl-form-container">
     <h3><i class="fas fa-plus-circle"></i> ایجاد قرارداد و قسط‌بندی جدید</h3>
     <form id="create-contract-form" method="post">
-        <?php wp_nonce_field('puzzling_create_contract'); ?>
-        <input type="hidden" name="puzzling_action" value="create_contract">
+        <?php wp_nonce_field('puzzling_create_contract_nonce', 'security'); ?>
         <div class="form-group">
             <label for="project_id">پروژه مورد نظر را انتخاب کنید:</label>
             <select name="project_id" id="project_id" required>

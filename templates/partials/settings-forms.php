@@ -17,8 +17,7 @@ $form_to_edit = ($form_id > 0) ? get_post($form_id) : null;
             <a href="<?php echo remove_query_arg(['action', 'form_id']); ?>" class="pzl-button">&larr; <?php _e('بازگشت به لیست فرم‌ها', 'puzzlingcrm'); ?></a>
         </div>
         <form id="manage-form" method="post" class="pzl-form" style="margin-top: 20px;">
-            <?php wp_nonce_field('puzzling_manage_form'); ?>
-            <input type="hidden" name="puzzling_action" value="manage_form">
+            <?php wp_nonce_field('puzzling_manage_form_nonce', 'security'); ?>
             <input type="hidden" name="form_id" value="<?php echo esc_attr($form_id); ?>">
 
             <div class="form-group">

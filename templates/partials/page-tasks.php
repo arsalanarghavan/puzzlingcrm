@@ -48,6 +48,7 @@ $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
                 <h3><i class="fas fa-plus-circle"></i> افزودن وظیفه جدید</h3>
             </div>
             <form id="puzzling-add-task-form" class="pzl-form" enctype="multipart/form-data">
+                <?php wp_nonce_field('puzzling_add_task_nonce', 'security'); ?>
                 <div class="form-group">
                     <label for="template_id">استفاده از قالب:</label>
                     <select name="template_id" id="task-template-selector">
@@ -230,6 +231,7 @@ $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
                     ?>
                 </ul>
                 <form id="add-new-status-form" class="pzl-form-inline">
+                    <?php wp_nonce_field('puzzling_add_new_status_nonce', 'security'); ?>
                     <input type="text" id="new-status-name" placeholder="نام وضعیت جدید" required>
                     <button type="submit" class="pzl-button">افزودن وضعیت</button>
                 </form>

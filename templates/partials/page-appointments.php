@@ -19,10 +19,9 @@ $appt_to_edit = ($appt_id > 0) ? get_post($appt_id) : null;
             <a href="<?php echo remove_query_arg(['action', 'appt_id']); ?>" class="pzl-button">&larr; بازگشت به لیست</a>
         </div>
         <div class="pzl-card">
-            <form method="post" class="pzl-form">
-                <input type="hidden" name="puzzling_action" value="manage_appointment">
+            <form method="post" class="pzl-form" id="pzl-appointment-form">
                 <input type="hidden" name="item_id" value="<?php echo esc_attr($appt_id); ?>">
-                <?php wp_nonce_field('puzzling_manage_appointment_' . $appt_id, '_wpnonce'); ?>
+                <?php wp_nonce_field('puzzling_manage_appointment_nonce', 'security'); ?>
                 
                 <?php
                 $selected_customer = $appt_to_edit ? $appt_to_edit->post_author : '';

@@ -12,7 +12,7 @@ $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
 $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
 ?>
 <div class="pzl-dashboard-section">
-    <?php if ($action === 'edit' || $action === 'add'): 
+    <?php if ($action === 'edit' || $action === 'add'):
         $phone_number = $user_to_edit ? get_user_meta($user_to_edit->ID, 'pzl_mobile_phone', true) : '';
     ?>
         <div class="pzl-card-header">
@@ -20,10 +20,9 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
             <a href="<?php echo remove_query_arg(['action', 'user_id']); ?>" class="pzl-button">&larr; بازگشت به لیست کاربران</a>
         </div>
         <div class="pzl-card">
-            <form method="post" class="pzl-form">
-                <input type="hidden" name="puzzling_action" value="manage_user">
+            <form method="post" class="pzl-form" id="pzl-customer-form">
                 <input type="hidden" name="user_id" value="<?php echo esc_attr($user_id); ?>">
-                <?php wp_nonce_field('puzzling_manage_user'); ?>
+                <?php wp_nonce_field('puzzling_manage_user_nonce', 'security'); ?>
 
                 <div class="pzl-form-row">
                     <div class="form-group half-width">
@@ -51,7 +50,7 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
                     <div class="form-group half-width">
                         <label for="role">نقش کاربری</label>
                         <select name="role" id="role" required>
-                            <?php 
+                            <?php
                             $editable_roles = get_editable_roles();
                             $current_role = $user_to_edit ? $user_to_edit->roles[0] : 'customer';
                             foreach ($editable_roles as $role_key => $role_details) {
@@ -81,7 +80,7 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
             <table class="pzl-table">
                 <thead><tr><th>نام کامل</th><th>ایمیل</th><th>نقش</th><th>تاریخ ثبت‌نام</th><th>عملیات</th></tr></thead>
                 <tbody>
-                    <?php 
+                    <?php
                     $all_users = get_users(['orderby' => 'display_name', 'order' => 'ASC']);
                     foreach($all_users as $user): ?>
                         <tr>
