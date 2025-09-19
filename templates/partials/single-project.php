@@ -16,11 +16,12 @@ if ( !$project || ($project->post_author != $current_user_id && !current_user_ca
     return;
 }
 
-$dashboard_url = get_permalink(get_page_by_title('PuzzlingCRM Dashboard'));
+// **CORRECTED:** Use the smart function to get the dashboard URL
+$dashboard_url = puzzling_get_dashboard_url();
 ?>
 
 <div class="pzl-single-project">
-    <a href="<?php echo esc_url($dashboard_url); ?>" class="back-to-dashboard-link">&larr; بازگشت به داشبورد</a>
+    <a href="<?php echo esc_url(add_query_arg('view', 'projects', $dashboard_url)); ?>" class="back-to-dashboard-link">&larr; بازگشت به لیست پروژه‌ها</a>
 
     <div class="project-content">
         <?php echo wp_kses_post( apply_filters('the_content', $project->post_content) ); ?>
@@ -64,7 +65,6 @@ $dashboard_url = get_permalink(get_page_by_title('PuzzlingCRM Dashboard'));
             echo '<p>هیچ تسکی برای این پروژه ثبت نشده است.</p>';
         } else {
             foreach ($project_tasks as $task) {
-                // **FIXED: Changed puzzling_render_task_item to puzzling_render_task_card**
                 echo puzzling_render_task_card($task);
             }
         }

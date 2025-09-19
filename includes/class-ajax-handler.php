@@ -1,9 +1,8 @@
 <?php
 /**
- * PuzzlingCRM AJAX Handler
+ * PuzzlingCRM AJAX Handler - REFACTORED
  *
- * Handles all AJAX requests for the plugin, including task management,
- * notifications, workflow, and new Agile/bulk editing features.
+ * Handles all AJAX requests for the plugin, including form submissions, task management, etc.
  *
  * @package PuzzlingCRM
  */
@@ -16,75 +15,73 @@ require_once(ABSPATH . 'wp-admin/includes/image.php');
 class PuzzlingCRM_Ajax_Handler {
 
     public function __construct() {
-        // Standard Task Actions
+        // --- Form Submissions (Refactored to AJAX) ---
+        add_action('wp_ajax_puzzling_manage_user', [$this, 'ajax_manage_user']);
+        add_action('wp_ajax_puzzling_manage_project', [$this, 'ajax_manage_project']);
+        add_action('wp_ajax_puzzling_manage_contract', [$this, 'ajax_manage_contract']);
+
+        // --- Standard Task Actions ---
         add_action('wp_ajax_puzzling_add_task', [$this, 'add_task']);
         add_action('wp_ajax_puzzling_quick_add_task', [$this, 'quick_add_task']);
         add_action('wp_ajax_puzzling_update_task_status', [$this, 'update_task_status']);
         add_action('wp_ajax_puzzling_delete_task', [$this, 'delete_task']);
 
-        // Notification Actions
+        // --- Notification Actions ---
         add_action('wp_ajax_puzzling_get_notifications', [$this, 'get_notifications']);
         add_action('wp_ajax_puzzling_mark_notification_read', [$this, 'mark_notification_read']);
 
-        // Kanban Board & Modal Actions
+        // --- Kanban Board & Modal Actions ---
         add_action('wp_ajax_puzzling_get_task_details', [$this, 'get_task_details']);
         add_action('wp_ajax_puzzling_save_task_content', [$this, 'save_task_content']);
         add_action('wp_ajax_puzzling_add_task_comment', [$this, 'add_task_comment']);
         
-        // Workflow Management Actions
+        // --- Workflow Management Actions ---
         add_action('wp_ajax_puzzling_save_status_order', [$this, 'save_status_order']);
         add_action('wp_ajax_puzzling_add_new_status', [$this, 'add_new_status']);
         add_action('wp_ajax_puzzling_delete_status', [$this, 'delete_status']);
 
-        // Advanced Task Features
+        // --- Advanced Task Features ---
         add_action('wp_ajax_puzzling_manage_checklist', [$this, 'manage_checklist']);
         add_action('wp_ajax_puzzling_log_time', [$this, 'log_time']);
         add_action('wp_ajax_puzzling_quick_edit_task', [$this, 'quick_edit_task']);
 
-        // Advanced Views Data
+        // --- Advanced Views Data ---
         add_action('wp_ajax_get_tasks_for_views', [$this, 'get_tasks_for_views']);
 
-        // Advanced Task Linking
+        // --- Advanced Task Linking ---
         add_action('wp_ajax_puzzling_add_task_link', [$this, 'add_task_link']);
         add_action('wp_ajax_puzzling_remove_task_link', [$this, 'remove_task_link']);
         add_action('wp_ajax_puzzling_search_tasks_for_linking', [$this, 'search_tasks_for_linking']);
         
-        // Project Deletion
+        // --- Other AJAX Actions ---
         add_action('wp_ajax_puzzling_delete_project', [$this, 'delete_project']);
-        
-        // **NEW: Bulk Edit & Task Template Actions**
         add_action('wp_ajax_puzzling_bulk_edit_tasks', [$this, 'bulk_edit_tasks']);
         add_action('wp_ajax_puzzling_save_task_as_template', [$this, 'save_task_as_template']);
-        
-        // **NEW: AJAX Staff Management**
-        add_action('wp_ajax_puzzling_manage_staff_ajax', [$this, 'manage_staff_ajax']);
-
-        // **NEW: Custom SMS Sending**
         add_action('wp_ajax_puzzling_send_custom_sms', [$this, 'send_custom_sms']);
     }
     
     /**
-     * AJAX handler for managing staff profiles.
+     * Universal AJAX handler for creating and updating users (staff and customers).
+     * This replaces both manage_staff_ajax and the form handler's manage_user.
      */
-    public function manage_staff_ajax() {
-        check_ajax_referer('puzzling_manage_user', '_wpnonce');
+    public function ajax_manage_user() {
+        // Nonce check should be specific. We'll use a generic one for now.
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
 
         $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
 
-        if (!current_user_can('edit_user', $user_id) && $user_id !== 0) {
-            wp_send_json_error(['message' => 'شما دسترسی لازم برای ویرایش این کاربر را ندارید.']);
+        if (!current_user_can('edit_user', $user_id) && $user_id !== 0 && !current_user_can('create_users')) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم برای این کار را ندارید.']);
         }
         
-        // This logic is moved from class-form-handler.php
         $email = sanitize_email($_POST['email']);
         $first_name = sanitize_text_field($_POST['first_name']);
         $last_name = sanitize_text_field($_POST['last_name']);
         $password = $_POST['password'];
         $role = sanitize_key($_POST['role']);
-        $position_id = isset($_POST['organizational_position']) ? intval($_POST['organizational_position']) : 0;
-
-        if (!is_email($email) || empty($first_name) || empty($last_name) || empty($role)) {
-            wp_send_json_error(['message' => 'لطفاً فیلدهای ضروری (نام، نام خانوادگی، ایمیل و نقش) را پر کنید.']);
+        
+        if (!is_email($email) || empty($last_name) || empty($role)) {
+            wp_send_json_error(['message' => 'لطفاً فیلدهای ضروری (نام خانوادگی، ایمیل و نقش) را پر کنید.']);
         }
         if ($user_id === 0 && empty($password)) {
             wp_send_json_error(['message' => 'برای کاربر جدید، وارد کردن رمز عبور ضروری است.']);
@@ -101,7 +98,9 @@ class PuzzlingCRM_Ajax_Handler {
             $result = wp_update_user($user_data);
             $message = 'پروفایل با موفقیت به‌روزرسانی شد.';
         } else {
-            if (email_exists($email)) wp_send_json_error(['message' => 'کاربری با این ایمیل از قبل وجود دارد.']);
+            if (email_exists($email)) {
+                wp_send_json_error(['message' => 'کاربری با این ایمیل از قبل وجود دارد.']);
+            }
             $user_data['user_login'] = $email;
             $result = wp_insert_user($user_data);
             $message = 'کاربر جدید با موفقیت ایجاد شد.';
@@ -112,7 +111,7 @@ class PuzzlingCRM_Ajax_Handler {
         } else {
             $the_user_id = is_int($result) ? $result : $user_id;
 
-            // Save all custom meta fields
+            // Save all custom meta fields starting with 'pzl_'
             foreach ($_POST as $key => $value) {
                 if (strpos($key, 'pzl_') === 0) {
                     update_user_meta($the_user_id, $key, sanitize_text_field($value));
@@ -120,7 +119,9 @@ class PuzzlingCRM_Ajax_Handler {
             }
             
             // Set organizational position term
-            wp_set_object_terms($the_user_id, $position_id, 'organizational_position', false);
+            if (isset($_POST['organizational_position'])) {
+                wp_set_object_terms($the_user_id, intval($_POST['organizational_position']), 'organizational_position', false);
+            }
 
             // Handle profile picture upload
             if (!empty($_FILES['pzl_profile_picture']['name'])) {
@@ -130,10 +131,123 @@ class PuzzlingCRM_Ajax_Handler {
                 }
             }
             
-            wp_send_json_success(['message' => $message]);
+            wp_send_json_success(['message' => $message, 'reload' => true]);
+        }
+    }
+
+    /**
+     * AJAX handler for creating and updating projects.
+     */
+    public function ajax_manage_project() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
+        $project_title = sanitize_text_field($_POST['project_title']);
+        $project_content = wp_kses_post($_POST['project_content']);
+        $customer_id = intval($_POST['customer_id']);
+        $project_category = sanitize_text_field($_POST['project_category']);
+
+        if(empty($project_title) || empty($customer_id)) {
+            wp_send_json_error(['message' => 'عنوان پروژه و انتخاب مشتری الزامی است.']);
+        }
+
+        $post_data = [
+            'post_title'    => $project_title, 'post_content'  => $project_content,
+            'post_author'   => $customer_id, 'post_status'   => 'publish', 'post_type' => 'project',
+        ];
+
+        if ($project_id > 0) {
+            $post_data['ID'] = $project_id;
+            $result = wp_update_post($post_data, true);
+            $message = 'پروژه با موفقیت به‌روزرسانی شد.';
+        } else {
+            $result = wp_insert_post($post_data, true);
+            $message = 'پروژه جدید با موفقیت ایجاد شد.';
+            if (!is_wp_error($result)) {
+                 PuzzlingCRM_Logger::add(sprintf('پروژه جدید "%s" برای شما ثبت شد', $project_title),
+                    ['content' => 'برای مشاهده جزئیات به پنل کاربری خود مراجعه کنید.', 'type' => 'notification', 'user_id' => $customer_id, 'object_id' => $result]
+                );
+            }
+        }
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => 'خطا در پردازش پروژه.']);
+        } else {
+            $the_project_id = is_int($result) ? $result : $project_id;
+            update_post_meta($the_project_id, '_project_category', $project_category);
+            wp_send_json_success(['message' => $message, 'reload' => true]);
         }
     }
     
+    /**
+     * AJAX handler for creating and updating contracts.
+     */
+    public function ajax_manage_contract() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $contract_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
+        $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
+        $payment_amounts = isset($_POST['payment_amount']) ? (array) $_POST['payment_amount'] : [];
+        $payment_due_dates = isset($_POST['payment_due_date']) ? (array) $_POST['payment_due_date'] : [];
+        $payment_statuses = isset($_POST['payment_status']) ? (array) $_POST['payment_status'] : [];
+
+        if (empty($payment_amounts) || count($payment_amounts) !== count($payment_due_dates)) {
+            wp_send_json_error(['message' => 'اطلاعات اقساط ناقص یا نامعتبر است.']);
+        }
+
+        $installments = [];
+        for ($i = 0; $i < count($payment_amounts); $i++) {
+            if (!empty($payment_amounts[$i]) && !empty($payment_due_dates[$i])) {
+                $installments[] = [
+                    'amount' => sanitize_text_field(str_replace(',', '', $payment_amounts[$i])), 
+                    'due_date' => sanitize_text_field($payment_due_dates[$i]),
+                    'status' => sanitize_key($payment_statuses[$i] ?? 'pending'),
+                    'ref_id' => '' // Ref ID is only set on payment
+                ];
+            }
+        }
+
+        if (empty($installments)) {
+            wp_send_json_error(['message' => 'حداقل یک قسط معتبر باید تعریف شود.']);
+        }
+
+        if ($contract_id > 0) { // Editing existing contract
+            update_post_meta($contract_id, '_installments', $installments);
+            PuzzlingCRM_Logger::add('قرارداد به‌روزرسانی شد', ['content' => "قرارداد با شناسه {$contract_id} به‌روزرسانی شد.", 'type' => 'log', 'object_id' => $contract_id]);
+            wp_send_json_success(['message' => 'قرارداد با موفقیت به‌روزرسانی شد.', 'reload' => true]);
+        } else { // Creating new contract
+            if (empty($project_id)) {
+                wp_send_json_error(['message' => 'برای ایجاد قرارداد جدید، انتخاب پروژه الزامی است.']);
+            }
+            $project = get_post($project_id);
+            if (!$project || $project->post_type !== 'project') {
+                wp_send_json_error(['message' => 'پروژه انتخاب شده معتبر نیست.']);
+            }
+
+            $new_contract_id = wp_insert_post([
+                'post_title' => 'قرارداد پروژه: ' . get_the_title($project_id),
+                'post_type' => 'contract',
+                'post_status' => 'publish',
+                'post_author' => $project->post_author
+            ]);
+
+            if (!is_wp_error($new_contract_id)) {
+                update_post_meta($new_contract_id, '_project_id', $project_id);
+                update_post_meta($new_contract_id, '_installments', $installments);
+                PuzzlingCRM_Logger::add('قرارداد جدید ثبت شد', ['content' => "قرارداد جدیدی برای پروژه '".get_the_title($project_id)."' ایجاد شد.", 'type' => 'log', 'object_id' => $new_contract_id]);
+                wp_send_json_success(['message' => 'قرارداد جدید با موفقیت ایجاد شد.', 'reload' => true]);
+            } else {
+                wp_send_json_error(['message' => 'خطا در ایجاد قرارداد.']);
+            }
+        }
+    }
+
     /**
      * Logs an activity to a task's metadata.
      * @param int $task_id The ID of the task.

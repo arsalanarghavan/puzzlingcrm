@@ -115,3 +115,47 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
         );
     }
 }
+
+/**
+ * Automatically syncs user phone numbers across multiple meta keys when a user profile is updated.
+ *
+ * @param int $user_id The ID of the user being updated.
+ */
+function puzzling_sync_user_phone_numbers($user_id) {
+    // Ensure the current user has permission to edit the target user.
+    if (!current_user_can('edit_user', $user_id)) {
+        return;
+    }
+
+    // List of all meta keys that are used for storing phone numbers.
+    $phone_meta_keys = [
+        'pzl_mobile_phone',      // The main key used in this plugin
+        'wpyarud_phone',         // Key from another plugin
+        'puzzling_phone_number', // An old/deprecated key from this plugin
+        'user_phone_number'      // Another common key from other plugins
+    ];
+
+    $updated_phone = null;
+
+    // Check if any of the known phone fields were submitted in the form.
+    // We loop through the keys and as soon as we find one in the submitted data,
+    // we take its value as the "source of truth".
+    foreach ($phone_meta_keys as $key) {
+        if (isset($_POST[$key])) {
+            $updated_phone = sanitize_text_field($_POST[$key]);
+            break;
+        }
+    }
+
+    // If a phone number was found in the submitted form data (`$updated_phone` is not null),
+    // we loop through all the phone meta keys again and update each one with the new value.
+    // This ensures all fields are synchronized.
+    if ($updated_phone !== null) {
+        foreach ($phone_meta_keys as $key) {
+            update_user_meta($user_id, $key, $updated_phone);
+        }
+    }
+}
+// Hook this function to run whenever a user profile is updated in the dashboard or the admin area.
+add_action('personal_options_update', 'puzzling_sync_user_phone_numbers');
+add_action('edit_user_profile_update', 'puzzling_sync_user_phone_numbers');
