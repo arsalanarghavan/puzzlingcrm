@@ -30,26 +30,36 @@ jQuery(document).ready(function($) {
             timerProgressBar: true
         }).then(() => {
             if (reloadPage) {
-                window.location.reload();
+                // Instead of full reload, try to redirect to a clean URL
+                var cleanUrl = window.location.href.split('?')[0];
+                var view = new URLSearchParams(window.location.search).get('view');
+                if (view) {
+                    cleanUrl = cleanUrl + '?view=' + view;
+                }
+                 window.location.href = cleanUrl;
             }
         });
     }
 
     /**
-     * Generic AJAX Form Submission Handler
-     * Intercepts form submissions, sends data via AJAX, and shows a SweetAlert notice.
+     * Generic AJAX Form Submission Handler - REBUILT FOR ALL FORMS
+     * Intercepts form submissions with '.pzl-ajax-form', sends data via AJAX, and shows a notice.
      * @param {jQuery} form The form element being submitted.
      */
     function handleAjaxFormSubmit(form) {
         var submitButton = form.find('button[type="submit"]');
         var originalButtonHtml = submitButton.html();
         var formData = new FormData(form[0]);
-        var action = form.data('action') || form.find('input[name="puzzling_action"]').val();
-        var nonce = form.find('input[name="security"]').val() || puzzling_ajax_nonce;
-
+        
+        // Use data-action attribute on the form, falling back to a hidden input
+        var action = form.data('action') || form.find('input[name="action"]').val();
         formData.append('action', action);
+        
+        // The nonce is now consistently named 'security'
+        var nonce = form.find('input[name="security"]').val();
         formData.append('security', nonce);
 
+        // Handle TinyMCE editors
         form.find('.wp-editor-area').each(function() {
             var editorId = $(this).attr('id');
             if (typeof tinymce !== 'undefined' && tinymce.get(editorId)) {
@@ -64,7 +74,7 @@ jQuery(document).ready(function($) {
             processData: false,
             contentType: false,
             beforeSend: function() {
-                submitButton.html('در حال ذخیره...').prop('disabled', true);
+                submitButton.html('<i class="fas fa-spinner fa-spin"></i> در حال ذخیره...').prop('disabled', true);
             },
             success: function(response) {
                 if (response.success) {
@@ -77,26 +87,20 @@ jQuery(document).ready(function($) {
                 showPuzzlingAlert('خطای سرور', 'یک خطای ناشناخته در ارتباط با سرور رخ داد.', 'error');
             },
             complete: function(xhr) {
-                var response = xhr.responseJSON;
+                 var response = xhr.responseJSON;
+                 // Only re-enable the button if the page isn't going to reload
                 if (!(response && response.success && response.data.reload)) {
                     submitButton.html(originalButtonHtml).prop('disabled', false);
                 }
             }
         });
     }
-    
+
     // Bind the generic handler to all forms with the 'pzl-ajax-form' class
     $('body').on('submit', 'form.pzl-ajax-form', function(e) {
         e.preventDefault();
         handleAjaxFormSubmit($(this));
     });
-
-    // Specific handler for staff form (since it was not using AJAX before)
-    $('body').on('submit', 'form#pzl-staff-form', function(e) {
-        e.preventDefault();
-        handleAjaxFormSubmit($(this));
-    });
-
 
     // --- Intelligent Installment Calculation ---
     $('#calculate-installments').on('click', function() {
@@ -131,10 +135,18 @@ jQuery(document).ready(function($) {
 
             tableBody.append(`<tr><td>${i + 1}</td><td>${formattedAmount}</td><td>${displayDate}</td></tr>`);
             hiddenContainer.append(`
-                <input type="hidden" name="payment_amount[]" value="${installmentAmount}">
-                <input type="hidden" name="payment_due_date[]" value="${inputDate}">
+                <div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <input type="number" name="payment_amount[]" placeholder="مبلغ (تومان)" style="flex-grow: 1; padding: 8px;" value="${installmentAmount}" required>
+                    <input type="date" name="payment_due_date[]" style="padding: 8px;" value="${inputDate}" required>
+                    <select name="payment_status[]" style="padding: 8px;">
+                        <option value="pending" selected>در انتظار پرداخت</option>
+                        <option value="paid">پرداخت شده</option>
+                    </select>
+                </div>
             `);
         }
+         // Make the hidden container visible for edit forms, but it is actually populated with inputs now.
+        hiddenContainer.show();
     });
 
     // --- Kanban Board: Drag and Drop ---

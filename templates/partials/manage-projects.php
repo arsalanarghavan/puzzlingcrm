@@ -21,8 +21,8 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                 <a href="<?php echo remove_query_arg(['action', 'project_id']); ?>" class="pzl-button">&larr; بازگشت به لیست پروژه‌ها</a>
             </div>
 
-            <form method="post" class="pzl-form" id="pzl-project-form" enctype="multipart/form-data">
-                <?php wp_nonce_field('puzzling_manage_project_nonce', 'security'); ?>
+            <form method="post" class="pzl-form pzl-ajax-form" id="pzl-project-form" data-action="puzzling_manage_project" enctype="multipart/form-data">
+                <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
                 <input type="hidden" name="project_id" value="<?php echo esc_attr($project_id); ?>">
 
                 <div class="form-group">

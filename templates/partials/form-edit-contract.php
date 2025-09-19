@@ -1,45 +1,61 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 if ( ! current_user_can('manage_options') ) return;
-
-global $puzzling_contract_id; // This global should be set by the template that includes this partial
-$contract_id = $puzzling_contract_id;
-
-$contract = get_post($contract_id);
-if (!$contract || $contract->post_type !== 'contract') {
-    echo '<p>' . esc_html__('Contract not found.', 'puzzlingcrm') . '</p>';
-    return;
-}
-
-$project_id = get_post_meta($contract_id, '_project_id', true);
-$installments = get_post_meta($contract_id, '_installments', true);
-$back_url = add_query_arg('view', 'contracts', puzzling_get_dashboard_url());
-
 ?>
 <div class="pzl-form-container">
-    <a href="<?php echo esc_url($back_url); ?>" class="back-to-list-link">&larr; <?php esc_html_e('Back to Contracts List', 'puzzlingcrm'); ?></a>
-    <h3><?php printf(esc_html__('Editing Contract for Project: %s', 'puzzlingcrm'), get_the_title($project_id)); ?></h3>
-    
-    <form id="edit-contract-form" method="post">
-        <?php wp_nonce_field('puzzling_edit_contract_' . $contract_id, '_wpnonce'); ?>
-        <input type="hidden" name="puzzling_action" value="edit_contract">
-        <input type="hidden" name="item_id" value="<?php echo esc_attr($contract_id); ?>">
+    <h3><i class="fas fa-plus-circle"></i> ایجاد قرارداد و قسط‌بندی جدید</h3>
+    <form id="create-contract-form" class="pzl-ajax-form" data-action="puzzling_manage_contract" method="post">
+        <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
+        <input type="hidden" name="item_id" value="0">
+        
+        <div class="form-group">
+            <label for="project_id">پروژه مورد نظر را انتخاب کنید:</label>
+            <select name="project_id" id="project_id" required>
+                <option value="">-- انتخاب پروژه --</option>
+                <?php
+                $projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish']);
+                foreach ($projects as $project) {
+                    $existing_contract = get_posts(['post_type' => 'contract','meta_key' => '_project_id','meta_value' => $project->ID]);
+                    if (empty($existing_contract)) {
+                        echo '<option value="' . esc_attr($project->ID) . '">' . esc_html($project->post_title) . '</option>';
+                    }
+                }
+                ?>
+            </select>
+        </div>
 
-        <h4><?php esc_html_e('Installment Plan', 'puzzlingcrm'); ?></h4>
-        <div id="payment-rows-container">
-            <?php if (is_array($installments)): foreach($installments as $index => $inst): ?>
-            <div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                <input type="number" name="payment_amount[]" placeholder="<?php esc_attr_e('Amount (Toman)', 'puzzlingcrm'); ?>" style="flex-grow: 1; padding: 8px;" value="<?php echo esc_attr($inst['amount']); ?>" required>
-                <input type="date" name="payment_due_date[]" style="padding: 8px;" value="<?php echo esc_attr($inst['due_date']); ?>" required>
-                <select name="payment_status[]" style="padding: 8px;">
-                    <option value="pending" <?php selected($inst['status'], 'pending'); ?>><?php esc_html_e('Pending', 'puzzlingcrm'); ?></option>
-                    <option value="paid" <?php selected($inst['status'], 'paid'); ?>><?php esc_html_e('Paid', 'puzzlingcrm'); ?></option>
-                </select>
+        <hr>
+        <h4>محاسبه‌گر اقساط</h4>
+        <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="total_amount">مبلغ کل قرارداد (تومان)</label>
+                <input type="text" id="total_amount" placeholder="مثال: 30000000">
             </div>
-            <?php endforeach; endif; ?>
+            <div class="form-group">
+                <label for="total_installments">تعداد کل اقساط</label>
+                <input type="number" id="total_installments" placeholder="مثال: 6">
+            </div>
+            <div class="form-group">
+                <label for="installment_interval">فاصله بین اقساط (روز)</label>
+                <input type="number" id="installment_interval" placeholder="مثال: 30 برای ماهانه">
+            </div>
+            <div class="form-group">
+                <label for="start_date">تاریخ اولین قسط</label>
+                <input type="date" id="start_date">
+            </div>
+        </div>
+        <button type="button" id="calculate-installments" class="pzl-button">محاسبه و تولید اقساط</button>
+
+        <hr>
+        <h4>لیست اقساط تولید شده</h4>
+        <div id="installments-preview-container">
+            <p class="description">پس از وارد کردن اطلاعات بالا و کلیک بر روی دکمه محاسبه، لیست اقساط در این قسمت نمایش داده می‌شود.</p>
         </div>
         
+        <div id="payment-rows-container" style="display: none;">
+            </div>
+
         <hr style="margin: 20px 0;">
-        <button type="submit" name="submit_edit_contract" class="pzl-button pzl-button-primary" style="font-size: 16px;"><?php esc_html_e('Save Changes', 'puzzlingcrm'); ?></button>
+        <button type="submit" name="submit_contract" class="pzl-button" style="font-size: 16px;">ایجاد و ثبت قرارداد</button>
     </form>
 </div>
