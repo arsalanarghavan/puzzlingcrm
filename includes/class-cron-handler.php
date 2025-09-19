@@ -73,7 +73,7 @@ class PuzzlingCRM_Cron_Handler {
             $installments = get_post_meta( $contract_post->ID, '_installments', true );
             $customer_id = $contract_post->post_author;
             
-            $customer_phone = get_user_meta($customer_id, 'puzzling_phone_number', true);
+            $customer_phone = get_user_meta($customer_id, 'pzl_mobile_phone', true);
 
             if ( empty($installments) || ! is_array($installments) || empty($customer_phone) ) {
                 continue;

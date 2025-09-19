@@ -803,7 +803,7 @@ class PuzzlingCRM_Ajax_Handler {
         try {
             $user_id = intval($_POST['user_id']);
             $message = sanitize_textarea_field($_POST['message']);
-            $user_phone = get_user_meta($user_id, 'puzzling_phone_number', true);
+            $user_phone = get_user_meta($user_id, 'pzl_mobile_phone', true);
 
             if (empty($user_phone)) {
                 wp_send_json_error(['message' => 'شماره موبایل برای این کاربر ثبت نشده است.']);

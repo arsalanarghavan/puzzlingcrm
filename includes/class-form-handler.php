@@ -104,9 +104,17 @@ class PuzzlingCRM_Form_Handler {
         $last_name = sanitize_text_field($_POST['last_name']);
         $password = $_POST['password'];
         $role = sanitize_key($_POST['role']);
-        $position_id = isset($_POST['organizational_position']) ? intval($_POST['organizational_position']) : 0;
+        
+        // **START CORRECTION:** Ensure all `pzl_` fields from the form are processed, including the phone number.
+        $extra_data = [];
+        foreach ($_POST as $key => $value) {
+            if (strpos($key, 'pzl_') === 0) {
+                $extra_data[$key] = sanitize_text_field($value);
+            }
+        }
+        // **END CORRECTION**
 
-        if (!is_email($email) || empty($first_name) || empty($last_name) || empty($role)) {
+        if (!is_email($email) || empty($last_name)) { // First name can be optional sometimes
             $this->redirect_with_notice('user_error_data_invalid');
         }
         if ($user_id === 0 && empty($password)) {
@@ -135,29 +143,14 @@ class PuzzlingCRM_Form_Handler {
         } else {
             $the_user_id = is_int($result) ? $result : $user_id;
 
-            // Save all custom meta fields
-            foreach ($_POST as $key => $value) {
-                if (strpos($key, 'pzl_') === 0) {
-                    update_user_meta($the_user_id, $key, sanitize_text_field($value));
+            // **START CORRECTION:** Save the extra data collected.
+            if (!empty($extra_data)) {
+                foreach ($extra_data as $key => $value) {
+                    update_user_meta($the_user_id, $key, $value);
                 }
             }
+            // **END CORRECTION**
             
-            // Set organizational position term
-            wp_set_object_terms($the_user_id, $position_id, 'organizational_position', false);
-
-            // Handle profile picture upload
-            if (!empty($_FILES['pzl_profile_picture']['name'])) {
-                require_once(ABSPATH . 'wp-admin/includes/image.php');
-                require_once(ABSPATH . 'wp-admin/includes/file.php');
-                require_once(ABSPATH . 'wp-admin/includes/media.php');
-                
-                // Let WordPress handle the upload
-                $attachment_id = media_handle_upload('pzl_profile_picture', 0);
-                if (!is_wp_error($attachment_id)) {
-                    update_user_meta($the_user_id, 'pzl_profile_picture_id', $attachment_id);
-                }
-            }
-
             $this->redirect_with_notice($notice);
         }
     }

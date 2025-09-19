@@ -13,7 +13,7 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
 ?>
 <div class="pzl-dashboard-section">
     <?php if ($action === 'edit' || $action === 'add'): 
-        $phone_number = $user_to_edit ? get_user_meta($user_to_edit->ID, 'puzzling_phone_number', true) : '';
+        $phone_number = $user_to_edit ? get_user_meta($user_to_edit->ID, 'pzl_mobile_phone', true) : '';
     ?>
         <div class="pzl-card-header">
             <h3><i class="fas fa-user-edit"></i> <?php echo $user_id > 0 ? 'ویرایش اطلاعات کاربر' : 'افزودن کاربر جدید'; ?></h3>
@@ -42,8 +42,8 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
                         <input type="email" id="email" name="email" value="<?php echo $user_to_edit ? esc_attr($user_to_edit->user_email) : ''; ?>" required>
                     </div>
                     <div class="form-group half-width">
-                        <label for="puzzling_phone_number">شماره موبایل</label>
-                        <input type="text" id="puzzling_phone_number" name="puzzling_phone_number" value="<?php echo esc_attr($phone_number); ?>" class="ltr-input">
+                        <label for="pzl_mobile_phone">شماره موبایل</label>
+                        <input type="text" id="pzl_mobile_phone" name="pzl_mobile_phone" value="<?php echo esc_attr($phone_number); ?>" class="ltr-input">
                     </div>
                 </div>
                  
