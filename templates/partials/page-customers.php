@@ -20,9 +20,9 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
             <a href="<?php echo remove_query_arg(['action', 'user_id']); ?>" class="pzl-button">&larr; بازگشت به لیست کاربران</a>
         </div>
         <div class="pzl-card">
-            <form method="post" class="pzl-form" id="pzl-customer-form">
+            <form method="post" class="pzl-form pzl-ajax-form" id="pzl-customer-form" data-action="puzzling_manage_user">
                 <input type="hidden" name="user_id" value="<?php echo esc_attr($user_id); ?>">
-                <?php wp_nonce_field('puzzling_manage_user_nonce', 'security'); ?>
+                <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
 
                 <div class="pzl-form-row">
                     <div class="form-group half-width">
