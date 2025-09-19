@@ -49,30 +49,25 @@ class PuzzlingCRM_Form_Handler {
         if ($action === 'submit_automation_form') { $this->handle_submit_automation_form(); return; }
         if ($action === 'manage_form') { $this->handle_manage_form(); return; }
         
-        if (!isset($_POST['_wpnonce'])) return;
+        if (!isset($_POST['_wpnonce']) && !isset($_POST['security'])) return;
+        $nonce = isset($_POST['_wpnonce']) ? $_POST['_wpnonce'] : $_POST['security'];
+        
         $item_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
         $nonce_action = 'puzzling_' . $action;
-        // **FIXED**: 'delete_project' is removed from this array as it's handled by AJAX.
+        
         if (in_array($action, ['edit_contract', 'delete_appointment', 'manage_appointment', 'delete_pro_invoice'])) {
              $nonce_action .= '_' . $item_id;
+        } elseif ($action === 'manage_user') {
+            $nonce_action = 'puzzling_manage_user';
         }
 
-        if ($action === 'manage_user' && !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_manage_user')) {
+
+        if (!wp_verify_nonce($nonce, $nonce_action)) {
              $this->redirect_with_notice('security_failed');
-        }
-
-        if (!wp_verify_nonce($_POST['_wpnonce'], $nonce_action) && $action !== 'manage_user') {
-            if (($action === 'manage_pro_invoice' && !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_manage_pro_invoice')) ||
-                ($action === 'request_appointment' && !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_request_appointment'))) {
-                 $this->redirect_with_notice('security_failed');
-            } elseif (!in_array($action, ['manage_pro_invoice', 'request_appointment'])) {
-                $this->redirect_with_notice('security_failed');
-            }
         }
 
         if (!is_user_logged_in()) $this->redirect_with_notice('permission_denied');
 
-        // **FIXED**: 'delete_project' is removed from this array.
         $manager_actions = [
             'manage_user', 'manage_project', 'create_contract', 'edit_contract', 'save_settings',
             'manage_appointment', 'delete_appointment', 'manage_pro_invoice', 'delete_pro_invoice'
@@ -94,7 +89,7 @@ class PuzzlingCRM_Form_Handler {
     private function redirect_with_notice($notice_key, $base_url = '') {
         $url = empty($base_url) ? wp_get_referer() : $base_url;
         if (!$url) $url = home_url('/');
-        $url = remove_query_arg(['puzzling_action', '_wpnonce', 'action', 'user_id', 'puzzling_notice', 'item_id'], $url);
+        $url = remove_query_arg(['puzzling_action', '_wpnonce', 'action', 'user_id', 'puzzling_notice', 'item_id', 'security'], $url);
         wp_redirect( add_query_arg('puzzling_notice', $notice_key, $url) );
         exit;
     }
@@ -212,7 +207,7 @@ class PuzzlingCRM_Form_Handler {
     }
 
     private function handle_manage_form() {
-        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_manage_form')) {
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['security'], 'puzzling_manage_form_nonce')) {
             $this->redirect_with_notice('security_failed');
         }
         

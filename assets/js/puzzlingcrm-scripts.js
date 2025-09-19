@@ -44,7 +44,7 @@ jQuery(document).ready(function($) {
         var submitButton = form.find('button[type="submit"]');
         var originalButtonHtml = submitButton.html();
         var formData = new FormData(form[0]);
-        var action = form.data('action');
+        var action = form.data('action') || form.find('input[name="puzzling_action"]').val();
         var nonce = form.find('input[name="security"]').val() || puzzling_ajax_nonce;
 
         formData.append('action', action);
@@ -84,12 +84,19 @@ jQuery(document).ready(function($) {
             }
         });
     }
-
+    
     // Bind the generic handler to all forms with the 'pzl-ajax-form' class
     $('body').on('submit', 'form.pzl-ajax-form', function(e) {
         e.preventDefault();
         handleAjaxFormSubmit($(this));
     });
+
+    // Specific handler for staff form (since it was not using AJAX before)
+    $('body').on('submit', 'form#pzl-staff-form', function(e) {
+        e.preventDefault();
+        handleAjaxFormSubmit($(this));
+    });
+
 
     // --- Intelligent Installment Calculation ---
     $('#calculate-installments').on('click', function() {

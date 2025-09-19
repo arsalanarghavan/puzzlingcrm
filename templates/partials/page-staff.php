@@ -63,9 +63,10 @@ $profile_fields = [
              <a href="<?php echo remove_query_arg(['action', 'user_id']); ?>" class="pzl-button">&larr; بازگشت به لیست کارکنان</a>
         </div>
 
-        <form method="post" class="pzl-form" id="pzl-staff-form" enctype="multipart/form-data">
+        <form method="post" class="pzl-form pzl-ajax-form" id="pzl-staff-form" enctype="multipart/form-data" data-action="puzzling_manage_user">
+            <input type="hidden" name="puzzling_action" value="manage_user">
             <input type="hidden" name="user_id" value="<?php echo esc_attr($user_id); ?>">
-            <?php wp_nonce_field('puzzling_manage_user_nonce', 'security'); ?>
+            <?php wp_nonce_field('puzzling_manage_user', 'security'); ?>
             
             <div class="pzl-card">
                 <div class="pzl-profile-main-info">
