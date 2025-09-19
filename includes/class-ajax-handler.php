@@ -62,16 +62,17 @@ class PuzzlingCRM_Ajax_Handler {
     
     /**
      * Universal AJAX handler for creating and updating users (staff and customers).
-     * This replaces both manage_staff_ajax and the form handler's manage_user.
      */
     public function ajax_manage_user() {
-        // Nonce check should be specific. We'll use a generic one for now.
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
 
         $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
 
-        if (!current_user_can('edit_user', $user_id) && $user_id !== 0 && !current_user_can('create_users')) {
-            wp_send_json_error(['message' => 'شما دسترسی لازم برای این کار را ندارید.']);
+        if ($user_id !== 0 && !current_user_can('edit_user', $user_id)) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم برای ویرایش این کاربر را ندارید.']);
+        }
+        if ($user_id === 0 && !current_user_can('create_users')) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم برای ایجاد کاربر جدید را ندارید.']);
         }
         
         $email = sanitize_email($_POST['email']);
@@ -107,7 +108,7 @@ class PuzzlingCRM_Ajax_Handler {
         }
 
         if (is_wp_error($result)) {
-            wp_send_json_error(['message' => 'خطا در ذخیره‌سازی اطلاعات کاربر.']);
+            wp_send_json_error(['message' => 'خطا در ذخیره‌سازی اطلاعات کاربر: ' . $result->get_error_message()]);
         } else {
             $the_user_id = is_int($result) ? $result : $user_id;
 
@@ -125,7 +126,7 @@ class PuzzlingCRM_Ajax_Handler {
 
             // Handle profile picture upload
             if (!empty($_FILES['pzl_profile_picture']['name'])) {
-                $attachment_id = media_handle_upload('pzl_profile_picture', 0);
+                $attachment_id = media_handle_upload('pzl_profile_picture', $the_user_id);
                 if (!is_wp_error($attachment_id)) {
                     update_user_meta($the_user_id, 'pzl_profile_picture_id', $attachment_id);
                 }
@@ -414,7 +415,7 @@ class PuzzlingCRM_Ajax_Handler {
         
         PuzzlingCRM_Logger::add('تسک جدید به شما محول شد', ['content' => "تسک '{$title}' در پروژه '{$project_title}' به شما تخصیص داده شد.", 'type' => 'notification', 'user_id' => $assigned_to, 'object_id' => $task_id]);
 
-        wp_send_json_success(['message' => 'تسک با موفقیت اضافه شد.']);
+        wp_send_json_success(['message' => 'تسک با موفقیت اضافه شد.', 'reload' => true]);
     }
 
     public function quick_add_task() {

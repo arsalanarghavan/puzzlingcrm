@@ -54,7 +54,6 @@ $profile_fields = [
 <div class="pzl-dashboard-section">
     <?php if ($action === 'logs'): ?>
         <?php 
-        // Load the new template for displaying logs
         include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/view-staff-logs.php'; 
         ?>
     <?php elseif ($action === 'edit' || $action === 'add'): ?>
@@ -63,10 +62,9 @@ $profile_fields = [
              <a href="<?php echo remove_query_arg(['action', 'user_id']); ?>" class="pzl-button">&larr; بازگشت به لیست کارکنان</a>
         </div>
 
-        <form method="post" class="pzl-form pzl-ajax-form" id="pzl-staff-form" enctype="multipart/form-data" data-action="puzzling_manage_user">
-            <input type="hidden" name="puzzling_action" value="manage_user">
+        <form method="post" class="pzl-form pzl-ajax-form" id="pzl-staff-form" data-action="puzzling_manage_user" enctype="multipart/form-data">
             <input type="hidden" name="user_id" value="<?php echo esc_attr($user_id); ?>">
-            <?php wp_nonce_field('puzzling_manage_user', 'security'); ?>
+            <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
             
             <div class="pzl-card">
                 <div class="pzl-profile-main-info">
