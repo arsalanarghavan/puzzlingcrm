@@ -100,6 +100,9 @@ class PuzzlingCRM {
         wp_enqueue_script('jquery-ui-sortable');
         wp_enqueue_script('jquery-ui-datepicker');
 
+        // *** ADDED THIS LINE FOR SWEETALERT ***
+        wp_enqueue_script('sweetalert2', 'https://cdn.jsdelivr.net/npm/sweetalert2@11', [], '11', true);
+
         // Enqueue FullCalendar assets
         wp_enqueue_script('fullcalendar', 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js', ['jquery'], '6.1.11', true);
 
@@ -108,7 +111,7 @@ class PuzzlingCRM {
         wp_enqueue_style('dhtmlx-gantt', 'https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css', [], '8.0');
 
         // Main scripts file
-        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable', 'jquery-ui-datepicker', 'fullcalendar', 'dhtmlx-gantt'], PUZZLINGCRM_VERSION, true );
+        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable', 'jquery-ui-datepicker', 'sweetalert2', 'fullcalendar', 'dhtmlx-gantt'], PUZZLINGCRM_VERSION, true );
         
         // Data for JS
         $all_users = get_users(['role__in' => ['team_member', 'system_manager', 'administrator']]);
