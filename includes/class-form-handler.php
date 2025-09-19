@@ -1,9 +1,9 @@
 <?php
 /**
- * PuzzlingCRM Form Handler (SECURED & FULLY IMPLEMENTED)
+ * PuzzlingCRM Form Handler (SECURED & FINAL)
  *
- * This class is the central router for handling all GET and POST requests
- * for the plugin, including form submissions, payment processing, and deletions.
+ * This class now handles only non-AJAX GET requests (like payment) and legacy form submissions.
+ * All primary entity management (users, projects, etc.) is now handled by class-ajax-handler.php.
  *
  * @package PuzzlingCRM
  */
@@ -34,128 +34,55 @@ class PuzzlingCRM_Form_Handler {
      * Main router to direct form submissions and GET actions to the correct handler.
      */
     public function router() {
+        // --- Handle GET Actions (Payment, etc.) ---
         if (isset($_GET['puzzling_action'])) {
              $action = sanitize_key($_GET['puzzling_action']);
              switch ($action) {
                  case 'pay_installment': $this->handle_payment_request(); return;
                  case 'verify_payment': $this->handle_payment_verification(); return;
-                 case 'delete_form': $this->handle_delete_form(); return;
+                 case 'delete_form': $this->handle_delete_form(); return; // This is a GET link with nonce
              }
         }
 
+        // --- Handle Legacy POST Actions (if any remain) ---
         if (!isset($_POST['puzzling_action'])) return;
         $action = sanitize_key($_POST['puzzling_action']);
 
-        if ($action === 'submit_automation_form') { $this->handle_submit_automation_form(); return; }
-        if ($action === 'manage_form') { $this->handle_manage_form(); return; }
-        
-        if (!isset($_POST['_wpnonce']) && !isset($_POST['security'])) return;
-        $nonce = isset($_POST['_wpnonce']) ? $_POST['_wpnonce'] : $_POST['security'];
-        
-        $item_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
-        $nonce_action = 'puzzling_' . $action;
-        
-        if (in_array($action, ['edit_contract', 'delete_appointment', 'manage_appointment', 'delete_pro_invoice'])) {
-             $nonce_action .= '_' . $item_id;
-        } elseif ($action === 'manage_user') {
-            $nonce_action = 'puzzling_manage_user';
+        // Only handle specific, non-AJAX form submissions here
+        if ($action === 'submit_automation_form') { 
+            $this->handle_submit_automation_form(); 
+            return; 
         }
-
-
-        if (!wp_verify_nonce($nonce, $nonce_action)) {
-             $this->redirect_with_notice('security_failed');
-        }
-
-        if (!is_user_logged_in()) $this->redirect_with_notice('permission_denied');
-
-        $manager_actions = [
-            'manage_user', 'manage_project', 'create_contract', 'edit_contract', 'save_settings',
-            'manage_appointment', 'delete_appointment', 'manage_pro_invoice', 'delete_pro_invoice'
-        ];
-
-        if (in_array($action, $manager_actions)) {
-            if (current_user_can('manage_options')) {
-                $handler_method = 'handle_' . $action;
-                if (method_exists($this, $handler_method)) $this->$handler_method();
-            } else { $this->redirect_with_notice('permission_denied'); }
-        } elseif ($action === 'new_ticket') {
-            $this->handle_new_ticket_form();
-        } elseif ($action === 'request_appointment') {
-            if (current_user_can('customer')) $this->handle_request_appointment();
-            else $this->redirect_with_notice('permission_denied');
-        }
+        
+        // All other actions like 'manage_user', 'manage_project' are now handled via AJAX.
+        // This prevents this file from interfering with AJAX submissions.
     }
     
     private function redirect_with_notice($notice_key, $base_url = '') {
         $url = empty($base_url) ? wp_get_referer() : $base_url;
         if (!$url) $url = home_url('/');
-        $url = remove_query_arg(['puzzling_action', '_wpnonce', 'action', 'user_id', 'puzzling_notice', 'item_id', 'security'], $url);
+        $url = remove_query_arg(['puzzling_action', '_wpnonce', 'action', 'user_id', 'puzzling_notice', 'item_id'], $url);
         wp_redirect( add_query_arg('puzzling_notice', $notice_key, $url) );
         exit;
     }
-
-    private function handle_manage_user() {
-        $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
-        $email = sanitize_email($_POST['email']);
-        $first_name = sanitize_text_field($_POST['first_name']);
-        $last_name = sanitize_text_field($_POST['last_name']);
-        $password = $_POST['password'];
-        $role = sanitize_key($_POST['role']);
+    
+    private function handle_delete_form() {
+        $form_id = isset($_GET['form_id']) ? intval($_GET['form_id']) : 0;
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_GET['_wpnonce'], 'puzzling_delete_form_' . $form_id)) {
+            $this->redirect_with_notice('security_failed');
+        }
         
-        $extra_data = [];
-        foreach ($_POST as $key => $value) {
-            if (strpos($key, 'pzl_') === 0) {
-                $extra_data[$key] = sanitize_text_field($value);
-            }
-        }
-
-        if (!is_email($email) || empty($last_name)) {
-            $this->redirect_with_notice('user_error_data_invalid');
-        }
-        if ($user_id === 0 && empty($password)) {
-            $this->redirect_with_notice('user_error_password_required');
-        }
-
-        $user_data = [
-            'user_email' => $email, 'first_name' => $first_name, 'last_name' => $last_name,
-            'display_name' => trim($first_name . ' ' . $last_name), 'role' => $role
-        ];
-        if (!empty($password)) $user_data['user_pass'] = $password;
-
-        if ($user_id > 0) {
-            $user_data['ID'] = $user_id;
-            $result = wp_update_user($user_data);
-            $notice = 'user_updated_success';
-        } else {
-            if (email_exists($email)) $this->redirect_with_notice('user_error_email_exists');
-            $user_data['user_login'] = $email;
-            $result = wp_insert_user($user_data);
-            $notice = 'user_created_success';
-        }
-
-        if (is_wp_error($result)) {
-            $this->redirect_with_notice('user_error_failed');
-        } else {
-            $the_user_id = is_int($result) ? $result : $user_id;
-
-            if (!empty($extra_data)) {
-                foreach ($extra_data as $key => $value) {
-                    update_user_meta($the_user_id, $key, $value);
-                }
-            }
-            
-            $this->redirect_with_notice($notice);
-        }
+        wp_delete_post($form_id, true);
+        $this->redirect_with_notice('form_deleted_success');
     }
 
     private function handle_submit_automation_form() {
-        $form_id = intval($_POST['form_id']);
-        $token = sanitize_key($_POST['token']);
-
-        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_submit_automation_form_' . $token)) {
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_submit_automation_form_' . sanitize_key($_POST['token']))) {
             wp_die('خطای امنیتی.');
         }
 
+        $form_id = intval($_POST['form_id']);
+        $token = sanitize_key($_POST['token']);
         $token_data = get_post_meta($form_id, '_automation_token_' . $token, true);
 
         if (empty($token_data)) {
@@ -205,246 +132,7 @@ class PuzzlingCRM_Form_Handler {
              wp_die('خطا در ایجاد پروژه.');
         }
     }
-
-    private function handle_manage_form() {
-        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['security'], 'puzzling_manage_form_nonce')) {
-            $this->redirect_with_notice('security_failed');
-        }
-        
-        $form_id = isset($_POST['form_id']) ? intval($_POST['form_id']) : 0;
-        $title = sanitize_text_field($_POST['form_title']);
-        $content = wp_kses_post($_POST['form_content']);
-        $fields = isset($_POST['form_fields']) ? (array) $_POST['form_fields'] : [];
-
-        if (empty($title)) $this->redirect_with_notice('form_error_title_required');
-
-        $post_data = [
-            'post_title' => $title, 'post_content' => $content, 'post_type' => 'pzl_form',
-            'post_status' => 'publish', 'post_author' => get_current_user_id()
-        ];
-        
-        $result = ($form_id > 0) ? wp_update_post(array_merge(['ID' => $form_id], $post_data)) : wp_insert_post($post_data);
-
-        if ($result) {
-            $sanitized_fields = [];
-            if(!empty($fields)){
-                foreach ($fields as $field) {
-                    if (!empty($field['label'])) {
-                        $sanitized_fields[] = [
-                            'label' => sanitize_text_field($field['label']),
-                            'required' => isset($field['required'])
-                        ];
-                    }
-                }
-            }
-            update_post_meta($result, '_form_fields', $sanitized_fields);
-            $this->redirect_with_notice('form_saved_success');
-        } else {
-            $this->redirect_with_notice('form_error_failed');
-        }
-    }
-
-    private function handle_delete_form() {
-        $form_id = isset($_GET['form_id']) ? intval($_GET['form_id']) : 0;
-        if (!current_user_can('manage_options') || !wp_verify_nonce($_GET['_wpnonce'], 'puzzling_delete_form_' . $form_id)) {
-            $this->redirect_with_notice('security_failed');
-        }
-        
-        wp_delete_post($form_id, true);
-        $this->redirect_with_notice('form_deleted_success');
-    }
     
-    private function handle_manage_project() {
-        $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
-        $project_title = sanitize_text_field($_POST['project_title']);
-        $project_content = wp_kses_post($_POST['project_content']);
-        $customer_id = intval($_POST['customer_id']);
-        $project_category = sanitize_text_field($_POST['project_category']);
-
-        if(empty($project_title) || empty($customer_id)) $this->redirect_with_notice('project_error_data_invalid');
-
-        $post_data = [
-            'post_title'    => $project_title, 'post_content'  => $project_content,
-            'post_author'   => $customer_id, 'post_status'   => 'publish', 'post_type' => 'project',
-        ];
-
-        if ($project_id > 0) {
-            $post_data['ID'] = $project_id;
-            $result = wp_update_post($post_data, true);
-            $notice = 'project_updated_success';
-        } else {
-            $result = wp_insert_post($post_data, true);
-            $notice = 'project_created_success';
-            if (!is_wp_error($result)) {
-                 PuzzlingCRM_Logger::add(sprintf(__('پروژه جدید "%s" برای شما ثبت شد', 'puzzlingcrm'), $project_title),
-                    ['content' => __('برای مشاهده جزئیات به پنل کاربری خود مراجعه کنید.', 'puzzlingcrm'), 'type' => 'notification', 'user_id' => $customer_id, 'object_id' => $result]
-                );
-            }
-        }
-
-        if (is_wp_error($result)) {
-            $this->redirect_with_notice('project_error_failed');
-        } else {
-            $the_project_id = is_int($result) ? $result : $project_id;
-            update_post_meta($the_project_id, '_project_category', $project_category);
-            $this->redirect_with_notice($notice);
-        }
-    }
-
-    private function handle_create_contract() {
-        $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
-        $payment_amounts = isset($_POST['payment_amount']) ? (array) $_POST['payment_amount'] : [];
-        $payment_due_dates = isset($_POST['payment_due_date']) ? (array) $_POST['payment_due_date'] : [];
-
-        if ( empty($project_id) || empty($payment_amounts) || count($payment_amounts) !== count($payment_due_dates) ) {
-            $this->redirect_with_notice('contract_error_data_invalid');
-        }
-        
-        $project = get_post($project_id);
-        if(!$project || $project->post_type !== 'project') $this->redirect_with_notice('contract_error_project_not_found');
-
-        $installments = [];
-        for ($i = 0; $i < count($payment_amounts); $i++) {
-            if ( !empty($payment_amounts[$i]) && !empty($payment_due_dates[$i]) ) {
-                 $installments[] = ['amount' => sanitize_text_field(str_replace(',', '', $payment_amounts[$i])), 'due_date' => sanitize_text_field($payment_due_dates[$i]), 'status' => 'pending', 'ref_id' => ''];
-            }
-        }
-        
-        if(empty($installments)) $this->redirect_with_notice('contract_error_no_installments');
-
-        $contract_id = wp_insert_post([
-            'post_title' => sprintf(__('قرارداد پروژه: %s', 'puzzlingcrm'), get_the_title($project_id)), 'post_type' => 'contract',
-            'post_status' => 'publish', 'post_author' => $project->post_author
-        ]);
-
-        if ( ! is_wp_error($contract_id) ) {
-            update_post_meta($contract_id, '_project_id', $project_id);
-            update_post_meta($contract_id, '_installments', $installments);
-            PuzzlingCRM_Logger::add( __('قرارداد جدید ثبت شد', 'puzzlingcrm'), ['content' => sprintf(__("یک قرارداد جدید برای پروژه '%s' ایجاد شد.", 'puzzlingcrm'), get_the_title($project_id)), 'type' => 'log', 'object_id' => $contract_id]);
-            $this->redirect_with_notice('contract_created_success');
-        } else {
-            $this->redirect_with_notice('contract_error_creation_failed');
-        }
-    }
-
-    private function handle_edit_contract() {
-        $contract_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
-        $payment_amounts = isset($_POST['payment_amount']) ? (array) $_POST['payment_amount'] : [];
-        $payment_due_dates = isset($_POST['payment_due_date']) ? (array) $_POST['payment_due_date'] : [];
-        $payment_statuses = isset($_POST['payment_status']) ? (array) $_POST['payment_status'] : [];
-
-        if ( empty($contract_id) || empty($payment_amounts) || count($payment_amounts) !== count($payment_due_dates) ) {
-            $this->redirect_with_notice('contract_error_data_invalid');
-        }
-        
-        $old_installments = get_post_meta($contract_id, '_installments', true);
-        $installments = [];
-        for ($i = 0; $i < count($payment_amounts); $i++) {
-            if ( !empty($payment_amounts[$i]) && !empty($payment_due_dates[$i]) ) {
-                 $installments[] = [
-                    'amount' => sanitize_text_field(str_replace(',', '', $payment_amounts[$i])), 'due_date' => sanitize_text_field($payment_due_dates[$i]),
-                    'status' => sanitize_key($payment_statuses[$i] ?? 'pending'), 'ref_id' => $old_installments[$i]['ref_id'] ?? ''
-                ];
-            }
-        }
-        
-        if(empty($installments)) $this->redirect_with_notice('contract_error_no_installments');
-        
-        update_post_meta($contract_id, '_installments', $installments);
-        PuzzlingCRM_Logger::add(__('قرارداد به‌روزرسانی شد', 'puzzlingcrm'), ['content' => sprintf(__("قرارداد با شناسه %d به‌روزرسانی شد.", 'puzzlingcrm'), $contract_id), 'type' => 'log', 'object_id' => $contract_id]);
-        $this->redirect_with_notice('contract_updated_success');
-    }
-
-    private function handle_save_settings() {
-        if ( isset($_POST['puzzling_settings']) && is_array($_POST['puzzling_settings']) ) {
-            $current_settings = PuzzlingCRM_Settings_Handler::get_all_settings();
-            $new_settings = $_POST['puzzling_settings'];
-            
-            $sanitized_settings = [];
-            foreach ($new_settings as $key => $value) {
-                $key = sanitize_key($key);
-                if (is_array($value)) {
-                     $sanitized_settings[$key] = array_map('sanitize_text_field', $value);
-                } else if (strpos($key, 'msg') !== false) {
-                    $sanitized_settings[$key] = sanitize_textarea_field($value);
-                } else {
-                    $sanitized_settings[$key] = sanitize_text_field($value);
-                }
-            }
-
-            $updated_settings = array_merge($current_settings, $sanitized_settings);
-            PuzzlingCRM_Settings_Handler::update_settings($updated_settings);
-        }
-        $this->redirect_with_notice('settings_saved');
-    }
-
-    private function handle_manage_appointment() {
-        $appt_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
-        $customer_id = intval($_POST['customer_id']);
-        $title = sanitize_text_field($_POST['title']);
-        $date = sanitize_text_field($_POST['date']);
-        $time = sanitize_text_field($_POST['time']);
-        $notes = sanitize_textarea_field($_POST['notes']);
-        
-        if (empty($customer_id) || empty($title) || empty($date) || empty($time)) {
-             $this->redirect_with_notice('appt_error_data_invalid');
-        }
-
-        $full_datetime = $date . ' ' . $time;
-        $post_data = [
-            'post_title' => $title, 'post_content' => $notes, 'post_type' => 'pzl_appointment',
-            'post_status' => 'publish', 'post_author' => $customer_id,
-        ];
-
-        if ($appt_id > 0) {
-            $post_data['ID'] = $appt_id;
-            $result = wp_update_post($post_data, true);
-            $notice = 'appt_updated_success';
-        } else {
-            $result = wp_insert_post($post_data, true);
-            $notice = 'appt_created_success';
-        }
-
-        if (!is_wp_error($result)) {
-            $post_id = is_int($result) ? $result : $appt_id;
-            update_post_meta($post_id, '_appointment_datetime', $full_datetime);
-            $this->redirect_with_notice($notice);
-        } else {
-            $this->redirect_with_notice('appt_error_failed');
-        }
-    }
-
-    private function handle_delete_appointment() {
-        $appt_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
-        if ($appt_id > 0) {
-            wp_delete_post($appt_id, true);
-            $this->redirect_with_notice('appt_deleted_success');
-        }
-        $this->redirect_with_notice('appt_error_failed');
-    }
-    
-    private function handle_new_ticket_form() {
-        $title = sanitize_text_field( $_POST['ticket_title'] );
-        $content = wp_kses_post( $_POST['ticket_content'] );
-
-        if ( empty($title) || empty($content) ) $this->redirect_with_notice('ticket_error_empty');
-
-        $ticket_id = wp_insert_post([
-            'post_title' => $title, 'post_content' => $content, 'post_status' => 'publish',
-            'post_author' => get_current_user_id(), 'post_type' => 'ticket'
-        ]);
-
-        if ( ! is_wp_error( $ticket_id ) ) {
-            wp_set_object_terms( $ticket_id, 'open', 'ticket_status' );
-            $this->notify_all_admins(__('تیکت پشتیبانی جدید', 'puzzlingcrm'), 
-                ['content' => sprintf(__("یک تیکت جدید با موضوع '%s' توسط کاربر %s ارسال شد.", 'puzzlingcrm'), $title, wp_get_current_user()->display_name), 'type' => 'notification', 'object_id' => $ticket_id]
-            );
-            $this->redirect_with_notice('ticket_created_success');
-        } else {
-            $this->redirect_with_notice('ticket_error_failed');
-        }
-    }
-
     public function handle_ticket_reply_form() {
         if ( ! is_user_logged_in() || ! wp_verify_nonce( $_POST['_wpnonce_ticket_reply'], 'puzzling_ticket_reply_nonce' ) ) {
             wp_die(__('بررسی امنیتی ناموفق بود.', 'puzzlingcrm'));
@@ -484,7 +172,7 @@ class PuzzlingCRM_Form_Handler {
         if (!$contract_id || !wp_verify_nonce($_GET['_wpnonce'], 'pay_installment_' . $contract_id . '_' . $installment_index)) {
             $this->redirect_with_notice('security_failed');
         }
-
+        
         $installments = get_post_meta($contract_id, '_installments', true);
         if (!is_array($installments) || !isset($installments[$installment_index])) $this->redirect_with_notice('installment_not_found');
 
@@ -543,61 +231,6 @@ class PuzzlingCRM_Form_Handler {
             $this->redirect_with_notice('payment_success', $referrer_url);
         } else {
             $this->redirect_with_notice('payment_failed_verification', $referrer_url);
-        }
-    }
-
-    private function handle_manage_pro_invoice() {
-        $invoice_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
-        $title = sanitize_text_field($_POST['invoice_title']);
-        $content = wp_kses_post($_POST['invoice_content']);
-        $customer_id = intval($_POST['customer_id']);
-
-        if(empty($title) || empty($customer_id)) $this->redirect_with_notice('invoice_error_data_invalid');
-
-        $post_data = ['post_title' => $title, 'post_content'  => $content, 'post_author' => $customer_id, 'post_status' => 'publish', 'post_type' => 'pzl_pro_invoice'];
-        $result = ($invoice_id > 0) ? wp_update_post(array_merge(['ID' => $invoice_id], $post_data), true) : wp_insert_post($post_data, true);
-        $notice = ($invoice_id > 0) ? 'invoice_updated_success' : 'invoice_created_success';
-
-        if (is_wp_error($result)) {
-            $this->redirect_with_notice('invoice_error_failed');
-        } else {
-            $this->redirect_with_notice($notice);
-        }
-    }
-
-    private function handle_delete_pro_invoice() {
-        $invoice_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
-        
-        if ( !wp_verify_nonce($_POST['_wpnonce'], 'puzzling_delete_pro_invoice_' . $invoice_id) ) {
-            $this->redirect_with_notice('security_failed');
-        }
-
-        if ($invoice_id > 0 && get_post_type($invoice_id) === 'pzl_pro_invoice') {
-            wp_delete_post($invoice_id, true);
-            $this->redirect_with_notice('invoice_deleted_success');
-        }
-        $this->redirect_with_notice('invoice_error_failed');
-    }
-
-    private function handle_request_appointment() {
-        $title = sanitize_text_field($_POST['title']);
-        $date = sanitize_text_field($_POST['date']);
-        $time = sanitize_text_field($_POST['time']);
-        $notes = sanitize_textarea_field($_POST['notes']);
-        
-        if (empty($title) || empty($date) || empty($time)) $this->redirect_with_notice('appt_error_data_invalid');
-
-        $full_datetime = $date . ' ' . $time;
-        $customer_id = get_current_user_id();
-
-        $post_id = wp_insert_post(['post_title' => $title, 'post_content' => $notes, 'post_type' => 'pzl_appointment', 'post_status' => 'publish', 'post_author' => $customer_id]);
-
-        if (!is_wp_error($post_id)) {
-            update_post_meta($post_id, '_appointment_datetime', $full_datetime);
-            $this->notify_all_admins(__('درخواست قرار ملاقات جدید', 'puzzlingcrm'), ['content' => sprintf(__("مشتری '%s' برای موضوع '%s' در تاریخ %s درخواست قرار ملاقات داد.", 'puzzlingcrm'), wp_get_current_user()->display_name, $title, $full_datetime), 'type' => 'notification', 'object_id' => $post_id]);
-            $this->redirect_with_notice('appt_request_success');
-        } else {
-            $this->redirect_with_notice('appt_error_failed');
         }
     }
 }

@@ -30,7 +30,7 @@ jQuery(document).ready(function($) {
             timerProgressBar: true
         }).then(() => {
             if (reloadPage) {
-                // Instead of full reload, try to redirect to a clean URL
+                // Instead of full reload, try to redirect to a clean URL to avoid resubmission issues
                 var cleanUrl = window.location.href.split('?')[0];
                 var view = new URLSearchParams(window.location.search).get('view');
                 if (view) {
@@ -51,15 +51,12 @@ jQuery(document).ready(function($) {
         var originalButtonHtml = submitButton.html();
         var formData = new FormData(form[0]);
         
-        // Use data-action attribute on the form, falling back to a hidden input
         var action = form.data('action') || form.find('input[name="action"]').val();
         formData.append('action', action);
         
-        // The nonce is now consistently named 'security'
         var nonce = form.find('input[name="security"]').val();
         formData.append('security', nonce);
 
-        // Handle TinyMCE editors
         form.find('.wp-editor-area').each(function() {
             var editorId = $(this).attr('id');
             if (typeof tinymce !== 'undefined' && tinymce.get(editorId)) {
@@ -88,7 +85,6 @@ jQuery(document).ready(function($) {
             },
             complete: function(xhr) {
                  var response = xhr.responseJSON;
-                 // Only re-enable the button if the page isn't going to reload
                 if (!(response && response.success && response.data.reload)) {
                     submitButton.html(originalButtonHtml).prop('disabled', false);
                 }
@@ -145,7 +141,6 @@ jQuery(document).ready(function($) {
                 </div>
             `);
         }
-         // Make the hidden container visible for edit forms, but it is actually populated with inputs now.
         hiddenContainer.show();
     });
 
