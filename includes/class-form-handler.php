@@ -52,7 +52,8 @@ class PuzzlingCRM_Form_Handler {
         if (!isset($_POST['_wpnonce'])) return;
         $item_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
         $nonce_action = 'puzzling_' . $action;
-        if (in_array($action, ['edit_contract', 'delete_appointment', 'delete_project', 'manage_appointment', 'delete_pro_invoice'])) {
+        // **FIXED**: 'delete_project' is removed from this array as it's handled by AJAX.
+        if (in_array($action, ['edit_contract', 'delete_appointment', 'manage_appointment', 'delete_pro_invoice'])) {
              $nonce_action .= '_' . $item_id;
         }
 
@@ -71,8 +72,9 @@ class PuzzlingCRM_Form_Handler {
 
         if (!is_user_logged_in()) $this->redirect_with_notice('permission_denied');
 
+        // **FIXED**: 'delete_project' is removed from this array.
         $manager_actions = [
-            'manage_user', 'manage_project', 'delete_project', 'create_contract', 'edit_contract', 'save_settings',
+            'manage_user', 'manage_project', 'create_contract', 'edit_contract', 'save_settings',
             'manage_appointment', 'delete_appointment', 'manage_pro_invoice', 'delete_pro_invoice'
         ];
 
@@ -105,16 +107,14 @@ class PuzzlingCRM_Form_Handler {
         $password = $_POST['password'];
         $role = sanitize_key($_POST['role']);
         
-        // **START CORRECTION:** Ensure all `pzl_` fields from the form are processed, including the phone number.
         $extra_data = [];
         foreach ($_POST as $key => $value) {
             if (strpos($key, 'pzl_') === 0) {
                 $extra_data[$key] = sanitize_text_field($value);
             }
         }
-        // **END CORRECTION**
 
-        if (!is_email($email) || empty($last_name)) { // First name can be optional sometimes
+        if (!is_email($email) || empty($last_name)) {
             $this->redirect_with_notice('user_error_data_invalid');
         }
         if ($user_id === 0 && empty($password)) {
@@ -143,19 +143,15 @@ class PuzzlingCRM_Form_Handler {
         } else {
             $the_user_id = is_int($result) ? $result : $user_id;
 
-            // **START CORRECTION:** Save the extra data collected.
             if (!empty($extra_data)) {
                 foreach ($extra_data as $key => $value) {
                     update_user_meta($the_user_id, $key, $value);
                 }
             }
-            // **END CORRECTION**
             
             $this->redirect_with_notice($notice);
         }
     }
-    
-    // ... (rest of the functions in class-form-handler.php remain unchanged)
 
     private function handle_submit_automation_form() {
         $form_id = intval($_POST['form_id']);
@@ -298,14 +294,6 @@ class PuzzlingCRM_Form_Handler {
             update_post_meta($the_project_id, '_project_category', $project_category);
             $this->redirect_with_notice($notice);
         }
-    }
-
-    private function handle_delete_project() {
-        $project_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
-        if ($project_id > 0 && wp_delete_post($project_id, true)) {
-            $this->redirect_with_notice('project_deleted_success');
-        }
-        $this->redirect_with_notice('project_error_failed');
     }
 
     private function handle_create_contract() {

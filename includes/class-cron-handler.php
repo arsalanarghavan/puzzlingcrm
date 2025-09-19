@@ -12,7 +12,8 @@ class PuzzlingCRM_Cron_Handler {
     
     public function __construct() {
         if ( ! wp_next_scheduled( 'puzzling_daily_reminder_hook' ) ) {
-            wp_schedule_event( strtotime('today 9:00am'), 'daily', 'puzzling_daily_reminder_hook' );
+            // Use WordPress's timezone for scheduling to ensure consistency.
+            wp_schedule_event( strtotime('today 9:00am', current_time('timestamp')), 'daily', 'puzzling_daily_reminder_hook' );
         }
         
         add_action( 'puzzling_daily_reminder_hook', [ $this, 'send_payment_reminders' ] );
@@ -66,7 +67,8 @@ class PuzzlingCRM_Cron_Handler {
         $contracts = get_posts(['post_type' => 'contract', 'posts_per_page' => -1, 'post_status' => 'publish']);
         if (empty($contracts)) return;
 
-        $today = new DateTime('now', new DateTimeZone('Asia/Tehran'));
+        // Use WordPress's timezone for accurate date comparison
+        $today = new DateTime('now', new DateTimeZone(wp_timezone_string()));
         $today->setTime(0, 0, 0);
 
         foreach ( $contracts as $contract_post ) {
@@ -82,7 +84,7 @@ class PuzzlingCRM_Cron_Handler {
             foreach ($installments as $installment) {
                 if (($installment['status'] ?? 'pending') !== 'paid') {
                     try {
-                        $due_date = new DateTime($installment['due_date'], new DateTimeZone('Asia/Tehran'));
+                        $due_date = new DateTime($installment['due_date'], new DateTimeZone(wp_timezone_string()));
                         $due_date->setTime(0, 0, 0);
                         
                         $interval = $today->diff($due_date);
@@ -129,10 +131,12 @@ class PuzzlingCRM_Cron_Handler {
     
     /**
      * Sends email notifications for upcoming or overdue tasks.
+     * **FIXED**: Uses WordPress timezone-aware functions for date comparisons.
      */
     public function send_task_reminders() {
-        $today_str = date('Y-m-d');
-        $tomorrow_str = date('Y-m-d', strtotime('+1 day'));
+        // Use wp_date to get dates in WordPress's configured timezone.
+        $today_str = wp_date('Y-m-d');
+        $tomorrow_str = wp_date('Y-m-d', strtotime('+1 day'));
 
         $tasks_due_soon = get_posts([
             'post_type' => 'task',
@@ -200,7 +204,7 @@ class PuzzlingCRM_Cron_Handler {
             }
 
             $body .= '</ul>';
-            $body .= '<p>لطفاً برای مدیریت وظایف خود به داشبورد مراجعه کنید.</p>';
+            $body .= '<p>لطفاً برای مدیریت وظایf خود به داشبورد مراجعه کنید.</p>';
             $body .= '<p><a href="' . esc_url(puzzling_get_dashboard_url()) . '">رفتن به داشبورد</a></p>';
             
             $headers = ['Content-Type: text/html; charset=UTF-8'];
