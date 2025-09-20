@@ -19,7 +19,7 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_manage_user', [$this, 'ajax_manage_user']);
         add_action('wp_ajax_puzzling_manage_project', [$this, 'ajax_manage_project']);
         add_action('wp_ajax_puzzling_manage_contract', [$this, 'ajax_manage_contract']);
-        add_action('wp_ajax_puzzling_update_my_profile', [$this, 'ajax_update_my_profile']); // NEW
+        add_action('wp_ajax_puzzling_update_my_profile', [$this, 'ajax_update_my_profile']);
 
         // --- Standard Task Actions ---
         add_action('wp_ajax_puzzling_add_task', [$this, 'add_task']);
@@ -262,22 +262,50 @@ class PuzzlingCRM_Ajax_Handler {
     /**
      * AJAX handler for creating and updating contracts.
      */
-    public function ajax_manage_contract() {
+     public function ajax_manage_contract() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
         }
 
-        $contract_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
-        $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
+        // --- Sanitize Core Data ---
+        $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
+        $customer_id = intval($_POST['customer_id']);
+        $project_title = sanitize_text_field($_POST['project_title']);
+        
+        if (empty($customer_id) || empty($project_title)) {
+            wp_send_json_error(['message' => 'انتخاب مشتری و وارد کردن عنوان پروژه الزامی است.']);
+        }
+
+        // --- Prepare Project Data ---
+        $project_data = [
+            'post_title' => $project_title,
+            'post_author' => $customer_id,
+            'post_status' => 'publish',
+            'post_type' => 'project',
+        ];
+        
+        // --- Prepare Contract Data ---
+        $contract_title = 'قرارداد پروژه: ' . $project_title;
+        $contract_data = [
+            'post_title' => $contract_title,
+            'post_author' => $customer_id,
+            'post_status' => 'publish',
+            'post_type' => 'contract',
+        ];
+        
+        $contract_meta = [
+            '_project_contract_person' => sanitize_text_field($_POST['_project_contract_person']),
+            '_project_subscription_model' => sanitize_key($_POST['_project_subscription_model']),
+            '_project_contract_duration' => sanitize_key($_POST['_project_contract_duration']),
+            '_project_start_date' => sanitize_text_field($_POST['_project_start_date']),
+            '_project_end_date' => sanitize_text_field($_POST['_project_end_date']),
+        ];
+
+        // --- Handle Installments ---
         $payment_amounts = isset($_POST['payment_amount']) ? (array) $_POST['payment_amount'] : [];
         $payment_due_dates = isset($_POST['payment_due_date']) ? (array) $_POST['payment_due_date'] : [];
         $payment_statuses = isset($_POST['payment_status']) ? (array) $_POST['payment_status'] : [];
-
-        if (empty($payment_amounts) || count($payment_amounts) !== count($payment_due_dates)) {
-            wp_send_json_error(['message' => 'اطلاعات اقساط ناقص یا نامعتبر است.']);
-        }
-
         $installments = [];
         for ($i = 0; $i < count($payment_amounts); $i++) {
             if (!empty($payment_amounts[$i]) && !empty($payment_due_dates[$i])) {
@@ -285,44 +313,71 @@ class PuzzlingCRM_Ajax_Handler {
                     'amount' => sanitize_text_field(str_replace(',', '', $payment_amounts[$i])), 
                     'due_date' => sanitize_text_field($payment_due_dates[$i]),
                     'status' => sanitize_key($payment_statuses[$i] ?? 'pending'),
-                    'ref_id' => '' // Ref ID is only set on payment
                 ];
             }
         }
 
-        if (empty($installments)) {
-            wp_send_json_error(['message' => 'حداقل یک قسط معتبر باید تعریف شود.']);
-        }
+        // --- Logic: Update or Create ---
+        if ($contract_id > 0) { // --- UPDATE EXISTING ---
+            $the_contract_id = $contract_id;
+            $project_id = get_post_meta($the_contract_id, '_project_id', true);
 
-        if ($contract_id > 0) { // Editing existing contract
-            update_post_meta($contract_id, '_installments', $installments);
-            PuzzlingCRM_Logger::add('قرارداد به‌روزرسانی شد', ['content' => "قرارداد با شناسه {$contract_id} به‌روزرسانی شد.", 'type' => 'log', 'object_id' => $contract_id]);
-            wp_send_json_success(['message' => 'قرارداد با موفقیت به‌روزرسانی شد.', 'reload' => true]);
-        } else { // Creating new contract
-            if (empty($project_id)) {
-                wp_send_json_error(['message' => 'برای ایجاد قرارداد جدید، انتخاب پروژه الزامی است.']);
+            // Update Project
+            $project_data['ID'] = $project_id;
+            wp_update_post($project_data);
+
+            // Update Contract
+            $contract_data['ID'] = $the_contract_id;
+            wp_update_post($contract_data);
+
+            $message = 'قرارداد و پروژه با موفقیت به‌روزرسانی شدند.';
+
+        } else { // --- CREATE NEW ---
+            // 1. Create Project
+            $project_id = wp_insert_post($project_data, true);
+            if (is_wp_error($project_id)) {
+                wp_send_json_error(['message' => 'خطا در ایجاد پروژه.']);
             }
-            $project = get_post($project_id);
-            if (!$project || $project->post_type !== 'project') {
-                wp_send_json_error(['message' => 'پروژه انتخاب شده معتبر نیست.']);
+            // Set a default status for new projects
+             $active_status = get_term_by('slug', 'active', 'project_status');
+            if ($active_status) {
+                wp_set_object_terms($project_id, $active_status->term_id, 'project_status');
             }
 
-            $new_contract_id = wp_insert_post([
-                'post_title' => 'قرارداد پروژه: ' . get_the_title($project_id),
-                'post_type' => 'contract',
-                'post_status' => 'publish',
-                'post_author' => $project->post_author
-            ]);
 
-            if (!is_wp_error($new_contract_id)) {
-                update_post_meta($new_contract_id, '_project_id', $project_id);
-                update_post_meta($new_contract_id, '_installments', $installments);
-                PuzzlingCRM_Logger::add('قرارداد جدید ثبت شد', ['content' => "قرارداد جدیدی برای پروژه '".get_the_title($project_id)."' ایجاد شد.", 'type' => 'log', 'object_id' => $new_contract_id]);
-                wp_send_json_success(['message' => 'قرارداد جدید با موفقیت ایجاد شد.', 'reload' => true]);
-            } else {
+            // 2. Create Contract
+            $the_contract_id = wp_insert_post($contract_data, true);
+             if (is_wp_error($the_contract_id)) {
+                wp_delete_post($project_id, true); // Clean up orphaned project
                 wp_send_json_error(['message' => 'خطا در ایجاد قرارداد.']);
             }
+
+            // 3. Link them
+            update_post_meta($the_contract_id, '_project_id', $project_id);
+            update_post_meta($project_id, '_contract_id', $the_contract_id);
+            
+            $message = 'قرارداد و پروژه جدید با موفقیت ایجاد شدند.';
         }
+        
+        // --- Save Common Data for both Create and Update ---
+        
+        // Save contract meta
+        foreach ($contract_meta as $key => $value) {
+            update_post_meta($the_contract_id, $key, $value);
+        }
+        
+        // Save installments
+        update_post_meta($the_contract_id, '_installments', $installments);
+        
+        // Handle Project Logo Upload
+        if (isset($_FILES['project_logo']) && $_FILES['project_logo']['error'] == 0) {
+            $attachment_id = media_handle_upload('project_logo', $project_id);
+            if (!is_wp_error($attachment_id)) {
+                set_post_thumbnail($project_id, $attachment_id);
+            }
+        }
+        
+        wp_send_json_success(['message' => $message, 'reload' => true]);
     }
 
     /**
