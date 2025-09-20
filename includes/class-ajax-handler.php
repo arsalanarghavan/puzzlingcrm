@@ -19,8 +19,7 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_manage_user', [$this, 'ajax_manage_user']);
         add_action('wp_ajax_puzzling_manage_project', [$this, 'ajax_manage_project']);
         add_action('wp_ajax_puzzling_manage_contract', [$this, 'ajax_manage_contract']);
-        add_action('wp_ajax_puzzling_manage_position', [$this, 'ajax_manage_position']); // NEW
-        add_action('wp_ajax_puzzling_delete_position', [$this, 'ajax_delete_position']); // NEW
+        add_action('wp_ajax_puzzling_update_my_profile', [$this, 'ajax_update_my_profile']); // NEW
 
         // --- Standard Task Actions ---
         add_action('wp_ajax_puzzling_add_task', [$this, 'add_task']);
@@ -61,9 +60,59 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_save_task_as_template', [$this, 'save_task_as_template']);
         add_action('wp_ajax_puzzling_send_custom_sms', [$this, 'send_custom_sms']);
     }
+
+    /**
+     * AJAX handler for users updating their own profile.
+     */
+    public function ajax_update_my_profile() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => 'شما وارد نشده‌اید.']);
+        }
+
+        $user_id = get_current_user_id();
+        $first_name = sanitize_text_field($_POST['first_name']);
+        $last_name = sanitize_text_field($_POST['last_name']);
+        $password = $_POST['password'];
+        $password_confirm = $_POST['password_confirm'];
+
+        $user_data = [
+            'ID' => $user_id,
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            'display_name' => trim($first_name . ' ' . $last_name)
+        ];
+
+        if (!empty($password)) {
+            if ($password !== $password_confirm) {
+                wp_send_json_error(['message' => 'رمزهای عبور وارد شده یکسان نیستند.']);
+            }
+            $user_data['user_pass'] = $password;
+        }
+
+        $result = wp_update_user($user_data);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => 'خطا در به‌روزرسانی پروفایل: ' . $result->get_error_message()]);
+        }
+
+        if (isset($_POST['pzl_mobile_phone'])) {
+            update_user_meta($user_id, 'pzl_mobile_phone', sanitize_text_field($_POST['pzl_mobile_phone']));
+        }
+
+        if (!empty($_FILES['pzl_profile_picture']['name'])) {
+            $attachment_id = media_handle_upload('pzl_profile_picture', 0); // 0 means not attached to a post
+            if (!is_wp_error($attachment_id)) {
+                update_user_meta($user_id, 'pzl_profile_picture_id', $attachment_id);
+            }
+        }
+        
+        wp_send_json_success(['message' => 'پروفایل شما با موفقیت به‌روزرسانی شد.', 'reload' => true]);
+    }
     
     /**
      * Universal AJAX handler for creating and updating users (staff and customers).
+     * **MODIFIED**: Changed permission check to 'manage_options' for consistency.
      */
     public function ajax_manage_user() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
@@ -144,19 +193,31 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
         }
 
+        // Sanitize and retrieve all POST data
         $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
         $project_title = sanitize_text_field($_POST['project_title']);
         $project_content = wp_kses_post($_POST['project_content']);
         $customer_id = intval($_POST['customer_id']);
-        $project_category = sanitize_text_field($_POST['project_category']);
+        $project_status_id = intval($_POST['project_status']);
+        
+        $meta_inputs = [
+            '_project_contract_person' => sanitize_text_field($_POST['_project_contract_person']),
+            '_project_subscription_model' => sanitize_key($_POST['_project_subscription_model']),
+            '_project_contract_duration' => sanitize_key($_POST['_project_contract_duration']),
+            '_project_start_date' => sanitize_text_field($_POST['_project_start_date']),
+            '_project_end_date' => sanitize_text_field($_POST['_project_end_date']),
+        ];
 
         if(empty($project_title) || empty($customer_id)) {
             wp_send_json_error(['message' => 'عنوان پروژه و انتخاب مشتری الزامی است.']);
         }
 
         $post_data = [
-            'post_title'    => $project_title, 'post_content'  => $project_content,
-            'post_author'   => $customer_id, 'post_status'   => 'publish', 'post_type' => 'project',
+            'post_title'    => $project_title,
+            'post_content'  => $project_content,
+            'post_author'   => $customer_id,
+            'post_status'   => 'publish',
+            'post_type'     => 'project',
         ];
 
         if ($project_id > 0) {
@@ -177,7 +238,23 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'خطا در پردازش پروژه.']);
         } else {
             $the_project_id = is_int($result) ? $result : $project_id;
-            update_post_meta($the_project_id, '_project_category', $project_category);
+            
+            // Save all metadata
+            foreach ($meta_inputs as $key => $value) {
+                update_post_meta($the_project_id, $key, $value);
+            }
+
+            // Set the project status term
+            wp_set_object_terms($the_project_id, $project_status_id, 'project_status');
+            
+            // Handle logo upload (featured image)
+            if (isset($_FILES['project_logo']) && $_FILES['project_logo']['error'] == 0) {
+                $attachment_id = media_handle_upload('project_logo', $the_project_id);
+                if (!is_wp_error($attachment_id)) {
+                    set_post_thumbnail($the_project_id, $attachment_id);
+                }
+            }
+
             wp_send_json_success(['message' => $message, 'reload' => true]);
         }
     }
@@ -245,61 +322,6 @@ class PuzzlingCRM_Ajax_Handler {
             } else {
                 wp_send_json_error(['message' => 'خطا در ایجاد قرارداد.']);
             }
-        }
-    }
-
-    /**
-     * AJAX handler to create/update organizational positions.
-     */
-    public function ajax_manage_position() {
-        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
-        }
-
-        $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
-        $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
-
-        if (empty($name)) {
-            wp_send_json_error(['message' => 'نام جایگاه نمی‌تواند خالی باشد.']);
-        }
-
-        if ($term_id > 0) {
-            $result = wp_update_term($term_id, 'organizational_position', ['name' => $name]);
-            $message = 'جایگاه شغلی با موفقیت به‌روزرسانی شد.';
-        } else {
-            $result = wp_insert_term($name, 'organizational_position');
-            $message = 'جایگاه شغلی جدید با موفقیت ایجاد شد.';
-        }
-
-        if (is_wp_error($result)) {
-            wp_send_json_error(['message' => $result->get_error_message()]);
-        } else {
-            wp_send_json_success(['message' => $message, 'reload' => true]);
-        }
-    }
-
-    /**
-     * AJAX handler to delete an organizational position.
-     */
-    public function ajax_delete_position() {
-        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
-        }
-
-        $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
-
-        if ($term_id === 0) {
-            wp_send_json_error(['message' => 'شناسه نامعتبر است.']);
-        }
-        
-        $result = wp_delete_term($term_id, 'organizational_position');
-
-        if (is_wp_error($result)) {
-            wp_send_json_error(['message' => $result->get_error_message()]);
-        } else {
-            wp_send_json_success(['message' => 'جایگاه شغلی با موفقیت حذف شد.']);
         }
     }
 

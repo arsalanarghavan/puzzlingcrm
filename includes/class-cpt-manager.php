@@ -165,6 +165,21 @@ class PuzzlingCRM_CPT_Manager {
     }
 
     public function register_taxonomies() {
+        // Project Status Taxonomy - NEW
+        register_taxonomy('project_status', 'project', [
+            'label' => __( 'Project Status', 'puzzlingcrm' ),
+            'hierarchical' => true,
+            'public' => false,
+            'show_ui' => true,
+            'show_admin_column' => true,
+            'show_in_rest' => true,
+            'labels' => [
+                'name' => __( 'وضعیت‌های پروژه', 'puzzlingcrm' ),
+                'singular_name' => __( 'وضعیت پروژه', 'puzzlingcrm' ),
+                'menu_name' => __( 'وضعیت پروژه', 'puzzlingcrm' ),
+            ]
+        ]);
+
         // Task Status Taxonomy
         register_taxonomy('task_status', 'task', ['label' => __( 'Task Status', 'puzzlingcrm' ), 'hierarchical' => true, 'show_in_rest' => true]);
         
@@ -240,6 +255,12 @@ class PuzzlingCRM_CPT_Manager {
     }
 
     public static function create_default_terms() {
+        // Project Statuses - NEW
+        $project_statuses = ['فعال' => 'active', 'تکمیل شده' => 'completed', 'در انتظار' => 'on-hold', 'لغو شده' => 'cancelled'];
+        foreach ($project_statuses as $name => $slug) {
+            if ( ! term_exists( $slug, 'project_status' ) ) wp_insert_term( $name, 'project_status', ['slug' => $slug] );
+        }
+
         // Task Statuses
         $task_statuses = [__('To Do', 'puzzlingcrm') => 'to-do', __('In Progress', 'puzzlingcrm') => 'in-progress', __('Done', 'puzzlingcrm') => 'done'];
         foreach ($task_statuses as $name => $slug) {
