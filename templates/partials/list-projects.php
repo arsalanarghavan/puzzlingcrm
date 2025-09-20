@@ -29,19 +29,30 @@ $projects_query = new WP_Query($args);
     <h3><i class="fas fa-briefcase"></i> لیست پروژه‌های شما</h3>
     
     <?php if ($projects_query->have_posts()) : ?>
-        <ul class="pzl-project-cards-list">
-            <?php while ($projects_query->have_posts()) : $projects_query->the_post(); ?>
-                <li class="pzl-project-card">
-                    <a href="<?php the_permalink(); ?>">
-                        <i class="fas fa-folder-open"></i>
-                        <h4 class="project-title"><?php the_title(); ?></h4>
-                    </a>
-                    <div class="project-excerpt">
-                        <?php the_excerpt(); ?>
+        <div class="pzl-projects-grid-view">
+            <?php while ($projects_query->have_posts()) : $projects_query->the_post(); 
+                $project_category = get_post_meta(get_the_ID(), '_project_category', true) ?: '---';
+            ?>
+                <a href="<?php the_permalink(); ?>" class="pzl-project-card-item" style="text-decoration: none; color: inherit;">
+                    <div class="pzl-project-card-logo">
+                        <?php if (has_post_thumbnail()) : ?>
+                            <?php the_post_thumbnail('thumbnail'); ?>
+                        <?php else: ?>
+                            <i class="fas fa-folder-open"></i>
+                        <?php endif; ?>
                     </div>
-                </li>
+                    <div class="pzl-project-card-details">
+                        <h4 class="pzl-project-card-title"><?php the_title(); ?></h4>
+                        <div class="pzl-project-card-meta">
+                            <span class="pzl-project-card-category"><?php echo esc_html($project_category); ?></span>
+                        </div>
+                        <div class="project-excerpt">
+                            <?php the_excerpt(); ?>
+                        </div>
+                    </div>
+                </a>
             <?php endwhile; ?>
-        </ul>
+        </div>
         <?php wp_reset_postdata(); ?>
     <?php else : ?>
         <div class="pzl-empty-state">

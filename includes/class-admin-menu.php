@@ -44,25 +44,25 @@ class PuzzlingCRM_Admin_Menu {
     public function render_info_page() {
         ?>
         <div class="wrap">
-            <h1><?php esc_html_e( 'Welcome to PuzzlingCRM', 'puzzlingcrm' ); ?></h1>
-            <p><?php esc_html_e( 'All management for PuzzlingCRM is handled through shortcodes on the front-end of your site.', 'puzzlingcrm' ); ?></p>
-            <p><?php esc_html_e( 'You can place the shortcodes on any page you like to build your own dashboard.', 'puzzlingcrm' ); ?></p>
+            <h1><?php esc_html_e( 'به PuzzlingCRM خوش آمدید', 'puzzlingcrm' ); ?></h1>
+            <p><?php esc_html_e( 'تمام بخش‌های مدیریتی PuzzlingCRM از طریق شورت‌کدها در صفحات سایت شما قابل استفاده است.', 'puzzlingcrm' ); ?></p>
+            <p><?php esc_html_e( 'می‌توانید با قرار دادن شورت‌کدهای زیر در هر برگه‌ای، داشبورد اختصاصی خود را بسازید.', 'puzzlingcrm' ); ?></p>
             
-            <h2><?php esc_html_e( 'Available Shortcodes', 'puzzlingcrm' ); ?></h2>
-            <ul>
-                <li><code>[puzzling_projects]</code> - Displays projects for managers or clients.</li>
-                <li><code>[puzzling_contracts]</code> - Displays contracts for managers or clients.</li>
-                <li><code>[puzzling_invoices]</code> - Displays invoices/payments for managers or clients.</li>
-                <li><code>[puzzling_pro_invoices]</code> - Displays pro-forma invoices for managers or clients.</li>
-                <li><code>[puzzling_appointments]</code> - Displays appointments for managers or clients.</li>
-                <li><code>[puzzling_tickets]</code> - Displays support tickets.</li>
-                <li><code>[puzzling_tasks]</code> - Displays the task manager for managers and team members.</li>
-                <li><code>[puzzling_customers]</code> - (Manager Only) Customer management page.</li>
-                <li><code>[puzzling_staff]</code> - (Manager Only) Staff management page.</li>
-                <li><code>[puzzling_subscriptions]</code> - (Manager Only) WooCommerce Subscriptions page.</li>
-                <li><code>[puzzling_reports]</code> - (Manager Only) Reports page.</li>
-                <li><code>[puzzling_settings]</code> - (Manager Only) Settings page.</li>
-                <li><code>[puzzling_logs]</code> - (Manager Only) System logs page.</li>
+            <h2><?php esc_html_e( 'شورت‌کدهای موجود', 'puzzlingcrm' ); ?></h2>
+            <ul style="list-style-type: disc; padding-right: 20px;">
+                <li><code>[puzzling_projects]</code> - <?php esc_html_e('نمایش پروژه‌ها برای مدیران یا مشتریان.', 'puzzlingcrm'); ?></li>
+                <li><code>[puzzling_contracts]</code> - <?php esc_html_e('نمایش قراردادها برای مدیران یا مشتریان.', 'puzzlingcrm'); ?></li>
+                <li><code>[puzzling_invoices]</code> - <?php esc_html_e('نمایش فاکتورها و پرداخت‌ها برای مدیران یا مشتریان.', 'puzzlingcrm'); ?></li>
+                <li><code>[puzzling_pro_invoices]</code> - <?php esc_html_e('نمایش پیش‌فاکتورها برای مدیران یا مشتریان.', 'puzzlingcrm'); ?></li>
+                <li><code>[puzzling_appointments]</code> - <?php esc_html_e('نمایش قرار ملاقات‌ها برای مدیران یا مشتریان.', 'puzzlingcrm'); ?></li>
+                <li><code>[puzzling_tickets]</code> - <?php esc_html_e('نمایش تیکت‌های پشتیبانی.', 'puzzlingcrm'); ?></li>
+                <li><code>[puzzling_tasks]</code> - <?php esc_html_e('نمایش بخش مدیریت وظایف برای مدیران و اعضای تیم.', 'puzzlingcrm'); ?></li>
+                <li><code>[puzzling_customers]</code> - (<?php esc_html_e('فقط مدیر', 'puzzlingcrm'); ?>) <?php esc_html_e('صفحه مدیریت مشتریان.', 'puzzlingcrm'); ?></li>
+                <li><code>[puzzling_staff]</code> - (<?php esc_html_e('فقط مدیر', 'puzzlingcrm'); ?>) <?php esc_html_e('صفحه مدیریت کارمندان.', 'puzzlingcrm'); ?></li>
+                <li><code>[puzzling_subscriptions]</code> - (<?php esc_html_e('فقط مدیر', 'puzzlingcrm'); ?>) <?php esc_html_e('صفحه مدیریت اشتراک‌های ووکامرس.', 'puzzlingcrm'); ?></li>
+                <li><code>[puzzling_reports]</code> - (<?php esc_html_e('فقط مدیر', 'puzzlingcrm'); ?>) <?php esc_html_e('صفحه گزارش‌ها.', 'puzzlingcrm'); ?></li>
+                <li><code>[puzzling_settings]</code> - (<?php esc_html_e('فقط مدیر', 'puzzlingcrm'); ?>) <?php esc_html_e('صفحه تنظیمات.', 'puzzlingcrm'); ?></li>
+                <li><code>[puzzling_logs]</code> - (<?php esc_html_e('فقط مدیر', 'puzzlingcrm'); ?>) <?php esc_html_e('لاگ رویدادهای سیستم.', 'puzzlingcrm'); ?></li>
             </ul>
         </div>
         <?php
