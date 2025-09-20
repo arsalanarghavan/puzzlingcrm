@@ -17,12 +17,27 @@ class PuzzlingCRM_CPT_Manager {
     public function __construct() {
         add_action( 'init', [ $this, 'register_post_types' ], 0 );
         add_action( 'init', [ $this, 'register_taxonomies' ], 0 );
-        add_action( 'add_meta_boxes', [ $this, 'add_task_meta_boxes' ] );
-        add_action( 'save_post_task', [ $this, 'save_task_meta_boxes' ] );
+        // Add meta box for linking templates to products
+        add_action( 'add_meta_boxes', [ $this, 'add_project_template_meta_box' ] );
+        add_action( 'save_post_product', [ $this, 'save_project_template_meta_box' ] );
     }
 
     public function register_post_types() {
+        // Project Template CPT - NEW
+        register_post_type( 'pzl_project_template', [
+            'labels'        => [
+                'name'          => __( 'قالب‌های پروژه', 'puzzlingcrm' ),
+                'singular_name' => __( 'قالب پروژه', 'puzzlingcrm' ),
+                'add_new_item'  => __( 'افزودن قالب پروژه جدید', 'puzzlingcrm' ),
+            ],
+            'public'        => false,
+            'show_ui'       => true,
+            'show_in_menu'  => 'puzzling-crm-info', // Show under main CRM menu
+            'supports'      => ['title'],
+            'hierarchical'  => false,
+        ]);
 
+        // ... (rest of the register_post_types function)
         // **MODIFIED: Form CPT - Hidden from backend UI**
         register_post_type( 'pzl_form', [
             'labels'        => [
@@ -163,7 +178,53 @@ class PuzzlingCRM_CPT_Manager {
             'supports'      => ['title', 'editor', 'author', 'custom-fields'],
         ]);
     }
+    
+    // ... (rest of the file: register_taxonomies, meta boxes for tasks...)
 
+    /**
+     * Adds a meta box to link a Project Template to a WooCommerce Product.
+     */
+    public function add_project_template_meta_box() {
+        add_meta_box(
+            'puzzling_project_template_link',
+            __( 'اتوماسیون PuzzlingCRM', 'puzzlingcrm' ),
+            [ $this, 'render_project_template_meta_box' ],
+            'product', 'side', 'default'
+        );
+    }
+
+    /**
+     * Renders the content of the project template meta box.
+     */
+    public function render_project_template_meta_box( $post ) {
+        wp_nonce_field('puzzling_save_project_template_link', 'puzzling_project_template_nonce');
+        $linked_template_id = get_post_meta($post->ID, '_puzzling_project_template_id', true);
+        
+        $templates = get_posts(['post_type' => 'pzl_project_template', 'posts_per_page' => -1]);
+
+        echo '<p>' . __('این محصول (خدمت) پس از فروش، کدام قالب پروژه را ایجاد کند؟', 'puzzlingcrm') . '</p>';
+        echo '<select name="_puzzling_project_template_id" style="width:100%;">';
+        echo '<option value="">' . __('هیچکدام (پروژه‌ای ساخته نشود)', 'puzzlingcrm') . '</option>';
+        if ($templates) {
+            foreach ($templates as $template) {
+                echo '<option value="' . esc_attr($template->ID) . '" ' . selected($linked_template_id, $template->ID, false) . '>' . esc_html($template->post_title) . '</option>';
+            }
+        }
+        echo '</select>';
+    }
+
+    /**
+     * Saves the linked project template ID.
+     */
+    public function save_project_template_meta_box( $post_id ) {
+        if (!isset($_POST['puzzling_project_template_nonce']) || !wp_verify_nonce($_POST['puzzling_project_template_nonce'], 'puzzling_save_project_template_link')) return;
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+        if (!current_user_can('edit_product', $post_id)) return;
+
+        if (isset($_POST['_puzzling_project_template_id'])) {
+            update_post_meta($post_id, '_puzzling_project_template_id', intval($_POST['_puzzling_project_template_id']));
+        }
+    }
     public function register_taxonomies() {
         // Project Status Taxonomy - NEW
         register_taxonomy('project_status', 'project', [
