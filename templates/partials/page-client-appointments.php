@@ -4,7 +4,6 @@
  * @package PuzzlingCRM
  */
 if (!defined('ABSPATH')) exit;
-if (!current_user_can('customer')) return;
 ?>
 <div class="pzl-dashboard-section">
     <h3><i class="fas fa-calendar-plus"></i> ثبت قرار ملاقات جدید</h3>

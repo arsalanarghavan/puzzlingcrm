@@ -11,8 +11,8 @@ $active_tab = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
 ?>
 
 <div class="pzl-dashboard-tabs">
-    <a href="?view=overview" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"> <i class="fas fa-tachometer-alt"></i> <?php esc_html_e('Overview', 'puzzlingcrm'); ?></a>
-    <a href="?view=reports" class="pzl-tab <?php echo $active_tab === 'reports' ? 'active' : ''; ?>"> <i class="fas fa-chart-area"></i> <?php esc_html_e('Reports', 'puzzlingcrm'); ?></a>
+    <a href="?view=overview" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"> <i class="fas fa-tachometer-alt"></i> <?php esc_html_e('نمای کلی', 'puzzlingcrm'); ?></a>
+    <a href="?view=reports" class="pzl-tab <?php echo $active_tab === 'reports' ? 'active' : ''; ?>"> <i class="fas fa-chart-area"></i> <?php esc_html_e('گزارش‌ها', 'puzzlingcrm'); ?></a>
 </div>
 
 <div class="pzl-dashboard-tab-content">
@@ -58,20 +58,20 @@ $active_tab = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
     ?>
     <div class="pzl-dashboard-stats">
         <div class="stat-widget">
-            <h4><?php esc_html_e('Total Income (Toman)', 'puzzlingcrm'); ?></h4>
+            <h4><?php esc_html_e('درآمد کل (تومان)', 'puzzlingcrm'); ?></h4>
             <span class="stat-number"><?php echo esc_html( number_format($stats['total_income']) ); ?></span>
         </div>
         <div class="stat-widget">
-            <h4><?php esc_html_e('Pending Amount (Toman)', 'puzzlingcrm'); ?></h4>
+            <h4><?php esc_html_e('مبلغ در انتظار پرداخت (تومان)', 'puzzlingcrm'); ?></h4>
             <span class="stat-number"><?php echo esc_html( number_format($stats['pending_amount']) ); ?></span>
         </div>
         <div class="stat-widget">
-            <h4><?php esc_html_e('Overdue Installments', 'puzzlingcrm'); ?></h4>
+            <h4><?php esc_html_e('اقساط پرداخت‌نشده', 'puzzlingcrm'); ?></h4>
             <span class="stat-number"><?php echo esc_html( $stats['overdue_installments'] ); ?></span>
         </div>
     </div>
     <div class="pzl-dashboard-section">
-        <h3><i class="fas fa-list-ul" style="vertical-align: middle;"></i> <?php esc_html_e('All Installments List', 'puzzlingcrm'); ?></h3>
+        <h3><i class="fas fa-list-ul" style="vertical-align: middle;"></i> <?php esc_html_e('لیست تمام اقساط', 'puzzlingcrm'); ?></h3>
         <?php include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/common/payments-table.php'; ?>
     </div>
 <?php endif; ?>
