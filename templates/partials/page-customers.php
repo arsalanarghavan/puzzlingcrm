@@ -1,7 +1,7 @@
 <?php
 /**
  * Template for System Manager to Manage Customers - VISUALLY REVAMPED & UPGRADED
- * Lists all users with stats, search, and provides a comprehensive edit/add form.
+ * Lists all users with stats, live search, and provides a comprehensive edit/add form.
  * @package PuzzlingCRM
  */
 if (!defined('ABSPATH')) exit;
@@ -83,7 +83,7 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
         }
     ?>
         <div class="pzl-dashboard-stats-grid">
-            <div class="stat-widget-card gradient-1">
+             <div class="stat-widget-card gradient-1">
                 <div class="stat-widget-icon"><i class="fas fa-users"></i></div>
                 <div class="stat-widget-content">
                     <span class="stat-number"><?php echo esc_html($total_users); ?></span>
@@ -112,57 +112,35 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
                 <a href="<?php echo add_query_arg(['action' => 'add']); ?>" class="pzl-button">افزودن کاربر جدید</a>
             </div>
 
-            <form method="get" class="pzl-form" style="margin-top: 20px;">
-                <input type="hidden" name="view" value="customers">
-                <div class="pzl-form-row" style="align-items: flex-end;">
-                    <div class="form-group" style="flex-grow: 2;">
-                        <label for="user-search-input">جستجو</label>
-                        <input type="search" id="user-search-input" name="s" value="<?php echo isset($_GET['s']) ? esc_attr($_GET['s']) : ''; ?>" placeholder="جستجو بر اساس نام، موبایل، کد ملی...">
-                    </div>
-                    <div class="form-group">
-                        <button type="submit" class="pzl-button">جستجو</button>
-                    </div>
+            <div class="pzl-search-form-container">
+                <div class="form-group">
+                    <i class="fas fa-search pzl-search-icon"></i>
+                    <input type="search" id="user-live-search-input" placeholder="جستجوی زنده بر اساس نام، موبایل، کد ملی و...">
                 </div>
-            </form>
+            </div>
 
             <table class="pzl-table" style="margin-top: 20px;">
                 <thead><tr><th>نام کامل</th><th>ایمیل</th><th>نقش</th><th>تاریخ ثبت‌نام</th><th>عملیات</th></tr></thead>
-                <tbody>
+                <tbody id="pzl-users-table-body">
                     <?php
-                    $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
-                    $args = ['orderby' => 'display_name', 'order' => 'ASC'];
-                    
-                    if (!empty($search_query)) {
-                        $args['search'] = '*' . esc_attr($search_query) . '*';
-                        $args['search_columns'] = ['user_login', 'user_email', 'user_nicename', 'display_name'];
-                        $args['meta_query'] = [
-                            'relation' => 'OR',
-                            [
-                                'key' => 'pzl_mobile_phone',
-                                'value' => $search_query,
-                                'compare' => 'LIKE'
-                            ],
-                            [
-                                'key' => 'pzl_national_id', // Assuming you have this meta key from page-staff.php
-                                'value' => $search_query,
-                                'compare' => 'LIKE'
-                            ]
-                        ];
+                    $all_users = get_users(['orderby' => 'display_name', 'order' => 'ASC']);
+                    if (empty($all_users)) {
+                        echo '<tr><td colspan="5">هیچ کاربری یافت نشد.</td></tr>';
+                    } else {
+                        foreach($all_users as $user): ?>
+                            <tr>
+                                <td><?php echo get_avatar($user->ID, 32); ?> <?php echo esc_html($user->display_name); ?></td>
+                                <td><?php echo esc_html($user->user_email); ?></td>
+                                <td><?php echo !empty($user->roles) ? esc_html(wp_roles()->roles[$user->roles[0]]['name']) : '---'; ?></td>
+                                <td><?php echo date_i18n('Y/m/d', strtotime($user->user_registered)); ?></td>
+                                <td>
+                                    <a href="<?php echo add_query_arg(['action' => 'edit', 'user_id' => $user->ID]); ?>" class="pzl-button pzl-button-sm">ویرایش</a>
+                                    <button class="pzl-button pzl-button-sm send-sms-btn" data-user-id="<?php echo esc_attr($user->ID); ?>" data-user-name="<?php echo esc_attr($user->display_name); ?>"><i class="fas fa-sms"></i></button>
+                                </td>
+                            </tr>
+                        <?php endforeach; 
                     }
-                    
-                    $all_users = get_users($args);
-                    foreach($all_users as $user): ?>
-                        <tr>
-                            <td><?php echo get_avatar($user->ID, 32); ?> <?php echo esc_html($user->display_name); ?></td>
-                            <td><?php echo esc_html($user->user_email); ?></td>
-                            <td><?php echo !empty($user->roles) ? esc_html(wp_roles()->roles[$user->roles[0]]['name']) : '---'; ?></td>
-                            <td><?php echo date_i18n('Y/m/d', strtotime($user->user_registered)); ?></td>
-                            <td>
-                                <a href="<?php echo add_query_arg(['action' => 'edit', 'user_id' => $user->ID]); ?>" class="pzl-button pzl-button-sm">ویرایش</a>
-                                <button class="pzl-button pzl-button-sm send-sms-btn" data-user-id="<?php echo esc_attr($user->ID); ?>" data-user-name="<?php echo esc_attr($user->display_name); ?>"><i class="fas fa-sms"></i></button>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
+                    ?>
                 </tbody>
             </table>
         </div>

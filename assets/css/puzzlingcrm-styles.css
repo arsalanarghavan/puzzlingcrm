@@ -740,3 +740,53 @@
 .send-sms-btn i {
     color: white !important;
 }
+
+/* --- Search Form Styles --- */
+.pzl-search-form-container {
+    margin-bottom: 25px;
+}
+.pzl-search-form-container .pzl-form-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+.pzl-search-form-container .form-group {
+    flex-grow: 1;
+    margin: 0;
+    position: relative;
+}
+.pzl-search-form-container input[type="search"] {
+    padding: 14px 50px 14px 20px; /* Right padding for icon */
+    border-radius: 50px;
+    border: 1px solid var(--pzl-border-color);
+    transition: all 0.3s ease;
+    box-shadow: none;
+    height: 50px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+.pzl-search-form-container input[type="search"]:focus {
+    border-color: var(--pzl-primary-color);
+    box-shadow: 0 0 0 4px rgba(241, 67, 43, 0.1);
+    z-index: 3;
+}
+.pzl-search-form-container .pzl-search-icon {
+    position: absolute;
+    top: 50%;
+    right: 18px;
+    transform: translateY(-50%);
+    color: var(--pzl-text-light);
+    font-size: 16px;
+    z-index: 4;
+    pointer-events: none;
+}
+.pzl-search-form-container .pzl-button {
+    border-radius: 50px;
+    height: 50px;
+    padding: 0 30px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-left: -2px; /* Slight overlap */
+    z-index: 2;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}

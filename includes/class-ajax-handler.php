@@ -21,9 +21,10 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_manage_contract', [$this, 'ajax_manage_contract']);
         add_action('wp_ajax_puzzling_add_project_to_contract', [$this, 'ajax_add_project_to_contract']);
         add_action('wp_ajax_puzzling_update_my_profile', [$this, 'ajax_update_my_profile']);
-        
-        // NEW ACTION for adding services from product
         add_action('wp_ajax_puzzling_add_services_from_product', [$this, 'ajax_add_services_from_product']);
+
+        // --- Live Search Actions ---
+        add_action('wp_ajax_puzzling_search_users', [$this, 'ajax_search_users']);
 
         // --- Standard Task Actions ---
         add_action('wp_ajax_puzzling_add_task', [$this, 'add_task']);
@@ -65,8 +66,55 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_send_custom_sms', [$this, 'send_custom_sms']);
     }
 
-    // ... (All other functions from the original file remain here, unchanged)
-    
+    /**
+     * AJAX handler for live searching users in the customer management page.
+     */
+    public function ajax_search_users() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error();
+        }
+
+        $search_query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
+        $args = ['orderby' => 'display_name', 'order' => 'ASC'];
+
+        if (!empty($search_query)) {
+            $args['search'] = '*' . esc_attr($search_query) . '*';
+            $args['search_columns'] = ['user_login', 'user_email', 'user_nicename', 'display_name'];
+            $args['meta_query'] = [
+                'relation' => 'OR',
+                ['key' => 'pzl_mobile_phone', 'value' => $search_query, 'compare' => 'LIKE'],
+                ['key' => 'pzl_national_id', 'value' => $search_query, 'compare' => 'LIKE']
+            ];
+        }
+
+        $all_users = get_users($args);
+        $output_html = '';
+
+        if (empty($all_users)) {
+            $output_html = '<tr><td colspan="5">هیچ کاربری با این مشخصات یافت نشد.</td></tr>';
+        } else {
+            foreach ($all_users as $user) {
+                $edit_url = add_query_arg(['action' => 'edit', 'user_id' => $user->ID]);
+                $role_name = !empty($user->roles) ? esc_html(wp_roles()->roles[$user->roles[0]]['name']) : '---';
+                $registered_date = date_i18n('Y/m/d', strtotime($user->user_registered));
+                
+                $output_html .= '<tr>';
+                $output_html .= '<td>' . get_avatar($user->ID, 32) . ' ' . esc_html($user->display_name) . '</td>';
+                $output_html .= '<td>' . esc_html($user->user_email) . '</td>';
+                $output_html .= '<td>' . $role_name . '</td>';
+                $output_html .= '<td>' . $registered_date . '</td>';
+                $output_html .= '<td>';
+                $output_html .= '<a href="' . esc_url($edit_url) . '" class="pzl-button pzl-button-sm">ویرایش</a> ';
+                $output_html .= '<button class="pzl-button pzl-button-sm send-sms-btn" data-user-id="' . esc_attr($user->ID) . '" data-user-name="' . esc_attr($user->display_name) . '"><i class="fas fa-sms"></i></button>';
+                $output_html .= '</td>';
+                $output_html .= '</tr>';
+            }
+        }
+
+        wp_send_json_success(['html' => $output_html]);
+    }
+
     /**
      * AJAX handler for users updating their own profile.
      */

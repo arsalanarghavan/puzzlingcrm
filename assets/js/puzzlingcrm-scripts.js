@@ -3,6 +3,7 @@ jQuery(document).ready(function($) {
     var puzzling_ajax_nonce = puzzlingcrm_ajax_obj.nonce;
     var puzzling_lang = puzzlingcrm_ajax_obj.lang;
     var currentTaskId = null;
+    var searchTimer; // Timer for live search delay
 
     /**
      * SweetAlert Integration for Notifications
@@ -109,6 +110,40 @@ jQuery(document).ready(function($) {
     $('body').on('submit', 'form.pzl-ajax-form', function(e) {
         e.preventDefault();
         handleAjaxFormSubmit($(this));
+    });
+
+    // --- Live User Search ---
+    $('#user-live-search-input').on('keyup', function() {
+        var searchInput = $(this);
+        var query = searchInput.val();
+        var resultsContainer = $('#pzl-users-table-body');
+
+        clearTimeout(searchTimer); // Clear previous timer
+
+        searchTimer = setTimeout(function() {
+            $.ajax({
+                url: puzzlingcrm_ajax_obj.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'puzzling_search_users',
+                    security: puzzling_ajax_nonce,
+                    query: query
+                },
+                beforeSend: function() {
+                    resultsContainer.html('<tr><td colspan="5"><div class="pzl-loader" style="margin: 20px auto; width: 30px; height: 30px;"></div></td></tr>');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        resultsContainer.html(response.data.html);
+                    } else {
+                        resultsContainer.html('<tr><td colspan="5">خطا در جستجو.</td></tr>');
+                    }
+                },
+                error: function() {
+                    resultsContainer.html('<tr><td colspan="5">خطای سرور.</td></tr>');
+                }
+            });
+        }, 500); // Wait 500ms after user stops typing
     });
 
     // --- Intelligent Installment Calculation ---
