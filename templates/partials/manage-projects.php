@@ -10,6 +10,13 @@ if ( ! current_user_can('manage_options') ) return;
 $action = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 $project_id = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0;
 $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
+
+// Robust check to ensure default project statuses exist.
+$project_statuses = get_terms(['taxonomy' => 'project_status', 'hide_empty' => false]);
+if (empty($project_statuses)) {
+    PuzzlingCRM_CPT_Manager::create_default_terms();
+    $project_statuses = get_terms(['taxonomy' => 'project_status', 'hide_empty' => false]);
+}
 ?>
 
 <div class="pzl-projects-manager-wrapper">
@@ -35,7 +42,7 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                     <select name="contract_id" id="contract_id" required>
                         <option value="">-- انتخاب قرارداد --</option>
                         <?php
-                        $contracts = get_posts(['post_type' => 'contract', 'posts_per_page' => -1]);
+                        $contracts = get_posts(['post_type' => 'contract', 'posts_per_page' => -1, 'orderby' => 'ID', 'order' => 'DESC']);
                         $current_contract_id = $project_to_edit ? get_post_meta($project_id, '_contract_id', true) : 0;
                         foreach ($contracts as $contract) {
                             $customer = get_userdata($contract->post_author);
@@ -51,10 +58,9 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                     <label for="project_status">وضعیت پروژه:</label>
                     <select name="project_status" id="project_status" required>
                         <?php
-                        $statuses = get_terms(['taxonomy' => 'project_status', 'hide_empty' => false]);
                         $current_status = $project_to_edit ? wp_get_post_terms($project_id, 'project_status', ['fields' => 'ids']) : [];
                         $current_status_id = !empty($current_status) ? $current_status[0] : 0;
-                        foreach ($statuses as $status) {
+                        foreach ($project_statuses as $status) {
                             echo '<option value="' . esc_attr($status->term_id) . '" ' . selected($current_status_id, $status->term_id, false) . '>' . esc_html($status->name) . '</option>';
                         }
                         ?>
@@ -85,13 +91,13 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                 <a href="<?php echo add_query_arg(['action' => 'new']); ?>" class="pzl-button"><i class="fas fa-plus"></i> ایجاد پروژه جدید</a>
             </div>
             
-            <form method="get" class="pzl-form" style="margin-top: 20px;">
+            <form method="get" class="pzl-form">
                 <input type="hidden" name="view" value="projects">
-                <div class="pzl-form-row" style="align-items: flex-end;">
-                    <div class="form-group" style="flex: 2;"><label>جستجو</label><input type="text" name="s" placeholder="جستجوی عنوان پروژه..." value="<?php echo isset($_GET['s']) ? esc_attr($_GET['s']) : ''; ?>"></div>
-                    <div class="form-group"><label>مشتری</label><select name="customer_filter"><option value="">همه</option><?php $all_customers = get_users(['role__in' => ['customer', 'subscriber'], 'orderby' => 'display_name']); $current_customer = isset($_GET['customer_filter']) ? intval($_GET['customer_filter']) : 0; foreach ($all_customers as $customer) { echo '<option value="' . esc_attr($customer->ID) . '" ' . selected($current_customer, $customer->ID, false) . '>' . esc_html($customer->display_name) . '</option>'; } ?></select></div>
-                    <div class="form-group"><label>وضعیت</label><select name="status_filter"><option value="">همه</option><?php $all_statuses = get_terms(['taxonomy' => 'project_status', 'hide_empty' => false]); $current_status = isset($_GET['status_filter']) ? sanitize_key($_GET['status_filter']) : ''; foreach ($all_statuses as $status) { echo '<option value="' . esc_attr($status->slug) . '" ' . selected($current_status, $status->slug, false) . '>' . esc_html($status->name) . '</option>'; } ?></select></div>
-                    <div class="form-group"><button type="submit" class="pzl-button">فیلتر</button></div>
+                <div class="pzl-form-row" style="align-items: flex-end; gap: 10px;">
+                    <div class="form-group" style="flex: 2; margin-bottom: 0;"><input type="text" name="s" placeholder="جستجوی عنوان پروژه..." value="<?php echo isset($_GET['s']) ? esc_attr($_GET['s']) : ''; ?>"></div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;"><select name="customer_filter"><option value="">همه مشتریان</option><?php $all_customers = get_users(['role__in' => ['customer', 'subscriber'], 'orderby' => 'display_name']); $current_customer = isset($_GET['customer_filter']) ? intval($_GET['customer_filter']) : 0; foreach ($all_customers as $customer) { echo '<option value="' . esc_attr($customer->ID) . '" ' . selected($current_customer, $customer->ID, false) . '>' . esc_html($customer->display_name) . '</option>'; } ?></select></div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;"><select name="status_filter"><option value="">همه وضعیت‌ها</option><?php $current_status = isset($_GET['status_filter']) ? sanitize_key($_GET['status_filter']) : ''; foreach ($project_statuses as $status) { echo '<option value="' . esc_attr($status->slug) . '" ' . selected($current_status, $status->slug, false) . '>' . esc_html($status->name) . '</option>'; } ?></select></div>
+                    <div class="form-group" style="margin-bottom: 0;"><button type="submit" class="pzl-button">فیلتر</button></div>
                 </div>
             </form>
 
@@ -111,6 +117,8 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                         $customer = get_userdata(get_the_author_meta('ID'));
                         $edit_url = add_query_arg(['action' => 'edit', 'project_id' => $project_id]);
                         $contract_id = get_post_meta($project_id, '_contract_id', true);
+                        
+                        $contract_url = 'https://puzzlingco.ir/panel/?endp=inf_menu_3&contract_id=' . $contract_id;
                         
                         // Fetch data from contract
                         $model_val = $contract_id ? get_post_meta($contract_id, '_project_subscription_model', true) : '';
@@ -140,7 +148,7 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                         </div>
                         <div class="pzl-project-card-actions">
                             <a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-sm">ویرایش پروژه</a>
-                            <?php if ($contract_id): ?><a href="<?php echo esc_url(add_query_arg(['view' => 'contracts', 'action' => 'edit', 'contract_id' => $contract_id], $base_page_url)); ?>" class="pzl-button pzl-button-sm">مشاهده قرارداد</a><?php endif; ?>
+                            <?php if ($contract_id): ?><a href="<?php echo esc_url($contract_url); ?>" class="pzl-button pzl-button-sm" target="_blank">مشاهده قرارداد</a><?php endif; ?>
                             <button class="delete-project pzl-button pzl-button-sm" data-project-id="<?php echo esc_attr($project_id); ?>" data-nonce="<?php echo esc_attr(wp_create_nonce('puzzling_delete_project_' . $project_id)); ?>" style="background-color: #dc3545 !important;">حذف</button>
                         </div>
                     </div>
