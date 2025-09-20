@@ -14,10 +14,10 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
 
 <div class="pzl-projects-manager-wrapper">
 
-    <?php if ($action === 'edit'): // Editing a project is now simplified as most data is in contract ?>
+    <?php if ($action === 'new' || ($action === 'edit' && $project_to_edit)): ?>
         <div class="pzl-card">
             <div class="pzl-card-header">
-                <h3>ویرایش پروژه: <?php echo esc_html($project_to_edit->post_title); ?></h3>
+                <h3><i class="fas fa-edit"></i> <?php echo $project_to_edit ? 'ویرایش پروژه' : 'ایجاد پروژه جدید'; ?></h3>
                 <a href="<?php echo remove_query_arg(['action', 'project_id']); ?>" class="pzl-button">&larr; بازگشت به لیست پروژه‌ها</a>
             </div>
 
@@ -26,33 +26,54 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                 <input type="hidden" name="project_id" value="<?php echo esc_attr($project_id); ?>">
 
                 <div class="form-group">
-                    <label for="project_title">عنوان پروژه:</label>
+                    <label for="project_title">عنوان پروژه (ضروری):</label>
                     <input type="text" id="project_title" name="project_title" value="<?php echo $project_to_edit ? esc_attr($project_to_edit->post_title) : ''; ?>" required>
                 </div>
-                 <div class="form-group">
-                    <label for="project_status">وضعیت پروژه:</label>
-                        <select name="project_status" id="project_status" required>
-                            <?php
-                            $statuses = get_terms(['taxonomy' => 'project_status', 'hide_empty' => false]);
-                            $current_status = $project_to_edit ? wp_get_post_terms($project_id, 'project_status', ['fields' => 'ids']) : [];
-                            $current_status_id = !empty($current_status) ? $current_status[0] : 0;
-                            foreach ($statuses as $status) {
-                                echo '<option value="' . esc_attr($status->term_id) . '" ' . selected($current_status_id, $status->term_id, false) . '>' . esc_html($status->name) . '</option>';
-                            }
-                            ?>
-                        </select>
+                
+                <div class="form-group">
+                    <label for="contract_id">اتصال به قرارداد (ضروری):</label>
+                    <select name="contract_id" id="contract_id" required>
+                        <option value="">-- انتخاب قرارداد --</option>
+                        <?php
+                        $contracts = get_posts(['post_type' => 'contract', 'posts_per_page' => -1]);
+                        $current_contract_id = $project_to_edit ? get_post_meta($project_id, '_contract_id', true) : 0;
+                        foreach ($contracts as $contract) {
+                            $customer = get_userdata($contract->post_author);
+                            $label = sprintf('#%d - %s (%s)', $contract->ID, $contract->post_title, $customer->display_name);
+                            echo '<option value="' . esc_attr($contract->ID) . '" ' . selected($current_contract_id, $contract->ID, false) . '>' . esc_html($label) . '</option>';
+                        }
+                        ?>
+                    </select>
+                    <p class="description">پروژه اطلاعات مشتری، تاریخ‌ها و سایر جزئیات را از این قرارداد به ارث می‌برد.</p>
                 </div>
+
+                <div class="form-group">
+                    <label for="project_status">وضعیت پروژه:</label>
+                    <select name="project_status" id="project_status" required>
+                        <?php
+                        $statuses = get_terms(['taxonomy' => 'project_status', 'hide_empty' => false]);
+                        $current_status = $project_to_edit ? wp_get_post_terms($project_id, 'project_status', ['fields' => 'ids']) : [];
+                        $current_status_id = !empty($current_status) ? $current_status[0] : 0;
+                        foreach ($statuses as $status) {
+                            echo '<option value="' . esc_attr($status->term_id) . '" ' . selected($current_status_id, $status->term_id, false) . '>' . esc_html($status->name) . '</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
+
                 <div class="form-group">
                     <label for="project_content">توضیحات پروژه:</label>
-                    <?php wp_editor($project_to_edit ? $project_to_edit->post_content : '', 'project_content', ['textarea_rows' => 10]); ?>
+                    <?php wp_editor($project_to_edit ? $project_to_edit->post_content : '', 'project_content', ['textarea_rows' => 8]); ?>
                 </div>
-                 <div class="form-group">
-                    <label for="project_logo">تغییر لوگوی پروژه (تصویر شاخص):</label>
+                 
+                <div class="form-group">
+                    <label for="project_logo">لوگوی پروژه (تصویر شاخص):</label>
                     <input type="file" id="project_logo" name="project_logo" accept="image/*">
                     <?php if (has_post_thumbnail($project_id)) { echo '<div style="margin-top:10px;">' . get_the_post_thumbnail($project_id, 'thumbnail') . '</div>'; } ?>
                 </div>
+
                  <div class="form-submit">
-                    <button type="submit" class="pzl-button">ذخیره تغییرات پروژه</button>
+                    <button type="submit" class="pzl-button"><?php echo $project_to_edit ? 'ذخیره تغییرات پروژه' : 'ایجاد پروژه'; ?></button>
                 </div>
             </form>
         </div>
@@ -61,70 +82,26 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
         <div class="pzl-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
                 <h3><i class="fas fa-briefcase"></i> لیست پروژه‌ها</h3>
-                <a href="<?php echo esc_url(add_query_arg(['view' => 'contracts', 'action' => 'new'], get_permalink())); ?>" class="pzl-button"><i class="fas fa-file-signature"></i> ایجاد قرارداد جدید</a>
+                <a href="<?php echo add_query_arg(['action' => 'new']); ?>" class="pzl-button"><i class="fas fa-plus"></i> ایجاد پروژه جدید</a>
             </div>
-            <p class="description">برای ایجاد یک پروژه جدید، ابتدا باید یک قرارداد برای آن ثبت کنید. تمام پروژه‌ها باید تحت یک قرارداد تعریف شوند.</p>
             
             <form method="get" class="pzl-form" style="margin-top: 20px;">
                 <input type="hidden" name="view" value="projects">
                 <div class="pzl-form-row" style="align-items: flex-end;">
-                    <div class="form-group" style="flex: 2;">
-                        <label>جستجو</label>
-                        <input type="text" name="s" placeholder="جستجوی عنوان پروژه..." value="<?php echo isset($_GET['s']) ? esc_attr($_GET['s']) : ''; ?>">
-                    </div>
-                    <div class="form-group">
-                        <label>مشتری</label>
-                        <select name="customer_filter">
-                            <option value="">همه مشتریان</option>
-                            <?php
-                            $all_customers = get_users(['role__in' => ['customer', 'subscriber'], 'orderby' => 'display_name']);
-                            $current_customer = isset($_GET['customer_filter']) ? intval($_GET['customer_filter']) : 0;
-                            foreach ($all_customers as $customer) {
-                                echo '<option value="' . esc_attr($customer->ID) . '" ' . selected($current_customer, $customer->ID, false) . '>' . esc_html($customer->display_name) . '</option>';
-                            }
-                            ?>
-                        </select>
-                    </div>
-                     <div class="form-group">
-                        <label>وضعیت پروژه</label>
-                        <select name="status_filter">
-                            <option value="">همه وضعیت‌ها</option>
-                             <?php
-                            $all_statuses = get_terms(['taxonomy' => 'project_status', 'hide_empty' => false]);
-                            $current_status = isset($_GET['status_filter']) ? sanitize_key($_GET['status_filter']) : '';
-                            foreach ($all_statuses as $status) {
-                                echo '<option value="' . esc_attr($status->slug) . '" ' . selected($current_status, $status->slug, false) . '>' . esc_html($status->name) . '</option>';
-                            }
-                            ?>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <button type="submit" class="pzl-button">فیلتر</button>
-                    </div>
+                    <div class="form-group" style="flex: 2;"><label>جستجو</label><input type="text" name="s" placeholder="جستجوی عنوان پروژه..." value="<?php echo isset($_GET['s']) ? esc_attr($_GET['s']) : ''; ?>"></div>
+                    <div class="form-group"><label>مشتری</label><select name="customer_filter"><option value="">همه</option><?php $all_customers = get_users(['role__in' => ['customer', 'subscriber'], 'orderby' => 'display_name']); $current_customer = isset($_GET['customer_filter']) ? intval($_GET['customer_filter']) : 0; foreach ($all_customers as $customer) { echo '<option value="' . esc_attr($customer->ID) . '" ' . selected($current_customer, $customer->ID, false) . '>' . esc_html($customer->display_name) . '</option>'; } ?></select></div>
+                    <div class="form-group"><label>وضعیت</label><select name="status_filter"><option value="">همه</option><?php $all_statuses = get_terms(['taxonomy' => 'project_status', 'hide_empty' => false]); $current_status = isset($_GET['status_filter']) ? sanitize_key($_GET['status_filter']) : ''; foreach ($all_statuses as $status) { echo '<option value="' . esc_attr($status->slug) . '" ' . selected($current_status, $status->slug, false) . '>' . esc_html($status->name) . '</option>'; } ?></select></div>
+                    <div class="form-group"><button type="submit" class="pzl-button">فیلتر</button></div>
                 </div>
             </form>
 
             <?php
-            // Save the current page's URL before starting the custom loop
             $base_page_url = get_permalink();
-
             $paged = get_query_var('paged') ? get_query_var('paged') : 1;
-            $args = [
-                'post_type' => 'project',
-                'posts_per_page' => 12, // تعداد آیتم‌ها برای نمایش کارتی
-                'paged' => $paged,
-            ];
-            if (!empty($_GET['s'])) {
-                $args['s'] = sanitize_text_field($_GET['s']);
-            }
-            if (!empty($_GET['customer_filter'])) {
-                $args['author'] = intval($_GET['customer_filter']);
-            }
-            if (!empty($_GET['status_filter'])) {
-                 $args['tax_query'] = [
-                    ['taxonomy' => 'project_status', 'field' => 'slug', 'terms' => sanitize_key($_GET['status_filter'])]
-                ];
-            }
+            $args = ['post_type' => 'project', 'posts_per_page' => 12, 'paged' => $paged];
+            if (!empty($_GET['s'])) $args['s'] = sanitize_text_field($_GET['s']);
+            if (!empty($_GET['customer_filter'])) $args['author'] = intval($_GET['customer_filter']);
+            if (!empty($_GET['status_filter'])) $args['tax_query'] = [['taxonomy' => 'project_status', 'field' => 'slug', 'terms' => sanitize_key($_GET['status_filter'])]];
             $projects_query = new WP_Query($args);
 
             if ($projects_query->have_posts()): ?>
@@ -135,59 +112,52 @@ $project_to_edit = ($project_id > 0) ? get_post($project_id) : null;
                         $edit_url = add_query_arg(['action' => 'edit', 'project_id' => $project_id]);
                         $contract_id = get_post_meta($project_id, '_contract_id', true);
                         
+                        // Fetch data from contract
+                        $model_val = $contract_id ? get_post_meta($contract_id, '_project_subscription_model', true) : '';
+                        $model_map = ['onetime' => 'یکبار پرداخت', 'subscription' => 'اشتراکی'];
+                        $model_text = $model_map[$model_val] ?? '---';
+
+                        $duration_val = $contract_id ? get_post_meta($contract_id, '_project_contract_duration', true) : '';
+                        $duration_map = ['1-month' => 'یک ماهه', '3-months' => 'سه ماهه', '6-months' => 'شش ماهه', '12-months' => 'یک ساله'];
+                        $duration_text = $duration_map[$duration_val] ?? '---';
+                        
+                        $end_date = $contract_id ? get_post_meta($contract_id, '_project_end_date', true) : '';
+
                         $status_terms = get_the_terms($project_id, 'project_status');
                         $status_name = !empty($status_terms) ? esc_html($status_terms[0]->name) : '---';
                         $status_slug = !empty($status_terms) ? esc_attr($status_terms[0]->slug) : 'default';
-                        
-                        $end_date = $contract_id ? get_post_meta($contract_id, '_project_end_date', true) : '';
                     ?>
                     <div class="pzl-project-card-item">
                         <div class="pzl-project-card-header-flex">
-                            <div class="pzl-project-card-logo">
-                                <?php if (has_post_thumbnail()) : ?>
-                                    <?php the_post_thumbnail('thumbnail'); ?>
-                                <?php else: ?>
-                                    <div class="pzl-logo-placeholder"><?php echo esc_html(mb_substr(get_the_title(), 0, 1)); ?></div>
-                                <?php endif; ?>
-                            </div>
-                            <div class="pzl-project-card-title-group">
-                                <h4 class="pzl-project-card-title"><?php the_title(); ?></h4>
-                                <span class="pzl-project-card-customer"><?php echo esc_html($customer->display_name); ?></span>
-                            </div>
+                            <div class="pzl-project-card-logo"><?php if (has_post_thumbnail()) { the_post_thumbnail('thumbnail'); } else { echo '<div class="pzl-logo-placeholder">' . esc_html(mb_substr(get_the_title(), 0, 1)) . '</div>'; } ?></div>
+                            <div class="pzl-project-card-title-group"><h4 class="pzl-project-card-title"><?php the_title(); ?></h4><span class="pzl-project-card-customer"><?php echo esc_html($customer->display_name); ?></span></div>
                         </div>
-
-                        <div class="pzl-project-card-meta">
-                             <span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span>
-                            <?php if ($end_date): ?>
-                            <span class="pzl-project-card-date">پایان قرارداد: <?php echo esc_html(date_i18n('Y/m/d', strtotime($end_date))); ?></span>
-                            <?php endif; ?>
+                        <div class="pzl-project-card-details-grid">
+                            <div><i class="fas fa-toggle-on"></i> وضعیت: <span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span></div>
+                            <div><i class="fas fa-sync-alt"></i> مدل: <strong><?php echo esc_html($model_text); ?></strong></div>
+                            <div><i class="fas fa-calendar-alt"></i> مدت: <strong><?php echo esc_html($duration_text); ?></strong></div>
+                            <div><i class="fas fa-hourglass-end"></i> پایان: <strong><?php echo $end_date ? esc_html(date_i18n('Y/m/d', strtotime($end_date))) : '---'; ?></strong></div>
                         </div>
                         <div class="pzl-project-card-actions">
                             <a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-sm">ویرایش پروژه</a>
-                             <?php if ($contract_id): ?>
-                                <a href="<?php echo esc_url(add_query_arg(['view' => 'contracts', 'action' => 'edit', 'contract_id' => $contract_id], $base_page_url)); ?>" class="pzl-button pzl-button-sm">مشاهده قرارداد</a>
-                            <?php endif; ?>
+                            <?php if ($contract_id): ?><a href="<?php echo esc_url(add_query_arg(['view' => 'contracts', 'action' => 'edit', 'contract_id' => $contract_id], $base_page_url)); ?>" class="pzl-button pzl-button-sm">مشاهده قرارداد</a><?php endif; ?>
+                            <button class="delete-project pzl-button pzl-button-sm" data-project-id="<?php echo esc_attr($project_id); ?>" data-nonce="<?php echo esc_attr(wp_create_nonce('puzzling_delete_project_' . $project_id)); ?>" style="background-color: #dc3545 !important;">حذف</button>
                         </div>
                     </div>
                     <?php endwhile; ?>
                 </div>
-                <div class="pagination">
-                    <?php
-                    echo paginate_links([
-                        'total' => $projects_query->max_num_pages,
-                        'current' => $paged,
-                        'format' => '?paged=%#%',
-                    ]);
-                    ?>
-                </div>
+                <div class="pagination"><?php echo paginate_links(['total' => $projects_query->max_num_pages, 'current' => $paged, 'format' => '?paged=%#%']); ?></div>
                 <?php wp_reset_postdata(); ?>
             <?php else: ?>
-                 <div class="pzl-empty-state">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <h4>پروژه‌ای یافت نشد</h4>
-                    <p>هیچ پروژه‌ای با این مشخصات یافت نشد. برای شروع، یک قرارداد جدید ایجاد کنید.</p>
-                </div>
+                 <div class="pzl-empty-state"><i class="fas fa-exclamation-circle"></i><h4>پروژه‌ای یافت نشد</h4><p>هیچ پروژه‌ای با این مشخصات یافت نشد. می‌توانید یک پروژه جدید ایجاد کنید.</p></div>
             <?php endif; ?>
         </div>
     <?php endif; ?>
 </div>
+
+<style>
+/* Add these styles to your main CSS file (puzzlingcrm-styles.css) */
+.pzl-project-card-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: #333; margin: 15px 0; flex-grow: 1; align-content: start; }
+.pzl-project-card-details-grid div { display: flex; align-items: center; gap: 6px; }
+.pzl-project-card-details-grid .fas { color: var(--pzl-primary-color); }
+</style>

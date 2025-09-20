@@ -19,7 +19,7 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_manage_user', [$this, 'ajax_manage_user']);
         add_action('wp_ajax_puzzling_manage_project', [$this, 'ajax_manage_project']);
         add_action('wp_ajax_puzzling_manage_contract', [$this, 'ajax_manage_contract']);
-        add_action('wp_ajax_puzzling_add_project_to_contract', [$this, 'ajax_add_project_to_contract']); // NEW
+        add_action('wp_ajax_puzzling_add_project_to_contract', [$this, 'ajax_add_project_to_contract']);
         add_action('wp_ajax_puzzling_update_my_profile', [$this, 'ajax_update_my_profile']);
 
         // --- Standard Task Actions ---
@@ -113,7 +113,6 @@ class PuzzlingCRM_Ajax_Handler {
     
     /**
      * Universal AJAX handler for creating and updating users (staff and customers).
-     * **MODIFIED**: Changed permission check to 'manage_options' for consistency.
      */
     public function ajax_manage_user() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
@@ -161,11 +160,9 @@ class PuzzlingCRM_Ajax_Handler {
         } else {
             $the_user_id = is_int($result) ? $result : $user_id;
 
-            // Save all custom meta fields starting with 'pzl_'
-            foreach ($_POST as $key => $value) {
-                if (strpos($key, 'pzl_') === 0) {
-                    update_user_meta($the_user_id, $key, sanitize_text_field($value));
-                }
+            // Save custom meta fields
+            if (isset($_POST['pzl_mobile_phone'])) {
+                update_user_meta($the_user_id, 'pzl_mobile_phone', sanitize_text_field($_POST['pzl_mobile_phone']));
             }
             
             // Set organizational position term
@@ -195,77 +192,90 @@ class PuzzlingCRM_Ajax_Handler {
         }
 
         $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
-        if (!$project_id) {
-             wp_send_json_error(['message' => 'شناسه پروژه نامعتبر است.']);
-        }
-
+        $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
         $project_title = sanitize_text_field($_POST['project_title']);
         $project_content = wp_kses_post($_POST['project_content']);
         $project_status_id = intval($_POST['project_status']);
-       
-        if(empty($project_title)) {
-            wp_send_json_error(['message' => 'عنوان پروژه الزامی است.']);
+
+        if (empty($project_title) || empty($contract_id)) {
+            wp_send_json_error(['message' => 'عنوان پروژه و انتخاب قرارداد الزامی است.']);
         }
+
+        $contract = get_post($contract_id);
+        if (!$contract) {
+            wp_send_json_error(['message' => 'قرارداد انتخاب شده معتبر نیست.']);
+        }
+        $customer_id = $contract->post_author;
 
         $post_data = [
-            'ID' => $project_id,
             'post_title' => $project_title,
             'post_content' => $project_content,
+            'post_author' => $customer_id,
+            'post_status' => 'publish',
+            'post_type' => 'project',
         ];
 
-        $result = wp_update_post($post_data, true);
-        
-        if (is_wp_error($result)) {
-            wp_send_json_error(['message' => 'خطا در به‌روزرسانی پروژه.']);
-        }
-        
-        wp_set_object_terms($project_id, $project_status_id, 'project_status');
-        
-        if (isset($_FILES['project_logo']) && $_FILES['project_logo']['error'] == 0) {
-            $attachment_id = media_handle_upload('project_logo', $project_id);
-            if (!is_wp_error($attachment_id)) {
-                set_post_thumbnail($project_id, $attachment_id);
-            }
+        if ($project_id > 0) { // Update existing project
+            $post_data['ID'] = $project_id;
+            $result = wp_update_post($post_data, true);
+            $message = 'پروژه با موفقیت به‌روزرسانی شد.';
+        } else { // Create new project
+            $result = wp_insert_post($post_data, true);
+            $message = 'پروژه جدید با موفقیت ایجاد شد.';
         }
 
-        wp_send_json_success(['message' => 'پروژه با موفقیت به‌روزرسانی شد.', 'reload' => true]);
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => 'خطا در پردازش پروژه.']);
+        }
+
+        $the_project_id = is_int($result) ? $result : $project_id;
+        
+        // Link to contract
+        update_post_meta($the_project_id, '_contract_id', $contract_id);
+        
+        // Set status
+        wp_set_object_terms($the_project_id, $project_status_id, 'project_status');
+        
+        // Handle logo
+        if (isset($_FILES['project_logo']) && $_FILES['project_logo']['error'] == 0) {
+            $attachment_id = media_handle_upload('project_logo', $the_project_id);
+            if (!is_wp_error($attachment_id)) {
+                set_post_thumbnail($the_project_id, $attachment_id);
+            }
+        }
+        
+        wp_send_json_success(['message' => $message, 'reload' => true]);
     }
     
     /**
-     * AJAX handler for creating and updating contracts.
+     * AJAX handler for creating and updating contracts (without projects).
      */
-     public function ajax_manage_contract() {
+    public function ajax_manage_contract() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
         }
 
-        // --- Sanitize Core Data ---
         $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
         $customer_id = intval($_POST['customer_id']);
-        $project_title = sanitize_text_field($_POST['project_title']);
-        
-        if (empty($customer_id) || empty($project_title)) {
-            wp_send_json_error(['message' => 'انتخاب مشتری و وارد کردن عنوان پروژه الزامی است.']);
-        }
 
-        // --- Prepare Project Data ---
-        $project_data = [
-            'post_title' => $project_title,
-            'post_author' => $customer_id,
-            'post_status' => 'publish',
-            'post_type' => 'project',
-        ];
+        if (empty($customer_id)) {
+            wp_send_json_error(['message' => 'انتخاب مشتری الزامی است.']);
+        }
         
-        // --- Prepare Contract Data ---
-        $contract_title = 'قرارداد پروژه: ' . $project_title;
+        // Use a generic title, can be updated later by user
+        $contract_title = sprintf('قرارداد با %s', get_the_author_meta('display_name', $customer_id));
+        if (isset($_POST['_project_contract_person']) && !empty($_POST['_project_contract_person'])) {
+            $contract_title = sprintf('قرارداد %s', sanitize_text_field($_POST['_project_contract_person']));
+        }
+        
         $contract_data = [
             'post_title' => $contract_title,
             'post_author' => $customer_id,
             'post_status' => 'publish',
             'post_type' => 'contract',
         ];
-        
+
         $contract_meta = [
             '_project_contract_person' => sanitize_text_field($_POST['_project_contract_person']),
             '_project_subscription_model' => sanitize_key($_POST['_project_subscription_model']),
@@ -274,82 +284,36 @@ class PuzzlingCRM_Ajax_Handler {
             '_project_end_date' => sanitize_text_field($_POST['_project_end_date']),
         ];
 
-        // --- Handle Installments ---
+        // Installments
         $payment_amounts = isset($_POST['payment_amount']) ? (array) $_POST['payment_amount'] : [];
         $payment_due_dates = isset($_POST['payment_due_date']) ? (array) $_POST['payment_due_date'] : [];
         $payment_statuses = isset($_POST['payment_status']) ? (array) $_POST['payment_status'] : [];
         $installments = [];
         for ($i = 0; $i < count($payment_amounts); $i++) {
             if (!empty($payment_amounts[$i]) && !empty($payment_due_dates[$i])) {
-                $installments[] = [
-                    'amount' => sanitize_text_field(str_replace(',', '', $payment_amounts[$i])), 
-                    'due_date' => sanitize_text_field($payment_due_dates[$i]),
-                    'status' => sanitize_key($payment_statuses[$i] ?? 'pending'),
-                ];
+                $installments[] = ['amount' => sanitize_text_field(str_replace(',', '', $payment_amounts[$i])), 'due_date' => sanitize_text_field($payment_due_dates[$i]), 'status' => sanitize_key($payment_statuses[$i] ?? 'pending'),];
             }
         }
 
-        // --- Logic: Update or Create ---
-        if ($contract_id > 0) { // --- UPDATE EXISTING ---
-            $the_contract_id = $contract_id;
-            $project_id = get_post_meta($the_contract_id, '_project_id', true);
+        if ($contract_id > 0) {
+            $contract_data['ID'] = $contract_id;
+            $result = wp_update_post($contract_data, true);
+            $message = 'قرارداد با موفقیت به‌روزرسانی شد.';
+        } else {
+            $result = wp_insert_post($contract_data, true);
+            $message = 'قرارداد جدید با موفقیت ایجاد شد.';
+        }
 
-            // Update Project
-            if ($project_id) {
-                $project_data['ID'] = $project_id;
-                wp_update_post($project_data);
-            }
-            
-            // Update Contract
-            $contract_data['ID'] = $the_contract_id;
-            wp_update_post($contract_data);
-
-            $message = 'قرارداد و پروژه با موفقیت به‌روزرسانی شدند.';
-
-        } else { // --- CREATE NEW ---
-            // 1. Create Project
-            $project_id = wp_insert_post($project_data, true);
-            if (is_wp_error($project_id)) {
-                wp_send_json_error(['message' => 'خطا در ایجاد پروژه.']);
-            }
-            // Set a default status for new projects
-             $active_status = get_term_by('slug', 'active', 'project_status');
-            if ($active_status) {
-                wp_set_object_terms($project_id, $active_status->term_id, 'project_status');
-            }
-
-
-            // 2. Create Contract
-            $the_contract_id = wp_insert_post($contract_data, true);
-             if (is_wp_error($the_contract_id)) {
-                wp_delete_post($project_id, true); // Clean up orphaned project
-                wp_send_json_error(['message' => 'خطا در ایجاد قرارداد.']);
-            }
-
-            // 3. Link them
-            update_post_meta($the_contract_id, '_project_id', $project_id);
-            update_post_meta($project_id, '_contract_id', $the_contract_id);
-            
-            $message = 'قرارداد و پروژه جدید با موفقیت ایجاد شدند.';
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => 'خطا در پردازش قرارداد.']);
         }
         
-        // --- Save Common Data for both Create and Update ---
+        $the_contract_id = is_int($result) ? $result : $contract_id;
         
-        // Save contract meta
         foreach ($contract_meta as $key => $value) {
             update_post_meta($the_contract_id, $key, $value);
         }
-        
-        // Save installments
         update_post_meta($the_contract_id, '_installments', $installments);
-        
-        // Handle Project Logo Upload
-        if (isset($_FILES['project_logo']) && $_FILES['project_logo']['error'] == 0) {
-            $attachment_id = media_handle_upload('project_logo', $project_id);
-            if (!is_wp_error($attachment_id)) {
-                set_post_thumbnail($project_id, $attachment_id);
-            }
-        }
         
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
@@ -399,11 +363,8 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => 'پروژه جدید با موفقیت به قرارداد اضافه شد.', 'reload' => true]);
     }
 
-
     /**
      * Logs an activity to a task's metadata.
-     * @param int $task_id The ID of the task.
-     * @param string $activity_text The description of the activity.
      */
     private function _log_task_activity($task_id, $activity_text) {
         $activity_log = get_post_meta($task_id, '_task_activity_log', true);
@@ -422,11 +383,7 @@ class PuzzlingCRM_Ajax_Handler {
     }
 
     private function notify_all_admins($title, $args) {
-        $admins = get_users([
-            'role__in' => ['administrator', 'system_manager'],
-            'fields' => 'ID',
-        ]);
-
+        $admins = get_users(['role__in' => ['administrator', 'system_manager'], 'fields' => 'ID']);
         foreach ($admins as $admin_id) {
             $notification_args = array_merge($args, ['user_id' => $admin_id]);
             PuzzlingCRM_Logger::add($title, $notification_args);
@@ -464,14 +421,7 @@ class PuzzlingCRM_Ajax_Handler {
                         }
                         break;
                     case 'add_comment':
-                        wp_insert_comment([
-                            'comment_post_ID' => $task_id,
-                            'comment_content' => $rule_value,
-                            'user_id' => 0,
-                            'comment_author' => 'سیستم اتوماسیون',
-                            'comment_author_email' => 'system@puzzling.com',
-                            'comment_approved' => 1,
-                        ]);
+                        wp_insert_comment(['comment_post_ID' => $task_id, 'comment_content' => $rule_value, 'user_id' => 0, 'comment_author' => 'سیستم اتوماسیون', 'comment_author_email' => 'system@puzzling.com', 'comment_approved' => 1]);
                         $this->_log_task_activity($task_id, 'یک کامنت خودکار توسط سیستم ثبت شد.');
                         break;
                 }
@@ -481,8 +431,7 @@ class PuzzlingCRM_Ajax_Handler {
 
     public function add_task() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-
-        if ( ! current_user_can('edit_tasks') || ! isset($_POST['title']) ) {
+        if (!current_user_can('edit_tasks') || !isset($_POST['title'])) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
         }
 
@@ -497,21 +446,12 @@ class PuzzlingCRM_Ajax_Handler {
         $task_labels = isset($_POST['task_labels']) ? sanitize_text_field($_POST['task_labels']) : '';
         $story_points = isset($_POST['story_points']) ? sanitize_text_field($_POST['story_points']) : '';
 
-
         if (empty($project_id)) {
             wp_send_json_error(['message' => 'لطفاً یک پروژه را برای تسک انتخاب کنید.']);
         }
 
-        $task_id = wp_insert_post([
-            'post_title' => $title, 
-            'post_content' => $content,
-            'post_type' => 'task', 
-            'post_status' => 'publish', 
-            'post_author' => get_current_user_id(),
-            'post_parent' => $parent_id,
-        ]);
-
-        if ( is_wp_error($task_id) ) {
+        $task_id = wp_insert_post(['post_title' => $title, 'post_content' => $content, 'post_type' => 'task', 'post_status' => 'publish', 'post_author' => get_current_user_id(), 'post_parent' => $parent_id]);
+        if (is_wp_error($task_id)) {
             wp_send_json_error(['message' => 'خطا در ایجاد تسک.']);
         }
         
@@ -532,17 +472,16 @@ class PuzzlingCRM_Ajax_Handler {
         
         $this->_log_task_activity($task_id, 'وظیفه را ایجاد کرد.');
 
-        if ( isset($_FILES['task_cover_image']) && $_FILES['task_cover_image']['error'] == 0 ) {
+        if (isset($_FILES['task_cover_image']) && $_FILES['task_cover_image']['error'] == 0) {
             $attachment_id = media_handle_upload('task_cover_image', $task_id);
             if (!is_wp_error($attachment_id)) {
                 set_post_thumbnail($task_id, $attachment_id);
             }
         }
 
-        if ( ! empty($_FILES['task_attachments']) ) {
+        if (!empty($_FILES['task_attachments'])) {
             $files = $_FILES['task_attachments'];
             $attachment_ids = [];
-
             foreach ($files['name'] as $key => $value) {
                 if ($files['name'][$key]) {
                     $file = ['name' => $files['name'][$key], 'type' => $files['type'][$key], 'tmp_name' => $files['tmp_name'][$key], 'error' => $files['error'][$key], 'size' => $files['size'][$key]];
@@ -563,7 +502,6 @@ class PuzzlingCRM_Ajax_Handler {
         $this->send_task_assignment_email($assigned_to, $task_id);
         
         $project_title = get_the_title($project_id);
-        
         PuzzlingCRM_Logger::add('تسک جدید به شما محول شد', ['content' => "تسک '{$title}' در پروژه '{$project_title}' به شما تخصیص داده شد.", 'type' => 'notification', 'user_id' => $assigned_to, 'object_id' => $task_id]);
 
         wp_send_json_success(['message' => 'تسک با موفقیت اضافه شد.', 'reload' => true]);
@@ -571,8 +509,7 @@ class PuzzlingCRM_Ajax_Handler {
 
     public function quick_add_task() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-
-        if ( ! current_user_can('edit_tasks') || ! isset($_POST['title']) ) {
+        if (!current_user_can('edit_tasks') || !isset($_POST['title'])) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
         }
 
@@ -586,8 +523,7 @@ class PuzzlingCRM_Ajax_Handler {
         }
 
         $task_id = wp_insert_post(['post_title' => $title, 'post_type' => 'task', 'post_status' => 'publish', 'post_author' => get_current_user_id()]);
-
-        if ( is_wp_error($task_id) ) {
+        if (is_wp_error($task_id)) {
             wp_send_json_error(['message' => 'خطا در ایجاد تسک.']);
         }
 
@@ -620,7 +556,7 @@ class PuzzlingCRM_Ajax_Handler {
         
         $to = $user->user_email;
         $subject = 'یک تسک جدید به شما تخصیص داده شد: ' . $task->post_title;
-        $body  = '<p>سلام ' . esc_html($user->display_name) . '،</p>';
+        $body = '<p>سلام ' . esc_html($user->display_name) . '،</p>';
         $body .= '<p>یک تسک جدید در پروژه <strong>' . esc_html($project_title) . '</strong> به شما محول شده است:</p>';
         $body .= '<ul><li><strong>عنوان تسک:</strong> ' . esc_html($task->post_title) . '</li></ul>';
         $body .= '<p>برای مشاهده جزئیات به داشبورد مراجعه کنید:</p>';
@@ -631,8 +567,7 @@ class PuzzlingCRM_Ajax_Handler {
     
     public function update_task_status() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-
-        if ( ! current_user_can('edit_tasks') || ! isset($_POST['task_id']) || !isset($_POST['new_status_slug']) ) {
+        if (!current_user_can('edit_tasks') || !isset($_POST['task_id']) || !isset($_POST['new_status_slug'])) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
         }
 
@@ -664,21 +599,18 @@ class PuzzlingCRM_Ajax_Handler {
 
     public function delete_task() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-
-        if ( ! current_user_can('delete_tasks') || ! isset($_POST['task_id']) ) {
+        if (!current_user_can('delete_tasks') || !isset($_POST['task_id'])) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
         }
 
         $task_id = intval($_POST['task_id']);
         $task = get_post($task_id);
-
-        if ( !$task || ( !current_user_can('manage_options') && $task->post_author != get_current_user_id() ) ) {
+        if (!$task || (!current_user_can('manage_options') && $task->post_author != get_current_user_id())) {
             wp_send_json_error(['message' => 'شما اجازه حذف این تسک را ندارید.']);
         }
 
         $result = wp_delete_post($task_id, true);
-
-        if ( $result ) {
+        if ($result) {
             PuzzlingCRM_Logger::add('تسک حذف شد', ['content' => "تسک '{$task->post_title}' توسط " . wp_get_current_user()->display_name . " حذف شد.", 'type' => 'log', 'object_id' => $task_id]);
             wp_send_json_success(['message' => 'تسک با موفقیت حذف شد.']);
         } else {
@@ -694,7 +626,6 @@ class PuzzlingCRM_Ajax_Handler {
 
         $task_id = intval($_POST['task_id']);
         $task = get_post($task_id);
-
         if (!$task) {
             wp_send_json_error(['message' => 'وظیفه یافت نشد.']);
         }
@@ -735,12 +666,7 @@ class PuzzlingCRM_Ajax_Handler {
         $comment_text = wp_kses_post($_POST['comment_text']);
         $user = wp_get_current_user();
         
-        $comment_id = wp_insert_comment([
-            'comment_post_ID' => $task_id, 'comment_author' => $user->display_name,
-            'comment_author_email' => $user->user_email, 'comment_content' => $comment_text,
-            'user_id' => $user->ID, 'comment_approved' => 1,
-        ]);
-
+        $comment_id = wp_insert_comment(['comment_post_ID' => $task_id, 'comment_author' => $user->display_name, 'comment_author_email' => $user->user_email, 'comment_content' => $comment_text, 'user_id' => $user->ID, 'comment_approved' => 1]);
         if ($comment_id) {
             $this->_log_task_activity($task_id, sprintf('یک نظر جدید ثبت کرد: "%s"', esc_html(wp_trim_words($comment_text, 10))));
             
@@ -909,15 +835,21 @@ class PuzzlingCRM_Ajax_Handler {
     
     public function delete_project() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-        if ( ! current_user_can('delete_posts') || ! isset($_POST['project_id']) || !isset($_POST['_wpnonce']) ) wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        if (!current_user_can('delete_posts') || !isset($_POST['project_id']) || !isset($_POST['nonce'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
         
         $project_id = intval($_POST['project_id']);
-        if ( ! wp_verify_nonce( $_POST['_wpnonce'], 'puzzling_delete_project_' . $project_id ) ) wp_send_json_error(['message' => 'خطای امنیتی.']);
+        if (!wp_verify_nonce($_POST['nonce'], 'puzzling_delete_project_' . $project_id)) {
+            wp_send_json_error(['message' => 'خطای امنیتی.']);
+        }
         
         $project = get_post($project_id);
-        if ( !$project || $project->post_type !== 'project' ) wp_send_json_error(['message' => 'پروژه یافت نشد.']);
+        if (!$project || $project->post_type !== 'project') {
+            wp_send_json_error(['message' => 'پروژه یافت نشد.']);
+        }
         
-        if ( wp_delete_post($project_id, true) ) {
+        if (wp_delete_post($project_id, true)) {
             PuzzlingCRM_Logger::add('پروژه حذف شد', ['content' => "پروژه '{$project->post_title}' توسط " . wp_get_current_user()->display_name . " حذف شد.", 'type' => 'log']);
             wp_send_json_success(['message' => 'پروژه با موفقیت حذف شد.']);
         } else {
@@ -1017,8 +949,7 @@ class PuzzlingCRM_Ajax_Handler {
 
     public function bulk_edit_tasks() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-
-        if ( ! current_user_can('edit_tasks') || ! isset($_POST['task_ids']) || ! is_array($_POST['task_ids']) ) {
+        if (!current_user_can('edit_tasks') || !isset($_POST['task_ids']) || !is_array($_POST['task_ids'])) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
         }
 
@@ -1036,7 +967,7 @@ class PuzzlingCRM_Ajax_Handler {
     
     public function save_task_as_template() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-        if ( ! current_user_can('edit_tasks') || ! isset($_POST['task_id']) || !isset($_POST['template_name']) ) {
+        if (!current_user_can('edit_tasks') || !isset($_POST['task_id']) || !isset($_POST['template_name'])) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
         }
 
@@ -1047,7 +978,6 @@ class PuzzlingCRM_Ajax_Handler {
         if (!$source_task) wp_send_json_error(['message' => 'وظیفه منبع یافت نشد.']);
 
         $template_id = wp_insert_post(['post_title' => $template_name, 'post_content' => $source_task->post_content, 'post_type' => 'pzl_task_template', 'post_status' => 'publish']);
-
         if (is_wp_error($template_id)) wp_send_json_error(['message' => 'خطا در ایجاد قالب.']);
         
         $priority = wp_get_post_terms($task_id, 'task_priority');
@@ -1061,8 +991,7 @@ class PuzzlingCRM_Ajax_Handler {
 
     public function send_custom_sms() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-
-        if ( ! current_user_can('manage_options') || ! isset($_POST['user_id']) || ! isset($_POST['message']) ) {
+        if (!current_user_can('manage_options') || !isset($_POST['user_id']) || !isset($_POST['message'])) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
         }
 
@@ -1074,7 +1003,6 @@ class PuzzlingCRM_Ajax_Handler {
             if (empty($user_phone)) {
                 wp_send_json_error(['message' => 'شماره موبایل برای این کاربر ثبت نشده است.']);
             }
-
             if (empty($message)) {
                 wp_send_json_error(['message' => 'متن پیام نمی‌تواند خالی باشد.']);
             }
@@ -1089,10 +1017,7 @@ class PuzzlingCRM_Ajax_Handler {
             $success = $sms_handler->send_sms($user_phone, $message);
 
             if ($success) {
-                PuzzlingCRM_Logger::add('ارسال پیامک دستی', [
-                    'content' => "یک پیامک دستی به کاربر با شناسه {$user_id} ارسال شد.",
-                    'type' => 'log'
-                ]);
+                PuzzlingCRM_Logger::add('ارسال پیامک دستی', ['content' => "یک پیامک دستی به کاربر با شناسه {$user_id} ارسال شد.", 'type' => 'log']);
                 wp_send_json_success(['message' => 'پیامک با موفقیت ارسال شد.']);
             } else {
                 wp_send_json_error(['message' => 'خطا در ارسال پیامک. لطفاً تنظیمات سرویس پیامک و لاگ‌های سرور را بررسی کنید.']);
