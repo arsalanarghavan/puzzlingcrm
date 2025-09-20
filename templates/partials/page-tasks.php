@@ -1,6 +1,6 @@
 <?php
 /**
- * Main Task Management Page Template - V3.3 (AJAX Form Fix)
+ * Main Task Management Page Template - V3.4 (Board View & Filter Fix)
  * This template includes multiple views and auto-filters for team members.
  * @package PuzzlingCRM
  */
@@ -25,6 +25,7 @@ $all_staff = get_users(['role__in' => $staff_roles, 'orderby' => 'display_name']
 $all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC']);
 $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
 $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
+$labels = get_terms(['taxonomy' => 'task_label', 'hide_empty' => true]);
 
 ?>
 <div class="pzl-dashboard-section" id="pzl-task-manager-page">
@@ -188,9 +189,11 @@ $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
             // Query for tasks list
             $paged = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
             $args = ['post_type' => 'task', 'posts_per_page' => 20, 'paged' => $paged, 'meta_query' => ['relation' => 'AND'], 'tax_query' => ['relation' => 'AND']];
-            if (!empty($_GET['project_id'])) $args['meta_query'][] = ['key' => '_project_id', 'value' => intval($_GET['project_id'])];
+            if ($project_filter > 0) $args['meta_query'][] = ['key' => '_project_id', 'value' => $project_filter];
             if ($staff_filter > 0) $args['meta_query'][] = ['key' => '_assigned_to', 'value' => $staff_filter];
-            if (!empty($_GET['status'])) $args['tax_query'][] = ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => sanitize_key($_GET['status'])];
+            if (!empty($priority_filter)) $args['tax_query'][] = ['taxonomy' => 'task_priority', 'field' => 'slug', 'terms' => $priority_filter];
+            if (!empty($label_filter)) $args['tax_query'][] = ['taxonomy' => 'task_label', 'field' => 'slug', 'terms' => $label_filter];
+            if (!empty($search_query)) $args['s'] = $search_query;
             $tasks_query = new WP_Query($args);
             ?>
             <table class="pzl-table" id="tasks-list-table">
@@ -280,7 +283,6 @@ $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
             </div>
             
             <?php
-            // The rest of the board logic, now respects the auto-applied $staff_filter for team members
             $statuses = $all_statuses;
             
             if ($swimlane_by === 'none' || $is_team_member) {
@@ -290,10 +292,19 @@ $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
                     echo '<h4 class="pzl-column-header">' . esc_html($status->name) . '</h4>';
                     echo '<div class="pzl-task-list">';
                     
-                    $tasks_args = ['post_type' => 'task', 'posts_per_page' => -1, 'post_parent' => 0, 'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug]], 'meta_query' => [], 'orderby' => 'menu_order date', 'order' => 'ASC'];
-                    if ($staff_filter > 0) {
-                        $tasks_args['meta_query'][] = ['key' => '_assigned_to', 'value' => $staff_filter];
-                    }
+                    // **FIXED QUERY**: Added all filters to the board view query.
+                    $tasks_args = [
+                        'post_type' => 'task', 'posts_per_page' => -1, 'post_parent' => 0,
+                        'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug]],
+                        'meta_query' => ['relation' => 'AND'],
+                        'orderby' => 'menu_order date', 'order' => 'ASC',
+                    ];
+                    if ($project_filter > 0) { $tasks_args['meta_query'][] = ['key' => '_project_id', 'value' => $project_filter]; }
+                    if ($staff_filter > 0) { $tasks_args['meta_query'][] = ['key' => '_assigned_to', 'value' => $staff_filter]; }
+                    if (!empty($search_query)) { $tasks_args['s'] = $search_query; }
+                    if (!empty($priority_filter)) { $tasks_args['tax_query'][] = ['taxonomy' => 'task_priority', 'field' => 'slug', 'terms' => $priority_filter]; }
+                    if (!empty($label_filter)) { $tasks_args['tax_query'][] = ['taxonomy' => 'task_label', 'field' => 'slug', 'terms' => $label_filter]; }
+
                     $tasks_in_column = get_posts($tasks_args);
                     
                     foreach ($tasks_in_column as $task) echo puzzling_render_task_card($task);

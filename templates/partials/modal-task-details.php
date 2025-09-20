@@ -1,6 +1,6 @@
 <?php
 /**
- * Template for the Task Details Modal Content - V2 (Upgraded)
+ * Template for the Task Details Modal Content - V2.1 (Status Changer)
  * Loaded via AJAX. Includes new Agile fields and actions.
  * @package PuzzlingCRM
  */
@@ -26,7 +26,9 @@ $attachments = get_post_meta($task_id, '_task_attachments', true) ?: [];
 $time_logs = get_post_meta($task_id, '_task_time_logs', true) ?: [];
 $total_logged = array_sum(wp_list_pluck($time_logs, 'hours'));
 $activity_log = get_post_meta($task_id, '_task_activity_log', true) ?: [];
-
+$current_status_terms = wp_get_post_terms($task_id, 'task_status');
+$current_status_slug = !empty($current_status_terms) ? $current_status_terms[0]->slug : '';
+$all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order']);
 ?>
 <div class="pzl-modal-header">
     <h3 id="pzl-modal-title"><?php echo esc_html($task->post_title); ?></h3>
@@ -154,7 +156,7 @@ $activity_log = get_post_meta($task_id, '_task_activity_log', true) ?: [];
         <hr>
         <h5><i class="fas fa-history"></i> لاگ‌های زمان</h5>
         <ul class="pzl-time-log-list">
-             <?php foreach(array_reverse($time_logs) as $log): ?>
+             <?php foreach(array_reverse((array)$time_logs) as $log): ?>
                 <li><strong><?php echo esc_html($log['user_name']); ?></strong> <?php echo esc_html($log['hours']); ?> ساعت ثبت کرد <span class="pzl-time-log-desc">(<?php echo esc_html($log['description']); ?>)</span><span class="pzl-time-log-date"><?php echo date_i18n('Y/m/d', strtotime($log['date'])); ?></span></li>
              <?php endforeach; ?>
         </ul>
@@ -163,7 +165,7 @@ $activity_log = get_post_meta($task_id, '_task_activity_log', true) ?: [];
     <div id="tab-attachments" class="pzl-modal-tab-content" style="display:none;">
          <h4><i class="fas fa-paperclip"></i> فایل‌های پیوست</h4>
          <ul class="pzl-attachment-list">
-         <?php if(!empty($attachments)): foreach($attachments as $att_id): 
+         <?php if(!empty($attachments) && is_array($attachments)): foreach($attachments as $att_id): 
             $file_url = wp_get_attachment_url($att_id);
             $file_name = get_the_title($att_id);
          ?>
@@ -177,7 +179,7 @@ $activity_log = get_post_meta($task_id, '_task_activity_log', true) ?: [];
     <div id="tab-activity" class="pzl-modal-tab-content" style="display:none;">
         <h4><i class="fas fa-history"></i> تاریخچه فعالیت</h4>
         <ul class="pzl-activity-log">
-        <?php foreach($activity_log as $log): ?>
+        <?php foreach(array_reverse((array)$activity_log) as $log): ?>
             <li><strong><?php echo esc_html($log['user_name']); ?></strong> <?php echo esc_html($log['text']); ?> <span class="pzl-activity-time"><?php echo human_time_diff(strtotime($log['time']), current_time('timestamp')); ?> پیش</span></li>
         <?php endforeach; ?>
         </ul>
@@ -186,6 +188,16 @@ $activity_log = get_post_meta($task_id, '_task_activity_log', true) ?: [];
 
 <div class="pzl-modal-sidebar">
     <h4>جزئیات</h4>
+    <div class="pzl-sidebar-item">
+        <strong>وضعیت:</strong>
+        <select id="pzl-task-status-changer" data-task-id="<?php echo esc_attr($task_id); ?>">
+            <?php foreach($all_statuses as $status): ?>
+                <option value="<?php echo esc_attr($status->slug); ?>" <?php selected($current_status_slug, $status->slug); ?>>
+                    <?php echo esc_html($status->name); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
     <div class="pzl-sidebar-item">
         <strong>مسئول:</strong>
         <span><?php echo $assignee ? esc_html($assignee->display_name) : '---'; ?></span>
