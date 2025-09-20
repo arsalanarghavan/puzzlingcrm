@@ -9,8 +9,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $current_view = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
-// Use the current page URL as the base, removing any existing query parameters.
+$project_id_to_view = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0;
+
 $base_url = get_permalink();
+
+// Special handling for single project view
+if ($current_view === 'projects' && $project_id_to_view > 0) {
+    global $puzzling_project;
+    $puzzling_project = get_post($project_id_to_view);
+
+    // Security check: Make sure the current user is the author of the project.
+    if ($puzzling_project && $puzzling_project->post_author == get_current_user_id()) {
+        include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/single-project-client.php';
+        return; // Stop further execution
+    } else {
+        // If not allowed, just fall back to the main projects list
+        $current_view = 'projects'; 
+    }
+}
 
 // A map of views to their corresponding template files and titles
 $dashboard_pages = [
