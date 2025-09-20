@@ -25,18 +25,26 @@ jQuery(document).ready(function($) {
             title: title,
             text: text,
             icon: icon,
-            confirmButtonText: 'باشه',
+            confirmButtonText: puzzling_lang.ok_button || 'باشه',
             timer: reloadPage ? 2000 : 4000,
             timerProgressBar: true
         }).then(() => {
             if (reloadPage) {
                 // Instead of full reload, try to redirect to a clean URL to avoid resubmission issues
                 var cleanUrl = window.location.href.split('?')[0];
-                var view = new URLSearchParams(window.location.search).get('view');
-                if (view) {
-                    cleanUrl = cleanUrl + '?view=' + view;
+                var params = new URLSearchParams(window.location.search);
+                var view = params.get('view');
+                var action = params.get('action');
+
+                var newParams = new URLSearchParams();
+                if (view) newParams.set('view', view);
+                if (action === 'edit') { // Keep edit action and id
+                    newParams.set('action', action);
+                    if(params.get('contract_id')) newParams.set('contract_id', params.get('contract_id'));
                 }
-                 window.location.href = cleanUrl;
+                
+                var finalUrl = cleanUrl + '?' + newParams.toString();
+                window.location.href = finalUrl;
             }
         });
     }
@@ -64,6 +72,11 @@ jQuery(document).ready(function($) {
             }
         });
 
+        // Ensure disabled fields are included in submission
+        form.find('select:disabled').each(function() {
+            formData.append($(this).attr('name'), $(this).val());
+        });
+
         $.ajax({
             url: puzzlingcrm_ajax_obj.ajax_url,
             type: 'POST',
@@ -75,13 +88,13 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    showPuzzlingAlert('موفقیت‌آمیز', response.data.message, 'success', response.data.reload || false);
+                    showPuzzlingAlert(puzzling_lang.success_title, response.data.message, 'success', response.data.reload || false);
                 } else {
-                    showPuzzlingAlert('خطا', response.data.message, 'error');
+                    showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error');
                 }
             },
             error: function() {
-                showPuzzlingAlert('خطای سرور', 'یک خطای ناشناخته در ارتباط با سرور رخ داد.', 'error');
+                showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error');
             },
             complete: function(xhr) {
                  var response = xhr.responseJSON;
@@ -106,43 +119,48 @@ jQuery(document).ready(function($) {
         var startDateStr = $('#start_date').val();
 
         if (isNaN(totalAmount) || isNaN(totalInstallments) || isNaN(intervalDays) || !startDateStr) {
-            showPuzzlingAlert('خطا', 'لطفاً تمام فیلدهای محاسبه‌گر اقساط را به درستی پر کنید.', 'error');
+            showPuzzlingAlert(puzzling_lang.error_title, 'لطفاً تمام فیلدهای محاسبه‌گر اقساط را به درستی پر کنید.', 'error');
             return;
         }
 
         var installmentAmount = Math.round(totalAmount / totalInstallments);
         var startDate = new Date(startDateStr);
         
-        var previewContainer = $('#installments-preview-container');
-        var hiddenContainer = $('#payment-rows-container');
-        
-        previewContainer.html('<table class="pzl-table"><thead><tr><th>#</th><th>مبلغ قسط (تومان)</th><th>تاریخ سررسید</th></tr></thead><tbody></tbody></table>');
-        hiddenContainer.html('');
-
-        var tableBody = previewContainer.find('tbody');
+        var hiddenContainer = $('#payment-rows-container').html(''); // Clear previous manual/calculated rows
 
         for (var i = 0; i < totalInstallments; i++) {
             var dueDate = new Date(startDate);
             dueDate.setDate(startDate.getDate() + (i * intervalDays));
-            
-            var displayDate = dueDate.toLocaleDateString('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' });
             var inputDate = dueDate.getFullYear() + '-' + ('0' + (dueDate.getMonth() + 1)).slice(-2) + '-' + ('0' + dueDate.getDate()).slice(-2);
-            var formattedAmount = installmentAmount.toLocaleString('en-US');
-
-            tableBody.append(`<tr><td>${i + 1}</td><td>${formattedAmount}</td><td>${displayDate}</td></tr>`);
-            hiddenContainer.append(`
-                <div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                    <input type="number" name="payment_amount[]" placeholder="مبلغ (تومان)" style="flex-grow: 1; padding: 8px;" value="${installmentAmount}" required>
-                    <input type="date" name="payment_due_date[]" style="padding: 8px;" value="${inputDate}" required>
-                    <select name="payment_status[]" style="padding: 8px;">
-                        <option value="pending" selected>در انتظار پرداخت</option>
-                        <option value="paid">پرداخت شده</option>
-                    </select>
-                </div>
-            `);
+            
+            addInstallmentRow(installmentAmount, inputDate, 'pending');
         }
-        hiddenContainer.show();
     });
+
+    // --- Manual Installment Management ---
+    function addInstallmentRow(amount = '', date = '', status = 'pending') {
+        var newRow = `
+            <div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <input type="number" name="payment_amount[]" placeholder="مبلغ (تومان)" value="${amount}" style="flex-grow: 1;" required>
+                <input type="date" name="payment_due_date[]" value="${date}" required>
+                <select name="payment_status[]">
+                    <option value="pending" ${status === 'pending' ? 'selected' : ''}>در انتظار پرداخت</option>
+                    <option value="paid" ${status === 'paid' ? 'selected' : ''}>پرداخت شده</option>
+                </select>
+                <button type="button" class="pzl-button pzl-button-sm remove-payment-row" style="background: #dc3545 !important;">حذف</button>
+            </div>
+        `;
+        $('#payment-rows-container').append(newRow);
+    }
+
+    $('#add-payment-row').on('click', function() {
+        addInstallmentRow();
+    });
+
+    $('#payment-rows-container').on('click', '.remove-payment-row', function() {
+        $(this).closest('.payment-row').remove();
+    });
+
 
     // --- Kanban Board: Drag and Drop ---
     if ($('#pzl-task-board, .pzl-swimlane-board').length) {
@@ -172,12 +190,12 @@ jQuery(document).ready(function($) {
                     },
                     success: function(response) {
                         if (!response.success) {
-                            showPuzzlingAlert('خطا', response.data.message, 'error');
+                            showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error');
                             $(this).sortable('cancel');
                         }
                     },
                     error: function() {
-                        showPuzzlingAlert('خطا', 'خطای ارتباط با سرور.', 'error');
+                        showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error');
                         $(this).sortable('cancel');
                     },
                     complete: function() {
@@ -214,7 +232,7 @@ jQuery(document).ready(function($) {
         var staffId = new URLSearchParams(window.location.search).get('staff_filter') || 0;
 
         if (!projectId || !staffId) {
-            showPuzzlingAlert('راهنمایی', 'برای استفاده از افزودن سریع، لطفاً ابتدا برد را بر اساس پروژه و کارمند فیلتر کنید.', 'info');
+            showPuzzlingAlert(puzzling_lang.info_title, 'برای استفاده از افزودن سریع، لطفاً ابتدا برد را بر اساس پروژه و کارمند فیلتر کنید.', 'info');
             return;
         }
 
@@ -231,10 +249,10 @@ jQuery(document).ready(function($) {
                     taskList.append(response.data.task_html);
                     textarea.val('').focus();
                 } else {
-                    showPuzzlingAlert('خطا', response.data.message || 'خطای ناشناخته', 'error');
+                    showPuzzlingAlert(puzzling_lang.error_title, response.data.message || 'خطای ناشناخته', 'error');
                 }
             },
-            error: function() { showPuzzlingAlert('خطا', 'یک خطای ارتباطی رخ داد.', 'error'); },
+            error: function() { showPuzzlingAlert(puzzling_lang.error_title, 'یک خطای ارتباطی رخ داد.', 'error'); },
             complete: function() { form.find('.submit-add-card').prop('disabled', false).text('افزودن'); }
         });
     }
@@ -311,9 +329,9 @@ jQuery(document).ready(function($) {
                     viewer.html(response.data.new_content_html || '<p class="pzl-no-content">توضیحاتی ثبت نشده.</p>');
                     $('#pzl-task-description-editor').hide();
                     viewer.show();
-                } else { showPuzzlingAlert('خطا', 'خطا در ذخیره‌سازی.', 'error'); }
+                } else { showPuzzlingAlert(puzzling_lang.error_title, 'خطا در ذخیره‌سازی.', 'error'); }
             },
-            error: function() { showPuzzlingAlert('خطا', 'خطای ارتباط با سرور.', 'error'); },
+            error: function() { showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error'); },
             complete: function() { button.text('ذخیره').prop('disabled', false); }
         });
     });
@@ -331,9 +349,9 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     $('.pzl-comment-list').append(response.data.comment_html);
                     $('#pzl-new-comment-text').val('');
-                } else { showPuzzlingAlert('خطا', 'خطا در ثبت نظر.', 'error'); }
+                } else { showPuzzlingAlert(puzzling_lang.error_title, 'خطا در ثبت نظر.', 'error'); }
              },
-             error: function() { showPuzzlingAlert('خطا', 'خطای ارتباط با سرور.', 'error'); },
+             error: function() { showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error'); },
              complete: function() { button.text('ارسال نظر').prop('disabled', false); }
         });
     });
@@ -380,7 +398,7 @@ jQuery(document).ready(function($) {
             data: { action: 'puzzling_log_time', security: puzzling_ajax_nonce, task_id: currentTaskId, hours: hours, description: description },
             success: function(response){
                 if(response.success){ openTaskModal(currentTaskId); } 
-                else { showPuzzlingAlert('خطا', response.data.message, 'error'); }
+                else { showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error'); }
             }
         });
     });
@@ -393,14 +411,14 @@ jQuery(document).ready(function($) {
         var nonce = link.data('nonce');
         
         Swal.fire({
-            title: 'آیا مطمئن هستید؟',
+            title: puzzling_lang.confirm_title,
             text: puzzling_lang.confirm_delete_project,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'بله، حذف کن!',
-            cancelButtonText: 'انصراف'
+            confirmButtonText: puzzling_lang.confirm_button,
+            cancelButtonText: puzzling_lang.cancel_button
         }).then((result) => {
             if (result.isConfirmed) {
                 var projectCard = link.closest('.pzl-project-card-item');
@@ -412,14 +430,14 @@ jQuery(document).ready(function($) {
                     success: function(response) {
                         if (response.success) {
                             projectCard.slideUp(function() { $(this).remove(); });
-                            showPuzzlingAlert('حذف شد!', 'پروژه با موفقیت حذف شد.', 'success');
+                            showPuzzlingAlert(puzzling_lang.success_title, response.data.message, 'success');
                         } else {
-                            showPuzzlingAlert('خطا', response.data.message || 'خطای ناشناخته', 'error');
+                            showPuzzlingAlert(puzzling_lang.error_title, response.data.message || 'خطای ناشناخته', 'error');
                             projectCard.css('opacity', '1');
                         }
                     },
                     error: function() {
-                        showPuzzlingAlert('خطا', 'یک خطای ناشناخته رخ داد.', 'error');
+                        showPuzzlingAlert(puzzling_lang.error_title, 'یک خطای ناشناخته رخ داد.', 'error');
                         projectCard.css('opacity', '1');
                     }
                 });
@@ -438,12 +456,12 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     cardElement.replaceWith(response.data.task_html);
                 } else { 
-                    showPuzzlingAlert('خطا', 'خطا در به‌روزرسانی: ' + response.data.message, 'error');
+                    showPuzzlingAlert(puzzling_lang.error_title, 'خطا در به‌روزرسانی: ' + response.data.message, 'error');
                     cardElement.css('opacity', '1');
                 }
             },
             error: function() {
-                showPuzzlingAlert('خطا', 'خطای سرور در هنگام ویرایش سریع.', 'error');
+                showPuzzlingAlert(puzzling_lang.error_title, 'خطای سرور در هنگام ویرایش سریع.', 'error');
                 cardElement.css('opacity', '1');
             }
         });
@@ -576,7 +594,7 @@ jQuery(document).ready(function($) {
                     var newStatusHTML = '<li data-term-id="' + response.data.term_id + '"><i class="fas fa-grip-vertical"></i> ' + response.data.name + ' <span class="delete-status-btn" data-term-id="' + response.data.term_id + '">&times;</span></li>';
                     $('#status-sortable-list').append(newStatusHTML);
                     form.trigger('reset');
-                } else { showPuzzlingAlert('خطا', response.data.message, 'error'); }
+                } else { showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error'); }
             }
         });
     });
@@ -591,7 +609,7 @@ jQuery(document).ready(function($) {
             data: { action: 'puzzling_delete_status', security: puzzling_ajax_nonce, term_id: termId },
             success: function(response) {
                 if (response.success) { listItem.remove(); } 
-                else { showPuzzlingAlert('خطا', response.data.message, 'error'); }
+                else { showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error'); }
             }
         });
     });
@@ -629,7 +647,7 @@ jQuery(document).ready(function($) {
         var linkType = $('#new-link-type').val();
         
         if (!toTaskId || !linkType) {
-            showPuzzlingAlert('راهنمایی', 'لطفا وظیفه و نوع پیوند را انتخاب کنید.', 'info');
+            showPuzzlingAlert(puzzling_lang.info_title, 'لطفا وظیفه و نوع پیوند را انتخاب کنید.', 'info');
             return;
         }
         var btn = $(this);
@@ -649,7 +667,7 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     openTaskModal(currentTaskId);
                 } else {
-                    showPuzzlingAlert('خطا', 'خطا در افزودن پیوند.', 'error');
+                    showPuzzlingAlert(puzzling_lang.error_title, 'خطا در افزودن پیوند.', 'error');
                 }
             },
             complete: function() {
@@ -679,7 +697,7 @@ jQuery(document).ready(function($) {
     $('#apply-bulk-edit').on('click', function() {
         var taskIds = $('.task-checkbox:checked').map(function() { return $(this).val(); }).get();
         if (taskIds.length === 0) {
-            showPuzzlingAlert('راهنمایی', 'لطفاً حداقل یک وظیفه را انتخاب کنید.', 'info');
+            showPuzzlingAlert(puzzling_lang.info_title, 'لطفاً حداقل یک وظیفه را انتخاب کنید.', 'info');
             return;
         }
 
@@ -702,13 +720,13 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    showPuzzlingAlert('موفق', response.data.message, 'success', true);
+                    showPuzzlingAlert(puzzling_lang.success_title, response.data.message, 'success', true);
                 } else {
-                    showPuzzlingAlert('خطا', response.data.message, 'error');
+                    showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error');
                 }
             },
             error: function() {
-                showPuzzlingAlert('خطا', 'خطای سرور.', 'error');
+                showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error');
             },
             complete: function() {
                 $('#apply-bulk-edit').text('اعمال').prop('disabled', false);
@@ -777,9 +795,9 @@ jQuery(document).ready(function($) {
                 },
                 success: function(response) {
                     if(response.success){
-                         showPuzzlingAlert('موفق', response.data.message, 'success');
+                         showPuzzlingAlert(puzzling_lang.success_title, response.data.message, 'success');
                     } else {
-                         showPuzzlingAlert('خطا', response.data.message, 'error');
+                         showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error');
                     }
                 },
                 complete: function(){
@@ -821,7 +839,7 @@ jQuery(document).ready(function($) {
         var message = $('#sms_message').val();
 
         if (!message.trim()) {
-            showPuzzlingAlert('خطا', 'لطفاً متن پیام را وارد کنید.', 'error');
+            showPuzzlingAlert(puzzling_lang.error_title, 'لطفاً متن پیام را وارد کنید.', 'error');
             return;
         }
 
@@ -839,14 +857,14 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    showPuzzlingAlert('موفق', response.data.message, 'success');
+                    showPuzzlingAlert(puzzling_lang.success_title, response.data.message, 'success');
                     closeSmsModal();
                 } else {
-                    showPuzzlingAlert('خطا', response.data.message || 'خطای ناشناخته', 'error');
+                    showPuzzlingAlert(puzzling_lang.error_title, response.data.message || 'خطای ناشناخته', 'error');
                 }
             },
             error: function() {
-                showPuzzlingAlert('خطا', 'یک خطای ناشناخته در ارتباط با سرور رخ داد.', 'error');
+                showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error');
             },
             complete: function() {
                 submitButton.text(originalButtonText).prop('disabled', false);

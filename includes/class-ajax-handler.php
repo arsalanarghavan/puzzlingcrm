@@ -19,6 +19,7 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_manage_user', [$this, 'ajax_manage_user']);
         add_action('wp_ajax_puzzling_manage_project', [$this, 'ajax_manage_project']);
         add_action('wp_ajax_puzzling_manage_contract', [$this, 'ajax_manage_contract']);
+        add_action('wp_ajax_puzzling_add_project_to_contract', [$this, 'ajax_add_project_to_contract']); // NEW
         add_action('wp_ajax_puzzling_update_my_profile', [$this, 'ajax_update_my_profile']);
 
         // --- Standard Task Actions ---
@@ -193,70 +194,41 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
         }
 
-        // Sanitize and retrieve all POST data
         $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
+        if (!$project_id) {
+             wp_send_json_error(['message' => 'شناسه پروژه نامعتبر است.']);
+        }
+
         $project_title = sanitize_text_field($_POST['project_title']);
         $project_content = wp_kses_post($_POST['project_content']);
-        $customer_id = intval($_POST['customer_id']);
         $project_status_id = intval($_POST['project_status']);
-        
-        $meta_inputs = [
-            '_project_contract_person' => sanitize_text_field($_POST['_project_contract_person']),
-            '_project_subscription_model' => sanitize_key($_POST['_project_subscription_model']),
-            '_project_contract_duration' => sanitize_key($_POST['_project_contract_duration']),
-            '_project_start_date' => sanitize_text_field($_POST['_project_start_date']),
-            '_project_end_date' => sanitize_text_field($_POST['_project_end_date']),
-        ];
-
-        if(empty($project_title) || empty($customer_id)) {
-            wp_send_json_error(['message' => 'عنوان پروژه و انتخاب مشتری الزامی است.']);
+       
+        if(empty($project_title)) {
+            wp_send_json_error(['message' => 'عنوان پروژه الزامی است.']);
         }
 
         $post_data = [
-            'post_title'    => $project_title,
-            'post_content'  => $project_content,
-            'post_author'   => $customer_id,
-            'post_status'   => 'publish',
-            'post_type'     => 'project',
+            'ID' => $project_id,
+            'post_title' => $project_title,
+            'post_content' => $project_content,
         ];
 
-        if ($project_id > 0) {
-            $post_data['ID'] = $project_id;
-            $result = wp_update_post($post_data, true);
-            $message = 'پروژه با موفقیت به‌روزرسانی شد.';
-        } else {
-            $result = wp_insert_post($post_data, true);
-            $message = 'پروژه جدید با موفقیت ایجاد شد.';
-            if (!is_wp_error($result)) {
-                 PuzzlingCRM_Logger::add(sprintf('پروژه جدید "%s" برای شما ثبت شد', $project_title),
-                    ['content' => 'برای مشاهده جزئیات به پنل کاربری خود مراجعه کنید.', 'type' => 'notification', 'user_id' => $customer_id, 'object_id' => $result]
-                );
-            }
-        }
-
+        $result = wp_update_post($post_data, true);
+        
         if (is_wp_error($result)) {
-            wp_send_json_error(['message' => 'خطا در پردازش پروژه.']);
-        } else {
-            $the_project_id = is_int($result) ? $result : $project_id;
-            
-            // Save all metadata
-            foreach ($meta_inputs as $key => $value) {
-                update_post_meta($the_project_id, $key, $value);
-            }
-
-            // Set the project status term
-            wp_set_object_terms($the_project_id, $project_status_id, 'project_status');
-            
-            // Handle logo upload (featured image)
-            if (isset($_FILES['project_logo']) && $_FILES['project_logo']['error'] == 0) {
-                $attachment_id = media_handle_upload('project_logo', $the_project_id);
-                if (!is_wp_error($attachment_id)) {
-                    set_post_thumbnail($the_project_id, $attachment_id);
-                }
-            }
-
-            wp_send_json_success(['message' => $message, 'reload' => true]);
+            wp_send_json_error(['message' => 'خطا در به‌روزرسانی پروژه.']);
         }
+        
+        wp_set_object_terms($project_id, $project_status_id, 'project_status');
+        
+        if (isset($_FILES['project_logo']) && $_FILES['project_logo']['error'] == 0) {
+            $attachment_id = media_handle_upload('project_logo', $project_id);
+            if (!is_wp_error($attachment_id)) {
+                set_post_thumbnail($project_id, $attachment_id);
+            }
+        }
+
+        wp_send_json_success(['message' => 'پروژه با موفقیت به‌روزرسانی شد.', 'reload' => true]);
     }
     
     /**
@@ -323,9 +295,11 @@ class PuzzlingCRM_Ajax_Handler {
             $project_id = get_post_meta($the_contract_id, '_project_id', true);
 
             // Update Project
-            $project_data['ID'] = $project_id;
-            wp_update_post($project_data);
-
+            if ($project_id) {
+                $project_data['ID'] = $project_id;
+                wp_update_post($project_data);
+            }
+            
             // Update Contract
             $contract_data['ID'] = $the_contract_id;
             wp_update_post($contract_data);
@@ -379,6 +353,52 @@ class PuzzlingCRM_Ajax_Handler {
         
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
+
+    /**
+     * AJAX handler to add a new (secondary) project to an existing contract.
+     */
+    public function ajax_add_project_to_contract() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
+        $project_title = isset($_POST['project_title']) ? sanitize_text_field($_POST['project_title']) : '';
+        
+        if (empty($contract_id) || empty($project_title)) {
+            wp_send_json_error(['message' => 'اطلاعات قرارداد یا عنوان پروژه ناقص است.']);
+        }
+
+        $contract = get_post($contract_id);
+        if (!$contract || $contract->post_type !== 'contract') {
+             wp_send_json_error(['message' => 'قرارداد معتبر نیست.']);
+        }
+
+        // Create the new project
+        $project_id = wp_insert_post([
+            'post_title' => $project_title,
+            'post_author' => $contract->post_author,
+            'post_status' => 'publish',
+            'post_type' => 'project'
+        ], true);
+
+        if (is_wp_error($project_id)) {
+            wp_send_json_error(['message' => 'خطا در ایجاد پروژه جدید.']);
+        }
+
+        // Link project to the contract
+        update_post_meta($project_id, '_contract_id', $contract_id);
+        
+        // Set a default status
+        $active_status = get_term_by('slug', 'active', 'project_status');
+        if ($active_status) {
+            wp_set_object_terms($project_id, $active_status->term_id, 'project_status');
+        }
+
+        wp_send_json_success(['message' => 'پروژه جدید با موفقیت به قرارداد اضافه شد.', 'reload' => true]);
+    }
+
 
     /**
      * Logs an activity to a task's metadata.

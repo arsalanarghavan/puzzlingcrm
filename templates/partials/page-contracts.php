@@ -14,18 +14,58 @@ $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']
     </div>
 
     <div class="pzl-dashboard-tab-content">
-    <?php if ($action === 'edit' && $contract_id_to_edit > 0): ?>
+    <?php if (($action === 'edit' && $contract_id_to_edit > 0) || $action === 'new'): ?>
         <div class="pzl-card">
             <?php 
-            global $puzzling_contract_id;
-            $puzzling_contract_id = $contract_id_to_edit;
-            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/form-edit-contract.php'; 
+            if ($contract_id_to_edit > 0) {
+                global $puzzling_contract;
+                $puzzling_contract = get_post($contract_id_to_edit);
+            }
+            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/common/contract-form.php'; 
             ?>
         </div>
-    <?php elseif ($action === 'new'): ?>
+        
+        <?php if ($action === 'edit' && $contract_id_to_edit > 0): 
+            $related_projects = get_posts([
+                'post_type' => 'project',
+                'posts_per_page' => -1,
+                'meta_key' => '_contract_id',
+                'meta_value' => $contract_id_to_edit
+            ]);
+        ?>
         <div class="pzl-card">
-            <?php include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/common/contract-form.php'; ?>
+            <h4><i class="fas fa-briefcase"></i> پروژه‌های مرتبط با این قرارداد</h4>
+            <?php if (!empty($related_projects)): ?>
+                <ul class="pzl-activity-list">
+                    <?php foreach($related_projects as $project): ?>
+                        <li>
+                            <a href="<?php echo esc_url(add_query_arg(['view' => 'projects', 'action' => 'edit', 'project_id' => $project->ID], get_permalink())); ?>">
+                                <?php echo esc_html($project->post_title); ?>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php else: ?>
+                <p>هیچ پروژه‌ای به این قرارداد متصل نیست.</p>
+            <?php endif; ?>
+            <hr>
+            <h5><i class="fas fa-plus-circle"></i> افزودن پروژه جدید به این قرارداد</h5>
+            <form class="pzl-form pzl-ajax-form" data-action="puzzling_add_project_to_contract">
+                <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
+                <input type="hidden" name="contract_id" value="<?php echo esc_attr($contract_id_to_edit); ?>">
+                <div class="pzl-form-row" style="align-items: flex-end;">
+                    <div class="form-group" style="flex: 2;">
+                        <label for="new_project_title">عنوان پروژه جدید:</label>
+                        <input type="text" name="project_title" id="new_project_title" required>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="pzl-button">افزودن پروژه</button>
+                    </div>
+                </div>
+            </form>
         </div>
+        <?php endif; ?>
+
     <?php else: // List View ?>
         <div class="pzl-card">
             <?php
@@ -40,7 +80,7 @@ $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']
                 <table class="pzl-table">
                     <thead>
                         <tr>
-                            <th>پروژه</th>
+                            <th>شماره قرارداد</th>
                             <th>مشتری</th>
                             <th>مبلغ کل</th>
                             <th>مبلغ پرداخت شده</th>
@@ -51,7 +91,6 @@ $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']
                     <tbody>
                         <?php while($contracts_query->have_posts()): $contracts_query->the_post(); 
                             $contract_id = get_the_ID();
-                            $project_id = get_post_meta($contract_id, '_project_id', true);
                             $customer = get_userdata(get_the_author_meta('ID'));
                             $installments = get_post_meta($contract_id, '_installments', true);
                             
@@ -75,12 +114,12 @@ $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']
                             $edit_url = add_query_arg(['view' => 'contracts', 'action' => 'edit', 'contract_id' => $contract_id]);
                         ?>
                         <tr>
-                            <td><strong><?php echo esc_html(get_the_title($project_id)); ?></strong></td>
+                            <td><strong>#<?php echo esc_html($contract_id); ?></strong></td>
                             <td><?php echo esc_html($customer->display_name); ?></td>
                             <td><?php echo esc_html(number_format($total_amount)); ?> تومان</td>
                             <td><?php echo esc_html(number_format($paid_amount)); ?> تومان</td>
                             <td><span class="pzl-status <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_text); ?></span></td>
-                            <td><a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-sm">ویرایش / مشاهده اقساط</a></td>
+                            <td><a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-sm">ویرایش / مشاهده جزئیات</a></td>
                         </tr>
                         <?php endwhile; ?>
                     </tbody>
