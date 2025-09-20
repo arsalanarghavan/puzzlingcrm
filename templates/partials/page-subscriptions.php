@@ -39,6 +39,7 @@ $subscriptions = wcs_get_subscriptions([
                 <tbody>
                     <?php foreach($subscriptions as $subscription): 
                         $customer = $subscription->get_user();
+                        $customer_profile_url = $customer ? add_query_arg(['view' => 'customers', 'action' => 'edit', 'user_id' => $customer->ID]) : '#';
                     ?>
                     <tr>
                         <td>#<?php echo esc_html($subscription->get_id()); ?></td>
@@ -48,7 +49,7 @@ $subscriptions = wcs_get_subscriptions([
                         <td><?php echo esc_html($subscription->get_date_to_display('start_date')); ?></td>
                         <td><?php echo esc_html($subscription->get_date_to_display('next_payment_date')); ?></td>
                         <td>
-                            <a href="<?php echo esc_url(get_edit_post_link($subscription->get_id())); ?>" class="pzl-button pzl-button-sm" target="_blank">مدیریت</a>
+                            <a href="<?php echo esc_url($customer_profile_url); ?>" class="pzl-button pzl-button-sm">مشاهده پروفایل مشتری</a>
                         </td>
                     </tr>
                     <?php endforeach; ?>

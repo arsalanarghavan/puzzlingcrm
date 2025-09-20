@@ -14,11 +14,11 @@ $roles = get_editable_roles();
 ?>
 
 <div class="pzl-form-container">
-    <h4><i class="fas fa-sitemap"></i> تنظیمات گردش کار و جایگاه‌های شغلی</h4>
-    <p class="description">در این بخش قوانین گردش کار و جایگاه‌های شغلی سازمان را مدیریت کنید.</p>
+    <h4><i class="fas fa-sitemap"></i> تنظیمات گردش کار</h4>
+    <p class="description">در این بخش می‌توانید قوانین دسترسی به ستون‌های مختلف در برد وظایف را مدیریت کنید.</p>
     
     <div class="pzl-card">
-        <h5>قوانین دسترسی به ستون‌های کانبان</h5>
+        <h5><i class="fas fa-check-double"></i> قوانین دسترسی به ستون‌های کانبان</h5>
         <form id="puzzling-workflow-settings-form" method="post" class="pzl-form" style="margin-top: 20px;">
             <?php wp_nonce_field('puzzling_save_settings_nonce', 'security'); ?>
             <table class="pzl-table">
@@ -50,11 +50,7 @@ $roles = get_editable_roles();
     </div>
 
     <div class="pzl-card">
-        <h5>مدیریت جایگاه‌های شغلی</h5>
-        <p class="description">در اینجا می‌توانید دپارتمان‌ها و عناوین شغلی را برای تخصیص به کارکنان تعریف کنید.</p>
-        <div id="positions-manager-wrapper" style="max-width: 500px;">
-            <p>برای مدیریت جایگاه‌های شغلی (مانند افزودن "مدیر سوشال مدیا")، لطفاً به لینک زیر در پیشخوان وردپرس مراجعه کنید. این بخش به شما امکان تعریف ساختار سازمانی را می‌دهد.</p>
-            <a href="<?php echo esc_url(admin_url('term.php?taxonomy=organizational_position')); ?>" class="pzl-button" target="_blank">رفتن به صفحه مدیریت جایگاه‌ها</a>
-        </div>
+        <h5><i class="fas fa-user-tie"></i> مدیریت جایگاه‌های شغلی</h5>
+        <p class="description">برای تعریف، ویرایش یا حذف دپارتمان‌ها و عناوین شغلی سازمان، لطفاً به تب **"جایگاه‌های شغلی"** در همین صفحه تنظیمات مراجعه کنید.</p>
     </div>
 </div>

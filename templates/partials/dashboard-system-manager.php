@@ -71,9 +71,11 @@ $recent_tickets = get_posts(['post_type' => 'ticket', 'posts_per_page' => 5, 'or
             <h3><i class="fas fa-briefcase"></i> آخرین پروژه‌ها</h3>
         </div>
         <ul class="pzl-activity-list">
-            <?php if (!empty($recent_projects)): foreach($recent_projects as $p): ?>
+            <?php if (!empty($recent_projects)): foreach($recent_projects as $p): 
+                $project_edit_url = add_query_arg(['view' => 'projects', 'action' => 'edit', 'project_id' => $p->ID]);
+            ?>
                 <li>
-                    <a href="<?php echo get_edit_post_link($p->ID); // Links to backend editor for admin ?>" target="_blank"><?php echo esc_html($p->post_title); ?></a>
+                    <a href="<?php echo esc_url($project_edit_url); ?>"><?php echo esc_html($p->post_title); ?></a>
                     <span class="meta"><?php echo get_the_author_meta('display_name', $p->post_author); ?> - <?php echo date_i18n('Y/m/d', strtotime($p->post_date)); ?></span>
                 </li>
             <?php endforeach; else: ?>

@@ -19,6 +19,8 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_manage_user', [$this, 'ajax_manage_user']);
         add_action('wp_ajax_puzzling_manage_project', [$this, 'ajax_manage_project']);
         add_action('wp_ajax_puzzling_manage_contract', [$this, 'ajax_manage_contract']);
+        add_action('wp_ajax_puzzling_manage_position', [$this, 'ajax_manage_position']); // NEW
+        add_action('wp_ajax_puzzling_delete_position', [$this, 'ajax_delete_position']); // NEW
 
         // --- Standard Task Actions ---
         add_action('wp_ajax_puzzling_add_task', [$this, 'add_task']);
@@ -62,7 +64,6 @@ class PuzzlingCRM_Ajax_Handler {
     
     /**
      * Universal AJAX handler for creating and updating users (staff and customers).
-     * **MODIFIED**: Changed permission check to 'manage_options' for consistency.
      */
     public function ajax_manage_user() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
@@ -244,6 +245,61 @@ class PuzzlingCRM_Ajax_Handler {
             } else {
                 wp_send_json_error(['message' => 'خطا در ایجاد قرارداد.']);
             }
+        }
+    }
+
+    /**
+     * AJAX handler to create/update organizational positions.
+     */
+    public function ajax_manage_position() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
+        $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
+
+        if (empty($name)) {
+            wp_send_json_error(['message' => 'نام جایگاه نمی‌تواند خالی باشد.']);
+        }
+
+        if ($term_id > 0) {
+            $result = wp_update_term($term_id, 'organizational_position', ['name' => $name]);
+            $message = 'جایگاه شغلی با موفقیت به‌روزرسانی شد.';
+        } else {
+            $result = wp_insert_term($name, 'organizational_position');
+            $message = 'جایگاه شغلی جدید با موفقیت ایجاد شد.';
+        }
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        } else {
+            wp_send_json_success(['message' => $message, 'reload' => true]);
+        }
+    }
+
+    /**
+     * AJAX handler to delete an organizational position.
+     */
+    public function ajax_delete_position() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
+
+        if ($term_id === 0) {
+            wp_send_json_error(['message' => 'شناسه نامعتبر است.']);
+        }
+        
+        $result = wp_delete_term($term_id, 'organizational_position');
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        } else {
+            wp_send_json_success(['message' => 'جایگاه شغلی با موفقیت حذف شد.']);
         }
     }
 

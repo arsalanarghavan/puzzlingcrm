@@ -10,6 +10,7 @@ $base_url = remove_query_arg('puzzling_notice');
         <a href="<?php echo add_query_arg('tab', 'payment', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'payment' ? 'active' : ''; ?>"><i class="fas fa-credit-card"></i> درگاه پرداخت</a>
         <a href="<?php echo add_query_arg('tab', 'sms', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'sms' ? 'active' : ''; ?>"><i class="fas fa-sms"></i> سامانه پیامک</a>
         <a href="<?php echo add_query_arg('tab', 'workflow', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'workflow' ? 'active' : ''; ?>"><i class="fas fa-project-diagram"></i> گردش کار</a>
+        <a href="<?php echo add_query_arg('tab', 'positions', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'positions' ? 'active' : ''; ?>"><i class="fas fa-sitemap"></i> جایگاه‌های شغلی</a>
         <a href="<?php echo add_query_arg('tab', 'automations', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'automations' ? 'active' : ''; ?>"><i class="fas fa-robot"></i> اتوماسیون</a>
         <a href="<?php echo add_query_arg('tab', 'forms', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'forms' ? 'active' : ''; ?>"><i class="fas fa-clipboard-list"></i> فرم‌ها</a>
     </div>
@@ -21,6 +22,8 @@ $base_url = remove_query_arg('puzzling_notice');
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-sms.php';
         } elseif ( $active_tab == 'workflow' ) {
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-workflow.php';
+        } elseif ( $active_tab == 'positions' ) {
+            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-positions.php';
         } elseif ( $active_tab == 'automations' ) {
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-automations.php';
         } elseif ( $active_tab == 'forms' ) {
