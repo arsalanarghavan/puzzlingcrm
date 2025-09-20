@@ -76,16 +76,39 @@ class PuzzlingCRM_Ajax_Handler {
         }
 
         $search_query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
-        $args = ['orderby' => 'display_name', 'order' => 'ASC'];
-
-        if (!empty($search_query)) {
-            $args['search'] = '*' . esc_attr($search_query) . '*';
-            $args['search_columns'] = ['user_login', 'user_email', 'user_nicename', 'display_name'];
-            $args['meta_query'] = [
+        $args = [
+            'orderby' => 'display_name', 
+            'order' => 'ASC',
+            'search' => '*' . esc_attr($search_query) . '*',
+            'search_columns' => ['user_login', 'user_email', 'user_nicename', 'display_name'],
+            'meta_query' => [
                 'relation' => 'OR',
-                ['key' => 'pzl_mobile_phone', 'value' => $search_query, 'compare' => 'LIKE'],
-                ['key' => 'pzl_national_id', 'value' => $search_query, 'compare' => 'LIKE']
-            ];
+                [
+                    'key' => 'pzl_mobile_phone',
+                    'value' => $search_query,
+                    'compare' => 'LIKE'
+                ],
+                [
+                    'key' => 'pzl_national_id',
+                    'value' => $search_query,
+                    'compare' => 'LIKE'
+                ],
+                [
+                    'key' => 'first_name',
+                    'value' => $search_query,
+                    'compare' => 'LIKE'
+                ],
+                [
+                    'key' => 'last_name',
+                    'value' => $search_query,
+                    'compare' => 'LIKE'
+                ]
+            ]
+        ];
+        
+        if (empty($search_query)) {
+            unset($args['search']);
+            unset($args['meta_query']);
         }
 
         $all_users = get_users($args);
@@ -95,7 +118,7 @@ class PuzzlingCRM_Ajax_Handler {
             $output_html = '<tr><td colspan="5">هیچ کاربری با این مشخصات یافت نشد.</td></tr>';
         } else {
             foreach ($all_users as $user) {
-                $edit_url = add_query_arg(['action' => 'edit', 'user_id' => $user->ID]);
+                $edit_url = add_query_arg(['view' => 'customers', 'action' => 'edit', 'user_id' => $user->ID]);
                 $role_name = !empty($user->roles) ? esc_html(wp_roles()->roles[$user->roles[0]]['name']) : '---';
                 $registered_date = date_i18n('Y/m/d', strtotime($user->user_registered));
                 
