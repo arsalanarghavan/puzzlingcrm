@@ -48,7 +48,7 @@ $contract_to_edit = isset($puzzling_contract) ? $puzzling_contract : null;
         <hr>
         <h4><i class="fas fa-calculator"></i> اقساط قرارداد</h4>
         <div id="payment-rows-container">
-            <?php if ($contract_to_edit) { $installments = get_post_meta($contract_to_edit->ID, '_installments', true); if (!empty($installments)) { foreach ($installments as $index => $inst) { ?><div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;"><input type="number" name="payment_amount[]" placeholder="مبلغ (تومان)" value="<?php echo esc_attr($inst['amount']); ?>" required><input type="date" name="payment_due_date[]" value="<?php echo esc_attr($inst['due_date']); ?>" required><select name="payment_status[]"><option value="pending" <?php selected($inst['status'], 'pending'); ?>>در انتظار</option><option value="paid" <?php selected($inst['status'], 'paid'); ?>>پرداخت شده</option></select><button type="button" class="pzl-button pzl-button-sm remove-payment-row" style="background: #dc3545 !important;">حذف</button></div><?php } } } ?>
+            <?php if ($contract_to_edit) { $installments = get_post_meta($contract_to_edit->ID, '_installments', true); if (!empty($installments) && is_array($installments)) { foreach ($installments as $index => $inst) { ?><div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;"><input type="number" name="payment_amount[]" placeholder="مبلغ (تومان)" value="<?php echo esc_attr($inst['amount']); ?>" required><input type="date" name="payment_due_date[]" value="<?php echo esc_attr($inst['due_date']); ?>" required><select name="payment_status[]"><option value="pending" <?php selected($inst['status'] ?? 'pending', 'pending'); ?>>در انتظار</option><option value="paid" <?php selected($inst['status'] ?? 'pending', 'paid'); ?>>پرداخت شده</option></select><button type="button" class="pzl-button pzl-button-sm remove-payment-row" style="background: #dc3545 !important;">حذف</button></div><?php } } } ?>
         </div>
         <button type="button" id="add-payment-row" class="pzl-button" style="align-self: flex-start;">افزودن قسط دستی</button>
         
@@ -66,7 +66,8 @@ $contract_to_edit = isset($puzzling_contract) ? $puzzling_contract : null;
                 <select id="product_id_for_automation">
                     <option value="">-- انتخاب کنید --</option>
                     <?php
-                    $products = wc_get_products(['type' => ['subscription', 'grouped', 'bundle'], 'limit' => -1]);
+                    // Query for subscription, grouped, and bundled products
+                    $products = wc_get_products(['type' => ['subscription', 'grouped', 'bundle'], 'limit' => -1, 'status' => 'publish']);
                     foreach ($products as $product) {
                         echo '<option value="' . esc_attr($product->get_id()) . '">' . esc_html($product->get_name()) . '</option>';
                     }

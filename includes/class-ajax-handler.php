@@ -21,6 +21,9 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_manage_contract', [$this, 'ajax_manage_contract']);
         add_action('wp_ajax_puzzling_add_project_to_contract', [$this, 'ajax_add_project_to_contract']);
         add_action('wp_ajax_puzzling_update_my_profile', [$this, 'ajax_update_my_profile']);
+        
+        // NEW ACTION for adding services from product
+        add_action('wp_ajax_puzzling_add_services_from_product', [$this, 'ajax_add_services_from_product']);
 
         // --- Standard Task Actions ---
         add_action('wp_ajax_puzzling_add_task', [$this, 'add_task']);
@@ -62,6 +65,8 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_send_custom_sms', [$this, 'send_custom_sms']);
     }
 
+    // ... (All other functions from the original file remain here, unchanged)
+    
     /**
      * AJAX handler for users updating their own profile.
      */
@@ -362,6 +367,67 @@ class PuzzlingCRM_Ajax_Handler {
 
         wp_send_json_success(['message' => 'پروژه جدید با موفقیت به قرارداد اضافه شد.', 'reload' => true]);
     }
+    
+    /**
+     * NEW: AJAX handler to create projects from a WooCommerce product for a contract.
+     */
+    public function ajax_add_services_from_product() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
+        $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+        
+        if (empty($contract_id) || empty($product_id)) {
+            wp_send_json_error(['message' => 'اطلاعات قرارداد یا محصول ناقص است.']);
+        }
+
+        $contract = get_post($contract_id);
+        $product = wc_get_product($product_id);
+
+        if (!$contract || !$product) {
+            wp_send_json_error(['message' => 'قرارداد یا محصول یافت نشد.']);
+        }
+
+        $created_projects_count = 0;
+        $child_products = [];
+        
+        if ($product->is_type('grouped')) {
+            $child_products = $product->get_children();
+        } else {
+            $child_products[] = $product->get_id();
+        }
+        
+        foreach($child_products as $child_product_id) {
+            $child_product = wc_get_product($child_product_id);
+            if (!$child_product) continue;
+            
+            $project_id = wp_insert_post([
+                'post_title' => $child_product->get_name(),
+                'post_author' => $contract->post_author,
+                'post_status' => 'publish',
+                'post_type' => 'project'
+            ], true);
+            
+            if (!is_wp_error($project_id)) {
+                update_post_meta($project_id, '_contract_id', $contract_id);
+                $active_status = get_term_by('slug', 'active', 'project_status');
+                if ($active_status) {
+                    wp_set_object_terms($project_id, $active_status->term_id, 'project_status');
+                }
+                $created_projects_count++;
+            }
+        }
+
+        if($created_projects_count > 0) {
+            wp_send_json_success(['message' => $created_projects_count . ' پروژه با موفقیت از محصول ایجاد و به این قرارداد متصل شد.', 'reload' => true]);
+        } else {
+            wp_send_json_error(['message' => 'هیچ پروژه‌ای از محصول انتخاب شده ایجاد نشد. ممکن است محصول فاقد خدمات قابل تبدیل به پروژه باشد.']);
+        }
+    }
+
 
     /**
      * Logs an activity to a task's metadata.

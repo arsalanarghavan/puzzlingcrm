@@ -957,7 +957,7 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'puzzling_add_services_from_product',
-                security: puzzling_ajax_obj.nonce,
+                security: puzzlingcrm_ajax_obj.nonce,
                 contract_id: contractId,
                 product_id: productId
             },
