@@ -6,12 +6,12 @@ jQuery(document).ready(function($) {
     var searchTimer; // Timer for live search delay
 
     /**
-     * SweetAlert Integration for Notifications
+     * SweetAlert Integration for Notifications - V2 (Corrected Redirect Logic)
      * A helper function to show consistent pop-up messages.
      * @param {string} title The title of the alert.
      * @param {string} text The main message of the alert.
      * @param {string} icon 'success', 'error', 'warning', 'info'.
-     * @param {boolean} reloadPage If true, the page will reload after a short delay.
+     * @param {boolean} reloadPage If true, the page will reload to a clean URL.
      */
     function showPuzzlingAlert(title, text, icon, reloadPage = false) {
         if (typeof Swal === 'undefined') {
@@ -31,21 +31,24 @@ jQuery(document).ready(function($) {
             timerProgressBar: true
         }).then(() => {
             if (reloadPage) {
-                // Instead of full reload, try to redirect to a clean URL to avoid resubmission issues
-                var cleanUrl = window.location.href.split('?')[0];
-                var params = new URLSearchParams(window.location.search);
-                var view = params.get('view');
-                var action = params.get('action');
-
-                var newParams = new URLSearchParams();
-                if (view) newParams.set('view', view);
-                if (action === 'edit') { // Keep edit action and id
-                    newParams.set('action', action);
-                    if(params.get('contract_id')) newParams.set('contract_id', params.get('contract_id'));
-                }
+                // **FIXED REDIRECT LOGIC**
+                // Create a URL object from the current location
+                let currentUrl = new URL(window.location.href);
                 
-                var finalUrl = cleanUrl + '?' + newParams.toString();
-                window.location.href = finalUrl;
+                // Get the search parameters
+                let params = currentUrl.searchParams;
+                
+                // List of parameters to remove after an action
+                let paramsToRemove = ['puzzling_notice', '_wpnonce', 'deleted', 'updated'];
+                
+                // Remove the unwanted parameters
+                paramsToRemove.forEach(param => params.delete(param));
+                
+                // Re-assign the cleaned search parameters to the URL
+                currentUrl.search = params.toString();
+                
+                // Redirect to the clean URL
+                window.location.href = currentUrl.toString();
             }
         });
     }

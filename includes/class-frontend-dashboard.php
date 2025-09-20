@@ -79,7 +79,6 @@ class PuzzlingCRM_Frontend_Dashboard {
     /**
      * Renders projects page based on user role.
      * Shortcode: [puzzling_projects]
-     * **FIX**: Added 'team_member' role to view their assigned projects.
      */
     public static function render_projects() {
         if ( ! is_user_logged_in() ) return self::render_partial('common/login-prompt');
@@ -116,7 +115,6 @@ class PuzzlingCRM_Frontend_Dashboard {
     /**
      * Renders invoices/payments page based on user role.
      * Shortcode: [puzzling_invoices]
-     * FINAL FIX: Ensured this function correctly points to the payments table for customers.
      */
     public static function render_invoices() {
         if ( ! is_user_logged_in() ) return self::render_partial('common/login-prompt');
@@ -183,15 +181,14 @@ class PuzzlingCRM_Frontend_Dashboard {
     /**
      * Renders tasks page based on user role.
      * Shortcode: [puzzling_tasks]
+     * **FIX**: Team members now see the full task page, just like admins.
      */
     public static function render_tasks() {
         if ( ! is_user_logged_in() ) return self::render_partial('common/login-prompt');
         $role = self::get_user_role();
 
-        if ( $role === 'system_manager' ) {
+        if ( $role === 'system_manager' || $role === 'team_member' ) {
             return self::render_partial('page-tasks');
-        } elseif ( $role === 'team_member' ) {
-            return self::render_partial('dashboard-team-member');
         } else {
             return '<p>' . __('You do not have permission to view this page.', 'puzzlingcrm') . '</p>';
         }

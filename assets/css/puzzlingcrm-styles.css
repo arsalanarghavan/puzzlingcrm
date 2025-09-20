@@ -776,3 +776,68 @@
 .pzl-search-form-container .pzl-button {
     display: none; /* Hide the button as search is live */
 }
+
+/* --- New Dashboard Layout Styles --- */
+.pzl-dashboard-grid-2-col {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: var(--pzl-spacing);
+    align-items: start;
+}
+
+.pzl-activity-feed h5 {
+    font-size: 16px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--pzl-border-color);
+    color: var(--pzl-secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.pzl-activity-feed h5:first-child {
+    margin-top: 0;
+}
+
+.pzl-activity-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.pzl-activity-list li {
+    padding: 12px 5px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+.pzl-activity-list li:last-child {
+    border-bottom: none;
+}
+.pzl-activity-list li a {
+    font-weight: 600;
+    text-decoration: none;
+}
+.pzl-activity-list li .meta {
+    font-size: 12px;
+    color: var(--pzl-text-light);
+    direction: ltr;
+    text-align: left;
+}
+.pzl-status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 11px;
+    color: #fff;
+    text-align: center;
+    min-width: 80px;
+    font-weight: 500;
+}
+.pzl-status-badge.status-open { background-color: #0073aa; }
+.pzl-status-badge.status-in-progress { background-color: var(--pzl-warning-color); color: #333; }
+.pzl-status-badge.status-answered, .pzl-status-badge.status-completed, .pzl-status-badge.status-active { background-color: var(--pzl-success-color); }
+.pzl-status-badge.status-closed, .pzl-status-badge.status-on-hold { background-color: #777; }
+.pzl-status-badge.status-cancelled { background-color: var(--pzl-danger-color); }
