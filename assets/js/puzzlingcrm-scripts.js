@@ -938,4 +938,42 @@ jQuery(document).ready(function($) {
             }
         });
     }
+
+    // --- Automation from Product in Contract Edit Page ---
+    $('#add-services-from-product').on('click', function() {
+        var button = $(this);
+        var productId = $('#product_id_for_automation').val();
+        var contractId = $('input[name="contract_id"]').val();
+
+        if (!productId) {
+            showPuzzlingAlert(puzzling_lang.info_title, 'لطفاً ابتدا یک محصول را انتخاب کنید.', 'info');
+            return;
+        }
+
+        button.text('در حال پردازش...').prop('disabled', true);
+
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'puzzling_add_services_from_product',
+                security: puzzling_ajax_obj.nonce,
+                contract_id: contractId,
+                product_id: productId
+            },
+            success: function(response) {
+                if (response.success) {
+                    showPuzzlingAlert(puzzling_lang.success_title, response.data.message, 'success', true); // Reload on success
+                } else {
+                    showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error');
+                }
+            },
+            error: function() {
+                showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error');
+            },
+            complete: function() {
+                button.text('افزودن خدمات محصول').prop('disabled', false);
+            }
+        });
+    });
 });

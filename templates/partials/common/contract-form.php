@@ -36,26 +36,8 @@ $contract_to_edit = isset($puzzling_contract) ? $puzzling_contract : null;
         </div>
         
          <div class="pzl-form-row">
-            <div class="form-group">
-                <label for="_project_subscription_model">مدل اشتراک:</label>
-                <select name="_project_subscription_model" id="_project_subscription_model">
-                    <?php
-                    $models = ['یکبار پرداخت' => 'onetime', 'اشتراکی' => 'subscription'];
-                    $current_model = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_project_subscription_model', true) : 'onetime';
-                    foreach ($models as $label => $value) { echo '<option value="' . esc_attr($value) . '" ' . selected($current_model, $value, false) . '>' . esc_html($label) . '</option>'; }
-                    ?>
-                </select>
-            </div>
-            <div class="form-group">
-                 <label for="_project_contract_duration">مدت قرارداد:</label>
-                <select name="_project_contract_duration" id="_project_contract_duration">
-                     <?php
-                    $durations = ['یک ماهه' => '1-month', 'سه ماهه' => '3-months', 'شش ماهه' => '6-months', 'یک ساله' => '12-months'];
-                    $current_duration = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_project_contract_duration', true) : '1-month';
-                    foreach ($durations as $label => $value) { echo '<option value="' . esc_attr($value) . '" ' . selected($current_duration, $value, false) . '>' . esc_html($label) . '</option>'; }
-                    ?>
-                </select>
-            </div>
+            <div class="form-group"><label for="_project_subscription_model">مدل اشتراک:</label><select name="_project_subscription_model" id="_project_subscription_model"><?php $models = ['یکبار پرداخت' => 'onetime', 'اشتراکی' => 'subscription']; $current_model = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_project_subscription_model', true) : 'onetime'; foreach ($models as $label => $value) { echo '<option value="' . esc_attr($value) . '" ' . selected($current_model, $value, false) . '>' . esc_html($label) . '</option>'; } ?></select></div>
+            <div class="form-group"><label for="_project_contract_duration">مدت قرارداد:</label><select name="_project_contract_duration" id="_project_contract_duration"><?php $durations = ['یک ماهه' => '1-month', 'سه ماهه' => '3-months', 'شش ماهه' => '6-months', 'یک ساله' => '12-months']; $current_duration = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_project_contract_duration', true) : '1-month'; foreach ($durations as $label => $value) { echo '<option value="' . esc_attr($value) . '" ' . selected($current_duration, $value, false) . '>' . esc_html($label) . '</option>'; } ?></select></div>
         </div>
 
          <div class="pzl-form-row">
@@ -64,30 +46,37 @@ $contract_to_edit = isset($puzzling_contract) ? $puzzling_contract : null;
         </div>
 
         <hr>
-        <h4><i class="fas fa-calculator"></i> محاسبه‌گر اقساط</h4>
-        <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-            <div class="form-group"><label for="total_amount">مبلغ کل (تومان)</label><input type="text" id="total_amount" placeholder="مثال: 30000000"></div>
-            <div class="form-group"><label for="total_installments">تعداد اقساط</label><input type="number" id="total_installments" placeholder="مثال: 6"></div>
-            <div class="form-group"><label for="installment_interval">فاصله (روز)</label><input type="number" id="installment_interval" placeholder="مثال: 30"></div>
-            <div class="form-group"><label for="start_date">تاریخ اولین قسط</label><input type="date" id="start_date"></div>
-        </div>
-        <button type="button" id="calculate-installments" class="pzl-button">محاسبه و تولید اقساط</button>
-        <hr>
-        <h4><i class="fas fa-tasks"></i> لیست اقساط</h4>
+        <h4><i class="fas fa-calculator"></i> اقساط قرارداد</h4>
         <div id="payment-rows-container">
-            <?php
-            if ($contract_to_edit) {
-                $installments = get_post_meta($contract_to_edit->ID, '_installments', true);
-                if (!empty($installments)) {
-                    foreach ($installments as $index => $inst) {
-                        ?><div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;"><input type="number" name="payment_amount[]" placeholder="مبلغ (تومان)" value="<?php echo esc_attr($inst['amount']); ?>" required><input type="date" name="payment_due_date[]" value="<?php echo esc_attr($inst['due_date']); ?>" required><select name="payment_status[]"><option value="pending" <?php selected($inst['status'], 'pending'); ?>>در انتظار پرداخت</option><option value="paid" <?php selected($inst['status'], 'paid'); ?>>پرداخت شده</option></select><button type="button" class="pzl-button pzl-button-sm remove-payment-row" style="background: #dc3545 !important;">حذف</button></div><?php
-                    }
-                }
-            }
-            ?>
+            <?php if ($contract_to_edit) { $installments = get_post_meta($contract_to_edit->ID, '_installments', true); if (!empty($installments)) { foreach ($installments as $index => $inst) { ?><div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;"><input type="number" name="payment_amount[]" placeholder="مبلغ (تومان)" value="<?php echo esc_attr($inst['amount']); ?>" required><input type="date" name="payment_due_date[]" value="<?php echo esc_attr($inst['due_date']); ?>" required><select name="payment_status[]"><option value="pending" <?php selected($inst['status'], 'pending'); ?>>در انتظار</option><option value="paid" <?php selected($inst['status'], 'paid'); ?>>پرداخت شده</option></select><button type="button" class="pzl-button pzl-button-sm remove-payment-row" style="background: #dc3545 !important;">حذف</button></div><?php } } } ?>
         </div>
         <button type="button" id="add-payment-row" class="pzl-button" style="align-self: flex-start;">افزودن قسط دستی</button>
+        
         <hr style="margin: 20px 0;">
         <button type="submit" name="submit_contract" class="pzl-button" style="font-size: 16px;"><?php echo $contract_to_edit ? 'ذخیره تغییرات قرارداد' : 'ایجاد قرارداد'; ?></button>
     </form>
+    
+    <?php if ($contract_to_edit) : ?>
+    <div id="pzl-automation-from-product" style="margin-top: 30px; border-top: 1px solid #dee2e6; padding-top: 20px;">
+        <h4><i class="fas fa-magic"></i> افزودن خدمات از محصول</h4>
+        <p class="description">یک محصول اشتراکی یا گروهی را انتخاب کنید تا پروژه‌های مرتبط با خدمات آن به صورت خودکار به این قرارداد اضافه شوند.</p>
+        <div class="pzl-form-row" style="align-items: flex-end;">
+            <div class="form-group" style="flex: 2;">
+                <label for="product_id_for_automation">انتخاب محصول:</label>
+                <select id="product_id_for_automation">
+                    <option value="">-- انتخاب کنید --</option>
+                    <?php
+                    $products = wc_get_products(['type' => ['subscription', 'grouped', 'bundle'], 'limit' => -1]);
+                    foreach ($products as $product) {
+                        echo '<option value="' . esc_attr($product->get_id()) . '">' . esc_html($product->get_name()) . '</option>';
+                    }
+                    ?>
+                </select>
+            </div>
+            <div class="form-group">
+                 <button type="button" id="add-services-from-product" class="pzl-button">افزودن خدمات محصول</button>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
