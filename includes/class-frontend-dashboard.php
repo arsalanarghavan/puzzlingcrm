@@ -56,6 +56,11 @@ class PuzzlingCRM_Frontend_Dashboard {
             return self::render_partial('common/login-prompt');
         }
 
+        // Handle my_profile view for all users
+        if (isset($_GET['view']) && $_GET['view'] === 'my_profile') {
+            return self::render_partial('page-my-profile');
+        }
+
         switch ( self::get_user_role() ) {
             case 'system_manager':
                 return self::render_partial('dashboard-system-manager');

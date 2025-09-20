@@ -71,6 +71,7 @@ $template_to_load = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to
             </div>
             <div class="user-info">
                 خوش آمدید، <strong><?php echo esc_html( $current_user->display_name ); ?></strong>
+                <a href="<?php echo esc_url( add_query_arg('view', 'my_profile', get_permalink()) ); ?>" title="پروفایل من">پروفایل من</a>
                 <a href="<?php echo esc_url( wp_logout_url( home_url() ) ); ?>" title="خروج از حساب کاربری">خروج</a>
             </div>
         </div>
@@ -94,6 +95,7 @@ $template_to_load = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $partial_to
                 'payment_cancelled' => ['type' => 'warning', 'text' => 'تراکنش توسط شما لغو شد.'],
                 'payment_failed' => ['type' => 'error', 'text' => 'خطا در اتصال به درگاه پرداخت.'],
                 'payment_failed_verification' => ['type' => 'error', 'text' => 'خطا در تایید پرداخت. لطفاً با پشتیبانی تماس بگیرید.'],
+                 'profile_updated_success' => ['type' => 'success', 'text' => 'پروفایل شما با موفقیت به‌روزرسانی شد.'],
             ];
 
             if (array_key_exists($notice_key, $messages)) {
