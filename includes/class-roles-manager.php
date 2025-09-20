@@ -10,12 +10,13 @@
 class PuzzlingCRM_Roles_Manager {
 
     public function __construct() {
-        // add_action( 'init', [ $this, 'block_dashboard_access' ] ); // HIGHLIGHT: This line is commented out to disable redirection.
+        add_action( 'init', [ $this, 'block_dashboard_access' ] );
     }
 
     /**
      * Adds custom roles and capabilities.
      * **FIXED**: Now correctly adds custom capabilities to the 'administrator' role.
+     * **MODIFIED**: Grants comprehensive capabilities to 'system_manager'.
      */
     public function add_custom_roles() {
         // Remove existing roles to ensure capabilities are updated correctly on reactivation
@@ -49,6 +50,10 @@ class PuzzlingCRM_Roles_Manager {
             'edit_tasks' => true,
             'delete_tasks' => true,
             'assign_tasks' => true,
+            'edit_users' => true,
+            'create_users' => true,
+            'delete_users' => true,
+            'list_users' => true,
         ] );
 
         // Team Member
@@ -79,7 +84,7 @@ class PuzzlingCRM_Roles_Manager {
 
     /**
      * Blocks direct access to the WordPress admin area for custom roles.
-     * HIGHLIGHT: This function is no longer called from the constructor.
+     * **MODIFIED**: This function is now activated and correctly redirects users.
      */
     public function block_dashboard_access() {
         if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
@@ -95,12 +100,10 @@ class PuzzlingCRM_Roles_Manager {
             $is_super_admin = in_array('administrator', $user_roles);
 
             if ( $has_blocked_role && !$is_super_admin ) {
-                $dashboard_url = puzzling_get_dashboard_url();
-                if ($dashboard_url) {
-                    wp_redirect( $dashboard_url );
-                } else {
-                    wp_redirect( home_url() );
-                }
+                $dashboard_page_id = get_option('puzzling_dashboard_page_id');
+                $dashboard_url = $dashboard_page_id ? get_permalink($dashboard_page_id) : home_url('/');
+                
+                wp_redirect( $dashboard_url );
                 exit;
             }
         }

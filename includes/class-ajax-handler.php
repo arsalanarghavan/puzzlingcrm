@@ -62,18 +62,16 @@ class PuzzlingCRM_Ajax_Handler {
     
     /**
      * Universal AJAX handler for creating and updating users (staff and customers).
+     * **MODIFIED**: Changed permission check to 'manage_options' for consistency.
      */
     public function ajax_manage_user() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
 
-        $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم برای مدیریت کاربران را ندارید.']);
+        }
 
-        if ($user_id !== 0 && !current_user_can('edit_user', $user_id)) {
-            wp_send_json_error(['message' => 'شما دسترسی لازم برای ویرایش این کاربر را ندارید.']);
-        }
-        if ($user_id === 0 && !current_user_can('create_users')) {
-            wp_send_json_error(['message' => 'شما دسترسی لازم برای ایجاد کاربر جدید را ندارید.']);
-        }
+        $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
         
         $email = sanitize_email($_POST['email']);
         $first_name = sanitize_text_field($_POST['first_name']);
