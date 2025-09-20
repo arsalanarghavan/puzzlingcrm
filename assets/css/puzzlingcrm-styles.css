@@ -841,3 +841,33 @@
 .pzl-status-badge.status-answered, .pzl-status-badge.status-completed, .pzl-status-badge.status-active { background-color: var(--pzl-success-color); }
 .pzl-status-badge.status-closed, .pzl-status-badge.status-on-hold { background-color: #777; }
 .pzl-status-badge.status-cancelled { background-color: var(--pzl-danger-color); }
+
+/* --- FINAL FIX for Task Page Filter Layout (Version 2) --- */
+.pzl-tasks-filters .pzl-filter-bar .pzl-form-row {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 15px; /* Space between items */
+    align-items: flex-end;
+}
+
+.pzl-tasks-filters .pzl-filter-bar .form-group {
+    flex: 1 1 auto; /* Allow items to grow/shrink based on content */
+    margin: 0; 
+}
+
+/* Make the search row and its group take full width */
+.pzl-tasks-filters .pzl-filter-bar .search-row,
+.pzl-tasks-filters .pzl-filter-bar .search-row .form-group {
+    flex-basis: 100%;
+}
+
+/* Ensure filter inputs take up available space */
+.pzl-tasks-filters .pzl-filter-bar .filter-row select,
+.pzl-tasks-filters .pzl-filter-bar .filter-row input {
+    width: 100%;
+}
+
+/* Give the button a fixed width so other elements can flex */
+.pzl-tasks-filters .pzl-filter-bar .filter-row .form-group:last-child {
+    flex-grow: 0;
+}
