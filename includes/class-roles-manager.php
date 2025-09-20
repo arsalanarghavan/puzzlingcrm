@@ -17,6 +17,7 @@ class PuzzlingCRM_Roles_Manager {
      * Adds custom roles and capabilities.
      * **FIXED**: Now correctly adds custom capabilities to the 'administrator' role.
      * **MODIFIED**: Grants comprehensive capabilities to 'system_manager'.
+     * **FIXED**: Added 'edit_posts' capability to 'team_member' to allow task creation.
      */
     public function add_custom_roles() {
         // Remove existing roles to ensure capabilities are updated correctly on reactivation
@@ -59,6 +60,7 @@ class PuzzlingCRM_Roles_Manager {
         // Team Member
         add_role( 'team_member', 'عضو تیم', [
             'read' => true,
+            'edit_posts' => true, // **FIX**: Added capability to allow creating/editing tasks CPT.
             'edit_tasks' => true,
         ] );
     }

@@ -79,6 +79,7 @@ class PuzzlingCRM_Frontend_Dashboard {
     /**
      * Renders projects page based on user role.
      * Shortcode: [puzzling_projects]
+     * **FIX**: Added 'team_member' role to view their assigned projects.
      */
     public static function render_projects() {
         if ( ! is_user_logged_in() ) return self::render_partial('common/login-prompt');
@@ -88,6 +89,8 @@ class PuzzlingCRM_Frontend_Dashboard {
             return self::render_partial('page-projects');
         } elseif ( $role === 'customer' ) {
             return self::render_partial('list-projects');
+        } elseif ( $role === 'team_member' ) {
+            return self::render_partial('list-team-member-projects');
         } else {
             return '<p>' . __('You do not have permission to view this page.', 'puzzlingcrm') . '</p>';
         }
