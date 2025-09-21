@@ -35,11 +35,6 @@ $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, '
     <div class="pzl-modal-subtitle">
         در پروژه: <a href="#"><?php echo esc_html($project_title); ?></a>
     </div>
-    <div class="pzl-modal-actions">
-        <button id="pzl-save-as-template-btn" class="pzl-button pzl-button-sm">
-            <i class="fas fa-clone"></i> ذخیره به عنوان قالب
-        </button>
-    </div>
 </div>
 
 <div class="pzl-modal-main-content">
@@ -217,6 +212,12 @@ $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, '
      <div class="pzl-sidebar-item">
         <strong>برچسب‌ها:</strong>
         <span><?php the_terms($task_id, 'task_label', '', ', '); ?></span>
+    </div>
+    <hr>
+    <div class="pzl-modal-actions">
+        <button id="pzl-save-as-template-btn" class="pzl-button pzl-button-sm">
+            <i class="fas fa-clone"></i> ذخیره به عنوان قالب
+        </button>
     </div>
 </div>
 <?php wp_reset_postdata(); ?>
