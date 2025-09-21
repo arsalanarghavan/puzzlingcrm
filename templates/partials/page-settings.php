@@ -12,6 +12,7 @@ $base_url = remove_query_arg('puzzling_notice');
         <a href="<?php echo add_query_arg('tab', 'workflow', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'workflow' ? 'active' : ''; ?>"><i class="fas fa-project-diagram"></i> گردش کار</a>
         <a href="<?php echo add_query_arg('tab', 'positions', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'positions' ? 'active' : ''; ?>"><i class="fas fa-sitemap"></i> جایگاه‌های شغلی</a>
         <a href="<?php echo add_query_arg('tab', 'automations', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'automations' ? 'active' : ''; ?>"><i class="fas fa-robot"></i> اتوماسیون</a>
+        <a href="<?php echo add_query_arg('tab', 'notifications', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'notifications' ? 'active' : ''; ?>"><i class="fas fa-bell"></i> اطلاع‌رسانی‌ها</a>
         <a href="<?php echo add_query_arg('tab', 'forms', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'forms' ? 'active' : ''; ?>"><i class="fas fa-clipboard-list"></i> فرم‌ها</a>
     </div>
 
@@ -28,6 +29,14 @@ $base_url = remove_query_arg('puzzling_notice');
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-automations.php';
         } elseif ( $active_tab == 'forms' ) {
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-forms.php';
+        } elseif ( $active_tab == 'notifications' ) {
+            // We will create this file next, for now, we just add the condition
+            $notification_settings_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-notifications.php';
+            if (file_exists($notification_settings_path)) {
+                include $notification_settings_path;
+            } else {
+                echo '<p>فایل تنظیمات اطلاع‌رسانی یافت نشد.</p>';
+            }
         } else {
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-payment.php';
         }

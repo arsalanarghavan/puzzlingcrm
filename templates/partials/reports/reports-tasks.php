@@ -1,6 +1,6 @@
 <?php
 /**
- * Tasks Reports Template - V2 with Charts and Advanced Stats
+ * Tasks Reports Template - V3 with Advanced KPIs and Export options
  * @package PuzzlingCRM
  */
 
@@ -9,13 +9,14 @@ if ( ! current_user_can('manage_options') ) return;
 
 // --- Stats Calculation ---
 $total_tasks = wp_count_posts('task')->publish;
+$today_str = wp_date('Y-m-d');
 
 // Task counts by status
 $task_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false]);
 $status_counts = [];
 $done_tasks_count = 0;
 foreach ($task_statuses as $status) {
-    $count = count(get_posts(['post_type' => 'task', 'posts_per_page' => -1, 'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug]]]));
+    $count = $status->count; // Use the count property from get_terms for efficiency
     $status_counts[$status->name] = $count;
     if ($status->slug === 'done') {
         $done_tasks_count = $count;
@@ -24,7 +25,6 @@ foreach ($task_statuses as $status) {
 $active_tasks_count = $total_tasks - $done_tasks_count;
 
 // Overdue tasks
-$today_str = date('Y-m-d');
 $overdue_tasks_query = new WP_Query([
     'post_type' => 'task',
     'posts_per_page' => -1,
@@ -37,6 +37,16 @@ $overdue_tasks_query = new WP_Query([
 ]);
 $overdue_tasks_count = $overdue_tasks_query->post_count;
 
+// NEW: Tasks completed today
+$tasks_done_today_query = new WP_Query([
+    'post_type' => 'task',
+    'posts_per_page' => -1,
+    'date_query' => [
+        ['after' => 'today', 'inclusive' => true]
+    ],
+    'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => 'done']]
+]);
+$tasks_done_today_count = $tasks_done_today_query->post_count;
 
 // Performance by team member
 $team_members_stats = [];
@@ -58,7 +68,16 @@ foreach ($team_users as $user) {
 }
 ?>
 
-<div class="finance-report-grid">
+<div class="pzl-card-header" style="border: none; padding-bottom: 0;">
+    <h4><i class="fas fa-file-export"></i> دریافت خروجی</h4>
+    <div class="pzl-header-actions">
+        <button class="pzl-button pzl-button-sm" disabled><i class="fas fa-file-pdf"></i> دریافت گزارش PDF</button>
+        <button class="pzl-button pzl-button-sm" disabled><i class="fas fa-file-excel"></i> دریافت گزارش اکسل</button>
+        <p class="description" style="margin-top: 10px; font-size: 12px;">قابلیت دریافت خروجی به زودی اضافه خواهد شد.</p>
+    </div>
+</div>
+
+<div class="finance-report-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
     <div class="report-card">
         <h4><i class="fas fa-tasks"></i> کل وظایف</h4>
         <span class="stat-number"><?php echo esc_html($total_tasks); ?></span>
@@ -67,9 +86,9 @@ foreach ($team_users as $user) {
         <h4><i class="fas fa-spinner"></i> وظایف فعال</h4>
         <span class="stat-number"><?php echo esc_html($active_tasks_count); ?></span>
     </div>
-    <div class="report-card">
-        <h4><i class="fas fa-check-circle"></i> وظایف انجام شده</h4>
-        <span class="stat-number"><?php echo esc_html($done_tasks_count); ?></span>
+	<div class="report-card">
+        <h4><i class="fas fa-check-double"></i> انجام شده امروز</h4>
+        <span class="stat-number" style="color: var(--pzl-success-color);"><?php echo esc_html($tasks_done_today_count); ?></span>
     </div>
     <div class="report-card">
         <h4><i class="fas fa-exclamation-triangle"></i> وظایف دارای تاخیر</h4>
@@ -79,7 +98,7 @@ foreach ($team_users as $user) {
 
 <div class="pzl-reports-grid">
     <div class="pzl-card">
-        <h4><i class="fas fa-pie-chart"></i> وظایف بر اساس وضعیت</h4>
+        <h4><i class="fas fa-chart-pie"></i> وظایف بر اساس وضعیت</h4>
         <div class="pzl-chart-container pzl-pie-chart-container">
             <?php if (!empty($status_counts) && $total_tasks > 0): ?>
                 <div class="pzl-chart-legend">
@@ -87,6 +106,7 @@ foreach ($team_users as $user) {
                 $hue_step = 360 / count($status_counts);
                 $current_hue = 0;
                 foreach($status_counts as $status => $count): 
+                    if ($count == 0) continue;
                     $percentage = round(($count / $total_tasks) * 100);
                 ?>
                     <div class="legend-item">
@@ -102,17 +122,22 @@ foreach ($team_users as $user) {
     </div>
 
     <div class="pzl-card">
-        <h4><i class="fas fa-users"></i> عملکرد اعضای تیم</h4>
+        <h4><i class="fas fa-users"></i> عملکرد اعضای تیم (تسک‌های تکمیل شده)</h4>
         <div class="pzl-team-performance">
             <?php if(!empty($team_members_stats)): ?>
-                 <?php foreach($team_members_stats as $name => $stats): 
+                 <?php
+                 // Sort users by completed tasks
+                 uasort($team_members_stats, function($a, $b) {
+                     return $b['completed'] <=> $a['completed'];
+                 });
+                 foreach($team_members_stats as $name => $stats): 
                     $total = $stats['active'] + $stats['completed'];
                     $completed_perc = $total > 0 ? round(($stats['completed'] / $total) * 100) : 0;
                  ?>
                  <div class="team-member-stat">
                     <span class="member-name"><?php echo esc_html($name); ?></span>
                     <div class="progress-bar-container">
-                        <div class="progress-bar" style="width: <?php echo esc_attr($completed_perc); ?>%;"></div>
+                        <div class="progress-bar" style="width: <?php echo esc_attr($completed_perc); ?>%;" title="<?php echo esc_attr($completed_perc); ?>% تکمیل شده"></div>
                     </div>
                     <span class="member-numbers"><?php echo esc_html($stats['completed']); ?>/<?php echo esc_html($total); ?> انجام شده</span>
                  </div>

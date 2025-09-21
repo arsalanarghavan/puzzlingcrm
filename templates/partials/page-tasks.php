@@ -1,6 +1,6 @@
 <?php
 /**
- * Main Task Management Page Template - V3.5 (Swimlane Filter Fix)
+ * Main Task Management Page Template - V4 (New Task Structure)
  * This template includes multiple views and auto-filters for team members.
  * @package PuzzlingCRM
  */
@@ -26,6 +26,9 @@ $all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_
 $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
 $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
 $labels = get_terms(['taxonomy' => 'task_label', 'hide_empty' => true]);
+// NEW: Fetch task categories and organizational positions
+$task_categories = get_terms(['taxonomy' => 'task_category', 'hide_empty' => false]);
+$organizational_positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false]);
 
 ?>
 <div class="pzl-dashboard-section" id="pzl-task-manager-page">
@@ -100,8 +103,10 @@ $labels = get_terms(['taxonomy' => 'task_label', 'hide_empty' => true]);
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="time_estimate">تخمین زمان (ساعت)</label>
-                        <input type="number" name="time_estimate" min="0" step="0.5" placeholder="مثال: 8">
+                        <label for="task_category">دسته‌بندی</label>
+						<select name="task_category" required>
+							<?php foreach ($task_categories as $category) { echo '<option value="' . esc_attr($category->term_id) . '">' . esc_html($category->name) . '</option>'; } ?>
+						</select>
                     </div>
                      <div class="form-group">
                         <label for="story_points">امتیاز داستان (Story Points)</label>
@@ -110,17 +115,20 @@ $labels = get_terms(['taxonomy' => 'task_label', 'hide_empty' => true]);
                 </div>
                 <div class="pzl-form-row">
                     <div class="form-group">
-                        <label for="assigned_to">تخصیص به</label>
-                        <select name="assigned_to" required>
+                        <label for="assigned_to">تخصیص به کارمند</label>
+                        <select name="assigned_to">
                             <option value="">-- انتخاب کارمند --</option>
                             <?php foreach ($all_staff as $member) { echo '<option value="' . esc_attr($member->ID) . '">' . esc_html($member->display_name) . '</option>'; } ?>
                         </select>
+						<p class="description">در صورت انتخاب، به جای نقش، تسک مستقیماً به این فرد تخصیص می‌یابد.</p>
                     </div>
-                    <div class="form-group">
-                        <label for="priority">اولویت</label>
-                        <select name="priority" required>
-                            <?php foreach ($priorities as $priority) { echo '<option value="' . esc_attr($priority->term_id) . '">' . esc_html($priority->name) . '</option>'; } ?>
-                        </select>
+					<div class="form-group">
+                        <label for="assigned_role">تخصیص به نقش مسئول</label>
+						<select name="assigned_role">
+							<option value="">-- انتخاب نقش --</option>
+							<?php foreach ($organizational_positions as $position) { echo '<option value="' . esc_attr($position->term_id) . '">' . esc_html($position->name) . '</option>'; } ?>
+						</select>
+						<p class="description">برای تسک‌های اتوماتیک یا عمومی استفاده شود.</p>
                     </div>
                     <div class="form-group">
                         <label for="due_date">ددلاین</label>
@@ -133,12 +141,15 @@ $labels = get_terms(['taxonomy' => 'task_label', 'hide_empty' => true]);
                         <input type="text" name="task_labels" placeholder="برچسب‌ها را با کاما (,) جدا کنید">
                     </div>
                     <div class="form-group half-width">
-                        <label for="task_cover_image">کاور وظیفه (اختیاری)</label>
-                        <input type="file" name="task_cover_image" accept="image/*">
-                    </div>
+						<label for="show_to_customer">تنظیمات نمایش</label>
+						<label style="font-weight: normal; display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid #dee2e6; border-radius: 8px; background: #fdfdfd;">
+							<input type="checkbox" name="show_to_customer" value="1">
+							<span>این تسک به مشتری نمایش داده شود</span>
+						</label>
+					</div>
                 </div>
                  <div class="form-group">
-                    <label for="task_attachments">پیوست فایل‌ها</label>
+                    <label for="task_attachments">پیوست فایل‌ها (حداکثر 5 مگابایت)</label>
                     <input type="file" name="task_attachments[]" multiple>
                 </div>
                 <div class="form-submit">

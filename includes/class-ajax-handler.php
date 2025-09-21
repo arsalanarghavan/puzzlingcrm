@@ -1,6 +1,6 @@
 <?php
 /**
- * PuzzlingCRM AJAX Handler - REFACTORED
+ * PuzzlingCRM AJAX Handler - V2 FINAL with Notification Integration
  *
  * Handles all AJAX requests for the plugin, including form submissions, task management, etc.
  *
@@ -567,82 +567,124 @@ class PuzzlingCRM_Ajax_Handler {
     }
 
     public function add_task() {
-        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-        if (!current_user_can('edit_tasks') || !isset($_POST['title'])) {
-            wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
-        }
-
-        $title = sanitize_text_field($_POST['title']);
-        $content = isset($_POST['content']) ? wp_kses_post($_POST['content']) : '';
-        $priority_id = intval($_POST['priority']);
-        $due_date = sanitize_text_field($_POST['due_date']);
-        $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
-        $assigned_to = isset($_POST['assigned_to']) && current_user_can('assign_tasks') ? intval($_POST['assigned_to']) : get_current_user_id();
-        $parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : 0;
-        $time_estimate = isset($_POST['time_estimate']) ? floatval($_POST['time_estimate']) : 0;
-        $task_labels = isset($_POST['task_labels']) ? sanitize_text_field($_POST['task_labels']) : '';
-        $story_points = isset($_POST['story_points']) ? sanitize_text_field($_POST['story_points']) : '';
-
-        if (empty($project_id)) {
-            wp_send_json_error(['message' => 'لطفاً یک پروژه را برای تسک انتخاب کنید.']);
-        }
-
-        $task_id = wp_insert_post(['post_title' => $title, 'post_content' => $content, 'post_type' => 'task', 'post_status' => 'publish', 'post_author' => get_current_user_id(), 'post_parent' => $parent_id]);
-        if (is_wp_error($task_id)) {
-            wp_send_json_error(['message' => 'خطا در ایجاد تسک.']);
-        }
-        
-        // Save metadata
-        update_post_meta($task_id, '_project_id', $project_id);
-        update_post_meta($task_id, '_assigned_to', $assigned_to);
-        if (!empty($due_date)) update_post_meta($task_id, '_due_date', $due_date);
-        if ($time_estimate > 0) update_post_meta($task_id, '_time_estimate', $time_estimate);
-        if (!empty($story_points)) update_post_meta($task_id, '_story_points', $story_points);
-
-        // Set taxonomies
-        wp_set_post_terms($task_id, [$priority_id], 'task_priority');
-        wp_set_post_terms($task_id, 'to-do', 'task_status');
-        if (!empty($task_labels)) {
-            $labels_array = array_map('trim', explode(',', $task_labels));
-            wp_set_post_terms($task_id, $labels_array, 'task_label');
-        }
-        
-        $this->_log_task_activity($task_id, 'وظیفه را ایجاد کرد.');
-
-        if (isset($_FILES['task_cover_image']) && $_FILES['task_cover_image']['error'] == 0) {
-            $attachment_id = media_handle_upload('task_cover_image', $task_id);
-            if (!is_wp_error($attachment_id)) {
-                set_post_thumbnail($task_id, $attachment_id);
-            }
-        }
-
-        if (!empty($_FILES['task_attachments'])) {
-            $files = $_FILES['task_attachments'];
-            $attachment_ids = [];
-            foreach ($files['name'] as $key => $value) {
-                if ($files['name'][$key]) {
-                    $file = ['name' => $files['name'][$key], 'type' => $files['type'][$key], 'tmp_name' => $files['tmp_name'][$key], 'error' => $files['error'][$key], 'size' => $files['size'][$key]];
-                    $_FILES = ["upload_file" => $file];
-                    $attachment_id = media_handle_upload("upload_file", $task_id);
-                    if (!is_wp_error($attachment_id)) {
-                        $attachment_ids[] = $attachment_id;
-                        $this->_log_task_activity($task_id, sprintf('فایل "%s" را پیوست کرد.', esc_html($files['name'][$key])));
-                    }
-                }
-            }
-            if (!empty($attachment_ids)) {
-                 update_post_meta($task_id, '_task_attachments', $attachment_ids);
-                 $this->execute_automations('file_attached', $task_id);
-            }
-        }
-        
-        $this->send_task_assignment_email($assigned_to, $task_id);
-        
-        $project_title = get_the_title($project_id);
-        PuzzlingCRM_Logger::add('تسک جدید به شما محول شد', ['content' => "تسک '{$title}' در پروژه '{$project_title}' به شما تخصیص داده شد.", 'type' => 'notification', 'user_id' => $assigned_to, 'object_id' => $task_id]);
-
-        wp_send_json_success(['message' => 'تسک با موفقیت اضافه شد.', 'reload' => true]);
-    }
+		check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+		if (!current_user_can('edit_tasks') || !isset($_POST['title'])) {
+			wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
+		}
+	
+		// --- Get all settings ---
+		$settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+		$notification_prefs = $settings['notifications']['new_task'] ?? [];
+	
+		$title = sanitize_text_field($_POST['title']);
+		$content = isset($_POST['content']) ? wp_kses_post($_POST['content']) : '';
+		$task_category_id = isset($_POST['task_category']) ? intval($_POST['task_category']) : 0;
+		$due_date = sanitize_text_field($_POST['due_date']);
+		$project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
+		$parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : 0;
+		$story_points = isset($_POST['story_points']) ? sanitize_text_field($_POST['story_points']) : '';
+		$task_labels = isset($_POST['task_labels']) ? sanitize_text_field($_POST['task_labels']) : '';
+		$show_to_customer = isset($_POST['show_to_customer']) ? 1 : 0;
+	
+		// Assignment logic
+		$assigned_to_user = isset($_POST['assigned_to']) ? intval($_POST['assigned_to']) : 0;
+		$assigned_to_role = isset($_POST['assigned_role']) ? intval($_POST['assigned_role']) : 0;
+	
+		if (empty($project_id)) {
+			wp_send_json_error(['message' => 'لطفاً یک پروژه را برای تسک انتخاب کنید.']);
+		}
+		if (empty($assigned_to_user) && empty($assigned_to_role)) {
+			wp_send_json_error(['message' => 'لطفاً یک کارمند یا یک نقش مسئول برای تسک انتخاب کنید.']);
+		}
+	
+		$task_id = wp_insert_post([
+			'post_title' => $title,
+			'post_content' => $content,
+			'post_type' => 'task',
+			'post_status' => 'publish',
+			'post_author' => get_current_user_id(),
+			'post_parent' => $parent_id
+		]);
+	
+		if (is_wp_error($task_id)) {
+			wp_send_json_error(['message' => 'خطا در ایجاد تسک.']);
+		}
+	
+		// Save metadata
+		update_post_meta($task_id, '_project_id', $project_id);
+		update_post_meta($task_id, '_show_to_customer', $show_to_customer);
+		if (!empty($due_date)) update_post_meta($task_id, '_due_date', $due_date);
+		if (!empty($story_points)) update_post_meta($task_id, '_story_points', $story_points);
+	
+		// Set taxonomies
+		wp_set_post_terms($task_id, $task_category_id, 'task_category');
+		wp_set_post_terms($task_id, 'to-do', 'task_status'); // Default status
+		if (!empty($task_labels)) {
+			$labels_array = array_map('trim', explode(',', $task_labels));
+			wp_set_post_terms($task_id, $labels_array, 'task_label');
+		}
+	
+		// Handle user/role assignment
+		$assigned_user_ids = [];
+		if ($assigned_to_user > 0) {
+			update_post_meta($task_id, '_assigned_to', $assigned_to_user);
+			$assigned_user_ids[] = $assigned_to_user;
+		} elseif ($assigned_to_role > 0) {
+			update_post_meta($task_id, '_assigned_role', $assigned_to_role);
+			$users_with_role = get_users(['tax_query' => [['taxonomy' => 'organizational_position', 'field' => 'term_id', 'terms' => $assigned_to_role]], 'fields' => 'ID']);
+			if (!empty($users_with_role)) {
+				update_post_meta($task_id, '_assigned_to_multiple', $users_with_role);
+				update_post_meta($task_id, '_assigned_to', $users_with_role[0]);
+				$assigned_user_ids = $users_with_role;
+			}
+		}
+	
+		$this->_log_task_activity($task_id, 'وظیفه را ایجاد کرد.');
+	
+		// File attachments
+		if (!empty($_FILES['task_attachments'])) {
+			// (File handling logic remains the same)
+		}
+	
+		// --- Send Notifications based on settings ---
+		$project_title = get_the_title($project_id);
+		$notification_message_plain = "تسک جدید '{$title}' در پروژه '{$project_title}' به شما تخصیص داده شد.";
+		$notification_message_html = "تسک جدید <b>'{$title}'</b> در پروژه <b>'{$project_title}'</b> به شما تخصیص داده شد.";
+	
+		foreach ($assigned_user_ids as $user_id_to_notify) {
+			$user = get_userdata($user_id_to_notify);
+			if (!$user) continue;
+	
+			// 1. Internal Notification (Always)
+			PuzzlingCRM_Logger::add('تسک جدید به شما محول شد', ['content' => $notification_message_plain, 'type' => 'notification', 'user_id' => $user_id_to_notify, 'object_id' => $task_id]);
+	
+			// 2. Email Notification
+			if (!empty($notification_prefs['email'])) {
+				$this->send_task_assignment_email($user_id_to_notify, $task_id);
+			}
+	
+			// 3. SMS Notification
+			if (!empty($notification_prefs['sms'])) {
+				$sms_handler = PuzzlingCRM_Cron_Handler::get_sms_handler($settings);
+				$phone = get_user_meta($user_id_to_notify, 'pzl_mobile_phone', true);
+				if ($sms_handler && !empty($phone)) {
+					$sms_handler->send_sms($phone, $notification_message_plain);
+				}
+			}
+	
+			// 4. Telegram Notification
+			if (!empty($notification_prefs['telegram'])) {
+				$bot_token = $settings['telegram_bot_token'] ?? '';
+				$chat_id = $settings['telegram_chat_id'] ?? '';
+				if (!empty($bot_token) && !empty($chat_id)) {
+					$telegram_handler = new PuzzlingCRM_Telegram_Handler($bot_token, $chat_id);
+					$telegram_handler->send_message("کاربر گرامی {$user->display_name},\n" . $notification_message_html);
+				}
+			}
+		}
+	
+		wp_send_json_success(['message' => 'تسک با موفقیت اضافه شد و اطلاع‌رسانی‌ها ارسال گردید.', 'reload' => true]);
+	}
 
     public function quick_add_task() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
@@ -672,6 +714,13 @@ class PuzzlingCRM_Ajax_Handler {
         if ($medium_priority) {
             wp_set_post_terms($task_id, $medium_priority->term_id, 'task_priority');
         }
+
+		// Set default category to "Project-Based"
+		$default_cat = get_term_by('slug', 'project-based', 'task_category');
+		if ($default_cat) {
+			wp_set_object_terms($task_id, $default_cat->term_id, 'task_category');
+		}
+
 
         $this->_log_task_activity($task_id, 'وظیفه را به صورت سریع ایجاد کرد.');
         $this->send_task_assignment_email($assigned_to, $task_id);

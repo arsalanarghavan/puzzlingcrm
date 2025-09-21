@@ -20,6 +20,9 @@ class PuzzlingCRM_CPT_Manager {
         // Add meta box for linking templates to products
         add_action( 'add_meta_boxes', [ $this, 'add_project_template_meta_box' ] );
         add_action( 'save_post_product', [ $this, 'save_project_template_meta_box' ] );
+		// NEW: Add meta box for task templates
+        add_action( 'add_meta_boxes', [ $this, 'add_task_template_meta_box' ] );
+        add_action( 'save_post_pzl_task_template', [ $this, 'save_task_template_meta_box' ] );
     }
 
     public function register_post_types() {
@@ -82,12 +85,13 @@ class PuzzlingCRM_CPT_Manager {
         // Task Template CPT
         register_post_type( 'pzl_task_template', [
             'labels'        => [
-                'name'          => __( 'Task Templates', 'puzzlingcrm' ),
-                'singular_name' => __( 'Task Template', 'puzzlingcrm' ),
+                'name'          => __( 'قالب‌های تسک', 'puzzlingcrm' ),
+                'singular_name' => __( 'قالب تسک', 'puzzlingcrm' ),
+				'add_new_item'  => __( 'افزودن قالب تسک جدید', 'puzzlingcrm' ),
             ],
             'public'        => false,
             'show_ui'       => true,
-            'show_in_menu'  => false,
+            'show_in_menu'  => 'puzzling-crm-info',
             'supports'      => ['title', 'editor', 'custom-fields'],
         ]);
         
@@ -178,8 +182,67 @@ class PuzzlingCRM_CPT_Manager {
             'supports'      => ['title', 'editor', 'author', 'custom-fields'],
         ]);
     }
-    
-    // ... (rest of the file: register_taxonomies, meta boxes for tasks...)
+
+    /**
+     * Adds a meta box to the Task Template CPT.
+     */
+    public function add_task_template_meta_box() {
+        add_meta_box(
+            'puzzling_task_template_options',
+            __( 'تنظیمات قالب تسک', 'puzzlingcrm' ),
+            [ $this, 'render_task_template_meta_box' ],
+            'pzl_task_template', 'normal', 'high'
+        );
+    }
+
+	/**
+     * Renders the content of the task template meta box.
+     */
+    public function render_task_template_meta_box( $post ) {
+        wp_nonce_field('puzzling_save_task_template_options', 'puzzling_task_template_nonce');
+
+        $assigned_role_id = get_post_meta($post->ID, '_assigned_role', true);
+        $task_category_id = get_post_meta($post->ID, '_task_category', true);
+        
+        $positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false]);
+        $categories = get_terms(['taxonomy' => 'task_category', 'hide_empty' => false]);
+
+        echo '<p><strong>' . __('دسته‌بندی (برای اتوماسیون):', 'puzzlingcrm') . '</strong></p>';
+        echo '<select name="_task_category" style="width:100%;">';
+        echo '<option value="">' . __('انتخاب کنید', 'puzzlingcrm') . '</option>';
+        foreach ($categories as $category) {
+            echo '<option value="' . esc_attr($category->term_id) . '" ' . selected($task_category_id, $category->term_id, false) . '>' . esc_html($category->name) . '</option>';
+        }
+        echo '</select>';
+        echo '<p class="description">' . __('برای ساخت تسک‌های خودکار، "روزانه" را انتخاب کنید.', 'puzzlingcrm') . '</p>';
+
+        echo '<hr style="margin: 20px 0;">';
+
+        echo '<p><strong>' . __('نقش مسئول (برای اتوماسیون):', 'puzzlingcrm') . '</strong></p>';
+        echo '<select name="_assigned_role" style="width:100%;">';
+        echo '<option value="">' . __('انتخاب کنید', 'puzzlingcrm') . '</option>';
+        foreach ($positions as $position) {
+            echo '<option value="' . esc_attr($position->term_id) . '" ' . selected($assigned_role_id, $position->term_id, false) . '>' . esc_html($position->name) . '</option>';
+        }
+        echo '</select>';
+        echo '<p class="description">' . __('این تسک روزانه برای تمام کارمندانی که این جایگاه شغلی را دارند ساخته خواهد شد.', 'puzzlingcrm') . '</p>';
+    }
+
+    /**
+     * Saves the task template options.
+     */
+    public function save_task_template_meta_box( $post_id ) {
+        if (!isset($_POST['puzzling_task_template_nonce']) || !wp_verify_nonce($_POST['puzzling_task_template_nonce'], 'puzzling_save_task_template_options')) return;
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+        if (!current_user_can('edit_post', $post_id)) return;
+
+        if (isset($_POST['_task_category'])) {
+            update_post_meta($post_id, '_task_category', intval($_POST['_task_category']));
+        }
+        if (isset($_POST['_assigned_role'])) {
+            update_post_meta($post_id, '_assigned_role', intval($_POST['_assigned_role']));
+        }
+    }
 
     /**
      * Adds a meta box to link a Project Template to a WooCommerce Product.
@@ -238,6 +301,21 @@ class PuzzlingCRM_CPT_Manager {
                 'name' => __( 'وضعیت‌های پروژه', 'puzzlingcrm' ),
                 'singular_name' => __( 'وضعیت پروژه', 'puzzlingcrm' ),
                 'menu_name' => __( 'وضعیت پروژه', 'puzzlingcrm' ),
+            ]
+        ]);
+
+		// Task Category Taxonomy - NEW
+		register_taxonomy('task_category', ['task', 'pzl_task_template'], [ // Apply to tasks and task templates
+            'label' => __( 'Task Category', 'puzzlingcrm' ),
+            'hierarchical' => true,
+            'public' => false,
+            'show_ui' => true,
+            'show_admin_column' => true,
+            'show_in_rest' => true,
+            'labels' => [
+                'name' => __( 'دسته‌بندی تسک', 'puzzlingcrm' ),
+                'singular_name' => __( 'دسته‌بندی تسک', 'puzzlingcrm' ),
+                'menu_name' => __( 'دسته‌بندی تسک', 'puzzlingcrm' ),
             ]
         ]);
 
@@ -322,8 +400,14 @@ class PuzzlingCRM_CPT_Manager {
             if ( ! term_exists( $slug, 'project_status' ) ) wp_insert_term( $name, 'project_status', ['slug' => $slug] );
         }
 
+		// Task Categories - NEW
+        $task_categories = ['روزانه' => 'daily', 'هفتگی' => 'weekly', 'پروژه‌ای' => 'project-based'];
+        foreach ($task_categories as $name => $slug) {
+            if ( ! term_exists( $slug, 'task_category' ) ) wp_insert_term( $name, 'task_category', ['slug' => $slug] );
+        }
+
         // Task Statuses
-        $task_statuses = [__('To Do', 'puzzlingcrm') => 'to-do', __('In Progress', 'puzzlingcrm') => 'in-progress', __('Done', 'puzzlingcrm') => 'done'];
+        $task_statuses = ['انجام نشده' => 'to-do', 'در حال انجام' => 'in-progress', 'انجام شده' => 'done'];
         foreach ($task_statuses as $name => $slug) {
             if ( ! term_exists( $slug, 'task_status' ) ) wp_insert_term( $name, 'task_status', ['slug' => $slug] );
         }

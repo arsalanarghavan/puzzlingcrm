@@ -1,7 +1,7 @@
 <?php
 /**
  * PuzzlingCRM Cron Handler
- * Manages scheduled tasks like sending payment reminders using a refactored, extensible architecture.
+ * Manages scheduled tasks like sending payment reminders and creating daily tasks.
  *
  * @package PuzzlingCRM
  */
@@ -11,13 +11,21 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class PuzzlingCRM_Cron_Handler {
     
     public function __construct() {
+        // Schedule daily payment reminders
         if ( ! wp_next_scheduled( 'puzzling_daily_reminder_hook' ) ) {
-            // Use WordPress's timezone for scheduling to ensure consistency.
             wp_schedule_event( strtotime('today 9:00am', current_time('timestamp')), 'daily', 'puzzling_daily_reminder_hook' );
         }
         
         add_action( 'puzzling_daily_reminder_hook', [ $this, 'send_payment_reminders' ] );
-        add_action( 'puzzling_daily_reminder_hook', [ $this, 'send_task_reminders' ] ); // **NEW ACTION**
+        add_action( 'puzzling_daily_reminder_hook', [ $this, 'send_task_reminders' ] );
+
+        // Schedule automatic daily task creation
+        if ( ! wp_next_scheduled( 'puzzling_create_daily_tasks_hook' ) ) {
+            $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+            $start_hour = $settings['work_start_hour'] ?? '09:00';
+            wp_schedule_event( strtotime('today ' . $start_hour, current_time('timestamp')), 'daily', 'puzzling_create_daily_tasks_hook' );
+        }
+        add_action( 'puzzling_create_daily_tasks_hook', [ $this, 'create_daily_tasks' ] );
     }
 
     /**
@@ -49,6 +57,106 @@ class PuzzlingCRM_Cron_Handler {
         }
 
         return $handler;
+    }
+	
+	/**
+     * Creates daily tasks automatically based on templates.
+     */
+    public function create_daily_tasks() {
+        // Find the term for "daily" tasks
+        $daily_category = get_term_by('slug', 'daily', 'task_category');
+        if (!$daily_category) {
+            error_log('PuzzlingCRM Cron: "Daily" task category not found.');
+            return;
+        }
+
+        // Get all task templates marked as "daily"
+        $daily_templates = get_posts([
+            'post_type' => 'pzl_task_template',
+            'posts_per_page' => -1,
+            'tax_query' => [
+                [
+                    'taxonomy' => 'task_category',
+                    'field'    => 'term_id',
+                    'terms'    => $daily_category->term_id,
+                ],
+            ],
+        ]);
+
+        if (empty($daily_templates)) {
+            return; // No daily templates to process
+        }
+		
+		$today_str = wp_date('Y-m-d');
+
+        foreach ($daily_templates as $template) {
+            $assigned_role_id = get_post_meta($template->ID, '_assigned_role', true);
+            if (empty($assigned_role_id)) {
+                continue;
+            }
+
+            // Find all users with this organizational position
+            $users_with_role = get_users([
+                'tax_query' => [
+                    [
+                        'taxonomy' => 'organizational_position',
+                        'field'    => 'term_id',
+                        'terms'    => $assigned_role_id,
+                    ],
+                ],
+                'fields' => 'ID',
+            ]);
+
+            if (empty($users_with_role)) {
+                continue;
+            }
+
+            // Create a task for each user with that role
+            foreach ($users_with_role as $user_id) {
+                // Check if a task with the same title was already created for this user today
+                $existing_tasks = get_posts([
+                    'post_type' => 'task',
+                    'title' => $template->post_title,
+                    'date_query' => [
+                        ['year' => wp_date('Y'), 'month' => wp_date('m'), 'day' => wp_date('d')]
+                    ],
+                    'meta_query' => [
+                        ['key' => '_assigned_to', 'value' => $user_id]
+                    ]
+                ]);
+
+                if (!empty($existing_tasks)) {
+                    continue; // Skip if already created today
+                }
+
+                $task_id = wp_insert_post([
+                    'post_title'   => $template->post_title,
+                    'post_content' => $template->post_content,
+                    'post_type'    => 'task',
+                    'post_status'  => 'publish',
+                    'post_author'  => 1, // System User
+                ]);
+
+                if (!is_wp_error($task_id)) {
+                    // Assign to the user
+                    update_post_meta($task_id, '_assigned_to', $user_id);
+                    // Set deadline for today
+                    update_post_meta($task_id, '_due_date', $today_str);
+                    // Set default status to "To Do"
+                    wp_set_object_terms($task_id, 'to-do', 'task_status');
+					// Set category to "Daily"
+					wp_set_object_terms($task_id, $daily_category->term_id, 'task_category');
+
+                    // Log and notify
+                    PuzzlingCRM_Logger::add('تسک روزانه جدید', [
+                        'content'   => "تسک خودکار '{$template->post_title}' برای شما ایجاد شد.",
+                        'type'      => 'notification',
+                        'user_id'   => $user_id,
+                        'object_id' => $task_id
+                    ]);
+                }
+            }
+        }
     }
 
     public function send_payment_reminders() {
