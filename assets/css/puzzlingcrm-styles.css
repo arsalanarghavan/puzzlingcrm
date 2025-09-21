@@ -1,6 +1,6 @@
 /*
  * PuzzlingCRM Stylesheet
- * Version: 2.4.0 (Advanced Tasks Update)
+ * Version: 2.6.0 (Final Task View & Modal Fixes)
  */
 
 /* --- ریشه و متغیرهای اصلی --- */
@@ -110,6 +110,12 @@
     padding: 8px 16px;
     font-size: 12px;
 }
+.pzl-button-secondary {
+    background-color: #6c757d !important;
+}
+.pzl-button-secondary:hover {
+     background-color: #5a6268 !important;
+}
 
 /* --- فرم‌ها --- */
 .pzl-form, .pzl-form-container form {
@@ -135,6 +141,7 @@
 .form-group input[type="date"],
 .form-group input[type="time"],
 .form-group input[type="tel"],
+.form-group input[type="search"],
 .form-group select,
 .form-group textarea {
     width: 100%;
@@ -287,7 +294,7 @@
     border-radius: var(--pzl-border-radius);
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     margin-bottom: 10px;
-    cursor: grab;
+    cursor: pointer;
     position: relative;
     border: 1px solid var(--pzl-border-color);
 }
@@ -295,7 +302,6 @@
     cursor: grabbing;
 }
 
-/* NEW: Cover Image Styles */
 .pzl-card-cover {
     border-top-left-radius: var(--pzl-border-radius);
     border-top-right-radius: var(--pzl-border-radius);
@@ -308,29 +314,22 @@
     display: block;
 }
 
-/* Adjustments for content when a cover exists */
-.pzl-task-card .pzl-card-priority,
-.pzl-task-card .pzl-card-labels,
-.pzl-task-card .pzl-card-title,
-.pzl-task-card .pzl-card-footer {
-    padding-left: 15px;
-    padding-right: 15px;
+.pzl-card-content {
+    padding: 15px;
 }
-.pzl-task-card .pzl-card-footer {
-    padding-bottom: 15px;
+
+.pzl-card-main {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between priority and title */
+    margin-bottom: 15px;
 }
 
 .pzl-card-priority {
-    position: absolute;
-    top: 15px;
-    right: 15px;
+    flex-shrink: 0; /* Prevent shrinking */
     width: 12px;
     height: 12px;
     border-radius: 50%;
-}
-/* If there's a cover, move priority down */
-.pzl-card-cover + .pzl-card-priority {
-    top: calc(150px + 15px); /* Cover height + padding */
 }
 
 .priority-high { background-color: var(--pzl-danger-color); }
@@ -340,8 +339,8 @@
 .pzl-card-title {
     font-weight: 600;
     font-size: 15px;
-    margin: 15px 0;
-    padding-right: 20px;
+    margin: 0;
+    flex-grow: 1; /* Allow title to take up remaining space */
 }
 
 .pzl-card-footer {
@@ -350,15 +349,17 @@
     align-items: center;
     font-size: 12px;
     color: var(--pzl-text-light);
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
 }
 .pzl-card-meta {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-wrap: wrap; /* Added for responsiveness */
+    flex-wrap: wrap; 
 }
 
-/* NEW: Deadline Indicator Styles */
 .pzl-card-due-date {
     display: inline-flex;
     align-items: center;
@@ -387,104 +388,129 @@
     height: 24px;
 }
 
-
+/* --- Task Modal V2 Styles (HOTFIX) --- */
 #pzl-task-modal-backdrop {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.6);
+    background-color: rgba(29, 30, 41, 0.7);
     z-index: 1000;
+    backdrop-filter: blur(5px);
 }
 #pzl-task-modal-wrap {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 800px;
+    width: 95%;
+    max-width: 960px; /* Wider for better layout */
     z-index: 1001;
 }
 #pzl-task-modal-content {
-    background-color: #fff;
+    background-color: var(--pzl-body-bg);
     border-radius: var(--pzl-border-radius);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    box-shadow: 0 15px 50px rgba(0,0,0,0.3);
     position: relative;
-    max-height: 85vh;
-    overflow-y: auto;
+    max-height: 90vh;
+    overflow: hidden; /* Hide scroll on main container */
+    display: flex;
+    flex-direction: column;
 }
 #pzl-close-modal-btn {
     position: absolute;
     top: 15px;
     left: 15px;
-    background: none;
+    background: transparent;
     border: none;
     font-size: 28px;
     cursor: pointer;
     color: var(--pzl-text-light);
     line-height: 1;
+    transition: color 0.2s;
+    padding: 5px;
 }
+#pzl-close-modal-btn:hover { color: var(--pzl-primary-color); }
+
 #pzl-task-modal-body {
-    padding: 30px 40px;
-}
-.pzl-modal-header h3 {
-    margin: 0;
-    font-size: 24px;
-    border-bottom: 1px solid var(--pzl-border-color);
-    padding-bottom: 20px;
-}
-.pzl-modal-body h4 {
-    margin-top: 30px;
-    margin-bottom: 15px;
-}
-#pzl-task-description-viewer {
-    cursor: pointer;
-}
-.pzl-no-content {
-    color: var(--pzl-text-light);
-    border: 2px dashed var(--pzl-border-color);
-    padding: 20px;
-    border-radius: var(--pzl-border-radius);
-    text-align: center;
-}
-#pzl-task-description-editor button {
-    margin-top: 10px;
-}
-.pzl-comment-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-.pzl-comment-item {
+    padding: 0; /* Remove padding */
     display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
+    overflow: hidden;
+    flex-grow: 1;
 }
+
+.pzl-modal-header { 
+    padding: 20px 30px; 
+    border-bottom: 1px solid var(--pzl-border-color); 
+    background: #fff; 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.pzl-modal-header-title { flex-grow: 1; }
+.pzl-modal-header h3 { font-size: 22px; margin: 0; }
+.pzl-modal-subtitle { font-size: 14px; color: var(--pzl-text-light); }
+.pzl-modal-actions { flex-shrink: 0; }
+
+.pzl-modal-main-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 25px 30px;
+    background-color: #fff;
+}
+.pzl-modal-sidebar {
+    flex: 0 0 280px;
+    padding: 25px;
+    border-right: 1px solid var(--pzl-border-color);
+    overflow-y: auto;
+    background-color: #fcfcfc;
+}
+.pzl-modal-sidebar h4 { margin-top: 0; font-size: 16px; border-bottom: 1px solid var(--pzl-border-color); padding-bottom: 10px; margin-bottom: 15px; }
+.pzl-sidebar-item { margin-bottom: 20px; font-size: 14px; }
+.pzl-sidebar-item strong { display: block; color: var(--pzl-text-color); margin-bottom: 8px; }
+.pzl-sidebar-item span, .pzl-sidebar-item select { display: block; color: var(--pzl-text-light); font-weight: 500; }
+.pzl-sidebar-item select { width: 100%; padding: 8px 12px; }
+
+.pzl-modal-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--pzl-border-color);
+    margin-bottom: 25px;
+}
+.pzl-modal-tab-link {
+    padding: 10px 15px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    color: var(--pzl-text-light);
+}
+.pzl-modal-tab-link.active {
+    color: var(--pzl-primary-color);
+    border-bottom-color: var(--pzl-primary-color);
+    font-weight: 600;
+}
+.pzl-modal-main-content h4 { font-size: 18px; display: flex; align-items: center; gap: 8px; margin-top: 30px; }
+.pzl-modal-main-content h4:first-child { margin-top: 0; }
+.pzl-loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--pzl-primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 50px auto; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+#pzl-task-description-viewer { cursor: pointer; min-height: 50px; }
+.pzl-no-content { color: var(--pzl-text-light); border: 2px dashed var(--pzl-border-color); padding: 20px; border-radius: var(--pzl-border-radius); text-align: center; }
+#pzl-task-description-editor button { margin-top: 10px; }
+.pzl-comment-list { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
+.pzl-comment-item { display: flex; gap: 15px; margin-bottom: 20px; }
 .pzl-comment-content { flex: 1; }
-.pzl-comment-content p { margin: 0; }
+.pzl-comment-content p { margin: 0; padding: 10px 15px; background: #f1f3f5; border-radius: 12px; }
 .pzl-comment-date { font-size: 12px; color: var(--pzl-text-light); }
 .pzl-add-comment-form { margin-top: 20px; }
-.pzl-loader {
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid var(--pzl-primary-color);
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-    margin: 50px auto;
-}
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+.pzl-add-comment-form textarea { width: 100%; }
+
+/* --- End Task Modal Styles --- */
 
 .pzl-card-labels {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
     margin-bottom: 10px;
-    padding: 15px 15px 0; /* Add padding for when there's no cover */
 }
 .pzl-card-cover + .pzl-card-labels {
     padding-top: 10px;
@@ -842,32 +868,37 @@
 .pzl-status-badge.status-closed, .pzl-status-badge.status-on-hold { background-color: #777; }
 .pzl-status-badge.status-cancelled { background-color: var(--pzl-danger-color); }
 
-/* --- FINAL FIX for Task Page Filter Layout (Version 2) --- */
-.pzl-tasks-filters .pzl-filter-bar .pzl-form-row {
-    display: flex;
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
-    gap: 15px; /* Space between items */
+
+/* --- Task Page Filter Layout (FINAL) --- */
+.pzl-tasks-filters .pzl-form .pzl-form-row {
+    display: grid;
+    gap: 15px;
     align-items: flex-end;
+    grid-template-columns: repeat(12, 1fr);
 }
-
-.pzl-tasks-filters .pzl-filter-bar .form-group {
-    flex: 1 1 auto; /* Allow items to grow/shrink based on content */
-    margin: 0; 
+.pzl-tasks-filters .form-group {
+    margin: 0;
 }
-
-/* Make the search row and its group take full width */
-.pzl-tasks-filters .pzl-filter-bar .search-row,
-.pzl-tasks-filters .pzl-filter-bar .search-row .form-group {
-    flex-basis: 100%;
+.pzl-tasks-filters .form-group.search-field {
+    grid-column: 1 / -1; 
 }
-
-/* Ensure filter inputs take up available space */
-.pzl-tasks-filters .pzl-filter-bar .filter-row select,
-.pzl-tasks-filters .pzl-filter-bar .filter-row input {
+.pzl-tasks-filters .form-group.filter-field {
+    grid-column: span 2;
+}
+.pzl-tasks-filters .form-group.swimlane-field {
+    grid-column: 1 / -1; /* Full width on its own row */
+    margin-top: 10px;
+}
+.pzl-tasks-filters .form-group.button-field {
+    grid-column: span 2;
+}
+.pzl-tasks-filters .form-group button {
     width: 100%;
 }
-
-/* Give the button a fixed width so other elements can flex */
-.pzl-tasks-filters .pzl-filter-bar .filter-row .form-group:last-child {
-    flex-grow: 0;
+@media (max-width: 1200px) {
+    .pzl-tasks-filters .form-group.filter-field { grid-column: span 3; }
+    .pzl-tasks-filters .form-group.button-field { grid-column: span 12; }
+}
+@media (max-width: 768px) {
+    .pzl-tasks-filters .form-group.filter-field { grid-column: span 6; }
 }

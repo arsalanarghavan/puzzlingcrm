@@ -39,7 +39,7 @@ jQuery(document).ready(function($) {
                 let params = currentUrl.searchParams;
                 
                 // List of parameters to remove after an action
-                let paramsToRemove = ['puzzling_notice', '_wpnonce', 'deleted', 'updated'];
+                let paramsToRemove = ['puzzling_notice', '_wpnonce', 'deleted', 'updated', 'open_task_id'];
                 
                 // Remove the unwanted parameters
                 paramsToRemove.forEach(param => params.delete(param));
@@ -357,6 +357,13 @@ jQuery(document).ready(function($) {
         gantt.config.date_format = "%Y-%m-%d";
         gantt.config.order_branch = true;
         gantt.config.order_branch_free = true;
+        
+        // **HOTFIX**: Add onTaskClick handler for Gantt
+        gantt.attachEvent("onTaskClick", function(id, e){
+            openTaskModal(id);
+            return false; // Prevent default behavior
+        });
+        
         gantt.init(ganttEl);
         
         $.ajax({

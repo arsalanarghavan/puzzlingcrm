@@ -16,7 +16,7 @@ if ( ! function_exists( 'puzzling_get_dashboard_url' ) ) {
     }
 }
 
-// **NEW & IMPROVED: Renders the HTML for a single task card**
+// **NEW & IMPROVED V2: Renders the HTML for a single task card with priority on the left**
 if ( ! function_exists( 'puzzling_render_task_card' ) ) {
     function puzzling_render_task_card( $task ) {
         if (is_int($task)) {
@@ -34,13 +34,11 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
         $assigned_user_id = get_post_meta($task_id, '_assigned_to', true);
         $assignee_avatar = $assigned_user_id ? get_avatar($assigned_user_id, 24) : '';
         
-        // **NEW: Deadline Visual Indicators**
         $due_date = get_post_meta($task_id, '_due_date', true);
         $due_date_html = '';
         $due_date_class = '';
         if ($due_date) {
             $due_timestamp = strtotime($due_date);
-            // --- FIX: Check if strtotime returns a valid timestamp before using it ---
             if ($due_timestamp) {
                 $today_timestamp = strtotime('today');
                 $days_diff = ($due_timestamp - $today_timestamp) / (60 * 60 * 24);
@@ -79,7 +77,6 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
             $labels_html .= '</div>';
         }
         
-        // **NEW: Cover Image**
         $cover_html = '';
         if (has_post_thumbnail($task_id)) {
             $cover_html = '<div class="pzl-card-cover">' . get_the_post_thumbnail($task_id, 'medium') . '</div>';
@@ -89,15 +86,19 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
         return sprintf(
             '<div class="pzl-task-card" data-task-id="%d">
                 %s
-                %s
-                <div class="pzl-card-priority %s" title="%s"></div>
-                <h4 class="pzl-card-title">%s</h4>
-                <div class="pzl-card-footer">
-                    <div class="pzl-card-meta">
-                        %s %s %s %s
-                        %s
+                <div class="pzl-card-content">
+                    %s
+                    <div class="pzl-card-main">
+                        <div class="pzl-card-priority %s" title="%s"></div>
+                        <h4 class="pzl-card-title">%s</h4>
                     </div>
-                    <div class="pzl-card-assignee">%s</div>
+                    <div class="pzl-card-footer">
+                        <div class="pzl-card-meta">
+                            %s %s %s %s
+                            %s
+                        </div>
+                        <div class="pzl-card-assignee">%s</div>
+                    </div>
                 </div>
             </div>',
             esc_attr($task_id),

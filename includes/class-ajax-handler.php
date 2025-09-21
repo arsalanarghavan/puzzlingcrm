@@ -1,6 +1,6 @@
 <?php
 /**
- * PuzzlingCRM AJAX Handler - V2 FINAL with Notification Integration
+ * PuzzlingCRM AJAX Handler - V2.1 FINAL with All Fixes
  *
  * Handles all AJAX requests for the plugin, including form submissions, task management, etc.
  *
@@ -643,7 +643,27 @@ class PuzzlingCRM_Ajax_Handler {
 	
 		// File attachments
 		if (!empty($_FILES['task_attachments'])) {
-			// (File handling logic remains the same)
+            $attachment_ids = [];
+            $files = $_FILES['task_attachments'];
+            foreach ($files['name'] as $key => $value) {
+                if ($files['name'][$key]) {
+                    $file = [
+                        'name'     => $files['name'][$key],
+                        'type'     => $files['type'][$key],
+                        'tmp_name' => $files['tmp_name'][$key],
+                        'error'    => $files['error'][$key],
+                        'size'     => $files['size'][$key]
+                    ];
+                    $_FILES = ["task_attachment_single" => $file];
+                    $attachment_id = media_handle_upload("task_attachment_single", $task_id);
+                    if (!is_wp_error($attachment_id)) {
+                        $attachment_ids[] = $attachment_id;
+                    }
+                }
+            }
+            if(!empty($attachment_ids)) {
+                update_post_meta($task_id, '_task_attachments', $attachment_ids);
+            }
 		}
 	
 		// --- Send Notifications based on settings ---
