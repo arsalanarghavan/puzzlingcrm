@@ -318,12 +318,36 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                     echo '<h4 class="pzl-column-header">' . esc_html($status->name) . '</h4>';
                     echo '<div class="pzl-task-list">';
                     
+                    // --- CODE REPLACEMENT START ---
                     $tasks_args = [
-                        'post_type' => 'task', 'posts_per_page' => -1,
-                        'tax_query' => ['relation' => 'AND', ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug]],
-                        'meta_query' => ['relation' => 'AND'],
-                        'orderby' => 'menu_order date', 'order' => 'ASC',
+                        'post_type'      => 'task',
+                        'posts_per_page' => -1,
+                        'meta_query'     => ['relation' => 'AND'],
+                        'tax_query'      => ['relation' => 'AND'],
+                        'orderby'        => 'menu_order date',
+                        'order'          => 'ASC',
                     ];
+
+                    if ($status === reset($statuses)) {
+                        $tasks_args['tax_query']['relation'] = 'OR';
+                        $tasks_args['tax_query'][] = [
+                            'taxonomy' => 'task_status',
+                            'field'    => 'slug',
+                            'terms'    => $status->slug,
+                        ];
+                        $tasks_args['tax_query'][] = [
+                            'taxonomy' => 'task_status',
+                            'operator' => 'NOT EXISTS',
+                        ];
+                    } else {
+                        $tasks_args['tax_query'][] = [
+                            'taxonomy' => 'task_status',
+                            'field'    => 'slug',
+                            'terms'    => $status->slug,
+                        ];
+                    }
+                    // --- CODE REPLACEMENT END ---
+
                     if ($project_filter > 0) { $tasks_args['meta_query'][] = ['key' => '_project_id', 'value' => $project_filter]; }
                     if ($staff_filter > 0) { $tasks_args['meta_query'][] = ['key' => '_assigned_to', 'value' => $staff_filter]; }
                     if (!empty($search_query)) { $tasks_args['s'] = $search_query; }
