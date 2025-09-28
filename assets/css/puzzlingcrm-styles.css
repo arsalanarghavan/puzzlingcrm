@@ -518,6 +518,9 @@
 .pzl-comment-content p { margin: 0; padding: 12px 18px; background: #f1f3f5; border-radius: 12px; font-size: 15px; }
 .pzl-comment-date { font-size: 12px; color: var(--pzl-text-light); margin-top: 5px; }
 .pzl-add-comment-form { margin-top: 25px; }
+.pzl-add-comment-form textarea {
+    width: 100%;
+}
 .pzl-add-comment-form button { margin-top: 10px; }
 
 /* Checklist Styles */
@@ -583,7 +586,15 @@
     border-top: 1px solid var(--pzl-border-color);
 }
 #pzl-add-checklist-item-form input[type="text"] {
+    width: 100%;
     padding: 14px 18px;
+    border-radius: var(--pzl-border-radius);
+    border: 1px solid var(--pzl-border-color);
+    background-color: #fdfdfd;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    font-size: 14px;
+    font-family: var(--pzl-font-family);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02) inset;
 }
 
 /* --- End Task Modal Styles --- */
@@ -682,7 +693,7 @@
     color: var(--pzl-secondary-color);
 }
 .add-card-btn .fas {
-    color: var(--pzl-text-light) !important;
+    color: white !important;
 }
 .add-card-btn:hover .fas {
     color: var(--pzl-secondary-color) !important;

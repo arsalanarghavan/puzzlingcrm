@@ -128,9 +128,13 @@ $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, '
                     <?php endif; ?>
                 </ul>
             </div>
-            <form id="pzl-add-checklist-item-form" class="pzl-form-inline">
-                <input type="text" placeholder="افزودن آیتم جدید..." required>
-                <button type="submit" class="pzl-button">افزودن</button>
+            <form id="pzl-add-checklist-item-form" class="pzl-form pzl-form-inline">
+                <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
+                    <input type="text" placeholder="افزودن آیتم جدید..." required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <button type="submit" class="pzl-button">افزودن</button>
+                </div>
             </form>
         </div>
 
