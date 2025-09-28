@@ -314,7 +314,7 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                     echo '<div class="pzl-task-list">';
                     
                     $tasks_args = [
-                        'post_type' => 'task', 'posts_per_page' => -1, 'post_parent' => 0,
+                        'post_type' => 'task', 'posts_per_page' => -1,
                         'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug]],
                         'meta_query' => ['relation' => 'AND'],
                         'orderby' => 'menu_order date', 'order' => 'ASC',
@@ -355,21 +355,17 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                         echo '<h4 class="pzl-column-header">' . esc_html($status->name) . '</h4>';
                         echo '<div class="pzl-task-list">';
                         
-                        // **CORRECTED QUERY LOGIC STARTS HERE**
                         $tasks_args = [
                             'post_type' => 'task', 
-                            'posts_per_page' => -1, 
-                            'post_parent' => 0, 
+                            'posts_per_page' => -1,
                             'tax_query' => ['relation' => 'AND'], 
                             'meta_query' => ['relation' => 'AND'], 
                             'orderby' => 'menu_order date', 
                             'order' => 'ASC'
                         ];
 
-                        // Add status filter for the current column
                         $tasks_args['tax_query'][] = ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug];
                         
-                        // Add swimlane group filter
                         if ($swimlane_by === 'assignee') {
                             $tasks_args['meta_query'][] = ['key' => '_assigned_to', 'value' => $group_id];
                         } elseif ($swimlane_by === 'project') {
@@ -378,7 +374,6 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                             $tasks_args['tax_query'][] = ['taxonomy' => 'task_priority', 'field' => 'term_id', 'terms' => $group_id];
                         }
                         
-                        // **INCORPORATE MAIN PAGE FILTERS**
                         if ($project_filter > 0) { $tasks_args['meta_query'][] = ['key' => '_project_id', 'value' => $project_filter]; }
                         if ($staff_filter > 0) { $tasks_args['meta_query'][] = ['key' => '_assigned_to', 'value' => $staff_filter]; }
                         if (!empty($search_query)) { $tasks_args['s'] = $search_query; }
