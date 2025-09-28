@@ -1,6 +1,6 @@
 <?php
 /**
- * Task Categories Management Template for Frontend
+ * Task Categories Management Template for Frontend - CORRECTED
  * @package PuzzlingCRM
  */
 if (!defined('ABSPATH')) exit;
@@ -94,7 +94,8 @@ jQuery(document).ready(function($) {
         }
         var row = $(this).closest('tr');
         var termId = row.data('term-id');
-        var securityNonce = $('#pzl-category-form').find('input[name="security"]').val(); // Get nonce from the form
+        // Correctly get the nonce from the ajax object which is localized for the script
+        var securityNonce = puzzlingcrm_ajax_obj.nonce;
 
         $.ajax({
             url: puzzlingcrm_ajax_obj.ajax_url,
@@ -124,3 +125,18 @@ jQuery(document).ready(function($) {
     });
 });
 </script>
+
+<style>
+/* This style ensures the two-column layout */
+.pzl-positions-manager {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--pzl-spacing);
+    align-items: flex-start;
+}
+@media (max-width: 900px) {
+    .pzl-positions-manager {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

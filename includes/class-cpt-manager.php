@@ -322,7 +322,7 @@ class PuzzlingCRM_CPT_Manager {
             ]
         ]);
         
-        // REVERTED to single hierarchical taxonomy for both Departments (parents) and Job Titles (children)
+        // **REVERTED** to single hierarchical taxonomy for both Departments (parents) and Job Titles (children)
         register_taxonomy('organizational_position', 'user', [
             'label' => __( 'Organizational Positions', 'puzzlingcrm' ),
             'public' => false,

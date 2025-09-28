@@ -1,8 +1,8 @@
 <?php
 /**
- * PuzzlingCRM AJAX Handler - V2.2 (Hierarchical Positions Update)
+ * PuzzlingCRM AJAX Handler - V2.6 (FINAL HIERARCHICAL SAVE FIX)
  *
- * Handles all AJAX requests for the plugin, including form submissions, task management, etc.
+ * Handles all AJAX requests for the plugin.
  *
  * @package PuzzlingCRM
  */
@@ -247,10 +247,21 @@ class PuzzlingCRM_Ajax_Handler {
                 }
             }
             
-            // Set organizational position term
-            if (isset($_POST['organizational_position'])) {
-                wp_set_object_terms($the_user_id, intval($_POST['organizational_position']), 'organizational_position', false);
+            // **CORRECTED LOGIC for saving Department and Job Title**
+            $department_id = isset($_POST['department']) ? intval($_POST['department']) : 0;
+            $job_title_id = isset($_POST['job_title']) ? intval($_POST['job_title']) : 0;
+
+            // The job title (child term) takes precedence.
+            // If no job title is selected, the department (parent term) is used.
+            $term_to_set = 0;
+            if ($job_title_id > 0) {
+                $term_to_set = $job_title_id;
+            } elseif ($department_id > 0) {
+                $term_to_set = $department_id;
             }
+
+            // Set the determined term for the user. If both are 0, it will clear the terms.
+            wp_set_object_terms($the_user_id, $term_to_set, 'organizational_position', false);
             
             // Handle profile picture upload
             if (!empty($_FILES['pzl_profile_picture']['name'])) {

@@ -1,6 +1,6 @@
 <?php
 /**
- * Template for System Manager to Manage Staff - FINAL DESIGN & LAYOUT
+ * Template for System Manager to Manage Staff - FINAL DESIGN & LAYOUT (HIERARCHICAL FIX V3)
  * @package PuzzlingCRM
  */
 if (!defined('ABSPATH')) exit;
@@ -121,23 +121,41 @@ $profile_fields = [
                     <h4><?php echo esc_html($section['title']); ?></h4>
                     <div class="pzl-form-row">
                         <?php 
-                        // Special handling for job info to add department and title dropdowns
                         if ($section_key === 'job_info') {
-                            $departments = get_terms(['taxonomy' => 'department', 'hide_empty' => false]);
-                            $job_titles = get_terms(['taxonomy' => 'job_title', 'hide_empty' => false]);
+                            $all_positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false]);
+                            $departments = [];
+                            $job_titles_by_dept = [];
                             $current_dept_id = 0;
                             $current_title_id = 0;
+
+                            foreach($all_positions as $pos) {
+                                if($pos->parent == 0) {
+                                    $departments[] = $pos;
+                                } else {
+                                    if(!isset($job_titles_by_dept[$pos->parent])) {
+                                        $job_titles_by_dept[$pos->parent] = [];
+                                    }
+                                    $job_titles_by_dept[$pos->parent][] = $pos;
+                                }
+                            }
+
                             if($user_to_edit) {
-                                $user_depts = wp_get_object_terms($user_to_edit->ID, 'department', ['fields' => 'ids']);
-                                $user_titles = wp_get_object_terms($user_to_edit->ID, 'job_title', ['fields' => 'ids']);
-                                $current_dept_id = !empty($user_depts) ? $user_depts[0] : 0;
-                                $current_title_id = !empty($user_titles) ? $user_titles[0] : 0;
+                                $user_pos_terms = wp_get_object_terms($user_to_edit->ID, 'organizational_position');
+                                if(!empty($user_pos_terms) && !is_wp_error($user_pos_terms)){
+                                    $user_pos = $user_pos_terms[0];
+                                    if($user_pos->parent == 0){
+                                        $current_dept_id = $user_pos->term_id;
+                                    } else {
+                                        $current_title_id = $user_pos->term_id;
+                                        $current_dept_id = $user_pos->parent;
+                                    }
+                                }
                             }
                             ?>
                             <div class="form-group half-width">
                                 <label for="department">دپارتمان:</label>
                                 <select name="department" id="department">
-                                    <option value="">-- بدون دپارتمان --</option>
+                                    <option value="0">-- انتخاب دپارتمان --</option>
                                     <?php foreach($departments as $dept){
                                         echo '<option value="' . esc_attr($dept->term_id) . '" ' . selected($current_dept_id, $dept->term_id, false) . '>' . esc_html($dept->name) . '</option>';
                                     } ?>
@@ -146,10 +164,13 @@ $profile_fields = [
                              <div class="form-group half-width">
                                 <label for="job_title">عنوان شغلی:</label>
                                 <select name="job_title" id="job_title">
-                                    <option value="">-- بدون عنوان شغلی --</option>
-                                    <?php foreach($job_titles as $title){
-                                        echo '<option value="' . esc_attr($title->term_id) . '" ' . selected($current_title_id, $title->term_id, false) . '>' . esc_html($title->name) . '</option>';
-                                    } ?>
+                                    <option value="0">-- ابتدا دپارتمان را انتخاب کنید --</option>
+                                    <?php foreach($job_titles_by_dept as $dept_id => $titles){
+                                        foreach($titles as $title) {
+                                            $display_style = ($dept_id == $current_dept_id) ? '' : 'style="display:none;"';
+                                            echo '<option value="' . esc_attr($title->term_id) . '" data-parent="' . esc_attr($dept_id) . '" ' . selected($current_title_id, $title->term_id, false) . ' ' . $display_style . '>' . esc_html($title->name) . '</option>';
+                                        }
+                                    }?>
                                 </select>
                             </div>
                         <?php }
@@ -199,16 +220,29 @@ $profile_fields = [
                 <thead><tr><th>نام</th><th>ایمیل</th><th>دپارتمان</th><th>عنوان شغلی</th><th>عملیات</th></tr></thead>
                 <tbody>
                     <?php 
-                    $staff_roles = ['system_manager', 'finance_manager', 'team_member'];
+                    $staff_roles = ['system_manager', 'finance_manager', 'team_member', 'administrator'];
                     foreach(get_users(['role__in' => $staff_roles]) as $staff): 
-                        $departments = wp_get_object_terms($staff->ID, 'department');
-                        $job_titles = wp_get_object_terms($staff->ID, 'job_title');
+                        $positions = wp_get_object_terms($staff->ID, 'organizational_position');
+                        $department_name = '---';
+                        $job_title_name = '---';
+                        if(!is_wp_error($positions) && !empty($positions)){
+                            $pos = $positions[0];
+                            if($pos->parent == 0) {
+                                $department_name = $pos->name;
+                            } else {
+                                $job_title_name = $pos->name;
+                                $parent_dept = get_term($pos->parent, 'organizational_position');
+                                if(!is_wp_error($parent_dept) && $parent_dept) {
+                                    $department_name = $parent_dept->name;
+                                }
+                            }
+                        }
                     ?>
                         <tr>
                             <td><?php echo get_avatar($staff->ID, 32); ?> <?php echo esc_html($staff->display_name); ?></td>
                             <td><?php echo esc_html($staff->user_email); ?></td>
-                            <td><?php echo !is_wp_error($departments) && !empty($departments) ? esc_html($departments[0]->name) : '---'; ?></td>
-                            <td><?php echo !is_wp_error($job_titles) && !empty($job_titles) ? esc_html($job_titles[0]->name) : '---'; ?></td>
+                            <td><?php echo esc_html($department_name); ?></td>
+                            <td><?php echo esc_html($job_title_name); ?></td>
                             <td>
                                 <a href="<?php echo add_query_arg(['action' => 'edit', 'user_id' => $staff->ID]); ?>" class="pzl-button pzl-button-sm">ویرایش پروفایل</a>
                                 <a href="<?php echo add_query_arg(['action' => 'logs', 'user_id' => $staff->ID]); ?>" class="pzl-button pzl-button-sm">تاریخچه عملیات</a>
@@ -220,6 +254,24 @@ $profile_fields = [
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+jQuery(document).ready(function($) {
+    $('#department').on('change', function() {
+        var deptId = $(this).val();
+        var jobTitleSelect = $('#job_title');
+        
+        jobTitleSelect.find('option').hide();
+        jobTitleSelect.find('option[value="0"]').show();
+        
+        if (deptId !== '0') {
+            jobTitleSelect.find('option[data-parent="' + deptId + '"]').show();
+        }
+        
+        jobTitleSelect.val('0'); // Reset selection
+    }).trigger('change');
+});
+</script>
 
 <style>
 /* --- Profile Form Enhancements --- */

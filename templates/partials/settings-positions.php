@@ -1,6 +1,6 @@
 <?php
 /**
- * Organizational Positions Management Template (Hierarchical View)
+ * Organizational Positions Management Template (Hierarchical View - CORRECTED)
  * @package PuzzlingCRM
  */
 if (!defined('ABSPATH')) exit;
@@ -72,7 +72,8 @@ function pzl_display_positions_tree($parent_id = 0, $level = 0) {
                             'show_option_none' => __('این یک دپارتمان اصلی است', 'puzzlingcrm'),
                             'hierarchical'     => true,
                             'hide_empty'       => false,
-                            'depth'            => 1, // Only show top-level terms (departments)
+                            'orderby'          => 'name',
+                            'order'            => 'ASC'
                         ]);
                     ?>
                      <p class="description">برای ایجاد یک عنوان شغلی، دپارتمان والد آن را انتخاب کنید.</p>
@@ -111,14 +112,14 @@ jQuery(document).ready(function($) {
         $(this).hide();
     });
 
-    // Delete Button Click (AJAX handled by puzzlingcrm-scripts.js)
+    // Delete Button Click
     $('.pzl-positions-list').on('click', '.delete-position-btn', function() {
         if (!confirm('آیا از حذف این جایگاه مطمئن هستید؟ تمام زیرمجموعه‌های آن نیز حذف خواهند شد.')) {
             return;
         }
         var row = $(this).closest('tr');
         var termId = row.data('term-id');
-        var securityNonce = $('#pzl-position-form').find('input[name="security"]').val();
+        var securityNonce = puzzlingcrm_ajax_obj.nonce;
 
         $.ajax({
             url: puzzlingcrm_ajax_obj.ajax_url,
