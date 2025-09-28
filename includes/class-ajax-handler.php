@@ -45,8 +45,12 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_save_status_order', [$this, 'save_status_order']);
         add_action('wp_ajax_puzzling_add_new_status', [$this, 'add_new_status']);
         add_action('wp_ajax_puzzling_delete_status', [$this, 'delete_status']);
-        add_action('wp_ajax_puzzling_manage_position', [$this, 'ajax_manage_position']);
-        add_action('wp_ajax_puzzling_delete_position', [$this, 'ajax_delete_position']);
+        
+        // NEW: Handlers for Departments and Job Titles
+        add_action('wp_ajax_puzzling_manage_department', [$this, 'ajax_manage_department']);
+        add_action('wp_ajax_puzzling_delete_department', [$this, 'ajax_delete_department']);
+        add_action('wp_ajax_puzzling_manage_job_title', [$this, 'ajax_manage_job_title']);
+        add_action('wp_ajax_puzzling_delete_job_title', [$this, 'ajax_delete_job_title']);
 
         // --- Advanced Task Features ---
         add_action('wp_ajax_puzzling_manage_checklist', [$this, 'manage_checklist']);
@@ -241,15 +245,20 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'خطا در ذخیره‌سازی اطلاعات کاربر: ' . $result->get_error_message()]);
         } else {
             $the_user_id = is_int($result) ? $result : $user_id;
-
-            // Save custom meta fields
-            if (isset($_POST['pzl_mobile_phone'])) {
-                update_user_meta($the_user_id, 'pzl_mobile_phone', sanitize_text_field($_POST['pzl_mobile_phone']));
-            }
             
-            // Set organizational position term
-            if (isset($_POST['organizational_position'])) {
-                wp_set_object_terms($the_user_id, intval($_POST['organizational_position']), 'organizational_position', false);
+            // Save custom meta fields (looping through them)
+            foreach ($_POST as $key => $value) {
+                if (strpos($key, 'pzl_') === 0) {
+                    update_user_meta($the_user_id, $key, sanitize_text_field($value));
+                }
+            }
+
+            // Set department and job title terms
+            if (isset($_POST['department'])) {
+                wp_set_object_terms($the_user_id, intval($_POST['department']), 'department', false);
+            }
+             if (isset($_POST['job_title'])) {
+                wp_set_object_terms($the_user_id, intval($_POST['job_title']), 'job_title', false);
             }
 
             // Handle profile picture upload
@@ -347,8 +356,8 @@ class PuzzlingCRM_Ajax_Handler {
         
         // Use a generic title, can be updated later by user
         $contract_title = sprintf('قرارداد با %s', get_the_author_meta('display_name', $customer_id));
-        if (isset($_POST['_project_contract_person']) && !empty($_POST['_project_contract_person'])) {
-            $contract_title = sprintf('قرارداد %s', sanitize_text_field($_POST['_project_contract_person']));
+        if (isset($_POST['contract_title']) && !empty($_POST['contract_title'])) {
+            $contract_title = sanitize_text_field($_POST['contract_title']);
         }
         
         $contract_data = [
@@ -359,7 +368,6 @@ class PuzzlingCRM_Ajax_Handler {
         ];
 
         $contract_meta = [
-            '_project_contract_person' => sanitize_text_field($_POST['_project_contract_person']),
             '_project_subscription_model' => sanitize_key($_POST['_project_subscription_model']),
             '_project_contract_duration' => sanitize_key($_POST['_project_contract_duration']),
             '_project_start_date' => sanitize_text_field($_POST['_project_start_date']),
@@ -637,7 +645,7 @@ class PuzzlingCRM_Ajax_Handler {
 			$assigned_user_ids[] = $assigned_to_user;
 		} elseif ($assigned_to_role > 0) {
 			update_post_meta($task_id, '_assigned_role', $assigned_to_role);
-			$users_with_role = get_users(['tax_query' => [['taxonomy' => 'organizational_position', 'field' => 'term_id', 'terms' => $assigned_to_role]], 'fields' => 'ID']);
+			$users_with_role = get_users(['tax_query' => [['taxonomy' => 'job_title', 'field' => 'term_id', 'terms' => $assigned_to_role]], 'fields' => 'ID']);
 			if (!empty($users_with_role)) {
 				update_post_meta($task_id, '_assigned_to_multiple', $users_with_role);
 				update_post_meta($task_id, '_assigned_to', $users_with_role[0]);
@@ -1239,12 +1247,12 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'یک خطای سیستمی در هنگام ارسال پیامک رخ داد. جزئیات خطا در لاگ سرور ثبت شد.']);
         }
     }
-
+    
     /**
      * AJAX handler for creating/updating task categories.
      */
     public function ajax_manage_task_category() {
-        check_ajax_referer('puzzling_manage_task_category_nonce', 'security');
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'شما دسترسی لازم را ندارید.']);
         }
@@ -1278,7 +1286,7 @@ class PuzzlingCRM_Ajax_Handler {
      * AJAX handler for deleting a task category.
      */
     public function ajax_delete_task_category() {
-        check_ajax_referer('puzzling_manage_task_category_nonce', 'security');
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'شما دسترسی لازم را ندارید.']);
         }
@@ -1298,59 +1306,100 @@ class PuzzlingCRM_Ajax_Handler {
     }
     
     /**
-     * AJAX handler for managing organizational positions.
+     * AJAX handler for managing departments.
      */
-    public function ajax_manage_position() {
+    public function ajax_manage_department() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'شما دسترسی لازم را ندارید.']);
         }
-
         $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
         $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
-
         if (empty($name)) {
-            wp_send_json_error(['message' => 'نام جایگاه شغلی نمی‌تواند خالی باشد.']);
+            wp_send_json_error(['message' => 'نام دپارتمان نمی‌تواند خالی باشد.']);
         }
-
         if ($term_id > 0) {
-            $result = wp_update_term($term_id, 'organizational_position', ['name' => $name]);
-            $message = 'جایگاه شغلی با موفقیت ویرایش شد.';
+            $result = wp_update_term($term_id, 'department', ['name' => $name]);
+            $message = 'دپارتمان با موفقیت ویرایش شد.';
         } else {
-            if (term_exists($name, 'organizational_position')) {
-                wp_send_json_error(['message' => 'این جایگاه شغلی از قبل وجود دارد.']);
+            if (term_exists($name, 'department')) {
+                wp_send_json_error(['message' => 'این دپارتمان از قبل وجود دارد.']);
             }
-            $result = wp_insert_term($name, 'organizational_position');
-            $message = 'جایگاه شغلی جدید با موفقیت اضافه شد.';
+            $result = wp_insert_term($name, 'department');
+            $message = 'دپارتمان جدید با موفقیت اضافه شد.';
         }
-
         if (is_wp_error($result)) {
             wp_send_json_error(['message' => $result->get_error_message()]);
         }
-
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
 
     /**
-     * AJAX handler for deleting an organizational position.
+     * AJAX handler for deleting a department.
      */
-    public function ajax_delete_position() {
+    public function ajax_delete_department() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'شما دسترسی لازم را ندارید.']);
         }
-
         $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
         if ($term_id === 0) {
             wp_send_json_error(['message' => 'شناسه نامعتبر است.']);
         }
-
-        $result = wp_delete_term($term_id, 'organizational_position');
-
+        $result = wp_delete_term($term_id, 'department');
         if (is_wp_error($result)) {
             wp_send_json_error(['message' => $result->get_error_message()]);
         }
+        wp_send_json_success(['message' => 'دپارتمان با موفقیت حذف شد.', 'reload' => true]);
+    }
 
-        wp_send_json_success(['message' => 'جایگاه شغلی با موفقیت حذف شد.', 'reload' => true]);
+    /**
+     * AJAX handler for managing job titles.
+     */
+    public function ajax_manage_job_title() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم را ندارید.']);
+        }
+        $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
+        $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
+        $parent = isset($_POST['parent']) ? intval($_POST['parent']) : 0;
+        if (empty($name)) {
+            wp_send_json_error(['message' => 'عنوان شغلی نمی‌تواند خالی باشد.']);
+        }
+        $args = ['parent' => $parent];
+        if ($term_id > 0) {
+            $result = wp_update_term($term_id, 'job_title', ['name' => $name, 'parent' => $parent]);
+            $message = 'عنوان شغلی با موفقیت ویرایش شد.';
+        } else {
+            if (term_exists($name, 'job_title', $parent)) {
+                wp_send_json_error(['message' => 'این عنوان شغلی در این دپارتمان از قبل وجود دارد.']);
+            }
+            $result = wp_insert_term($name, 'job_title', $args);
+            $message = 'عنوان شغلی جدید با موفقیت اضافه شد.';
+        }
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+        wp_send_json_success(['message' => $message, 'reload' => true]);
+    }
+
+    /**
+     * AJAX handler for deleting a job title.
+     */
+    public function ajax_delete_job_title() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم را ندارید.']);
+        }
+        $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
+        if ($term_id === 0) {
+            wp_send_json_error(['message' => 'شناسه نامعتبر است.']);
+        }
+        $result = wp_delete_term($term_id, 'job_title');
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+        wp_send_json_success(['message' => 'عنوان شغلی با موفقیت حذف شد.', 'reload' => true]);
     }
 }

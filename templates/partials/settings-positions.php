@@ -1,12 +1,13 @@
 <?php
 /**
- * Organizational Positions Management Template for Frontend
+ * Organizational Positions (Departments & Job Titles) Management Template
  * @package PuzzlingCRM
  */
 if (!defined('ABSPATH')) exit;
 if (!current_user_can('manage_options')) return;
 
-$positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false, 'orderby' => 'name']);
+$departments = get_terms(['taxonomy' => 'department', 'hide_empty' => false, 'orderby' => 'name']);
+$job_titles = get_terms(['taxonomy' => 'job_title', 'hide_empty' => false, 'orderby' => 'name']);
 ?>
 
 <div class="pzl-form-container">
@@ -15,48 +16,95 @@ $positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' =>
 
     <div class="pzl-positions-manager">
         <div class="pzl-positions-list pzl-card">
-            <h5><i class="fas fa-list-ul"></i> لیست جایگاه‌ها</h5>
+            <h5><i class="fas fa-building"></i> لیست دپارتمان‌ها</h5>
             <table class="pzl-table">
                 <thead>
-                    <tr>
-                        <th>نام جایگاه</th>
-                        <th>تعداد کارکنان</th>
-                        <th>عملیات</th>
-                    </tr>
+                    <tr><th>نام دپارتمان</th><th>عملیات</th></tr>
                 </thead>
-                <tbody>
-                    <?php if (!empty($positions) && !is_wp_error($positions)): ?>
-                        <?php foreach($positions as $pos): ?>
-                            <tr data-term-id="<?php echo esc_attr($pos->term_id); ?>">
-                                <td data-label="name"><?php echo esc_html($pos->name); ?></td>
-                                <td><?php echo esc_html($pos->count); ?></td>
+                <tbody id="department-list">
+                    <?php if (!empty($departments) && !is_wp_error($departments)):
+                        foreach($departments as $dept): ?>
+                            <tr data-term-id="<?php echo esc_attr($dept->term_id); ?>">
+                                <td data-label="name"><?php echo esc_html($dept->name); ?></td>
                                 <td>
-                                    <button class="pzl-button pzl-button-sm edit-position-btn">ویرایش</button>
-                                    <button class="pzl-button pzl-button-sm delete-position-btn" style="background-color: var(--pzl-danger-color) !important;">حذف</button>
+                                    <button class="pzl-button pzl-button-sm edit-dept-btn">ویرایش</button>
+                                    <button class="pzl-button pzl-button-sm delete-dept-btn" style="background-color: var(--pzl-danger-color) !important;">حذف</button>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="3">هیچ جایگاه شغلی تعریف نشده است.</td>
-                        </tr>
+                        <?php endforeach;
+                    else: ?>
+                        <tr><td colspan="2">هیچ دپارتمانی تعریف نشده است.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
-
         <div class="pzl-positions-form pzl-card">
-            <h5 id="position-form-title"><i class="fas fa-plus-circle"></i> افزودن جایگاه جدید</h5>
-            <form id="pzl-position-form" class="pzl-form pzl-ajax-form" data-action="puzzling_manage_position">
+            <h5 id="dept-form-title"><i class="fas fa-plus-circle"></i> افزودن دپارتمان جدید</h5>
+            <form id="pzl-dept-form" class="pzl-form pzl-ajax-form" data-action="puzzling_manage_department">
                 <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
-                <input type="hidden" name="term_id" id="position-term-id" value="0">
+                <input type="hidden" name="term_id" id="dept-term-id" value="0">
                 <div class="form-group">
-                    <label for="position-name">نام جایگاه</label>
-                    <input type="text" id="position-name" name="name" required>
+                    <label for="dept-name">نام دپارتمان</label>
+                    <input type="text" id="dept-name" name="name" required>
                 </div>
                 <div class="form-submit">
                     <button type="submit" class="pzl-button">ذخیره</button>
-                    <button type="button" id="cancel-edit-position" class="pzl-button-secondary" style="display: none;">انصراف</button>
+                    <button type="button" id="cancel-edit-dept" class="pzl-button-secondary" style="display: none;">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <hr style="margin: 30px 0;">
+
+    <div class="pzl-positions-manager">
+        <div class="pzl-positions-list pzl-card">
+            <h5><i class="fas fa-user-tie"></i> لیست عناوین شغلی</h5>
+            <table class="pzl-table">
+                <thead>
+                    <tr><th>عنوان شغلی</th><th>دپارتمان</th><th>عملیات</th></tr>
+                </thead>
+                <tbody id="job-title-list">
+                    <?php if (!empty($job_titles) && !is_wp_error($job_titles)):
+                        foreach($job_titles as $title):
+                            $parent_dept = $title->parent ? get_term($title->parent, 'department') : null;
+                        ?>
+                            <tr data-term-id="<?php echo esc_attr($title->term_id); ?>" data-parent-id="<?php echo esc_attr($title->parent); ?>">
+                                <td data-label="name"><?php echo esc_html($title->name); ?></td>
+                                <td><?php echo $parent_dept ? esc_html($parent_dept->name) : '---'; ?></td>
+                                <td>
+                                    <button class="pzl-button pzl-button-sm edit-title-btn">ویرایش</button>
+                                    <button class="pzl-button pzl-button-sm delete-title-btn" style="background-color: var(--pzl-danger-color) !important;">حذف</button>
+                                </td>
+                            </tr>
+                        <?php endforeach;
+                    else: ?>
+                        <tr><td colspan="3">هیچ عنوان شغلی تعریف نشده است.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <div class="pzl-positions-form pzl-card">
+            <h5 id="title-form-title"><i class="fas fa-plus-circle"></i> افزودن عنوان شغلی</h5>
+            <form id="pzl-title-form" class="pzl-form pzl-ajax-form" data-action="puzzling_manage_job_title">
+                <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
+                <input type="hidden" name="term_id" id="title-term-id" value="0">
+                <div class="form-group">
+                    <label for="title-name">نام عنوان شغلی</label>
+                    <input type="text" id="title-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="title-parent">دپارتمان والد</label>
+                    <select id="title-parent" name="parent">
+                        <option value="0">-- بدون دپارتمان --</option>
+                        <?php foreach($departments as $dept) {
+                            echo '<option value="'.esc_attr($dept->term_id).'">'.esc_html($dept->name).'</option>';
+                        } ?>
+                    </select>
+                </div>
+                <div class="form-submit">
+                    <button type="submit" class="pzl-button">ذخیره</button>
+                    <button type="button" id="cancel-edit-title" class="pzl-button-secondary" style="display: none;">انصراف</button>
                 </div>
             </form>
         </div>
@@ -65,80 +113,63 @@ $positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' =>
 
 <script>
 jQuery(document).ready(function($) {
-    // Handle Edit Button Click
-    $('.pzl-positions-list').on('click', '.edit-position-btn', function() {
+    // --- Department UI Logic ---
+    $('#department-list').on('click', '.edit-dept-btn', function() {
         var row = $(this).closest('tr');
-        var termId = row.data('term-id');
-        var name = row.find('td[data-label="name"]').text();
-
-        $('#position-form-title').html('<i class="fas fa-edit"></i> ویرایش جایگاه');
-        $('#position-term-id').val(termId);
-        $('#position-name').val(name).focus();
-        $('#cancel-edit-position').show();
+        $('#dept-form-title').html('<i class="fas fa-edit"></i> ویرایش دپارتمان');
+        $('#dept-term-id').val(row.data('term-id'));
+        $('#dept-name').val(row.find('td[data-label="name"]').text()).focus();
+        $('#cancel-edit-dept').show();
     });
 
-    // Handle Cancel Edit Button
-    $('#cancel-edit-position').on('click', function() {
-        $('#position-form-title').html('<i class="fas fa-plus-circle"></i> افزودن جایگاه جدید');
-        $('#pzl-position-form').trigger('reset');
-        $('#position-term-id').val('0');
+    $('#cancel-edit-dept').on('click', function() {
+        $('#dept-form-title').html('<i class="fas fa-plus-circle"></i> افزودن دپارتمان جدید');
+        $('#pzl-dept-form').trigger('reset');
+        $('#dept-term-id').val('0');
+        $(this).hide();
+    });
+    
+    $('#department-list').on('click', '.delete-dept-btn', function() {
+        if (!confirm('آیا از حذف این دپارتمان مطمئن هستید؟ تمام عناوین شغلی زیرمجموعه آن نیز حذف خواهند شد.')) return;
+        var row = $(this).closest('tr');
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
+            data: { action: 'puzzling_delete_department', term_id: row.data('term-id'), security: puzzlingcrm_ajax_obj.nonce },
+            success: function(response) {
+                if (response.success) showPuzzlingAlert('موفق', response.data.message, 'success', true);
+                else showPuzzlingAlert('خطا', response.data.message, 'error');
+            }
+        });
+    });
+
+    // --- Job Title UI Logic ---
+    $('#job-title-list').on('click', '.edit-title-btn', function() {
+        var row = $(this).closest('tr');
+        $('#title-form-title').html('<i class="fas fa-edit"></i> ویرایش عنوان شغلی');
+        $('#title-term-id').val(row.data('term-id'));
+        $('#title-name').val(row.find('td[data-label="name"]').text()).focus();
+        $('#title-parent').val(row.data('parent-id'));
+        $('#cancel-edit-title').show();
+    });
+
+    $('#cancel-edit-title').on('click', function() {
+        $('#title-form-title').html('<i class="fas fa-plus-circle"></i> افزودن عنوان شغلی');
+        $('#pzl-title-form').trigger('reset');
+        $('#title-term-id').val('0');
         $(this).hide();
     });
 
-    // Handle Delete Button Click
-    $('.pzl-positions-list').on('click', '.delete-position-btn', function() {
-        if (!confirm('آیا از حذف این جایگاه مطمئن هستید؟')) {
-            return;
-        }
-
+    $('#job-title-list').on('click', '.delete-title-btn', function() {
+        if (!confirm('آیا از حذف این عنوان شغلی مطمئن هستید؟')) return;
         var row = $(this).closest('tr');
-        var termId = row.data('term-id');
-        var security = $('#pzl-position-form').find('input[name="security"]').val();
-
         $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'puzzling_delete_position',
-                term_id: termId,
-                security: security
-            },
-            beforeSend: function() {
-                row.css('opacity', '0.5');
-            },
+            url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
+            data: { action: 'puzzling_delete_job_title', term_id: row.data('term-id'), security: puzzlingcrm_ajax_obj.nonce },
             success: function(response) {
-                if (response.success) {
-                    row.fadeOut(function() { $(this).remove(); });
-                    // SweetAlert is defined in the main scripts file
-                    if(typeof showPuzzlingAlert !== 'undefined') {
-                        showPuzzlingAlert('موفق', response.data.message, 'success');
-                    } else {
-                        alert(response.data.message);
-                    }
-                } else {
-                    row.css('opacity', '1');
-                    if(typeof showPuzzlingAlert !== 'undefined') {
-                        showPuzzlingAlert('خطا', response.data.message, 'error');
-                    } else {
-                        alert(response.data.message);
-                    }
-                }
+                if (response.success) showPuzzlingAlert('موفق', response.data.message, 'success', true);
+                else showPuzzlingAlert('خطا', response.data.message, 'error');
             }
         });
     });
 });
 </script>
-
-<style>
-.pzl-positions-manager {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: var(--pzl-spacing);
-    align-items: flex-start;
-}
-@media (max-width: 768px) {
-    .pzl-positions-manager {
-        grid-template-columns: 1fr;
-    }
-}
-</style>

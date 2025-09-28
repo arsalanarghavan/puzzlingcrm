@@ -13,7 +13,7 @@ $action = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
 $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
 
-// This defines the structure for our form
+// This defines the structure for our form fields (excluding user/role info)
 $profile_fields = [
     'identity_info' => [ 'title' => 'اطلاعات هویتی', 'fields' => [
         'father_name' => ['label' => 'نام پدر', 'type' => 'text'], 'birth_date' => ['label' => 'تاریخ تولد', 'type' => 'date'],
@@ -31,8 +31,8 @@ $profile_fields = [
         'emergency_contact_2_phone' => ['label' => 'شماره مخاطب اضطراری ۲', 'type' => 'tel', 'group' => 'emergency2'],
     ]],
     'job_info' => [ 'title' => 'اطلاعات شغلی / سازمانی', 'fields' => [
-        'department' => ['label' => 'دپارتمان', 'type' => 'text'], 'personnel_code' => ['label' => 'کد پرسنلی', 'type' => 'text'],
-        'direct_manager' => ['label' => 'مدیر مستقیم', 'type' => 'text'], 'hire_date' => ['label' => 'تاریخ استخدام', 'type' => 'date'],
+        'personnel_code' => ['label' => 'کد پرسنلی', 'type' => 'text'], 'direct_manager' => ['label' => 'مدیر مستقیم', 'type' => 'text'],
+        'hire_date' => ['label' => 'تاریخ استخدام', 'type' => 'date'],
         'contract_type' => ['label' => 'نوع قرارداد', 'type' => 'select', 'options' => ['' => 'انتخاب کنید', 'permanent' => 'رسمی', 'contractual' => 'پیمانی', 'project' => 'پروژه‌ای']],
         'job_status' => ['label' => 'وضعیت شغلی', 'type' => 'select', 'options' => ['' => 'انتخاب کنید', 'active' => 'فعال', 'on_leave' => 'مرخصی', 'mission' => 'ماموریت']],
     ]],
@@ -120,7 +120,41 @@ $profile_fields = [
                 <div class="pzl-card">
                     <h4><?php echo esc_html($section['title']); ?></h4>
                     <div class="pzl-form-row">
-                        <?php foreach ($section['fields'] as $field_key => $field): 
+                        <?php 
+                        // Special handling for job info to add department and title dropdowns
+                        if ($section_key === 'job_info') {
+                            $departments = get_terms(['taxonomy' => 'department', 'hide_empty' => false]);
+                            $job_titles = get_terms(['taxonomy' => 'job_title', 'hide_empty' => false]);
+                            $current_dept_id = 0;
+                            $current_title_id = 0;
+                            if($user_to_edit) {
+                                $user_depts = wp_get_object_terms($user_to_edit->ID, 'department', ['fields' => 'ids']);
+                                $user_titles = wp_get_object_terms($user_to_edit->ID, 'job_title', ['fields' => 'ids']);
+                                $current_dept_id = !empty($user_depts) ? $user_depts[0] : 0;
+                                $current_title_id = !empty($user_titles) ? $user_titles[0] : 0;
+                            }
+                            ?>
+                            <div class="form-group half-width">
+                                <label for="department">دپارتمان:</label>
+                                <select name="department" id="department">
+                                    <option value="">-- بدون دپارتمان --</option>
+                                    <?php foreach($departments as $dept){
+                                        echo '<option value="' . esc_attr($dept->term_id) . '" ' . selected($current_dept_id, $dept->term_id, false) . '>' . esc_html($dept->name) . '</option>';
+                                    } ?>
+                                </select>
+                            </div>
+                             <div class="form-group half-width">
+                                <label for="job_title">عنوان شغلی:</label>
+                                <select name="job_title" id="job_title">
+                                    <option value="">-- بدون عنوان شغلی --</option>
+                                    <?php foreach($job_titles as $title){
+                                        echo '<option value="' . esc_attr($title->term_id) . '" ' . selected($current_title_id, $title->term_id, false) . '>' . esc_html($title->name) . '</option>';
+                                    } ?>
+                                </select>
+                            </div>
+                        <?php }
+
+                        foreach ($section['fields'] as $field_key => $field): 
                             $meta_key = 'pzl_' . $field_key;
                             $value = $user_to_edit ? get_user_meta($user_to_edit->ID, $meta_key, true) : '';
                             $width_class = !empty($field['full_width']) ? 'full-width' : 'half-width';
@@ -146,25 +180,6 @@ $profile_fields = [
                                 ?>
                             </div>
                         <?php endforeach; ?>
-                         <?php if($section_key === 'job_info'): // Special field for Organizational Position ?>
-                            <div class="form-group half-width">
-                                <label for="organizational_position">جایگاه سازمانی:</label>
-                                <select name="organizational_position" id="organizational_position">
-                                    <option value="">-- بدون جایگاه --</option>
-                                    <?php
-                                    $positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false]);
-                                    $current_pos_id = 0;
-                                    if($user_to_edit){
-                                        $current_pos = wp_get_object_terms($user_to_edit->ID, 'organizational_position', ['fields' => 'ids']);
-                                        $current_pos_id = !empty($current_pos) ? $current_pos[0] : 0;
-                                    }
-                                    foreach($positions as $pos){
-                                        echo '<option value="' . esc_attr($pos->term_id) . '" ' . selected($current_pos_id, $pos->term_id, false) . '>' . esc_html($pos->name) . '</option>';
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                        <?php endif; ?>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -181,17 +196,19 @@ $profile_fields = [
         </div>
         <div class="pzl-card">
             <table class="pzl-table">
-                <thead><tr><th>نام</th><th>ایمیل</th><th>نقش</th><th>جایگاه سازمانی</th><th>عملیات</th></tr></thead>
+                <thead><tr><th>نام</th><th>ایمیل</th><th>دپارتمان</th><th>عنوان شغلی</th><th>عملیات</th></tr></thead>
                 <tbody>
                     <?php 
                     $staff_roles = ['system_manager', 'finance_manager', 'team_member'];
                     foreach(get_users(['role__in' => $staff_roles]) as $staff): 
+                        $departments = wp_get_object_terms($staff->ID, 'department');
+                        $job_titles = wp_get_object_terms($staff->ID, 'job_title');
                     ?>
                         <tr>
                             <td><?php echo get_avatar($staff->ID, 32); ?> <?php echo esc_html($staff->display_name); ?></td>
                             <td><?php echo esc_html($staff->user_email); ?></td>
-                            <td><?php echo !empty($staff->roles) ? esc_html(wp_roles()->roles[$staff->roles[0]]['name']) : '---'; ?></td>
-                            <td><?php $positions = wp_get_object_terms($staff->ID, 'organizational_position'); echo !is_wp_error($positions) && !empty($positions) ? esc_html($positions[0]->name) : '---'; ?></td>
+                            <td><?php echo !is_wp_error($departments) && !empty($departments) ? esc_html($departments[0]->name) : '---'; ?></td>
+                            <td><?php echo !is_wp_error($job_titles) && !empty($job_titles) ? esc_html($job_titles[0]->name) : '---'; ?></td>
                             <td>
                                 <a href="<?php echo add_query_arg(['action' => 'edit', 'user_id' => $staff->ID]); ?>" class="pzl-button pzl-button-sm">ویرایش پروفایل</a>
                                 <a href="<?php echo add_query_arg(['action' => 'logs', 'user_id' => $staff->ID]); ?>" class="pzl-button pzl-button-sm">تاریخچه عملیات</a>

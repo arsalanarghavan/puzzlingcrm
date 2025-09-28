@@ -57,8 +57,8 @@ class PuzzlingCRM_User_Profile {
                 'emergency_contact_2_phone' => ['label' => 'شماره مخاطب اضطراری ۲', 'type' => 'tel'],
             ]],
             'job_info' => [ 'title' => 'اطلاعات شغلی / سازمانی', 'fields' => [
-                'organizational_position' => ['label' => 'جایگاه سازمانی (عنوان شغلی)', 'type' => 'position_select'],
-                'department' => ['label' => 'دپارتمان', 'type' => 'text'],
+                'department' => ['label' => 'دپارتمان', 'type' => 'department_select'],
+                'job_title' => ['label' => 'عنوان شغلی', 'type' => 'job_title_select'],
                 'personnel_code' => ['label' => 'کد پرسنلی', 'type' => 'text'],
                 'direct_manager' => ['label' => 'مدیر مستقیم', 'type' => 'text'],
                 'hire_date' => ['label' => 'تاریخ استخدام', 'type' => 'date'],
@@ -92,7 +92,7 @@ class PuzzlingCRM_User_Profile {
                 <td>
                     <?php echo get_avatar($user->ID, 96); ?>
                     <input type="file" name="pzl_profile_picture" id="pzl_profile_picture" accept="image/*">
-                    <p class="description">برای بهترین نمایش، از یک تصویر با نسبت ۹ در ۱۶ استفاده کنید.</p>
+                    <p class="description">برای بهترین نمایش، از یک تصویر مربع استفاده کنید.</p>
                 </td>
             </tr>
         </table>
@@ -120,14 +120,25 @@ class PuzzlingCRM_User_Profile {
                                 }
                                 echo '</select>';
                                 break;
-                            case 'position_select':
-                                $positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false]);
-                                $current_pos = wp_get_object_terms($user->ID, 'organizational_position', ['fields' => 'ids']);
-                                $current_pos_id = !empty($current_pos) ? $current_pos[0] : 0;
-                                echo '<select name="organizational_position" id="organizational_position">';
-                                echo '<option value="">-- بدون جایگاه --</option>';
-                                foreach($positions as $pos){
-                                    echo '<option value="' . esc_attr($pos->term_id) . '" ' . selected($current_pos_id, $pos->term_id, false) . '>' . esc_html($pos->name) . '</option>';
+                            case 'department_select':
+                                $departments = get_terms(['taxonomy' => 'department', 'hide_empty' => false]);
+                                $current_depts = wp_get_object_terms($user->ID, 'department', ['fields' => 'ids']);
+                                $current_dept_id = !empty($current_depts) ? $current_depts[0] : 0;
+                                echo '<select name="department" id="department">';
+                                echo '<option value="">-- بدون دپارتمان --</option>';
+                                foreach($departments as $dept){
+                                    echo '<option value="' . esc_attr($dept->term_id) . '" ' . selected($current_dept_id, $dept->term_id, false) . '>' . esc_html($dept->name) . '</option>';
+                                }
+                                echo '</select>';
+                                break;
+                            case 'job_title_select':
+                                $job_titles = get_terms(['taxonomy' => 'job_title', 'hide_empty' => false]);
+                                $current_titles = wp_get_object_terms($user->ID, 'job_title', ['fields' => 'ids']);
+                                $current_title_id = !empty($current_titles) ? $current_titles[0] : 0;
+                                echo '<select name="job_title" id="job_title">';
+                                echo '<option value="">-- بدون عنوان شغلی --</option>';
+                                foreach($job_titles as $title){
+                                    echo '<option value="' . esc_attr($title->term_id) . '" ' . selected($current_title_id, $title->term_id, false) . '>' . esc_html($title->name) . '</option>';
                                 }
                                 echo '</select>';
                                 break;
@@ -148,7 +159,9 @@ class PuzzlingCRM_User_Profile {
 
         foreach ($this->profile_fields as $section) {
             foreach ($section['fields'] as $field_key => $field) {
-                if ($field['type'] === 'position_select') continue; // Handled separately
+                // Skip taxonomy fields, they are handled separately below
+                if ($field['type'] === 'department_select' || $field['type'] === 'job_title_select') continue;
+                
                 $meta_key = 'pzl_' . $field_key;
                 if (isset($_POST[$meta_key])) {
                     update_user_meta($user_id, $meta_key, sanitize_text_field($_POST[$meta_key]));
@@ -156,9 +169,14 @@ class PuzzlingCRM_User_Profile {
             }
         }
 
-        // Save organizational position
-        if (isset($_POST['organizational_position'])) {
-            wp_set_object_terms($user_id, intval($_POST['organizational_position']), 'organizational_position', false);
+        // Save department
+        if (isset($_POST['department'])) {
+            wp_set_object_terms($user_id, intval($_POST['department']), 'department', false);
+        }
+
+        // Save job title
+        if (isset($_POST['job_title'])) {
+            wp_set_object_terms($user_id, intval($_POST['job_title']), 'job_title', false);
         }
         
         // Handle profile picture upload
