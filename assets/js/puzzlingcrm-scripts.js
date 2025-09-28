@@ -148,6 +148,55 @@ jQuery(document).ready(function($) {
             });
         }, 500); // Wait 500ms after user stops typing
     });
+    
+    // --- User Deletion ---
+    $('#pzl-users-table-body').on('click', '.delete-user-btn', function(e) {
+        e.preventDefault();
+        var button = $(this);
+        var userId = button.data('user-id');
+        var nonce = button.data('nonce');
+
+        Swal.fire({
+            title: 'آیا مطمئن هستید؟',
+            text: "این عمل غیرقابل بازگشت است و تمام اطلاعات کاربر حذف خواهد شد.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'بله، حذف کن!',
+            cancelButtonText: 'انصراف'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                var userRow = button.closest('tr');
+                $.ajax({
+                    url: puzzlingcrm_ajax_obj.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'puzzling_delete_user',
+                        security: puzzling_ajax_nonce,
+                        user_id: userId,
+                        nonce: nonce
+                    },
+                    beforeSend: function() {
+                        userRow.css('opacity', '0.5');
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            userRow.fadeOut(400, function() { $(this).remove(); });
+                            showPuzzlingAlert('موفقیت‌آمیز', response.data.message, 'success');
+                        } else {
+                            showPuzzlingAlert('خطا', response.data.message, 'error');
+                            userRow.css('opacity', '1');
+                        }
+                    },
+                    error: function() {
+                        showPuzzlingAlert('خطا', 'یک خطای ناشناخته در سرور رخ داد.', 'error');
+                        userRow.css('opacity', '1');
+                    }
+                });
+            }
+        });
+    });
 
     // --- Intelligent Installment Calculation ---
     $('#calculate-installments').on('click', function() {

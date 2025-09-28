@@ -128,7 +128,7 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
                         echo '<tr><td colspan="5">هیچ کاربری یافت نشد.</td></tr>';
                     } else {
                         foreach($all_users as $user): ?>
-                            <tr>
+                            <tr data-user-row-id="<?php echo esc_attr($user->ID); ?>">
                                 <td><?php echo get_avatar($user->ID, 32); ?> <?php echo esc_html($user->display_name); ?></td>
                                 <td><?php echo esc_html($user->user_email); ?></td>
                                 <td><?php echo !empty($user->roles) ? esc_html(wp_roles()->roles[$user->roles[0]]['name']) : '---'; ?></td>
@@ -136,6 +136,9 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
                                 <td>
                                     <a href="<?php echo add_query_arg(['action' => 'edit', 'user_id' => $user->ID]); ?>" class="pzl-button pzl-button-sm">ویرایش</a>
                                     <button class="pzl-button pzl-button-sm send-sms-btn" data-user-id="<?php echo esc_attr($user->ID); ?>" data-user-name="<?php echo esc_attr($user->display_name); ?>"><i class="fas fa-sms"></i></button>
+                                    <?php if ( get_current_user_id() != $user->ID && $user->ID != 1 ): // Prevent deleting self and super admin ?>
+                                    <button class="pzl-button pzl-button-sm delete-user-btn" data-user-id="<?php echo esc_attr($user->ID); ?>" data-nonce="<?php echo wp_create_nonce('puzzling_delete_user_' . $user->ID); ?>" style="background-color: #dc3545 !important;">حذف</button>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; 

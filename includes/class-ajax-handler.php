@@ -1,6 +1,6 @@
 <?php
 /**
- * PuzzlingCRM AJAX Handler - V2.6 (FINAL HIERARCHICAL SAVE FIX)
+ * PuzzlingCRM AJAX Handler - V2.7 (User Deletion Added)
  *
  * Handles all AJAX requests for the plugin.
  *
@@ -17,6 +17,7 @@ class PuzzlingCRM_Ajax_Handler {
     public function __construct() {
         // --- Form Submissions (Refactored to AJAX) ---
         add_action('wp_ajax_puzzling_manage_user', [$this, 'ajax_manage_user']);
+        add_action('wp_ajax_puzzling_delete_user', [$this, 'ajax_delete_user']); // **NEW: User Deletion**
         add_action('wp_ajax_puzzling_manage_project', [$this, 'ajax_manage_project']);
         add_action('wp_ajax_puzzling_manage_contract', [$this, 'ajax_manage_contract']);
         add_action('wp_ajax_puzzling_add_project_to_contract', [$this, 'ajax_add_project_to_contract']);
@@ -69,6 +70,44 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_save_task_as_template', [$this, 'save_task_as_template']);
         add_action('wp_ajax_puzzling_send_custom_sms', [$this, 'send_custom_sms']);
     }
+    
+    /**
+     * NEW: AJAX handler for deleting a user.
+     */
+    public function ajax_delete_user() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+
+        if (!current_user_can('delete_users') || !isset($_POST['user_id']) || !isset($_POST['nonce'])) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم برای حذف کاربر را ندارید.']);
+        }
+
+        $user_id_to_delete = intval($_POST['user_id']);
+        $current_user_id = get_current_user_id();
+
+        if (!wp_verify_nonce($_POST['nonce'], 'puzzling_delete_user_' . $user_id_to_delete)) {
+            wp_send_json_error(['message' => 'خطای امنیتی. لطفاً صفحه را رفرش کنید.']);
+        }
+
+        if ($user_id_to_delete === $current_user_id) {
+            wp_send_json_error(['message' => 'شما نمی‌توانید حساب کاربری خود را حذف کنید.']);
+        }
+
+        if ($user_id_to_delete === 1) {
+            wp_send_json_error(['message' => 'امکان حذف مدیر اصلی سایت وجود ندارد.']);
+        }
+
+        if (!current_user_can('delete_user', $user_id_to_delete)) {
+            wp_send_json_error(['message' => 'شما اجازه حذف این کاربر را ندارید.']);
+        }
+        
+        // WordPress core function to delete user
+        if (wp_delete_user($user_id_to_delete)) {
+            wp_send_json_success(['message' => 'کاربر با موفقیت حذف شد.']);
+        } else {
+            wp_send_json_error(['message' => 'خطایی در هنگام حذف کاربر رخ داد.']);
+        }
+    }
+
 
     /**
      * AJAX handler for live searching users in the customer management page.
@@ -126,7 +165,7 @@ class PuzzlingCRM_Ajax_Handler {
                 $role_name = !empty($user->roles) ? esc_html(wp_roles()->roles[$user->roles[0]]['name']) : '---';
                 $registered_date = date_i18n('Y/m/d', strtotime($user->user_registered));
                 
-                $output_html .= '<tr>';
+                $output_html .= '<tr data-user-row-id="'. esc_attr($user->ID) .'">';
                 $output_html .= '<td>' . get_avatar($user->ID, 32) . ' ' . esc_html($user->display_name) . '</td>';
                 $output_html .= '<td>' . esc_html($user->user_email) . '</td>';
                 $output_html .= '<td>' . $role_name . '</td>';
@@ -134,6 +173,9 @@ class PuzzlingCRM_Ajax_Handler {
                 $output_html .= '<td>';
                 $output_html .= '<a href="' . esc_url($edit_url) . '" class="pzl-button pzl-button-sm">ویرایش</a> ';
                 $output_html .= '<button class="pzl-button pzl-button-sm send-sms-btn" data-user-id="' . esc_attr($user->ID) . '" data-user-name="' . esc_attr($user->display_name) . '"><i class="fas fa-sms"></i></button>';
+                if ( get_current_user_id() != $user->ID && $user->ID != 1 ) {
+                    $output_html .= ' <button class="pzl-button pzl-button-sm delete-user-btn" data-user-id="'. esc_attr($user->ID) .'" data-nonce="'. wp_create_nonce('puzzling_delete_user_' . $user->ID) .'" style="background-color: #dc3545 !important;">حذف</button>';
+                }
                 $output_html .= '</td>';
                 $output_html .= '</tr>';
             }
