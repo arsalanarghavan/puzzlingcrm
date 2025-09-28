@@ -1,44 +1,221 @@
 <?php
 /**
- * Main Task Management Page Template - V5 (Filter & Layout Fix)
- * This template includes multiple views and auto-filters for team members.
+ * Main Task Management Page Template - V7 (Role-Based Stats)
+ * This template includes role-specific statistics, multiple views, and auto-filters.
  * @package PuzzlingCRM
  */
 
 if (!defined('ABSPATH')) exit;
 
 $current_user = wp_get_current_user();
-$is_team_member = in_array('team_member', (array)$current_user->roles);
+$user_id = $current_user->ID;
+$user_roles = (array)$current_user->roles;
 
-if (!current_user_can('edit_tasks')) {
+// Simplified role check
+$is_manager = in_array('administrator', $user_roles) || in_array('system_manager', $user_roles);
+$is_team_member = in_array('team_member', $user_roles);
+$is_customer = in_array('customer', $user_roles);
+
+
+if (!current_user_can('edit_tasks') && !$is_customer) { // Customers can view their tasks page now
     echo '<p>شما دسترسی لازم برای مشاهده این بخش را ندارید.</p>';
     return;
 }
 
 // --- Get active tab and view options ---
-$active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'board'; // Default to board view
-$swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'none'; // For swimlanes
+$active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'board';
+$swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'none';
 
-// --- Pre-fetch data for filters and forms ---
-$staff_roles = ['system_manager', 'finance_manager', 'team_member', 'administrator'];
-$all_staff = get_users(['role__in' => $staff_roles, 'orderby' => 'display_name']);
-$all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC']);
+// --- Pre-fetch data for filters and forms (for managers) ---
+$all_staff = $is_manager ? get_users(['role__in' => ['system_manager', 'finance_manager', 'team_member', 'administrator'], 'orderby' => 'display_name']) : [];
+$all_projects = $is_manager ? get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC']) : [];
 $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
 $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
 $labels = get_terms(['taxonomy' => 'task_label', 'hide_empty' => true]);
 $task_categories = get_terms(['taxonomy' => 'task_category', 'hide_empty' => false]);
 $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false]);
 
+
+// --- ROLE-BASED STATS CALCULATION ---
+$transient_key = 'puzzling_tasks_stats_' . $user_id;
+if ( false === ( $stats = get_transient( $transient_key ) ) ) {
+    $today_str = wp_date('Y-m-d');
+    $week_start_str = wp_date('Y-m-d', strtotime('saturday this week'));
+    $week_end_str = wp_date('Y-m-d', strtotime('friday next week'));
+    $stats = [];
+
+    if ($is_manager) {
+        // Stats for System Manager (Global View)
+        $total_projects = wp_count_posts('project')->publish;
+        $total_tasks = wp_count_posts('task')->publish;
+        $done_tasks_count = get_terms(['taxonomy' => 'task_status', 'slug' => 'done', 'fields' => 'count'])[0] ?? 0;
+        $active_tasks_count = $total_tasks - $done_tasks_count;
+
+        $overdue_tasks_query = new WP_Query(['post_type' => 'task', 'posts_per_page' => -1, 'fields' => 'ids', 'meta_query' => [['key' => '_due_date', 'value' => $today_str, 'compare' => '<', 'type' => 'DATE']], 'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => 'done', 'operator' => 'NOT IN']]]);
+        $today_tasks_query = new WP_Query(['post_type' => 'task', 'posts_per_page' => -1, 'fields' => 'ids', 'meta_query' => [['key' => '_due_date', 'value' => $today_str, 'compare' => '=', 'type' => 'DATE']]]);
+        $week_tasks_query = new WP_Query(['post_type' => 'task', 'posts_per_page' => -1, 'fields' => 'ids', 'meta_query' => [['key' => '_due_date', 'value' => [$week_start_str, $week_end_str], 'compare' => 'BETWEEN', 'type' => 'DATE']]]);
+        
+        $stats = [
+            'total_projects' => $total_projects, 'total_tasks' => $total_tasks,
+            'active_tasks' => $active_tasks_count, 'completed_tasks' => $done_tasks_count,
+            'overdue_tasks' => $overdue_tasks_query->post_count, 'today_tasks' => $today_tasks_query->post_count,
+            'week_tasks' => $week_tasks_query->post_count, 'staff_count' => count($all_staff),
+        ];
+
+    } elseif ($is_team_member) {
+        // Stats for Team Member (Assigned Tasks)
+        $base_query_args = ['post_type' => 'task', 'posts_per_page' => -1, 'meta_key' => '_assigned_to', 'meta_value' => $user_id];
+        
+        $all_assigned_tasks = get_posts(array_merge($base_query_args, ['fields' => 'ids']));
+        $total_tasks = count($all_assigned_tasks);
+        
+        $project_ids = [];
+        if($all_assigned_tasks) {
+            foreach($all_assigned_tasks as $task_id) {
+                $p_id = get_post_meta($task_id, '_project_id', true);
+                if($p_id) $project_ids[$p_id] = true;
+            }
+        }
+        $total_projects = count($project_ids);
+
+        $completed_tasks = get_posts(array_merge($base_query_args, ['tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => 'done']]]));
+        $completed_count = count($completed_tasks);
+        $active_count = $total_tasks - $completed_count;
+
+        $overdue_tasks = get_posts(array_merge($base_query_args, [
+            'meta_query' => [['key' => '_due_date', 'value' => $today_str, 'compare' => '<', 'type' => 'DATE']],
+            'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => 'done', 'operator' => 'NOT IN']]
+        ]));
+
+        $stats = [
+            'total_projects' => $total_projects, 'total_tasks' => $total_tasks,
+            'active_tasks' => $active_count, 'completed_tasks' => $completed_count,
+            'overdue_tasks' => count($overdue_tasks),
+        ];
+
+    } elseif ($is_customer) {
+        // Stats for Customer (Their Projects' Tasks)
+        $customer_projects = get_posts(['post_type' => 'project', 'author' => $user_id, 'posts_per_page' => -1, 'fields' => 'ids']);
+        $total_projects = count($customer_projects);
+        
+        if (!empty($customer_projects)) {
+            $tasks_query = new WP_Query([
+                'post_type' => 'task', 'posts_per_page' => -1,
+                'meta_query' => [
+                    'relation' => 'AND',
+                    ['key' => '_project_id', 'value' => $customer_projects, 'compare' => 'IN'],
+                    ['key' => '_show_to_customer', 'value' => '1'] // Only tasks visible to customer
+                ]
+            ]);
+            $total_tasks = $tasks_query->post_count;
+
+            $done_tasks_query = new WP_Query([
+                'post_type' => 'task', 'posts_per_page' => -1, 'fields' => 'ids',
+                'meta_query' => [['key' => '_project_id', 'value' => $customer_projects, 'compare' => 'IN'], ['key' => '_show_to_customer', 'value' => '1']],
+                'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => 'done']]
+            ]);
+            $completed_tasks = $done_tasks_query->post_count;
+            $active_tasks = $total_tasks - $completed_tasks;
+        } else {
+            $total_tasks = $active_tasks = $completed_tasks = 0;
+        }
+
+        $stats = [
+            'total_projects' => $total_projects, 'total_tasks' => $total_tasks,
+            'active_tasks' => $active_tasks, 'completed_tasks' => $completed_tasks,
+        ];
+    }
+
+    set_transient( $transient_key, $stats, HOUR_IN_SECONDS );
+}
 ?>
 <div class="pzl-dashboard-section" id="pzl-task-manager-page">
     <h3><i class="fas fa-tasks"></i> مدیریت وظایف</h3>
 
+    <div class="pzl-dashboard-stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+        <?php if (isset($stats['total_projects'])): ?>
+        <div class="stat-widget-card gradient-1">
+            <div class="stat-widget-icon"><i class="fas fa-briefcase"></i></div>
+            <div class="stat-widget-content">
+                <span class="stat-number"><?php echo esc_html($stats['total_projects']); ?></span>
+                <span class="stat-title"><?php echo $is_team_member ? 'پروژه‌های درگیر' : 'کل پروژه‌ها'; ?></span>
+            </div>
+        </div>
+        <?php endif; ?>
+        <?php if (isset($stats['total_tasks'])): ?>
+        <div class="stat-widget-card gradient-2">
+            <div class="stat-widget-icon"><i class="fas fa-list-alt"></i></div>
+            <div class="stat-widget-content">
+                <span class="stat-number"><?php echo esc_html($stats['total_tasks']); ?></span>
+                <span class="stat-title">کل وظایف</span>
+            </div>
+        </div>
+        <?php endif; ?>
+        <?php if (isset($stats['active_tasks'])): ?>
+        <div class="stat-widget-card gradient-3">
+            <div class="stat-widget-icon"><i class="fas fa-spinner"></i></div>
+            <div class="stat-widget-content">
+                <span class="stat-number"><?php echo esc_html($stats['active_tasks']); ?></span>
+                <span class="stat-title">وظایف فعال</span>
+            </div>
+        </div>
+        <?php endif; ?>
+         <?php if (isset($stats['completed_tasks'])): ?>
+        <div class="stat-widget-card gradient-4">
+            <div class="stat-widget-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-widget-content">
+                <span class="stat-number"><?php echo esc_html($stats['completed_tasks']); ?></span>
+                <span class="stat-title">وظایف تکمیل‌شده</span>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($is_manager): ?>
+        <div class="stat-widget-card" style="background: linear-gradient(45deg, #dc3545, #b21f2d);">
+            <div class="stat-widget-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="stat-widget-content">
+                <span class="stat-number"><?php echo esc_html($stats['overdue_tasks']); ?></span>
+                <span class="stat-title">وظایف دارای تأخیر</span>
+            </div>
+        </div>
+        <div class="stat-widget-card" style="background: linear-gradient(45deg, #fd7e14, #ffc107);">
+            <div class="stat-widget-icon"><i class="fas fa-calendar-day"></i></div>
+            <div class="stat-widget-content">
+                <span class="stat-number"><?php echo esc_html($stats['today_tasks']); ?></span>
+                <span class="stat-title">سررسید امروز</span>
+            </div>
+        </div>
+        <div class="stat-widget-card" style="background: linear-gradient(45deg, #20c997, #28a745);">
+            <div class="stat-widget-icon"><i class="fas fa-calendar-week"></i></div>
+            <div class="stat-widget-content">
+                <span class="stat-number"><?php echo esc_html($stats['week_tasks']); ?></span>
+                <span class="stat-title">سررسید این هفته</span>
+            </div>
+        </div>
+        <div class="stat-widget-card" style="background: linear-gradient(45deg, #6610f2, #6f42c1);">
+            <div class="stat-widget-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-widget-content">
+                <span class="stat-number"><?php echo esc_html($stats['staff_count']); ?></span>
+                <span class="stat-title">تعداد کارمندان</span>
+            </div>
+        </div>
+        <?php endif; ?>
+         <?php if ($is_team_member && isset($stats['overdue_tasks'])): ?>
+         <div class="stat-widget-card" style="background: linear-gradient(45deg, #dc3545, #b21f2d);">
+            <div class="stat-widget-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="stat-widget-content">
+                <span class="stat-number"><?php echo esc_html($stats['overdue_tasks']); ?></span>
+                <span class="stat-title">وظایف دارای تأخیر</span>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
     <div class="pzl-dashboard-tabs">
         <a href="<?php echo add_query_arg('tab', 'board', remove_query_arg(['tab', 's', 'project_filter', 'staff_filter', 'priority_filter', 'label_filter', 'swimlane'])); ?>" class="pzl-tab <?php echo $active_tab === 'board' ? 'active' : ''; ?>"> <i class="fas fa-columns"></i> نمای بُرد</a>
         <a href="<?php echo add_query_arg('tab', 'list'); ?>" class="pzl-tab <?php echo $active_tab === 'list' ? 'active' : ''; ?>"> <i class="fas fa-list-ul"></i> نمای لیست</a>
         <a href="<?php echo add_query_arg('tab', 'calendar'); ?>" class="pzl-tab <?php echo $active_tab === 'calendar' ? 'active' : ''; ?>"> <i class="fas fa-calendar-alt"></i> نمای تقویم</a>
         <a href="<?php echo add_query_arg('tab', 'timeline'); ?>" class="pzl-tab <?php echo $active_tab === 'timeline' ? 'active' : ''; ?>"> <i class="fas fa-stream"></i> نمای تایم‌لاین</a>
-        <?php if (!$is_team_member): ?>
+        <?php if ($is_manager): ?>
             <a href="<?php echo add_query_arg('tab', 'new'); ?>" class="pzl-tab <?php echo $active_tab === 'new' ? 'active' : ''; ?>"> <i class="fas fa-plus"></i> افزودن وظیفه جدید</a>
             <a href="<?php echo add_query_arg('tab', 'workflow'); ?>" class="pzl-tab <?php echo $active_tab === 'workflow' ? 'active' : ''; ?>"> <i class="fas fa-cogs"></i> مدیریت گردش‌کار</a>
         <?php endif; ?>
@@ -53,7 +230,7 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
     $label_filter = isset($_GET['label_filter']) ? sanitize_key($_GET['label_filter']) : '';
     $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
 
-    if ($active_tab === 'new' && !$is_team_member): 
+    if ($active_tab === 'new' && $is_manager): 
     ?>
         <div class="pzl-card">
             <?php
@@ -166,7 +343,7 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                 <h3><i class="fas fa-list-ul"></i> لیست پیشرفته وظایف</h3>
             </div>
             
-            <?php if (!$is_team_member): ?>
+            <?php if ($is_manager): ?>
             <div id="bulk-edit-container" class="pzl-card" style="display:none; margin-bottom: 20px; background: #f0f3f6;">
                 <h4>ویرایش دسته‌جمعی</h4>
                 <div class="pzl-form-row" style="align-items: flex-end;">
@@ -211,8 +388,8 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
             ?>
             <table class="pzl-table" id="tasks-list-table">
                 <thead><tr>
-                    <?php if (!$is_team_member): ?><th><input type="checkbox" id="select-all-tasks"></th><?php endif; ?>
-                    <th>عنوان وظیفه</th><th>پروژه</th><?php if (!$is_team_member): ?><th>تخصیص به</th><?php endif; ?><th>وضعیت</th><th>ددلاین</th>
+                    <?php if ($is_manager): ?><th><input type="checkbox" id="select-all-tasks"></th><?php endif; ?>
+                    <th>عنوان وظیفه</th><th>پروژه</th><?php if ($is_manager): ?><th>تخصیص به</th><?php endif; ?><th>وضعیت</th><th>ددلاین</th>
                 </tr></thead>
                 <tbody>
                     <?php if ($tasks_query->have_posts()): while($tasks_query->have_posts()): $tasks_query->the_post();
@@ -221,10 +398,10 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                         $status_terms = get_the_terms(get_the_ID(), 'task_status');
                     ?>
                         <tr>
-                            <?php if (!$is_team_member): ?><td><input type="checkbox" class="task-checkbox" value="<?php echo get_the_ID(); ?>"></td><?php endif; ?>
+                            <?php if ($is_manager): ?><td><input type="checkbox" class="task-checkbox" value="<?php echo get_the_ID(); ?>"></td><?php endif; ?>
                             <td><a href="#" class="open-task-modal" data-task-id="<?php echo get_the_ID(); ?>"><?php the_title(); ?></a></td>
                             <td><?php echo $project_id ? get_the_title($project_id) : '---'; ?></td>
-                            <?php if (!$is_team_member): ?><td><?php echo $assigned_id ? get_the_author_meta('display_name', $assigned_id) : '---'; ?></td><?php endif; ?>
+                            <?php if ($is_manager): ?><td><?php echo $assigned_id ? get_the_author_meta('display_name', $assigned_id) : '---'; ?></td><?php endif; ?>
                             <td><?php echo !empty($status_terms) ? esc_html($status_terms[0]->name) : '---'; ?></td>
                             <td><?php echo get_post_meta(get_the_ID(), '_due_date', true); ?></td>
                         </tr>
@@ -251,7 +428,7 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
             </div>
              <div id="pzl-task-gantt" style='width:100%; height:600px;'></div>
         </div>
-    <?php elseif ($active_tab === 'workflow' && !$is_team_member): ?>
+    <?php elseif ($active_tab === 'workflow' && $is_manager): ?>
         <div class="pzl-card">
             <div class="pzl-card-header">
                 <h3><i class="fas fa-cogs"></i> مدیریت وضعیت‌های گردش‌کار</h3>
@@ -290,14 +467,14 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                      </div>
                      <div class="pzl-form-row filter-row">
                         <div class="form-group filter-field"><label>پروژه</label><select name="project_filter"><option value="">همه پروژه‌ها</option><?php foreach ($all_projects as $project) { echo '<option value="' . esc_attr($project->ID) . '" ' . selected($project_filter, $project->ID, false) . '>' . esc_html($project->post_title) . '</option>'; } ?></select></div>
-                        <?php if (!$is_team_member): ?>
+                        <?php if ($is_manager): ?>
                         <div class="form-group filter-field"><label>کارمند</label><select name="staff_filter"><option value="">همه</option><?php foreach ($all_staff as $staff) { echo '<option value="' . esc_attr($staff->ID) . '" ' . selected($staff_filter, $staff->ID, false) . '>' . esc_html($staff->display_name) . '</option>'; } ?></select></div>
                         <?php endif; ?>
                         <div class="form-group filter-field"><label>اولویت</label><select name="priority_filter"><option value="">همه</option><?php foreach ($priorities as $p) { echo '<option value="' . esc_attr($p->slug) . '" ' . selected($priority_filter, $p->slug, false) . '>' . esc_html($p->name) . '</option>'; } ?></select></div>
                         <div class="form-group filter-field"><label>برچسب</label><select name="label_filter"><option value="">همه</option><?php foreach ($labels as $l) { echo '<option value="' . esc_attr($l->slug) . '" ' . selected($label_filter, $l->slug, false) . '>' . esc_html($l->name) . '</option>'; } ?></select></div>
                         <div class="form-group button-field"><button type="submit" class="pzl-button">فیلتر</button></div>
                     </div>
-                     <?php if (!$is_team_member): ?>
+                     <?php if ($is_manager): ?>
                     <div class="pzl-form-row swimlane-row">
                         <div class="form-group swimlane-field">
                             <label for="swimlane-filter">گروه‌بندی افقی (Swimlane)</label>
@@ -354,7 +531,7 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                     wp_reset_postdata();
                     
                     echo '</div>';
-                    if (!$is_team_member) {
+                    if ($is_manager) {
                         echo '<div class="add-card-controls"><button class="add-card-btn"><i class="fas fa-plus"></i> افزودن کارت</button><div class="add-card-form" style="display: none;"><textarea placeholder="عنوان کارت..."></textarea><div class="add-card-actions"><button class="pzl-button pzl-button-sm submit-add-card">افزودن</button><button type="button" class="cancel-add-card">&times;</button></div></div></div>';
                     }
                     echo '</div>';
