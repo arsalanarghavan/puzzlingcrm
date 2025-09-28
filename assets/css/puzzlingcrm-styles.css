@@ -388,7 +388,7 @@
     height: 24px;
 }
 
-/* --- Task Modal V2 Styles (HOTFIX) --- */
+/* --- Task Modal V2 Styles (FINAL FIX) --- */
 #pzl-task-modal-backdrop {
     position: fixed;
     top: 0;
@@ -405,7 +405,7 @@
     left: 50%;
     transform: translate(-50%, -50%);
     width: 95%;
-    max-width: 960px; /* Wider for better layout */
+    max-width: 1100px; /* Wider for better layout */
     z-index: 1001;
 }
 #pzl-task-modal-content {
@@ -414,14 +414,14 @@
     box-shadow: 0 15px 50px rgba(0,0,0,0.3);
     position: relative;
     max-height: 90vh;
-    overflow: hidden; /* Hide scroll on main container */
+    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 #pzl-close-modal-btn {
     position: absolute;
     top: 15px;
-    left: 15px;
+    left: 15px; /* LTR position */
     background: transparent;
     border: none;
     font-size: 28px;
@@ -433,39 +433,43 @@
 }
 #pzl-close-modal-btn:hover { color: var(--pzl-primary-color); }
 
-#pzl-task-modal-body {
-    padding: 0; /* Remove padding */
-    display: flex;
-    overflow: hidden;
-    flex-grow: 1;
-}
-
 .pzl-modal-header { 
     padding: 20px 30px; 
     border-bottom: 1px solid var(--pzl-border-color); 
     background: #fff; 
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
 }
 .pzl-modal-header-title { flex-grow: 1; }
-.pzl-modal-header h3 { font-size: 22px; margin: 0; }
+.pzl-modal-header h3 { font-size: 22px; margin: 0 0 5px 0; }
 .pzl-modal-subtitle { font-size: 14px; color: var(--pzl-text-light); }
 .pzl-modal-actions { flex-shrink: 0; }
 
-.pzl-modal-main-content {
+#pzl-task-modal-body {
+    padding: 0;
+    display: flex;
+    flex-direction: row-reverse; /* For RTL layout */
+    overflow: hidden;
     flex-grow: 1;
+}
+
+.pzl-modal-main-content {
+    flex: 1 1 66.666%;
     overflow-y: auto;
     padding: 25px 30px;
     background-color: #fff;
+    min-width: 0;
 }
 .pzl-modal-sidebar {
-    flex: 0 0 280px;
+    flex: 1 1 33.333%;
+    max-width: 340px;
     padding: 25px;
     border-right: 1px solid var(--pzl-border-color);
     overflow-y: auto;
     background-color: #fcfcfc;
 }
+
 .pzl-modal-sidebar h4 { margin-top: 0; font-size: 16px; border-bottom: 1px solid var(--pzl-border-color); padding-bottom: 10px; margin-bottom: 15px; }
 .pzl-sidebar-item { margin-bottom: 20px; font-size: 14px; }
 .pzl-sidebar-item strong { display: block; color: var(--pzl-text-color); margin-bottom: 8px; }
@@ -598,6 +602,9 @@
 .add-card-btn:hover { 
     background-color: #dfe1e6; 
     color: var(--pzl-secondary-color);
+}
+.add-card-btn .fas.fa-plus {
+    color: #ffffff;
 }
 .add-card-form textarea {
     width: 100%;
@@ -901,4 +908,90 @@
 }
 @media (max-width: 768px) {
     .pzl-tasks-filters .form-group.filter-field { grid-column: span 6; }
+}
+
+/* --- Profile Form Enhancements --- */
+.pzl-profile-main-info { display: flex; align-items: stretch; gap: 30px; }
+.pzl-profile-avatar-column { flex: 0 0 200px; display: flex; flex-direction: column; }
+.pzl-avatar-container { 
+    width: 100%;
+    background-color: #f0f0f0;
+    border-radius: var(--pzl-border-radius);
+    overflow: hidden;
+    margin-bottom: 15px;
+    border: 1px solid var(--pzl-border-color);
+    flex-grow: 1; /* Makes it fill the available height */
+}
+.pzl-avatar-container img { width: 100%; height: 100%; object-fit: cover; }
+.pzl-profile-details-column { flex: 1; }
+.pzl-form-row { align-items: flex-start; } /* Align items to top */
+.form-group.full-width { flex: 1 1 100% !important; }
+.form-group-grouped { flex: 1 1 calc(50% - 10px) !important; }
+
+/* --- Style Fix for All Input Types --- */
+.pzl-form .form-group input[type="tel"],
+.pzl-form .form-group input[type="email"],
+.pzl-form .form-group input[type="date"],
+.pzl-form .form-group input[type="number"],
+.pzl-form .form-group input[type="password"],
+.pzl-form .form-group input[type="text"] {
+    width: 100%;
+}
+
+/* --- [جدید] استایل‌های مربوط به داشبورد مشتری --- */
+.pzl-dashboard-grid-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 25px;
+}
+.pzl-dashboard-nav-card {
+    background-color: var(--pzl-card-bg);
+    border: 1px solid var(--pzl-border-color);
+    border-radius: var(--pzl-border-radius);
+    padding: 25px;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: var(--pzl-box-shadow);
+}
+.pzl-dashboard-nav-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    border-color: var(--pzl-primary-color);
+}
+.pzl-dashboard-nav-card i {
+    font-size: 36px;
+    color: var(--pzl-primary-color);
+    margin-bottom: 15px;
+    display: block;
+}
+.pzl-dashboard-nav-card span {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--pzl-secondary-color);
+}
+.back-to-dashboard-btn {
+    margin-bottom: 25px;
+}
+
+.pzl-contract-projects-list { margin-top: auto; padding-top: 15px; border-top: 1px solid var(--pzl-border-color); }
+.pzl-contract-projects-list h5 { font-size: 14px; margin-bottom: 10px; }
+.pzl-contract-projects-list ul { list-style: none; padding: 0; margin: 0; }
+.pzl-contract-projects-list li a { text-decoration: none; }
+
+.pzl-project-card-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: #333; margin: 15px 0; flex-grow: 1; align-content: start; }
+.pzl-project-card-details-grid div { display: flex; align-items: center; gap: 6px; }
+.pzl-project-card-details-grid .fas { color: var(--pzl-primary-color); }
+
+.pzl-positions-manager {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--pzl-spacing);
+    align-items: flex-start;
+}
+@media (max-width: 900px) {
+    .pzl-positions-manager {
+        grid-template-columns: 1fr;
+    }
 }
