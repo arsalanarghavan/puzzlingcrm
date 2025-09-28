@@ -1,13 +1,12 @@
 <?php
 /**
- * Template for the Task Details Modal Content - V2.2 (Layout Revision)
+ * Template for the Task Details Modal Content - V2.3 (Aesthetic Polish)
  * Loaded via AJAX. Includes new Agile fields and actions.
  * @package PuzzlingCRM
  */
 if (!defined('ABSPATH')) exit;
 
 global $post;
-// It's safer to use the passed $task variable directly instead of relying on global $post
 if (isset($task)) {
     $post = $task;
     setup_postdata($post);
@@ -112,17 +111,23 @@ $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, '
             <button id="pzl-add-task-link-btn" class="pzl-button">افزودن پیوند</button>
         </div>
 
-        <div id="tab-checklist" class="pzl-modal-tab-content" style="display:none;">
+        <div id="tab-checklist" class="pzl-modal-tab-content" style="display:none; display: flex; flex-direction: column; height: 100%;">
             <h4><i class="fas fa-check-square"></i> چک‌لیست</h4>
-            <ul class="pzl-checklist">
-                <?php foreach($checklist as $id => $item): ?>
-                    <li class="pzl-checklist-item" data-item-id="<?php echo esc_attr($id); ?>">
-                        <input type="checkbox" id="<?php echo esc_attr($id); ?>" <?php checked($item['checked']); ?>>
-                        <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($item['text']); ?></label>
-                        <span class="pzl-delete-checklist-item">&times;</span>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
+            <div class="pzl-checklist-container">
+                <ul class="pzl-checklist">
+                    <?php if (empty($checklist)): ?>
+                        <p class="pzl-no-content" style="margin: 20px;">هیچ آیتمی در چک‌لیست وجود ندارد.</p>
+                    <?php else: ?>
+                        <?php foreach($checklist as $id => $item): ?>
+                            <li class="pzl-checklist-item" data-item-id="<?php echo esc_attr($id); ?>">
+                                <input type="checkbox" id="<?php echo esc_attr($id); ?>" <?php checked($item['checked']); ?>>
+                                <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($item['text']); ?></label>
+                                <span class="pzl-delete-checklist-item">&times;</span>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </ul>
+            </div>
             <form id="pzl-add-checklist-item-form" class="pzl-form-inline">
                 <input type="text" placeholder="افزودن آیتم جدید..." required>
                 <button type="submit" class="pzl-button">افزودن</button>

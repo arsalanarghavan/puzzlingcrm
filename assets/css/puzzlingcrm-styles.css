@@ -1,6 +1,6 @@
 /*
  * PuzzlingCRM Stylesheet
- * Version: 2.8.0 (Aesthetic Modal Polish)
+ * Version: 3.0.0 (Final UI Polish)
  */
 
 /* --- ریشه و متغیرهای اصلی --- */
@@ -451,7 +451,7 @@
     padding: 30px;
     border-right: 1px solid var(--pzl-border-color);
     overflow-y: auto;
-    background-color: #f8f9fa; /* Slightly different background */
+    background-color: #f8f9fa;
 }
 
 .pzl-sidebar-header {
@@ -464,10 +464,28 @@
 .pzl-sidebar-header .pzl-modal-subtitle a { text-decoration: none; }
 
 .pzl-modal-sidebar h4 { margin-top: 0; font-size: 16px; margin-bottom: 20px; color: var(--pzl-secondary-color); }
-.pzl-sidebar-item { margin-bottom: 25px; font-size: 14px; }
-.pzl-sidebar-item strong { display: block; color: #555; margin-bottom: 10px; font-weight: 600; }
-.pzl-sidebar-item span, .pzl-sidebar-item select { display: block; color: var(--pzl-text-color); font-weight: 500; }
-.pzl-sidebar-item select { width: 100%; padding: 10px 14px; }
+.pzl-modal-sidebar .pzl-sidebar-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+.pzl-modal-sidebar .pzl-sidebar-item strong {
+    margin: 0;
+    color: var(--pzl-text-light);
+    font-weight: 500;
+}
+.pzl-modal-sidebar .pzl-sidebar-item span, 
+.pzl-modal-sidebar .pzl-sidebar-item select {
+    text-align: left;
+    font-weight: 600;
+    color: var(--pzl-text-color);
+}
+.pzl-modal-sidebar .pzl-sidebar-item select {
+    padding: 8px 12px;
+    width: 60%;
+}
 
 .pzl-modal-tabs {
     display: flex;
@@ -500,6 +518,73 @@
 .pzl-comment-content p { margin: 0; padding: 12px 18px; background: #f1f3f5; border-radius: 12px; font-size: 15px; }
 .pzl-comment-date { font-size: 12px; color: var(--pzl-text-light); margin-top: 5px; }
 .pzl-add-comment-form { margin-top: 25px; }
+.pzl-add-comment-form button { margin-top: 10px; }
+
+/* Checklist Styles */
+.pzl-checklist-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    border: 1px solid var(--pzl-border-color);
+    border-radius: var(--pzl-border-radius);
+    margin-bottom: 20px;
+    background: #fff;
+}
+.pzl-checklist {
+    list-style: none;
+    padding: 10px;
+    margin: 0;
+}
+.pzl-checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+}
+.pzl-checklist-item:last-child {
+    border-bottom: none;
+}
+.pzl-checklist-item:hover {
+    background-color: #f8f9fa;
+}
+.pzl-checklist-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.pzl-checklist-item label {
+    flex-grow: 1;
+    margin: 0;
+    cursor: pointer;
+}
+.pzl-checklist-item input[type="checkbox"]:checked + label {
+    text-decoration: line-through;
+    color: var(--pzl-text-light);
+}
+.pzl-delete-checklist-item {
+    cursor: pointer;
+    color: var(--pzl-text-light);
+    font-size: 20px;
+    font-weight: bold;
+    padding: 0 5px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.pzl-checklist-item:hover .pzl-delete-checklist-item {
+    opacity: 1;
+}
+.pzl-delete-checklist-item:hover {
+    color: var(--pzl-danger-color);
+}
+#pzl-add-checklist-item-form {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid var(--pzl-border-color);
+}
+#pzl-add-checklist-item-form input[type="text"] {
+    padding: 14px 18px;
+}
 
 /* --- End Task Modal Styles --- */
 
@@ -596,10 +681,10 @@
     background-color: #dfe1e6; 
     color: var(--pzl-secondary-color);
 }
-.add-card-btn .fas.fa-plus {
+.add-card-btn .fas {
     color: var(--pzl-text-light) !important;
 }
-.add-card-btn:hover .fas.fa-plus {
+.add-card-btn:hover .fas {
     color: var(--pzl-secondary-color) !important;
 }
 .add-card-form textarea {
@@ -626,7 +711,7 @@
     color: var(--pzl-secondary-color) !important;
 }
 
-/* NEW: Swimlanes Styles */
+/* Swimlanes Styles */
 .pzl-swimlane {
     margin-bottom: 30px;
     background-color: rgba(0,0,0,0.02);
@@ -651,7 +736,7 @@
     padding-bottom: 10px;
 }
 
-/* --- Project Card Grid View --- */
+/* Project Card Grid View */
 .pzl-projects-grid-view {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -720,7 +805,7 @@
     justify-content: center;
 }
 
-/* --- SMS Modal Styles --- */
+/* SMS Modal Styles */
 #pzl-sms-modal-backdrop {
     position: fixed;
     top: 0;
@@ -770,7 +855,7 @@
     color: white !important;
 }
 
-/* --- Live Search Form Styles --- */
+/* Live Search Form Styles */
 .pzl-search-form-container {
     margin-bottom: 25px;
 }
@@ -806,7 +891,7 @@
     display: none;
 }
 
-/* --- New Dashboard Layout Styles --- */
+/* Dashboard Layout Styles */
 .pzl-dashboard-grid-2-col {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -871,41 +956,21 @@
 .pzl-status-badge.status-closed, .pzl-status-badge.status-on-hold { background-color: #777; }
 .pzl-status-badge.status-cancelled { background-color: var(--pzl-danger-color); }
 
-/* --- Task Page Filter Layout (FINAL) --- */
-.pzl-tasks-filters .pzl-form .pzl-form-row {
-    display: grid;
-    gap: 15px;
-    align-items: flex-end;
-    grid-template-columns: repeat(12, 1fr);
-}
-.pzl-tasks-filters .form-group {
-    margin: 0;
-}
-.pzl-tasks-filters .form-group.search-field {
-    grid-column: 1 / -1; 
-}
-.pzl-tasks-filters .form-group.filter-field {
-    grid-column: span 2;
-}
-.pzl-tasks-filters .form-group.swimlane-field {
-    grid-column: 1 / -1;
-    margin-top: 10px;
-}
-.pzl-tasks-filters .form-group.button-field {
-    grid-column: span 2;
-}
-.pzl-tasks-filters .form-group button {
-    width: 100%;
-}
-@media (max-width: 1200px) {
-    .pzl-tasks-filters .form-group.filter-field { grid-column: span 3; }
-    .pzl-tasks-filters .form-group.button-field { grid-column: span 12; }
-}
-@media (max-width: 768px) {
-    .pzl-tasks-filters .form-group.filter-field { grid-column: span 6; }
-}
+/* Task Page Filter Layout (FINAL) */
+.pzl-tasks-filters .pzl-form { gap: 15px; }
+.pzl-tasks-filters .pzl-form .pzl-form-row { align-items: flex-end; }
+.pzl-tasks-filters .pzl-form-row .form-group { margin-bottom: 0; }
+.pzl-tasks-filters .search-row .form-group { flex-basis: 100%; }
+.pzl-tasks-filters .filter-row { display: flex; flex-wrap: wrap; gap: 15px; width: 100%; }
+.pzl-tasks-filters .filter-row .form-group { flex: 1 1 auto; }
+.pzl-tasks-filters .filter-row .button-field { flex-grow: 0; }
+.pzl-tasks-filters .swimlane-row { width: 100%; }
+.pzl-tasks-filters .swimlane-row .form-group { flex-basis: 100%; }
+.pzl-tasks-filters .form-group label { display: block; }
+.pzl-tasks-filters .search-row .form-group label { display: none; }
 
-/* --- Profile Form Enhancements --- */
+
+/* Profile Form Enhancements */
 .pzl-profile-main-info { display: flex; align-items: stretch; gap: 30px; }
 .pzl-profile-avatar-column { flex: 0 0 200px; display: flex; flex-direction: column; }
 .pzl-avatar-container { 
@@ -919,21 +984,10 @@
 }
 .pzl-avatar-container img { width: 100%; height: 100%; object-fit: cover; }
 .pzl-profile-details-column { flex: 1; }
-.pzl-form-row { align-items: flex-start; }
 .form-group.full-width { flex: 1 1 100% !important; }
 .form-group-grouped { flex: 1 1 calc(50% - 10px) !important; }
 
-/* --- Style Fix for All Input Types --- */
-.pzl-form .form-group input[type="tel"],
-.pzl-form .form-group input[type="email"],
-.pzl-form .form-group input[type="date"],
-.pzl-form .form-group input[type="number"],
-.pzl-form .form-group input[type="password"],
-.pzl-form .form-group input[type="text"] {
-    width: 100%;
-}
-
-/* --- Client Dashboard Styles --- */
+/* Client Dashboard Styles */
 .pzl-dashboard-grid-nav {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

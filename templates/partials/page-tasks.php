@@ -1,6 +1,6 @@
 <?php
 /**
- * Main Task Management Page Template - V4 (New Task Structure)
+ * Main Task Management Page Template - V5 (Filter & Layout Fix)
  * This template includes multiple views and auto-filters for team members.
  * @package PuzzlingCRM
  */
@@ -26,7 +26,6 @@ $all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_
 $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
 $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
 $labels = get_terms(['taxonomy' => 'task_label', 'hide_empty' => true]);
-// NEW: Fetch task categories and organizational positions
 $task_categories = get_terms(['taxonomy' => 'task_category', 'hide_empty' => false]);
 $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false]);
 
@@ -39,7 +38,7 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
         <a href="<?php echo add_query_arg('tab', 'list'); ?>" class="pzl-tab <?php echo $active_tab === 'list' ? 'active' : ''; ?>"> <i class="fas fa-list-ul"></i> نمای لیست</a>
         <a href="<?php echo add_query_arg('tab', 'calendar'); ?>" class="pzl-tab <?php echo $active_tab === 'calendar' ? 'active' : ''; ?>"> <i class="fas fa-calendar-alt"></i> نمای تقویم</a>
         <a href="<?php echo add_query_arg('tab', 'timeline'); ?>" class="pzl-tab <?php echo $active_tab === 'timeline' ? 'active' : ''; ?>"> <i class="fas fa-stream"></i> نمای تایم‌لاین</a>
-        <?php if (!$is_team_member): // Hide from team members as they have a simpler form on their dashboard ?>
+        <?php if (!$is_team_member): ?>
             <a href="<?php echo add_query_arg('tab', 'new'); ?>" class="pzl-tab <?php echo $active_tab === 'new' ? 'active' : ''; ?>"> <i class="fas fa-plus"></i> افزودن وظیفه جدید</a>
             <a href="<?php echo add_query_arg('tab', 'workflow'); ?>" class="pzl-tab <?php echo $active_tab === 'workflow' ? 'active' : ''; ?>"> <i class="fas fa-cogs"></i> مدیریت گردش‌کار</a>
         <?php endif; ?>
@@ -58,7 +57,6 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
     ?>
         <div class="pzl-card">
             <?php
-            // Additional data needed only for this form
             $all_tasks_for_parent = get_posts(['post_type' => 'task', 'numberposts' => -1, 'orderby' => 'title', 'order' => 'ASC']);
             $task_templates = get_posts(['post_type' => 'pzl_task_template', 'numberposts' => -1]);
             ?>
@@ -168,7 +166,7 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                 <h3><i class="fas fa-list-ul"></i> لیست پیشرفته وظایف</h3>
             </div>
             
-            <?php if (!$is_team_member): // Bulk edit is only for admins ?>
+            <?php if (!$is_team_member): ?>
             <div id="bulk-edit-container" class="pzl-card" style="display:none; margin-bottom: 20px; background: #f0f3f6;">
                 <h4>ویرایش دسته‌جمعی</h4>
                 <div class="pzl-form-row" style="align-items: flex-end;">
@@ -202,7 +200,6 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
             <?php endif; ?>
 
             <?php
-            // Query for tasks list
             $paged = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
             $args = ['post_type' => 'task', 'posts_per_page' => 20, 'paged' => $paged, 'meta_query' => ['relation' => 'AND'], 'tax_query' => ['relation' => 'AND']];
             if ($project_filter > 0) $args['meta_query'][] = ['key' => '_project_id', 'value' => $project_filter];
@@ -263,7 +260,7 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
             <div id="workflow-status-manager">
                 <ul id="status-sortable-list">
                     <?php
-                    foreach ($all_statuses as $status) { // Use the pre-fetched variable
+                    foreach ($all_statuses as $status) {
                         echo '<li data-term-id="' . esc_attr($status->term_id) . '"><i class="fas fa-grip-vertical"></i> ' . esc_html($status->name) . ' <span class="delete-status-btn" data-term-id="' . esc_attr($status->term_id) . '">&times;</span></li>';
                     }
                     ?>
@@ -280,21 +277,29 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
         <div class="pzl-task-board-container">
             <div class="pzl-tasks-filters pzl-card" style="margin-bottom: 20px; padding: 20px;">
                 <form method="get" class="pzl-form">
-                     <input type="hidden" name="view" value="tasks">
-                     <input type="hidden" name="tab" value="board">
-                     <div class="pzl-form-row" style="align-items: flex-end;">
-                         <div class="form-group" style="flex-grow: 2; margin-bottom: 10px;"><label>جستجو</label><input type="search" name="s" placeholder="جستجوی عنوان..." value="<?php echo esc_attr($search_query); ?>"></div>
-                        <div class="form-group" style="margin-bottom: 10px;"><label>پروژه</label><select name="project_filter"><option value="">همه پروژه‌ها</option><?php foreach ($all_projects as $project) { echo '<option value="' . esc_attr($project->ID) . '" ' . selected($project_filter, $project->ID, false) . '>' . esc_html($project->post_title) . '</option>'; } ?></select></div>
+                     <?php
+                     // Keep existing query parameters
+                     foreach ($_GET as $key => $value) {
+                         if (!in_array($key, ['s', 'project_filter', 'staff_filter', 'priority_filter', 'label_filter', 'swimlane'])) {
+                             echo '<input type="hidden" name="' . esc_attr($key) . '" value="' . esc_attr($value) . '">';
+                         }
+                     }
+                     ?>
+                     <div class="pzl-form-row search-row">
+                         <div class="form-group search-field"><input type="search" name="s" placeholder="جستجوی عنوان وظیفه..." value="<?php echo esc_attr($search_query); ?>"></div>
+                     </div>
+                     <div class="pzl-form-row filter-row">
+                        <div class="form-group filter-field"><label>پروژه</label><select name="project_filter"><option value="">همه پروژه‌ها</option><?php foreach ($all_projects as $project) { echo '<option value="' . esc_attr($project->ID) . '" ' . selected($project_filter, $project->ID, false) . '>' . esc_html($project->post_title) . '</option>'; } ?></select></div>
                         <?php if (!$is_team_member): ?>
-                        <div class="form-group" style="margin-bottom: 10px;"><label>کارمند</label><select name="staff_filter"><option value="">همه</option><?php foreach ($all_staff as $staff) { echo '<option value="' . esc_attr($staff->ID) . '" ' . selected($staff_filter, $staff->ID, false) . '>' . esc_html($staff->display_name) . '</option>'; } ?></select></div>
+                        <div class="form-group filter-field"><label>کارمند</label><select name="staff_filter"><option value="">همه</option><?php foreach ($all_staff as $staff) { echo '<option value="' . esc_attr($staff->ID) . '" ' . selected($staff_filter, $staff->ID, false) . '>' . esc_html($staff->display_name) . '</option>'; } ?></select></div>
                         <?php endif; ?>
-                        <div class="form-group" style="margin-bottom: 10px;"><label>اولویت</label><select name="priority_filter"><option value="">همه</option><?php foreach ($priorities as $p) { echo '<option value="' . esc_attr($p->slug) . '" ' . selected($priority_filter, $p->slug, false) . '>' . esc_html($p->name) . '</option>'; } ?></select></div>
-                        <div class="form-group" style="margin-bottom: 10px;"><label>برچسب</label><select name="label_filter"><option value="">همه</option><?php foreach ($labels as $l) { echo '<option value="' . esc_attr($l->slug) . '" ' . selected($label_filter, $l->slug, false) . '>' . esc_html($l->name) . '</option>'; } ?></select></div>
-                        <div class="form-group" style="margin-bottom: 10px;"><button type="submit" class="pzl-button">فیلتر</button></div>
+                        <div class="form-group filter-field"><label>اولویت</label><select name="priority_filter"><option value="">همه</option><?php foreach ($priorities as $p) { echo '<option value="' . esc_attr($p->slug) . '" ' . selected($priority_filter, $p->slug, false) . '>' . esc_html($p->name) . '</option>'; } ?></select></div>
+                        <div class="form-group filter-field"><label>برچسب</label><select name="label_filter"><option value="">همه</option><?php foreach ($labels as $l) { echo '<option value="' . esc_attr($l->slug) . '" ' . selected($label_filter, $l->slug, false) . '>' . esc_html($l->name) . '</option>'; } ?></select></div>
+                        <div class="form-group button-field"><button type="submit" class="pzl-button">فیلتر</button></div>
                     </div>
-                     <?php if (!$is_team_member): // Swimlanes only for admins ?>
-                    <div class="pzl-form-row" style="align-items: flex-end; margin-top: 10px;">
-                        <div class="form-group" style="margin-bottom: 0;">
+                     <?php if (!$is_team_member): ?>
+                    <div class="pzl-form-row swimlane-row">
+                        <div class="form-group swimlane-field">
                             <label for="swimlane-filter">گروه‌بندی افقی (Swimlane)</label>
                             <select name="swimlane" id="swimlane-filter" onchange="this.form.submit()">
                                 <option value="none" <?php selected($swimlane_by, 'none'); ?>>هیچکدام</option>
@@ -318,35 +323,20 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                     echo '<h4 class="pzl-column-header">' . esc_html($status->name) . '</h4>';
                     echo '<div class="pzl-task-list">';
                     
-                    // --- CODE REPLACEMENT START ---
                     $tasks_args = [
-                        'post_type'      => 'task',
-                        'posts_per_page' => -1,
-                        'meta_query'     => ['relation' => 'AND'],
-                        'tax_query'      => ['relation' => 'AND'],
-                        'orderby'        => 'menu_order date',
-                        'order'          => 'ASC',
+                        'post_type' => 'task', 'posts_per_page' => -1,
+                        'tax_query' => ['relation' => 'AND'],
+                        'meta_query' => ['relation' => 'AND'],
+                        'orderby' => 'menu_order date', 'order' => 'ASC',
                     ];
 
                     if ($status === reset($statuses)) {
                         $tasks_args['tax_query']['relation'] = 'OR';
-                        $tasks_args['tax_query'][] = [
-                            'taxonomy' => 'task_status',
-                            'field'    => 'slug',
-                            'terms'    => $status->slug,
-                        ];
-                        $tasks_args['tax_query'][] = [
-                            'taxonomy' => 'task_status',
-                            'operator' => 'NOT EXISTS',
-                        ];
+                        $tasks_args['tax_query'][] = ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug];
+                        $tasks_args['tax_query'][] = ['taxonomy' => 'task_status', 'operator' => 'NOT EXISTS'];
                     } else {
-                        $tasks_args['tax_query'][] = [
-                            'taxonomy' => 'task_status',
-                            'field'    => 'slug',
-                            'terms'    => $status->slug,
-                        ];
+                        $tasks_args['tax_query'][] = ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug];
                     }
-                    // --- CODE REPLACEMENT END ---
 
                     if ($project_filter > 0) { $tasks_args['meta_query'][] = ['key' => '_project_id', 'value' => $project_filter]; }
                     if ($staff_filter > 0) { $tasks_args['meta_query'][] = ['key' => '_assigned_to', 'value' => $staff_filter]; }
@@ -364,13 +354,13 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                     wp_reset_postdata();
                     
                     echo '</div>';
-                    if (!$is_team_member) { // Quick add only for admins on this page
+                    if (!$is_team_member) {
                         echo '<div class="add-card-controls"><button class="add-card-btn"><i class="fas fa-plus"></i> افزودن کارت</button><div class="add-card-form" style="display: none;"><textarea placeholder="عنوان کارت..."></textarea><div class="add-card-actions"><button class="pzl-button pzl-button-sm submit-add-card">افزودن</button><button type="button" class="cancel-add-card">&times;</button></div></div></div>';
                     }
                     echo '</div>';
                 }
                 echo '</div>';
-            } else { // Swimlane logic for admins
+            } else { // Swimlane logic
                 $groups = [];
                 if ($swimlane_by === 'assignee') $groups = $all_staff;
                 elseif ($swimlane_by === 'project') $groups = $all_projects;
@@ -390,12 +380,10 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                         echo '<div class="pzl-task-list">';
                         
                         $tasks_args = [
-                            'post_type' => 'task', 
-                            'posts_per_page' => -1,
+                            'post_type' => 'task', 'posts_per_page' => -1,
                             'tax_query' => ['relation' => 'AND'], 
                             'meta_query' => ['relation' => 'AND'], 
-                            'orderby' => 'menu_order date', 
-                            'order' => 'ASC'
+                            'orderby' => 'menu_order date', 'order' => 'ASC'
                         ];
 
                         $tasks_args['tax_query'][] = ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug];
