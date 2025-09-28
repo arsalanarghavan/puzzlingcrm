@@ -18,10 +18,11 @@ class PuzzlingCRM_Roles_Manager {
      * **FIXED**: Now correctly adds custom capabilities to the 'administrator' role.
      * **MODIFIED**: Grants comprehensive capabilities to 'system_manager'.
      * **FIXED**: Added 'edit_posts' capability to 'team_member' to allow task creation.
+     * **FIXED**: Removed the call to remove_custom_roles() to prevent data loss on update.
      */
     public function add_custom_roles() {
-        // Remove existing roles to ensure capabilities are updated correctly on reactivation
-        $this->remove_custom_roles();
+        // The following line was causing the issue and has been removed.
+        // $this->remove_custom_roles();
 
         // --- Add Custom Capabilities to Administrator ---
         $admin_role = get_role('administrator');
