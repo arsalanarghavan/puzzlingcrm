@@ -1055,3 +1055,37 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* --- Add Card Button Icon Fix --- */
+.add-card-btn .fas {
+    color: var(--pzl-text-light) !important;
+}
+.add-card-btn:hover .fas {
+    color: var(--pzl-secondary-color) !important;
+}
+
+/* --- Task Modal Comment Box Fix --- */
+.pzl-add-comment-form {
+    margin-top: 25px;
+}
+.pzl-add-comment-form textarea {
+    width: 100%;
+    margin-bottom: 10px;
+}
+.pzl-add-comment-form button {
+    display: block;
+    margin-right: auto;
+}
+
+/* --- Task Modal Checklist Form Fix --- */
+#pzl-add-checklist-item-form {
+    display: flex;
+    gap: 10px;
+}
+#pzl-add-checklist-item-form .form-group {
+    flex-grow: 1;
+    margin-bottom: 0;
+}
+#pzl-add-checklist-item-form input[type="text"] {
+    width: 100%;
+}

@@ -398,7 +398,7 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                         
                         if ($project_filter > 0) { $tasks_args['meta_query'][] = ['key' => '_project_id', 'value' => $project_filter]; }
                         if ($staff_filter > 0) { $tasks_args['meta_query'][] = ['key' => '_assigned_to', 'value' => $staff_filter]; }
-                        if (!empty($search_query)) { $args['s'] = $search_query; }
+                        if (!empty($search_query)) { $tasks_args['s'] = $search_query; }
                         if (!empty($priority_filter)) { $tasks_args['tax_query'][] = ['taxonomy' => 'task_priority', 'field' => 'slug', 'terms' => $priority_filter]; }
                         if (!empty($label_filter)) { $tasks_args['tax_query'][] = ['taxonomy' => 'task_label', 'field' => 'slug', 'terms' => $label_filter]; }
                         
