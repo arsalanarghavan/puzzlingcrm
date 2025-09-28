@@ -45,6 +45,8 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_save_status_order', [$this, 'save_status_order']);
         add_action('wp_ajax_puzzling_add_new_status', [$this, 'add_new_status']);
         add_action('wp_ajax_puzzling_delete_status', [$this, 'delete_status']);
+        add_action('wp_ajax_puzzling_manage_position', [$this, 'ajax_manage_position']);
+        add_action('wp_ajax_puzzling_delete_position', [$this, 'ajax_delete_position']);
 
         // --- Advanced Task Features ---
         add_action('wp_ajax_puzzling_manage_checklist', [$this, 'manage_checklist']);
@@ -64,6 +66,10 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_bulk_edit_tasks', [$this, 'bulk_edit_tasks']);
         add_action('wp_ajax_puzzling_save_task_as_template', [$this, 'save_task_as_template']);
         add_action('wp_ajax_puzzling_send_custom_sms', [$this, 'send_custom_sms']);
+        
+        // NEW: Add handlers for task categories
+        add_action('wp_ajax_puzzling_manage_task_category', [$this, 'ajax_manage_task_category']);
+        add_action('wp_ajax_puzzling_delete_task_category', [$this, 'ajax_delete_task_category']);
     }
 
     /**
@@ -888,7 +894,7 @@ class PuzzlingCRM_Ajax_Handler {
 
             $comment = get_comment($comment_id);
             ob_start();
-            echo '<li class="pzl-comment-item"><div class="pzl-comment-avatar">' . get_avatar($comment->user_id, 32) . '</div><div class="pzl-comment-content"><p><strong>' . esc_html($comment->comment_author) . '</strong>: ' . wp_kses_post($comment->comment_content) . '</p><span class="pzl-comment-date">' . human_time_diff(strtotime($comment->comment_date), current_time('timestamp')) . ' پیش</span></div></li>';
+            echo '<li class="pzl-comment-item"><div class="pzl-comment-avatar">' . get_avatar($comment->user_id, 32) . '</div><div class="pzl-comment-content"><p><strong>' . esc_html($comment->comment_author) . '</strong>: ' . wp_kses_post(wpautop($comment->comment_content)) . '</p><span class="pzl-comment-date">' . human_time_diff(strtotime($comment->comment_date), current_time('timestamp')) . ' پیش</span></div></li>';
             wp_send_json_success(['comment_html' => ob_get_clean()]);
         } else {
              wp_send_json_error(['message' => 'خطا در ثبت نظر.']);
@@ -969,7 +975,7 @@ class PuzzlingCRM_Ajax_Handler {
     }
 
     public function add_new_status() {
-        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        check_ajax_referer('puzzling_add_new_status_nonce', 'security');
         if (!current_user_can('manage_options') || !isset($_POST['name'])) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
         }
@@ -1232,5 +1238,119 @@ class PuzzlingCRM_Ajax_Handler {
             error_log('PuzzlingCRM SMS Error: ' . $e->getMessage());
             wp_send_json_error(['message' => 'یک خطای سیستمی در هنگام ارسال پیامک رخ داد. جزئیات خطا در لاگ سرور ثبت شد.']);
         }
+    }
+
+    /**
+     * AJAX handler for creating/updating task categories.
+     */
+    public function ajax_manage_task_category() {
+        check_ajax_referer('puzzling_manage_task_category_nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم را ندارید.']);
+        }
+
+        $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
+        $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
+
+        if (empty($name)) {
+            wp_send_json_error(['message' => 'نام دسته‌بندی نمی‌تواند خالی باشد.']);
+        }
+
+        if ($term_id > 0) {
+            $result = wp_update_term($term_id, 'task_category', ['name' => $name]);
+            $message = 'دسته‌بندی با موفقیت ویرایش شد.';
+        } else {
+            if (term_exists($name, 'task_category')) {
+                wp_send_json_error(['message' => 'این دسته‌بندی از قبل وجود دارد.']);
+            }
+            $result = wp_insert_term($name, 'task_category');
+            $message = 'دسته‌بندی جدید با موفقیت اضافه شد.';
+        }
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+
+        wp_send_json_success(['message' => $message, 'reload' => true]);
+    }
+
+    /**
+     * AJAX handler for deleting a task category.
+     */
+    public function ajax_delete_task_category() {
+        check_ajax_referer('puzzling_manage_task_category_nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم را ندارید.']);
+        }
+
+        $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
+        if ($term_id === 0) {
+            wp_send_json_error(['message' => 'شناسه نامعتبر است.']);
+        }
+
+        $result = wp_delete_term($term_id, 'task_category');
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+
+        wp_send_json_success(['message' => 'دسته‌بندی با موفقیت حذف شد.', 'reload' => true]);
+    }
+    
+    /**
+     * AJAX handler for managing organizational positions.
+     */
+    public function ajax_manage_position() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم را ندارید.']);
+        }
+
+        $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
+        $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
+
+        if (empty($name)) {
+            wp_send_json_error(['message' => 'نام جایگاه شغلی نمی‌تواند خالی باشد.']);
+        }
+
+        if ($term_id > 0) {
+            $result = wp_update_term($term_id, 'organizational_position', ['name' => $name]);
+            $message = 'جایگاه شغلی با موفقیت ویرایش شد.';
+        } else {
+            if (term_exists($name, 'organizational_position')) {
+                wp_send_json_error(['message' => 'این جایگاه شغلی از قبل وجود دارد.']);
+            }
+            $result = wp_insert_term($name, 'organizational_position');
+            $message = 'جایگاه شغلی جدید با موفقیت اضافه شد.';
+        }
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+
+        wp_send_json_success(['message' => $message, 'reload' => true]);
+    }
+
+    /**
+     * AJAX handler for deleting an organizational position.
+     */
+    public function ajax_delete_position() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم را ندارید.']);
+        }
+
+        $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
+        if ($term_id === 0) {
+            wp_send_json_error(['message' => 'شناسه نامعتبر است.']);
+        }
+
+        $result = wp_delete_term($term_id, 'organizational_position');
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+
+        wp_send_json_success(['message' => 'جایگاه شغلی با موفقیت حذف شد.', 'reload' => true]);
     }
 }

@@ -104,9 +104,14 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                     </div>
                     <div class="form-group">
                         <label for="task_category">دسته‌بندی</label>
-						<select name="task_category" required>
-							<?php foreach ($task_categories as $category) { echo '<option value="' . esc_attr($category->term_id) . '">' . esc_html($category->name) . '</option>'; } ?>
-						</select>
+                        <select name="task_category" required>
+                            <option value=""><?php _e('-- انتخاب دسته‌بندی --', 'puzzlingcrm'); ?></option>
+                            <?php if (!empty($task_categories) && !is_wp_error($task_categories)): ?>
+                                <?php foreach ($task_categories as $category): ?>
+                                    <option value="<?php echo esc_attr($category->term_id); ?>"><?php echo esc_html($category->name); ?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
                     </div>
                      <div class="form-group">
                         <label for="story_points">امتیاز داستان (Story Points)</label>
