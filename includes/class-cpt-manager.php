@@ -197,7 +197,7 @@ class PuzzlingCRM_CPT_Manager {
         $assigned_role_id = get_post_meta($post->ID, '_assigned_role', true);
         $task_category_id = get_post_meta($post->ID, '_task_category', true);
         
-        $positions = get_terms(['taxonomy' => 'job_title', 'hide_empty' => false]);
+        $positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false]);
         $categories = get_terms(['taxonomy' => 'task_category', 'hide_empty' => false]);
 
         echo '<p><strong>' . __('دسته‌بندی (برای اتوماسیون):', 'puzzlingcrm') . '</strong></p>';
@@ -322,31 +322,22 @@ class PuzzlingCRM_CPT_Manager {
             ]
         ]);
         
-        // NEW: Department Taxonomy (for users)
-        register_taxonomy('department', 'user', [
-            'label' => __( 'Departments', 'puzzlingcrm' ),
+        // REVERTED to single hierarchical taxonomy for both Departments (parents) and Job Titles (children)
+        register_taxonomy('organizational_position', 'user', [
+            'label' => __( 'Organizational Positions', 'puzzlingcrm' ),
             'public' => false,
             'show_ui' => true,
-            'show_in_menu' => false,
-            'hierarchical' => true,
+            'show_in_menu' => false, 
+            'hierarchical' => true, // This is the key change to allow parent/child relationships
             'rewrite' => false,
             'labels' => [
-                'name' => __( 'دپارتمان‌ها', 'puzzlingcrm' ), 'singular_name' => __( 'دپارتمان', 'puzzlingcrm' ),
-                'menu_name' => __( 'دپارتمان‌ها', 'puzzlingcrm' ),
-            ]
-        ]);
-        
-        // NEW: Job Title Taxonomy (for users)
-        register_taxonomy('job_title', 'user', [
-            'label' => __( 'Job Titles', 'puzzlingcrm' ),
-            'public' => false,
-            'show_ui' => true,
-            'show_in_menu' => false,
-            'hierarchical' => true,
-            'rewrite' => false,
-            'labels' => [
-                'name' => __( 'عناوین شغلی', 'puzzlingcrm' ), 'singular_name' => __( 'عنوان شغلی', 'puzzlingcrm' ),
-                'menu_name' => __( 'عناوین شغلی', 'puzzlingcrm' ),
+                'name' => __( 'جایگاه‌های سازمانی', 'puzzlingcrm' ), 'singular_name' => __( 'جایگاه سازمانی', 'puzzlingcrm' ),
+                'search_items' => __( 'جستجوی جایگاه', 'puzzlingcrm' ), 'all_items' => __( 'تمام جایگاه‌ها', 'puzzlingcrm' ),
+                'edit_item' => __( 'ویرایش جایگاه', 'puzzlingcrm' ), 'update_item' => __( 'بروزرسانی جایگاه', 'puzzlingcrm' ),
+                'add_new_item' => __( 'افزودن جایگاه جدید', 'puzzlingcrm' ), 'new_item_name' => __( 'نام جایگاه جدید', 'puzzlingcrm' ),
+                'menu_name' => __( 'جایگاه‌های سازمانی', 'puzzlingcrm' ),
+                 'parent_item' => __( 'دپارتمان والد', 'puzzlingcrm' ),
+                'parent_item_colon' => __( 'دپارتمان والد:', 'puzzlingcrm' ),
             ]
         ]);
 
@@ -410,14 +401,9 @@ class PuzzlingCRM_CPT_Manager {
             if ( ! term_exists( $slug, 'task_priority' ) ) wp_insert_term( $name, 'task_priority', ['slug' => $slug] );
         }
         
-        // Default Department
-        if ( ! term_exists( 'مدیریت', 'department' ) ) {
-            wp_insert_term( 'مدیریت', 'department' );
-        }
-        
-        // Default Job Title
-        if ( ! term_exists( 'مدیر عامل', 'job_title' ) ) {
-            wp_insert_term( 'مدیر عامل', 'job_title' );
+        // Default Organizational Position (as a department)
+        if ( ! term_exists( 'مدیریت', 'organizational_position' ) ) {
+            wp_insert_term( 'مدیریت', 'organizational_position' );
         }
 
         // Ticket Statuses
