@@ -315,7 +315,7 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                     
                     $tasks_args = [
                         'post_type' => 'task', 'posts_per_page' => -1,
-                        'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug]],
+                        'tax_query' => ['relation' => 'AND', ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status->slug]],
                         'meta_query' => ['relation' => 'AND'],
                         'orderby' => 'menu_order date', 'order' => 'ASC',
                     ];
@@ -325,9 +325,14 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                     if (!empty($priority_filter)) { $tasks_args['tax_query'][] = ['taxonomy' => 'task_priority', 'field' => 'slug', 'terms' => $priority_filter]; }
                     if (!empty($label_filter)) { $tasks_args['tax_query'][] = ['taxonomy' => 'task_label', 'field' => 'slug', 'terms' => $label_filter]; }
 
-                    $tasks_in_column = get_posts($tasks_args);
-                    
-                    foreach ($tasks_in_column as $task) echo puzzling_render_task_card($task);
+                    $tasks_in_column_query = new WP_Query($tasks_args);
+                    if ($tasks_in_column_query->have_posts()) {
+                        while ($tasks_in_column_query->have_posts()) {
+                            $tasks_in_column_query->the_post();
+                            echo puzzling_render_task_card(get_post());
+                        }
+                    }
+                    wp_reset_postdata();
                     
                     echo '</div>';
                     if (!$is_team_member) { // Quick add only for admins on this page
@@ -380,8 +385,14 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                         if (!empty($priority_filter)) { $tasks_args['tax_query'][] = ['taxonomy' => 'task_priority', 'field' => 'slug', 'terms' => $priority_filter]; }
                         if (!empty($label_filter)) { $tasks_args['tax_query'][] = ['taxonomy' => 'task_label', 'field' => 'slug', 'terms' => $label_filter]; }
                         
-                        $tasks_in_group = get_posts($tasks_args);
-                        foreach ($tasks_in_group as $task) echo puzzling_render_task_card($task);
+                        $tasks_in_group_query = new WP_Query($tasks_args);
+                        if ($tasks_in_group_query->have_posts()) {
+                            while ($tasks_in_group_query->have_posts()) {
+                                $tasks_in_group_query->the_post();
+                                echo puzzling_render_task_card(get_post());
+                            }
+                        }
+                        wp_reset_postdata();
                         
                         echo '</div></div>';
                     }

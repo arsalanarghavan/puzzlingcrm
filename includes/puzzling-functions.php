@@ -143,3 +143,23 @@ function puzzling_sync_user_phone_numbers($user_id) {
 }
 add_action('personal_options_update', 'puzzling_sync_user_phone_numbers');
 add_action('edit_user_profile_update', 'puzzling_sync_user_phone_numbers');
+
+/**
+ * Gets the default task status slug (the first one in the defined order).
+ * @return string The slug of the first status, or 'to-do' as a fallback.
+ */
+function puzzling_get_default_task_status_slug() {
+    $statuses = get_terms([
+        'taxonomy'   => 'task_status',
+        'hide_empty' => false,
+        'orderby'    => 'term_order',
+        'order'      => 'ASC',
+        'number'     => 1,
+    ]);
+
+    if ( ! empty( $statuses ) && ! is_wp_error( $statuses ) ) {
+        return $statuses[0]->slug;
+    }
+
+    return 'to-do'; // Fallback
+}

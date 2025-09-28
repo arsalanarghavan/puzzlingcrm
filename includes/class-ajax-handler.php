@@ -618,7 +618,7 @@ class PuzzlingCRM_Ajax_Handler {
 	
 		// Set taxonomies
 		wp_set_post_terms($task_id, $task_category_id, 'task_category');
-		wp_set_post_terms($task_id, 'to-do', 'task_status'); // Default status
+        wp_set_post_terms($task_id, puzzling_get_default_task_status_slug(), 'task_status');
 		if (!empty($task_labels)) {
 			$labels_array = array_map('trim', explode(',', $task_labels));
 			wp_set_post_terms($task_id, $labels_array, 'task_label');

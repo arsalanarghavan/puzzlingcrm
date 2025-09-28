@@ -142,8 +142,8 @@ class PuzzlingCRM_Cron_Handler {
                     update_post_meta($task_id, '_assigned_to', $user_id);
                     // Set deadline for today
                     update_post_meta($task_id, '_due_date', $today_str);
-                    // Set default status to "To Do"
-                    wp_set_object_terms($task_id, 'to-do', 'task_status');
+                    // Set default status to the first one in the workflow
+                    wp_set_object_terms($task_id, puzzling_get_default_task_status_slug(), 'task_status');
 					// Set category to "Daily"
 					wp_set_object_terms($task_id, $daily_category->term_id, 'task_category');
 
