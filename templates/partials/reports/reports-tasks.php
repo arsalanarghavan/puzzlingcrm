@@ -71,9 +71,18 @@ foreach ($team_users as $user) {
 <div class="pzl-card-header" style="border: none; padding-bottom: 0;">
     <h4><i class="fas fa-file-export"></i> دریافت خروجی</h4>
     <div class="pzl-header-actions">
-        <button class="pzl-button pzl-button-sm" disabled><i class="fas fa-file-pdf"></i> دریافت گزارش PDF</button>
+        <?php
+        // Create the URL for the PDF download link
+        $pdf_url = add_query_arg([
+            'puzzling_action' => 'download_tasks_pdf',
+            '_wpnonce' => wp_create_nonce('download_tasks_pdf_nonce')
+        ]);
+        ?>
+        <a href="<?php echo esc_url($pdf_url); ?>" target="_blank" class="pzl-button pzl-button-sm">
+            <i class="fas fa-file-pdf"></i> دریافت گزارش PDF
+        </a>
         <button class="pzl-button pzl-button-sm" disabled><i class="fas fa-file-excel"></i> دریافت گزارش اکسل</button>
-        <p class="description" style="margin-top: 10px; font-size: 12px;">قابلیت دریافت خروجی به زودی اضافه خواهد شد.</p>
+        <p class="description" style="margin-top: 10px; font-size: 12px;">قابلیت دریافت خروجی اکسل به زودی اضافه خواهد شد.</p>
     </div>
 </div>
 
@@ -102,10 +111,10 @@ foreach ($team_users as $user) {
         <div class="pzl-chart-container pzl-pie-chart-container">
             <?php if (!empty($status_counts) && $total_tasks > 0): ?>
                 <div class="pzl-chart-legend">
-                <?php 
+                <?php
                 $hue_step = 360 / count($status_counts);
                 $current_hue = 0;
-                foreach($status_counts as $status => $count): 
+                foreach($status_counts as $status => $count):
                     if ($count == 0) continue;
                     $percentage = round(($count / $total_tasks) * 100);
                 ?>
@@ -130,7 +139,7 @@ foreach ($team_users as $user) {
                  uasort($team_members_stats, function($a, $b) {
                      return $b['completed'] <=> $a['completed'];
                  });
-                 foreach($team_members_stats as $name => $stats): 
+                 foreach($team_members_stats as $name => $stats):
                     $total = $stats['active'] + $stats['completed'];
                     $completed_perc = $total > 0 ? round(($stats['completed'] / $total) * 100) : 0;
                  ?>

@@ -58,6 +58,7 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-logger.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-agile-handler.php'; // **NEW: Agile Handler**
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-automation-handler.php'; // **NEW: Automation Handler**
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-pdf-reporter.php'; // **ADDED FOR PDF EXPORT**
         
         // SMS Interface and Integrations
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-sms-service-interface.php';

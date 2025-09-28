@@ -355,7 +355,7 @@ $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 
                         echo '<h4 class="pzl-column-header">' . esc_html($status->name) . '</h4>';
                         echo '<div class="pzl-task-list">';
                         
-                        // **FIXED QUERY LOGIC STARTS HERE**
+                        // **CORRECTED QUERY LOGIC STARTS HERE**
                         $tasks_args = [
                             'post_type' => 'task', 
                             'posts_per_page' => -1, 

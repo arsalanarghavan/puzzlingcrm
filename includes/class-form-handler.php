@@ -41,6 +41,11 @@ class PuzzlingCRM_Form_Handler {
                  case 'pay_installment': $this->handle_payment_request(); return;
                  case 'verify_payment': $this->handle_payment_verification(); return;
                  case 'delete_form': $this->handle_delete_form(); return; // This is a GET link with nonce
+                 case 'download_tasks_pdf': // **ADDED FOR PDF EXPORT**
+                    if (wp_verify_nonce($_GET['_wpnonce'], 'download_tasks_pdf_nonce')) {
+                        $this->handle_tasks_pdf_export();
+                    }
+                    return;
              }
         }
 
@@ -232,5 +237,58 @@ class PuzzlingCRM_Form_Handler {
         } else {
             $this->redirect_with_notice('payment_failed_verification', $referrer_url);
         }
+    }
+    
+    /**
+     * Handles the export of tasks to a PDF file.
+     * This is a new method added for the PDF export feature.
+     */
+    private function handle_tasks_pdf_export() {
+        if (!current_user_can('manage_options')) {
+            wp_die('You do not have permission to access this report.');
+        }
+
+        // 1. Fetch the completed tasks for today
+        $today_query = new WP_Query([
+            'post_type' => 'task',
+            'posts_per_page' => -1,
+            'date_query' => [
+                ['after' => 'today', 'inclusive' => true]
+            ],
+            'tax_query' => [['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => 'done']]
+        ]);
+        
+        // 2. Prepare data for the table
+        $header = ['پروژه', 'عنوان وظیفه', 'مسئول', 'ددلاین'];
+        $data = [];
+        if ($today_query->have_posts()) {
+            while ($today_query->have_posts()) {
+                $today_query->the_post();
+                $task_id = get_the_ID();
+                $project_id = get_post_meta($task_id, '_project_id', true);
+                $assigned_id = get_post_meta($task_id, '_assigned_to', true);
+                
+                $project_title = $project_id ? get_the_title($project_id) : '---';
+                $assignee_name = $assigned_id ? get_the_author_meta('display_name', $assigned_id) : '---';
+                $due_date = get_post_meta($task_id, '_due_date', true);
+
+                $data[] = [
+                    $project_title,
+                    get_the_title(),
+                    $assignee_name,
+                    $due_date
+                ];
+            }
+            wp_reset_postdata();
+        }
+
+        // 3. Generate PDF
+        $pdf = new PuzzlingCRM_PDF_Reporter();
+        $pdf->AliasNbPages();
+        $pdf->AddPage();
+        $pdf->SetFont('Arial', '', 12);
+        $pdf->TaskTable($header, $data);
+        $pdf->Output('D', 'PuzzlingCRM-Daily-Report-' . date('Y-m-d') . '.pdf');
+        exit;
     }
 }
