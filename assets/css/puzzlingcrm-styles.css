@@ -1,12 +1,12 @@
 /*
  * PuzzlingCRM Stylesheet
- * Version: 2.6.0 (Final Task View & Modal Fixes)
+ * Version: 2.8.0 (Aesthetic Modal Polish)
  */
 
 /* --- ریشه و متغیرهای اصلی --- */
 :root {
-    --pzl-primary-color: #F0192A; /* رنگ قرمز سازمانی */
-    --pzl-secondary-color: #1D1E29; /* رنگ هاور دکمه‌ها و مکمل */
+    --pzl-primary-color: #F0192A;
+    --pzl-secondary-color: #1D1E29;
     --pzl-text-color: #212529;
     --pzl-text-light: #6c757d;
     --pzl-body-bg: #f8f9fa;
@@ -31,7 +31,6 @@
     direction: rtl;
 }
 
-/* رنگ پیش‌فرض آیکن‌ها */
 .puzzling-dashboard-wrapper .fas,
 .puzzling-dashboard-wrapper .far,
 .puzzling-dashboard-wrapper .fal,
@@ -102,7 +101,6 @@
     color: #ffffff !important;
     transform: translateY(-2px);
 }
-/* رنگ آیکن داخل دکمه‌ها باید سفید باشد */
 .pzl-button .fas, .pzl-button .far {
     color: #ffffff !important;
 }
@@ -133,7 +131,6 @@
     color: var(--pzl-text-color);
     font-size: 14px;
 }
-/* FINAL FIX FOR ALL INPUTS */
 .form-group input[type="text"],
 .form-group input[type="email"],
 .form-group input[type="password"],
@@ -187,7 +184,6 @@
 .pzl-dashboard-tabs { border-bottom: 1px solid var(--pzl-border-color); margin-bottom: var(--pzl-spacing); display: flex; gap: 10px; flex-wrap: wrap; }
 .pzl-tab { padding: 12px 20px; text-decoration: none; color: var(--pzl-text-light); border-bottom: 3px solid transparent; margin-bottom: -1px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
 .pzl-tab.active { color: var(--pzl-primary-color); border-bottom-color: var(--pzl-primary-color); }
-/* رنگ آیکن تب فعال */
 .pzl-tab.active .fas {
     color: var(--pzl-primary-color);
 }
@@ -197,7 +193,6 @@
 .stat-widget-card { color: #fff; border-radius: var(--pzl-border-radius); padding: var(--pzl-spacing); display: flex; align-items: center; gap: 20px; box-shadow: var(--pzl-box-shadow); transition: transform 0.3s, box-shadow 0.3s; overflow: hidden; position: relative; border: none; }
 .stat-widget-card:hover { transform: translateY(-5px); box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
 .stat-widget-icon { background: rgba(255, 255, 255, 0.15); border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
-/* رنگ آیکن داخل ویجت‌های رنگی */
 .stat-widget-icon .fas {
     color: #ffffff;
 }
@@ -321,12 +316,12 @@
 .pzl-card-main {
     display: flex;
     align-items: center;
-    gap: 10px; /* Space between priority and title */
+    gap: 10px;
     margin-bottom: 15px;
 }
 
 .pzl-card-priority {
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0;
     width: 12px;
     height: 12px;
     border-radius: 50%;
@@ -340,7 +335,7 @@
     font-weight: 600;
     font-size: 15px;
     margin: 0;
-    flex-grow: 1; /* Allow title to take up remaining space */
+    flex-grow: 1;
 }
 
 .pzl-card-footer {
@@ -388,7 +383,7 @@
     height: 24px;
 }
 
-/* --- Task Modal V2 Styles (FINAL FIX) --- */
+/* --- Task Modal V2 Styles (Aesthetic Polish) --- */
 #pzl-task-modal-backdrop {
     position: fixed;
     top: 0;
@@ -405,7 +400,7 @@
     left: 50%;
     transform: translate(-50%, -50%);
     width: 95%;
-    max-width: 1100px; /* Wider for better layout */
+    max-width: 1100px;
     z-index: 1001;
 }
 #pzl-task-modal-content {
@@ -421,7 +416,7 @@
 #pzl-close-modal-btn {
     position: absolute;
     top: 15px;
-    left: 15px; /* LTR position */
+    left: 15px;
     background: transparent;
     border: none;
     font-size: 28px;
@@ -433,23 +428,12 @@
 }
 #pzl-close-modal-btn:hover { color: var(--pzl-primary-color); }
 
-.pzl-modal-header { 
-    padding: 20px 30px; 
-    border-bottom: 1px solid var(--pzl-border-color); 
-    background: #fff; 
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-}
-.pzl-modal-header-title { flex-grow: 1; }
-.pzl-modal-header h3 { font-size: 22px; margin: 0 0 5px 0; }
-.pzl-modal-subtitle { font-size: 14px; color: var(--pzl-text-light); }
-.pzl-modal-actions { flex-shrink: 0; }
+.pzl-modal-header { display: none; }
 
 #pzl-task-modal-body {
     padding: 0;
     display: flex;
-    flex-direction: row-reverse; /* For RTL layout */
+    flex-direction: row-reverse;
     overflow: hidden;
     flex-grow: 1;
 }
@@ -457,56 +441,65 @@
 .pzl-modal-main-content {
     flex: 1 1 66.666%;
     overflow-y: auto;
-    padding: 25px 30px;
+    padding: 30px;
     background-color: #fff;
     min-width: 0;
 }
 .pzl-modal-sidebar {
     flex: 1 1 33.333%;
     max-width: 340px;
-    padding: 25px;
+    padding: 30px;
     border-right: 1px solid var(--pzl-border-color);
     overflow-y: auto;
-    background-color: #fcfcfc;
+    background-color: #f8f9fa; /* Slightly different background */
 }
 
-.pzl-modal-sidebar h4 { margin-top: 0; font-size: 16px; border-bottom: 1px solid var(--pzl-border-color); padding-bottom: 10px; margin-bottom: 15px; }
-.pzl-sidebar-item { margin-bottom: 20px; font-size: 14px; }
-.pzl-sidebar-item strong { display: block; color: var(--pzl-text-color); margin-bottom: 8px; }
-.pzl-sidebar-item span, .pzl-sidebar-item select { display: block; color: var(--pzl-text-light); font-weight: 500; }
-.pzl-sidebar-item select { width: 100%; padding: 8px 12px; }
+.pzl-sidebar-header {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--pzl-border-color);
+}
+.pzl-sidebar-header h3 { font-size: 20px; line-height: 1.3; margin: 0 0 8px 0; }
+.pzl-sidebar-header .pzl-modal-subtitle { font-size: 14px; color: var(--pzl-text-light); }
+.pzl-sidebar-header .pzl-modal-subtitle a { text-decoration: none; }
+
+.pzl-modal-sidebar h4 { margin-top: 0; font-size: 16px; margin-bottom: 20px; color: var(--pzl-secondary-color); }
+.pzl-sidebar-item { margin-bottom: 25px; font-size: 14px; }
+.pzl-sidebar-item strong { display: block; color: #555; margin-bottom: 10px; font-weight: 600; }
+.pzl-sidebar-item span, .pzl-sidebar-item select { display: block; color: var(--pzl-text-color); font-weight: 500; }
+.pzl-sidebar-item select { width: 100%; padding: 10px 14px; }
 
 .pzl-modal-tabs {
     display: flex;
     border-bottom: 1px solid var(--pzl-border-color);
-    margin-bottom: 25px;
+    margin-bottom: 30px;
 }
 .pzl-modal-tab-link {
-    padding: 10px 15px;
-    border-bottom: 2px solid transparent;
+    padding: 12px 18px;
+    border-bottom: 3px solid transparent;
     margin-bottom: -1px;
     color: var(--pzl-text-light);
+    font-weight: 500;
 }
 .pzl-modal-tab-link.active {
     color: var(--pzl-primary-color);
     border-bottom-color: var(--pzl-primary-color);
-    font-weight: 600;
+    font-weight: 700;
 }
-.pzl-modal-main-content h4 { font-size: 18px; display: flex; align-items: center; gap: 8px; margin-top: 30px; }
+.pzl-modal-main-content h4 { font-size: 18px; display: flex; align-items: center; gap: 10px; margin-top: 35px; color: var(--pzl-secondary-color); }
 .pzl-modal-main-content h4:first-child { margin-top: 0; }
 .pzl-loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--pzl-primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 50px auto; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 #pzl-task-description-viewer { cursor: pointer; min-height: 50px; }
-.pzl-no-content { color: var(--pzl-text-light); border: 2px dashed var(--pzl-border-color); padding: 20px; border-radius: var(--pzl-border-radius); text-align: center; }
-#pzl-task-description-editor button { margin-top: 10px; }
+.pzl-no-content { color: var(--pzl-text-light); border: 2px dashed var(--pzl-border-color); padding: 25px; border-radius: var(--pzl-border-radius); text-align: center; }
+#pzl-task-description-editor button { margin-top: 15px; }
 .pzl-comment-list { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
 .pzl-comment-item { display: flex; gap: 15px; margin-bottom: 20px; }
 .pzl-comment-content { flex: 1; }
-.pzl-comment-content p { margin: 0; padding: 10px 15px; background: #f1f3f5; border-radius: 12px; }
-.pzl-comment-date { font-size: 12px; color: var(--pzl-text-light); }
-.pzl-add-comment-form { margin-top: 20px; }
-.pzl-add-comment-form textarea { width: 100%; }
+.pzl-comment-content p { margin: 0; padding: 12px 18px; background: #f1f3f5; border-radius: 12px; font-size: 15px; }
+.pzl-comment-date { font-size: 12px; color: var(--pzl-text-light); margin-top: 5px; }
+.pzl-add-comment-form { margin-top: 25px; }
 
 /* --- End Task Modal Styles --- */
 
@@ -585,7 +578,7 @@
 }
 
 .add-card-controls {
-    margin-top: auto; /* Push to the bottom */
+    margin-top: auto;
     padding: 0 10px 10px;
 }
 .add-card-btn {
@@ -604,7 +597,10 @@
     color: var(--pzl-secondary-color);
 }
 .add-card-btn .fas.fa-plus {
-    color: #ffffff;
+    color: var(--pzl-text-light) !important;
+}
+.add-card-btn:hover .fas.fa-plus {
+    color: var(--pzl-secondary-color) !important;
 }
 .add-card-form textarea {
     width: 100%;
@@ -786,7 +782,7 @@
 }
 .pzl-search-form-container input[type="search"] {
     width: 100%;
-    padding: 14px 50px 14px 20px; /* Right padding for icon */
+    padding: 14px 50px 14px 20px;
     border-radius: var(--pzl-border-radius);
     border: 1px solid var(--pzl-border-color);
     transition: all 0.3s ease;
@@ -807,7 +803,7 @@
     pointer-events: none;
 }
 .pzl-search-form-container .pzl-button {
-    display: none; /* Hide the button as search is live */
+    display: none;
 }
 
 /* --- New Dashboard Layout Styles --- */
@@ -875,7 +871,6 @@
 .pzl-status-badge.status-closed, .pzl-status-badge.status-on-hold { background-color: #777; }
 .pzl-status-badge.status-cancelled { background-color: var(--pzl-danger-color); }
 
-
 /* --- Task Page Filter Layout (FINAL) --- */
 .pzl-tasks-filters .pzl-form .pzl-form-row {
     display: grid;
@@ -893,7 +888,7 @@
     grid-column: span 2;
 }
 .pzl-tasks-filters .form-group.swimlane-field {
-    grid-column: 1 / -1; /* Full width on its own row */
+    grid-column: 1 / -1;
     margin-top: 10px;
 }
 .pzl-tasks-filters .form-group.button-field {
@@ -920,11 +915,11 @@
     overflow: hidden;
     margin-bottom: 15px;
     border: 1px solid var(--pzl-border-color);
-    flex-grow: 1; /* Makes it fill the available height */
+    flex-grow: 1;
 }
 .pzl-avatar-container img { width: 100%; height: 100%; object-fit: cover; }
 .pzl-profile-details-column { flex: 1; }
-.pzl-form-row { align-items: flex-start; } /* Align items to top */
+.pzl-form-row { align-items: flex-start; }
 .form-group.full-width { flex: 1 1 100% !important; }
 .form-group-grouped { flex: 1 1 calc(50% - 10px) !important; }
 
@@ -938,7 +933,7 @@
     width: 100%;
 }
 
-/* --- [جدید] استایل‌های مربوط به داشبورد مشتری --- */
+/* --- Client Dashboard Styles --- */
 .pzl-dashboard-grid-nav {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

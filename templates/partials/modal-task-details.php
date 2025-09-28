@@ -1,6 +1,6 @@
 <?php
 /**
- * Template for the Task Details Modal Content - V2.1 (Status Changer)
+ * Template for the Task Details Modal Content - V2.2 (Layout Revision)
  * Loaded via AJAX. Includes new Agile fields and actions.
  * @package PuzzlingCRM
  */
@@ -20,7 +20,7 @@ $assigned_user_id = get_post_meta($task_id, '_assigned_to', true);
 $assignee = get_userdata($assigned_user_id);
 $due_date = get_post_meta($task_id, '_due_date', true);
 $time_estimate = get_post_meta($task_id, '_time_estimate', true);
-$story_points = get_post_meta($task_id, '_story_points', true); // **NEW**
+$story_points = get_post_meta($task_id, '_story_points', true);
 $checklist = get_post_meta($task_id, '_task_checklist', true) ?: [];
 $attachments = get_post_meta($task_id, '_task_attachments', true) ?: [];
 $time_logs = get_post_meta($task_id, '_task_time_logs', true) ?: [];
@@ -30,15 +30,6 @@ $current_status_terms = wp_get_post_terms($task_id, 'task_status');
 $current_status_slug = !empty($current_status_terms) ? $current_status_terms[0]->slug : '';
 $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order']);
 ?>
-<div class="pzl-modal-header">
-    <div class="pzl-modal-header-title">
-        <h3 id="pzl-modal-title"><?php echo esc_html($task->post_title); ?></h3>
-        <div class="pzl-modal-subtitle">
-            در پروژه: <a href="#"><?php echo esc_html($project_title); ?></a>
-        </div>
-    </div>
-</div>
-
 <div id="pzl-task-modal-body">
     <div class="pzl-modal-main-content">
         <div class="pzl-modal-tabs">
@@ -185,6 +176,13 @@ $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, '
     </div>
 
     <div class="pzl-modal-sidebar">
+        <div class="pzl-sidebar-header">
+            <h3 id="pzl-modal-title"><?php echo esc_html($task->post_title); ?></h3>
+            <div class="pzl-modal-subtitle">
+                در پروژه: <a href="#"><?php echo esc_html($project_title); ?></a>
+            </div>
+        </div>
+
         <h4>جزئیات</h4>
         <div class="pzl-sidebar-item">
             <strong>وضعیت:</strong>
