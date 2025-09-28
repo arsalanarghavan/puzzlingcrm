@@ -15,16 +15,22 @@ if ( ! function_exists( 'puzzling_get_dashboard_url' ) ) {
 
 // **REVISED & STABILIZED V3: Renders the HTML for a single task card**
 if ( ! function_exists( 'puzzling_render_task_card' ) ) {
-    function puzzling_render_task_card( $task ) {
-        if (is_int($task)) {
-            $task = get_post($task);
+    function puzzling_render_task_card( $task_post ) {
+        if (is_int($task_post)) {
+            $task_post = get_post($task_post);
         }
         // If the task object is invalid, return an empty string to avoid errors.
-        if ( ! $task || ! is_a($task, 'WP_Post') ) {
+        if ( ! $task_post || ! is_a($task_post, 'WP_Post') ) {
             return '';
         }
         
-        $task_id = $task->ID;
+        global $post;
+        // Backup the global $post object to prevent conflicts
+        $original_post = $post;
+        $post = $task_post;
+        setup_postdata($post);
+
+        $task_id = get_the_ID();
         
         // --- Priority ---
         $priority_terms = wp_get_post_terms( $task_id, 'task_priority' );
@@ -64,7 +70,7 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
         $attachment_count = is_array($attachment_ids) ? count($attachment_ids) : 0;
         $attachment_html = $attachment_count > 0 ? '<span class="pzl-card-attachments"><i class="fas fa-paperclip"></i> ' . esc_html($attachment_count) . '</span>' : '';
         
-        $comment_count = $task->comment_count;
+        $comment_count = get_comments_number();
         $comment_html = $comment_count > 0 ? '<span class="pzl-card-comments"><i class="far fa-comment"></i> ' . esc_html($comment_count) . '</span>' : '';
 
         // --- Labels ---
@@ -80,6 +86,11 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
         
         // --- Cover Image ---
         $cover_html = has_post_thumbnail($task_id) ? '<div class="pzl-card-cover">' . get_the_post_thumbnail($task_id, 'medium') . '</div>' : '';
+
+        // Restore the global $post object
+        wp_reset_postdata();
+        $post = $original_post;
+        if($post) setup_postdata($post); // Restore original post data if it exists
 
         // --- Final Assembly ---
         return sprintf(
@@ -104,7 +115,7 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
             $labels_html,
             esc_attr($priority_class),
             esc_attr($priority_title),
-            esc_html($task->post_title),
+            esc_html($task_post->post_title),
             $due_date_html,
             $attachment_html,
             $comment_html,
