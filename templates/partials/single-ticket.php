@@ -33,7 +33,7 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
         <h2><?php echo esc_html($ticket->post_title); ?></h2>
         <div class="ticket-meta">
             <span>ارسال شده توسط: <?php echo esc_html(get_the_author_meta('display_name', $ticket->post_author)); ?></span>
-            <span>در تاریخ: <?php echo esc_html(get_the_date('Y/m/d H:i', $ticket)); ?></span>
+            <span>در تاریخ: <?php echo jdate('Y/m/d H:i', strtotime(get_the_date('Y/m/d H:i', $ticket))); ?></span>
             <span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span>
         </div>
     </div>
@@ -101,7 +101,7 @@ if (!function_exists('puzzling_ticket_comment_template')) {
             <div class="comment-author">
                 <?php echo get_avatar($comment, 48); ?>
                 <strong class="author-name"><?php echo get_comment_author(); ?></strong>
-                <span class="comment-date"><?php printf('%1$s در %2$s', get_comment_date(), get_comment_time()); ?></span>
+                <span class="comment-date"><?php printf('%1$s در %2$s', jdate('Y/m/d', strtotime(get_comment_date())), get_comment_time()); ?></span>
             </div>
             <div class="comment-content">
                 <?php comment_text(); ?>

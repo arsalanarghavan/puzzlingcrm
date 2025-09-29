@@ -86,7 +86,7 @@ if (!empty($project_ids)) {
                         <div><i class="fas fa-toggle-on"></i> وضعیت: <span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span></div>
                         <div><i class="fas fa-sync-alt"></i> مدل: <strong><?php echo esc_html($model_text); ?></strong></div>
                         <div><i class="fas fa-calendar-alt"></i> مدت: <strong><?php echo esc_html($duration_text); ?></strong></div>
-                        <div><i class="fas fa-hourglass-end"></i> پایان: <strong><?php echo $end_date ? esc_html(date_i18n('Y/m/d', strtotime($end_date))) : '---'; ?></strong></div>
+                        <div><i class="fas fa-hourglass-end"></i> پایان: <strong><?php echo $end_date ? jdate('Y/m/d', strtotime($end_date)) : '---'; ?></strong></div>
                     </div>
                     <div class="pzl-project-card-actions">
                         <a href="<?php the_permalink(); ?>" class="pzl-button pzl-button-sm">مشاهده وظایف پروژه</a>

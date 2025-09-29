@@ -3,6 +3,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
+// Include the jdf library
+require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/lib/jdf.php';
+
 if ( ! function_exists( 'puzzling_get_dashboard_url' ) ) {
     function puzzling_get_dashboard_url() {
         if ( is_singular() ) {
@@ -59,7 +62,7 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
             } elseif ($due_timestamp < strtotime('+2 days', $today_timestamp)) {
                 $due_date_class = 'pzl-due-near';
             }
-            $due_date_html = '<span class="pzl-card-due-date ' . $due_date_class . '"><i class="far fa-calendar-alt"></i> ' . esc_html(date_i18n('M j', $due_timestamp)) . '</span>';
+            $due_date_html = '<span class="pzl-card-due-date ' . $due_date_class . '"><i class="far fa-calendar-alt"></i> ' . jdate('Y/m/d', $due_timestamp) . '</span>';
         }
 
         // --- Sub-tasks, Attachments, Comments ---
@@ -174,3 +177,4 @@ function puzzling_get_default_task_status_slug() {
 
     return 'to-do'; // Fallback
 }
+?>
