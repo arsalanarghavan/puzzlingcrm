@@ -47,7 +47,7 @@ $appt_to_edit = ($appt_id > 0) ? get_post($appt_id) : null;
                 <div class="pzl-form-row">
                     <div class="form-group half-width">
                         <label for="date">تاریخ</label>
-                        <input type="date" id="date" name="date" value="<?php echo esc_attr($date_val); ?>" required>
+                        <input type="text" id="date" name="date" value="<?php echo esc_attr($date_val); ?>" class="pzl-jalali-date-picker" required>
                     </div>
                     <div class="form-group half-width">
                         <label for="time">ساعت</label>
@@ -84,7 +84,7 @@ $appt_to_edit = ($appt_id > 0) ? get_post($appt_id) : null;
                     <tr>
                         <td><?php echo esc_html($appt->post_title); ?></td>
                         <td><?php echo get_the_author_meta('display_name', $appt->post_author); ?></td>
-                        <td><?php echo date_i18n('Y/m/d H:i', strtotime($datetime_str)); ?></td>
+                        <td><?php echo jdate('Y/m/d H:i', strtotime($datetime_str)); ?></td>
                         <td><?php echo $is_past ? 'انجام شده' : 'در پیش رو'; ?></td>
                         <td>
                             <a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-sm">ویرایش</a>

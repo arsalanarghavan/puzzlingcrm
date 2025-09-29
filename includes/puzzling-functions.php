@@ -129,6 +129,24 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
     }
 }
 
+if ( ! function_exists( 'puzzling_jalali_to_gregorian' ) ) {
+    function puzzling_jalali_to_gregorian($jalali_date) {
+        if(empty($jalali_date)) return '';
+        $parts = explode('/', $jalali_date);
+        if(count($parts) !== 3) return $jalali_date; // Return original if format is wrong
+        $gregorian_parts = jalali_to_gregorian((int)$parts[0], (int)$parts[1], (int)$parts[2]);
+        return implode('-', $gregorian_parts);
+    }
+}
+
+if ( ! function_exists( 'puzzling_gregorian_to_jalali' ) ) {
+    function puzzling_gregorian_to_jalali($gregorian_date) {
+        if(empty($gregorian_date)) return '';
+        return jdate('Y/m/d', strtotime($gregorian_date));
+    }
+}
+
+
 /**
  * Automatically syncs user phone numbers across multiple meta keys when a user profile is updated.
  */

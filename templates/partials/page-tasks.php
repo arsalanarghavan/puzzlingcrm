@@ -312,7 +312,7 @@ $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
                     </div>
                     <div class="form-group">
                         <label for="due_date">ددلاین</label>
-                        <input type="date" name="due_date">
+                        <input type="text" name="due_date" class="pzl-jalali-date-picker">
                     </div>
                 </div>
                 <div class="pzl-form-row">
@@ -421,6 +421,7 @@ $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
                         $project_id = get_post_meta(get_the_ID(), '_project_id', true);
                         $assigned_id = get_post_meta(get_the_ID(), '_assigned_to', true);
                         $status_terms = get_the_terms(get_the_ID(), 'task_status');
+                        $due_date = get_post_meta(get_the_ID(), '_due_date', true);
                     ?>
                         <tr>
                             <?php if ($is_manager): ?><td><input type="checkbox" class="task-checkbox" value="<?php echo get_the_ID(); ?>"></td><?php endif; ?>
@@ -428,7 +429,7 @@ $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
                             <td><?php echo $project_id ? get_the_title($project_id) : '---'; ?></td>
                             <?php if ($is_manager): ?><td><?php echo $assigned_id ? get_the_author_meta('display_name', $assigned_id) : '---'; ?></td><?php endif; ?>
                             <td><?php echo !empty($status_terms) ? esc_html($status_terms[0]->name) : '---'; ?></td>
-                            <td><?php echo get_post_meta(get_the_ID(), '_due_date', true); ?></td>
+                            <td><?php echo $due_date ? jdate('Y/m/d', strtotime($due_date)) : '---'; ?></td>
                         </tr>
                     <?php endwhile; else: ?>
                         <tr><td colspan="6">هیچ وظیفه‌ای با این فیلترها یافت نشد.</td></tr>

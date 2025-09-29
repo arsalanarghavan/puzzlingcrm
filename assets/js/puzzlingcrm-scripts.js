@@ -165,7 +165,7 @@ jQuery(document).ready(function($) {
         var newRow = `
             <div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                 <input type="number" name="payment_amount[]" placeholder="مبلغ (تومان)" value="${amount}" style="flex-grow: 1;" required>
-                <input type="date" name="payment_due_date[]" value="${date}" required>
+                <input type="text" name="payment_due_date[]" class="jalali-datepicker" value="${date}" required>
                 <select name="payment_status[]">
                     <option value="pending" ${status === 'pending' ? 'selected' : ''}>در انتظار پرداخت</option>
                     <option value="paid" ${status === 'paid' ? 'selected' : ''}>پرداخت شده</option>
@@ -174,6 +174,7 @@ jQuery(document).ready(function($) {
             </div>
         `;
         $('#payment-rows-container').append(newRow);
+        kamadatepicker('.jalali-datepicker');
     }
     $('#add-payment-row').on('click', function() { addInstallmentRow(); });
     $('#payment-rows-container').on('click', '.remove-payment-row', function() { $(this).closest('.payment-row').remove(); });
@@ -284,6 +285,7 @@ jQuery(document).ready(function($) {
             firstDay: 6,
             buttonText: { today: 'امروز', month: 'ماه', week: 'هفته', list: 'لیست' },
             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+            titleFormat: { year: 'numeric', month: 'long' },
             events: function(fetchInfo, successCallback, failureCallback) {
                 var project_id = $('#calendar-project-filter').val();
                 $.ajax({
@@ -424,4 +426,11 @@ jQuery(document).ready(function($) {
     
     // --- Automation from Product in Contract Edit Page ---
     $('#add-services-from-product').on('click', function() { var button = $(this); var productId = $('#product_id_for_automation').val(); var contractId = $('input[name="contract_id"]').val(); if (!productId) { showPuzzlingAlert(puzzling_lang.info_title, 'لطفاً ابتدا یک محصول را انتخاب کنید.', 'info'); return; } button.text('در حال پردازش...').prop('disabled', true); $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_add_services_from_product', security: puzzlingcrm_ajax_obj.nonce, contract_id: contractId, product_id: productId }, success: function(response) { if (response.success) { showPuzzlingAlert(puzzling_lang.success_title, response.data.message, 'success', true); } else { showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error'); } }, error: function() { showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error'); }, complete: function() { button.text('افزودن خدمات محصول').prop('disabled', false); } }); });
+
+    // Initialize Jalali Datepickers
+    kamadatepicker('input[type="date"]', {
+        buttonsColor: "red",
+        forceFarsiDigits: true,
+        gotoToday: true,
+    });
 });

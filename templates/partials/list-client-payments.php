@@ -63,7 +63,7 @@ if ($contracts) {
                 echo '<tr>';
                 echo '<td>' . esc_html($installment['project_title']) . '</td>';
                 echo '<td>' . esc_html(number_format($installment['amount'])) . '</td>';
-                echo '<td>' . esc_html(date_i18n('Y/m/d', strtotime($installment['due_date']))) . '</td>';
+                echo '<td>' . jdate('Y/m/d', strtotime($installment['due_date'])) . '</td>';
                 echo '<td><span class="pzl-status ' . esc_attr($status_class) . '">' . $status_text . '</span></td>';
                 echo '<td>';
                 if ($status === 'pending') {

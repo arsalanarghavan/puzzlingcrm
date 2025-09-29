@@ -190,7 +190,7 @@ class PuzzlingCRM_Ajax_Handler {
             foreach ($all_users as $user) {
                 $edit_url = add_query_arg(['view' => 'customers', 'action' => 'edit', 'user_id' => $user->ID]);
                 $role_name = !empty($user->roles) ? esc_html(wp_roles()->roles[$user->roles[0]]['name']) : '---';
-                $registered_date = date_i18n('Y/m/d', strtotime($user->user_registered));
+                $registered_date = jdate('Y/m/d', strtotime($user->user_registered));
                 
                 $output_html .= '<tr data-user-row-id="'. esc_attr($user->ID) .'">';
                 $output_html .= '<td>' . get_avatar($user->ID, 32) . ' ' . esc_html($user->display_name) . '</td>';
@@ -417,15 +417,14 @@ class PuzzlingCRM_Ajax_Handler {
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
         }
-
+    
         $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
         $customer_id = intval($_POST['customer_id']);
-
+    
         if (empty($customer_id)) {
             wp_send_json_error(['message' => 'انتخاب مشتری الزامی است.']);
         }
         
-        // Use a generic title, can be updated later by user
         $contract_title = sprintf('قرارداد با %s', get_the_author_meta('display_name', $customer_id));
         if (isset($_POST['contract_title']) && !empty($_POST['contract_title'])) {
             $contract_title = sanitize_text_field($_POST['contract_title']);
@@ -437,14 +436,30 @@ class PuzzlingCRM_Ajax_Handler {
             'post_status' => 'publish',
             'post_type' => 'contract',
         ];
-
+    
+        $start_date_jalali = sanitize_text_field($_POST['_project_start_date']);
+        $start_date_gregorian = puzzling_jalali_to_gregorian($start_date_jalali);
+        $duration = sanitize_key($_POST['_project_contract_duration']);
+        $end_date_gregorian = '';
+    
+        if($start_date_gregorian && $duration) {
+            $end_date = new DateTime($start_date_gregorian);
+            switch ($duration) {
+                case '1-month': $end_date->modify('+1 month'); break;
+                case '3-months': $end_date->modify('+3 months'); break;
+                case '6-months': $end_date->modify('+6 months'); break;
+                case '12-months': $end_date->modify('+1 year'); break;
+            }
+            $end_date_gregorian = $end_date->format('Y-m-d');
+        }
+    
         $contract_meta = [
             '_project_subscription_model' => sanitize_key($_POST['_project_subscription_model']),
-            '_project_contract_duration' => sanitize_key($_POST['_project_contract_duration']),
-            '_project_start_date' => sanitize_text_field($_POST['_project_start_date']),
-            '_project_end_date' => sanitize_text_field($_POST['_project_end_date']),
+            '_project_contract_duration' => $duration,
+            '_project_start_date' => $start_date_gregorian,
+            '_project_end_date' => $end_date_gregorian,
         ];
-
+    
         // Installments
         $payment_amounts = isset($_POST['payment_amount']) ? (array) $_POST['payment_amount'] : [];
         $payment_due_dates = isset($_POST['payment_due_date']) ? (array) $_POST['payment_due_date'] : [];
@@ -452,10 +467,14 @@ class PuzzlingCRM_Ajax_Handler {
         $installments = [];
         for ($i = 0; $i < count($payment_amounts); $i++) {
             if (!empty($payment_amounts[$i]) && !empty($payment_due_dates[$i])) {
-                $installments[] = ['amount' => sanitize_text_field(str_replace(',', '', $payment_amounts[$i])), 'due_date' => sanitize_text_field($payment_due_dates[$i]), 'status' => sanitize_key($payment_statuses[$i] ?? 'pending'),];
+                $installments[] = [
+                    'amount' => sanitize_text_field(str_replace(',', '', $payment_amounts[$i])), 
+                    'due_date' => puzzling_jalali_to_gregorian(sanitize_text_field($payment_due_dates[$i])), 
+                    'status' => sanitize_key($payment_statuses[$i] ?? 'pending'),
+                ];
             }
         }
-
+    
         if ($contract_id > 0) {
             $contract_data['ID'] = $contract_id;
             $result = wp_update_post($contract_data, true);
@@ -464,7 +483,7 @@ class PuzzlingCRM_Ajax_Handler {
             $result = wp_insert_post($contract_data, true);
             $message = 'قرارداد جدید با موفقیت ایجاد شد.';
         }
-
+    
         if (is_wp_error($result)) {
             wp_send_json_error(['message' => 'خطا در پردازش قرارداد.']);
         }
@@ -664,7 +683,7 @@ class PuzzlingCRM_Ajax_Handler {
 		$title = sanitize_text_field($_POST['title']);
 		$content = isset($_POST['content']) ? wp_kses_post($_POST['content']) : '';
 		$task_category_id = isset($_POST['task_category']) ? intval($_POST['task_category']) : 0;
-		$due_date = sanitize_text_field($_POST['due_date']);
+		$due_date = puzzling_jalali_to_gregorian(sanitize_text_field($_POST['due_date']));
 		$project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
 		$parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : 0;
 		$story_points = isset($_POST['story_points']) ? sanitize_text_field($_POST['story_points']) : '';
@@ -1164,7 +1183,7 @@ class PuzzlingCRM_Ajax_Handler {
                 $this->_log_task_activity($task_id, sprintf('عنوان وظیفه را به "%s" تغییر داد.', sanitize_text_field($value)));
                 break;
             case 'due_date':
-                update_post_meta($task_id, '_due_date', sanitize_text_field($value));
+                update_post_meta($task_id, '_due_date', puzzling_jalali_to_gregorian(sanitize_text_field($value)));
                 $this->_log_task_activity($task_id, sprintf('ددلاین را به "%s" تغییر داد.', sanitize_text_field($value)));
                 break;
             case 'assignee':

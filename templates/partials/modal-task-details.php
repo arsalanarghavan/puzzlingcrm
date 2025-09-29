@@ -156,7 +156,7 @@ $all_staff = get_users(['role__in' => ['system_manager', 'finance_manager', 'tea
             <h5><i class="fas fa-history"></i> لاگ‌های زمان</h5>
             <ul class="pzl-time-log-list">
                  <?php foreach(array_reverse((array)$time_logs) as $log): ?>
-                    <li><strong><?php echo esc_html($log['user_name']); ?></strong> <?php echo esc_html($log['hours']); ?> ساعت ثبت کرد <span class="pzl-time-log-desc">(<?php echo esc_html($log['description']); ?>)</span><span class="pzl-time-log-date"><?php echo date_i18n('Y/m/d', strtotime($log['date'])); ?></span></li>
+                    <li><strong><?php echo esc_html($log['user_name']); ?></strong> <?php echo esc_html($log['hours']); ?> ساعت ثبت کرد <span class="pzl-time-log-desc">(<?php echo esc_html($log['description']); ?>)</span><span class="pzl-time-log-date"><?php echo jdate('Y/m/d', strtotime($log['date'])); ?></span></li>
                  <?php endforeach; ?>
             </ul>
         </div>
@@ -217,7 +217,7 @@ $all_staff = get_users(['role__in' => ['system_manager', 'finance_manager', 'tea
         </div>
         <div class="pzl-sidebar-item">
             <strong>ددلاین:</strong>
-            <span><?php echo $due_date ? esc_html(date_i18n('Y/m/d', strtotime($due_date))) : '---'; ?></span>
+            <span><?php echo $due_date ? jdate('Y/m/d', strtotime($due_date)) : '---'; ?></span>
         </div>
         <div class="pzl-sidebar-item">
             <strong>اولویت:</strong>

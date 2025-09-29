@@ -16,7 +16,7 @@ $user_to_edit = ($user_id > 0) ? get_user_by('ID', $user_id) : null;
 // This defines the structure for our form fields (excluding user/role info)
 $profile_fields = [
     'identity_info' => [ 'title' => 'اطلاعات هویتی', 'fields' => [
-        'father_name' => ['label' => 'نام پدر', 'type' => 'text'], 'birth_date' => ['label' => 'تاریخ تولد', 'type' => 'date'],
+        'father_name' => ['label' => 'نام پدر', 'type' => 'text'], 'birth_date' => ['label' => 'تاریخ تولد', 'type' => 'text', 'class' => 'pzl-jalali-date-picker'],
         'national_id' => ['label' => 'کد ملی', 'type' => 'text'], 'id_number' => ['label' => 'شماره شناسنامه', 'type' => 'text'],
         'id_issue_place' => ['label' => 'محل صدور', 'type' => 'text'],
         'marital_status' => ['label' => 'وضعیت تأهل', 'type' => 'select', 'options' => ['' => 'انتخاب کنید', 'single' => 'مجرد', 'married' => 'متاهل']],
@@ -32,7 +32,7 @@ $profile_fields = [
     ]],
     'job_info' => [ 'title' => 'اطلاعات شغلی / سازمانی', 'fields' => [
         'personnel_code' => ['label' => 'کد پرسنلی', 'type' => 'text'], 'direct_manager' => ['label' => 'مدیر مستقیم', 'type' => 'text'],
-        'hire_date' => ['label' => 'تاریخ استخدام', 'type' => 'date'],
+        'hire_date' => ['label' => 'تاریخ استخدام', 'type' => 'text', 'class' => 'pzl-jalali-date-picker'],
         'contract_type' => ['label' => 'نوع قرارداد', 'type' => 'select', 'options' => ['' => 'انتخاب کنید', 'permanent' => 'رسمی', 'contractual' => 'پیمانی', 'project' => 'پروژه‌ای']],
         'job_status' => ['label' => 'وضعیت شغلی', 'type' => 'select', 'options' => ['' => 'انتخاب کنید', 'active' => 'فعال', 'on_leave' => 'مرخصی', 'mission' => 'ماموریت']],
     ]],
@@ -180,6 +180,7 @@ $profile_fields = [
                             $value = $user_to_edit ? get_user_meta($user_to_edit->ID, $meta_key, true) : '';
                             $width_class = !empty($field['full_width']) ? 'full-width' : 'half-width';
                             $group_class = !empty($field['group']) ? ' form-group-grouped' : '';
+                            $field_class = isset($field['class']) ? $field['class'] : '';
                         ?>
                             <div class="form-group <?php echo $width_class . $group_class; ?>">
                                 <label for="<?php echo esc_attr($meta_key); ?>"><?php echo esc_html($field['label']); ?></label>
@@ -196,7 +197,7 @@ $profile_fields = [
                                         echo '</select>';
                                         break;
                                     default:
-                                        echo '<input type="' . esc_attr($field['type']) . '" name="' . esc_attr($meta_key) . '" id="' . esc_attr($meta_key) . '" value="' . esc_attr($value) . '" />';
+                                        echo '<input type="' . esc_attr($field['type']) . '" name="' . esc_attr($meta_key) . '" id="' . esc_attr($meta_key) . '" value="' . esc_attr($value) . '" class="' . esc_attr($field_class) . '" />';
                                 }
                                 ?>
                             </div>

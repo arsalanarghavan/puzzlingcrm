@@ -53,7 +53,7 @@ $selected_project = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0
                 ?>
                 <div class="pzl-scrum-column">
                     <h4><i class="fas fa-rocket"></i> <?php echo esc_html($sprint->post_title); ?></h4>
-                    <small><?php echo date_i18n('Y/m/d', strtotime($start_date)); ?> - <?php echo date_i18n('Y/m/d', strtotime($end_date)); ?></small>
+                    <small><?php echo jdate('Y/m/d', strtotime($start_date)); ?> - <?php echo jdate('Y/m/d', strtotime($end_date)); ?></small>
                     <div class="pzl-scrum-task-list" data-sprint-id="<?php echo esc_attr($sprint->ID); ?>">
                         <?php
                         $sprint_tasks = get_posts([

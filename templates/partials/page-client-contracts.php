@@ -48,7 +48,7 @@ $contracts = get_posts([
                 </div>
                  <div class="pzl-project-card-details-grid" style="align-content: flex-start; flex-grow: 0;">
                     <div><i class="fas fa-sync-alt"></i> مدل: <strong><?php echo esc_html($model_text); ?></strong></div>
-                    <div><i class="fas fa-hourglass-end"></i> پایان: <strong><?php echo $end_date ? esc_html(date_i18n('Y/m/d', strtotime($end_date))) : '---'; ?></strong></div>
+                    <div><i class="fas fa-hourglass-end"></i> پایان: <strong><?php echo $end_date ? jdate('Y/m/d', strtotime($end_date)) : '---'; ?></strong></div>
                 </div>
                 
                 <div class="pzl-contract-projects-list">
