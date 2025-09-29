@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) exit;
             <div class="pzl-form-row">
                 <div class="form-group half-width">
                     <label for="appointment_date">تاریخ مورد نظر:</label>
-                    <input type="date" id="appointment_date" name="date" required>
+                    <input type="text" id="appointment_date" name="date" class="pzl-jalali-date-picker" required>
                 </div>
                 <div class="form-group half-width">
                     <label for="appointment_time">ساعت مورد نظر:</label>

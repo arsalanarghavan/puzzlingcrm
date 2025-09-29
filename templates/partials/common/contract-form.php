@@ -42,7 +42,7 @@ $contract_to_edit = isset($puzzling_contract) ? $puzzling_contract : null;
 
          <div class="pzl-form-row">
             <div class="form-group"><label for="_project_start_date">تاریخ شروع:</label><input type="text" id="_project_start_date" name="_project_start_date" value="<?php echo $contract_to_edit ? esc_attr(get_post_meta($contract_to_edit->ID, '_project_start_date', true)) : ''; ?>" class="pzl-jalali-date-picker"></div>
-            <div class="form-group"><label for="_project_end_date">تاریخ پایان:</label><input type="text" id="_project_end_date" name="_project_end_date" value="<?php echo $contract_to_edit ? esc_attr(get_post_meta($contract_to_edit->ID, '_project_end_date', true)) : ''; ?>" readonly></div>
+            <div class="form-group"><label for="_project_end_date">تاریخ پایان:</label><input type="text" id="_project_end_date" name="_project_end_date" value="<?php echo $contract_to_edit ? esc_attr(get_post_meta($contract_to_edit->ID, '_project_end_date', true)) : ''; ?>" class="pzl-jalali-date-picker" readonly></div>
         </div>
 
         <hr>

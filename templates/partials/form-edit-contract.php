@@ -41,7 +41,7 @@ if ( ! current_user_can('manage_options') ) return;
             </div>
             <div class="form-group">
                 <label for="start_date">تاریخ اولین قسط</label>
-                <input type="date" id="start_date">
+                <input type="text" id="start_date" class="pzl-jalali-date-picker">
             </div>
         </div>
         <button type="button" id="calculate-installments" class="pzl-button">محاسبه و تولید اقساط</button>
