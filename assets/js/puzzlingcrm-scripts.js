@@ -8,11 +8,6 @@ jQuery(document).ready(function($) {
 
     /**
      * SweetAlert Integration for Notifications - V2 (Corrected Redirect Logic)
-     * A helper function to show consistent pop-up messages.
-     * @param {string} title The title of the alert.
-     * @param {string} text The main message of the alert.
-     * @param {string} icon 'success', 'error', 'warning', 'info'.
-     * @param {boolean} reloadPage If true, the page will reload to a clean URL.
      */
     function showPuzzlingAlert(title, text, icon, reloadPage = false) {
         if (typeof Swal === 'undefined') {
@@ -244,21 +239,6 @@ jQuery(document).ready(function($) {
         openTaskModal(openTaskIdFromUrl);
     }
     
-    // --- Select All Checkbox in Task List ---
-    $('#select-all-tasks').on('change', function() {
-        var isChecked = $(this).is(':checked');
-        $('.task-checkbox').prop('checked', isChecked).trigger('change');
-    });
-
-    // Show/hide bulk edit container based on checkbox selection
-    $('body').on('change', '.task-checkbox', function() {
-        if ($('.task-checkbox:checked').length > 0) {
-            $('#bulk-edit-container').slideDown();
-        } else {
-            $('#bulk-edit-container').slideUp();
-        }
-    });
-
     // --- Task Modal Dynamic Actions (Status/Assignee Change) ---
     $('body').on('change', '#pzl-task-status-changer, #pzl-task-assignee-changer', function() {
         var select = $(this);
@@ -353,6 +333,55 @@ jQuery(document).ready(function($) {
             success: function(response) { if (response.success) { gantt.parse(response.data.gantt_tasks); } }
         });
     }
+    
+    // --- Select All Checkbox in Task List ---
+    $('#select-all-tasks').on('change', function() {
+        var isChecked = $(this).is(':checked');
+        $('.task-checkbox').prop('checked', isChecked).trigger('change');
+    });
+
+    // Show/hide bulk edit container
+    $('body').on('change', '.task-checkbox', function() {
+        if ($('.task-checkbox:checked').length > 0) {
+            $('#bulk-edit-container').slideDown();
+        } else {
+            $('#bulk-edit-container').slideUp();
+        }
+    });
+    
+    // Cancel Bulk Edit
+    $('#cancel-bulk-edit').on('click', function() {
+        $('#bulk-edit-container').slideUp();
+        $('.task-checkbox').prop('checked', false);
+        $('#select-all-tasks').prop('checked', false);
+    });
+
+    // Apply Bulk Edit
+    $('#apply-bulk-edit').on('click', function() {
+        var task_ids = [];
+        $('.task-checkbox:checked').each(function() {
+            task_ids.push($(this).val());
+        });
+        if (task_ids.length === 0) {
+            showPuzzlingAlert('توجه', 'هیچ وظیفه‌ای برای ویرایش انتخاب نشده است.', 'info');
+            return;
+        }
+        var bulk_actions = {
+            status: $('#bulk-status').val(),
+            assignee: $('#bulk-assignee').val(),
+            priority: $('#bulk-priority').val(),
+        };
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: { action: 'puzzling_bulk_edit_tasks', security: puzzling_ajax_nonce, task_ids: task_ids, bulk_actions: bulk_actions },
+            success: function(response) {
+                if (response.success) { showPuzzlingAlert('موفق', response.data.message, 'success', true); }
+                else { showPuzzlingAlert('خطا', response.data.message, 'error'); }
+            },
+            error: function() { showPuzzlingAlert('خطا', 'خطای سرور.', 'error'); }
+        });
+    });
 
     // --- Quick Add Task Controls ---
     $('.pzl-task-board-container').on('click', '.add-card-btn', function() { $(this).hide(); $(this).siblings('.add-card-form').slideDown(200).find('textarea').focus(); });

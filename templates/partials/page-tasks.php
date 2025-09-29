@@ -1,6 +1,6 @@
 <?php
 /**
- * Main Task Management Page Template - V8 (UI/UX Enhancements)
+ * Main Task Management Page Template - V7 (Role-Based Stats)
  * This template includes role-specific statistics, multiple views, and auto-filters.
  * @package PuzzlingCRM
  */
@@ -28,12 +28,13 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
 
 // --- Pre-fetch data for filters and forms (for managers) ---
 $all_staff = $is_manager ? get_users(['role__in' => ['system_manager', 'finance_manager', 'team_member', 'administrator'], 'orderby' => 'display_name']) : [];
-$all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC']);
+$all_projects = $is_manager ? get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC']) : [];
 $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
 $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
 $labels = get_terms(['taxonomy' => 'task_label', 'hide_empty' => true]);
 $task_categories = get_terms(['taxonomy' => 'task_category', 'hide_empty' => false]);
 $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false]);
+
 
 // --- ROLE-BASED STATS CALCULATION ---
 $transient_key = 'puzzling_tasks_stats_' . $user_id;
@@ -127,6 +128,13 @@ if ( false === ( $stats = get_transient( $transient_key ) ) ) {
 
     set_transient( $transient_key, $stats, HOUR_IN_SECONDS );
 }
+
+// Handle filtering, auto-applying staff filter for team members
+$project_filter = isset($_GET['project_filter']) ? intval($_GET['project_filter']) : 0;
+$staff_filter = $is_team_member ? $current_user->ID : (isset($_GET['staff_filter']) ? intval($_GET['staff_filter']) : 0);
+$priority_filter = isset($_GET['priority_filter']) ? sanitize_key($_GET['priority_filter']) : '';
+$label_filter = isset($_GET['label_filter']) ? sanitize_key($_GET['label_filter']) : '';
+$search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
 ?>
 <div class="pzl-dashboard-section" id="pzl-task-manager-page">
     <h3><i class="fas fa-tasks"></i> مدیریت وظایف</h3>
@@ -222,13 +230,6 @@ if ( false === ( $stats = get_transient( $transient_key ) ) ) {
 
     <div class="pzl-dashboard-tab-content">
     <?php 
-    // Handle filtering, auto-applying staff filter for team members
-    $project_filter = isset($_GET['project_filter']) ? intval($_GET['project_filter']) : 0;
-    $staff_filter = $is_team_member ? $current_user->ID : (isset($_GET['staff_filter']) ? intval($_GET['staff_filter']) : 0);
-    $priority_filter = isset($_GET['priority_filter']) ? sanitize_key($_GET['priority_filter']) : '';
-    $label_filter = isset($_GET['label_filter']) ? sanitize_key($_GET['label_filter']) : '';
-    $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
-
     if ($active_tab === 'new' && $is_manager): 
     ?>
         <div class="pzl-card">
@@ -342,8 +343,9 @@ if ( false === ( $stats = get_transient( $transient_key ) ) ) {
                 <h3><i class="fas fa-list-ul"></i> لیست پیشرفته وظایف</h3>
             </div>
             
-            <div class="pzl-tasks-filters" style="margin-bottom: 20px; padding: 0;">
+            <div class="pzl-tasks-filters" style="margin-bottom: 20px;">
                 <form method="get" class="pzl-form">
+                    <input type="hidden" name="tab" value="list">
                      <?php
                      foreach ($_GET as $key => $value) {
                          if (!in_array($key, ['s', 'project_filter', 'staff_filter', 'priority_filter', 'label_filter'])) {
@@ -393,7 +395,7 @@ if ( false === ( $stats = get_transient( $transient_key ) ) ) {
                     </div>
                     <div class="form-group">
                         <button type="button" id="apply-bulk-edit" class="pzl-button">اعمال</button>
-                        <button type="button" id="cancel-bulk-edit" class="pzl-button-secondary" style="background: #6c757d !important;">انصراف</button>
+                        <button type="button" id="cancel-bulk-edit" class="pzl-button pzl-button-secondary">انصراف</button>
                     </div>
                 </div>
             </div>
@@ -442,13 +444,16 @@ if ( false === ( $stats = get_transient( $transient_key ) ) ) {
             <div class="pzl-card-header">
                 <h3><i class="fas fa-calendar-alt"></i> نمای تقویم</h3>
             </div>
-             <div class="pzl-tasks-filters" style="margin-bottom: 20px; padding: 0;">
-                <form method="get" class="pzl-form">
-                     <?php foreach ($_GET as $key => $value) { if ($key !== 'project_filter') { echo '<input type="hidden" name="' . esc_attr($key) . '" value="' . esc_attr($value) . '">'; } } ?>
-                     <div class="pzl-form-row">
-                        <div class="form-group filter-field"><label>فیلتر پروژه</label><select name="project_filter" id="calendar-project-filter"><option value="">همه پروژه‌ها</option><?php foreach ($all_projects as $project) { echo '<option value="' . esc_attr($project->ID) . '" ' . selected($project_filter, $project->ID, false) . '>' . esc_html($project->post_title) . '</option>'; } ?></select></div>
-                    </div>
-                </form>
+            <div class="pzl-tasks-filters" style="margin-bottom: 20px;">
+                <div class="form-group filter-field" style="max-width: 300px;">
+                    <label for="calendar-project-filter">فیلتر بر اساس پروژه</label>
+                    <select id="calendar-project-filter">
+                        <option value="0">همه پروژه‌ها</option>
+                        <?php foreach ($all_projects as $project) {
+                            echo '<option value="' . esc_attr($project->ID) . '">' . esc_html($project->post_title) . '</option>';
+                        } ?>
+                    </select>
+                </div>
             </div>
             <div id="pzl-task-calendar"></div>
         </div>
@@ -486,6 +491,7 @@ if ( false === ( $stats = get_transient( $transient_key ) ) ) {
             <div class="pzl-tasks-filters pzl-card" style="margin-bottom: 20px; padding: 20px;">
                 <form method="get" class="pzl-form">
                      <?php
+                     // Keep existing query parameters
                      foreach ($_GET as $key => $value) {
                          if (!in_array($key, ['s', 'project_filter', 'staff_filter', 'priority_filter', 'label_filter', 'swimlane'])) {
                              echo '<input type="hidden" name="' . esc_attr($key) . '" value="' . esc_attr($value) . '">';
