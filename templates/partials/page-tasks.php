@@ -1,6 +1,6 @@
 <?php
 /**
- * Main Task Management Page Template - V7 (Role-Based Stats)
+ * Main Task Management Page Template - V8 (UI/UX Enhancements)
  * This template includes role-specific statistics, multiple views, and auto-filters.
  * @package PuzzlingCRM
  */
@@ -28,13 +28,12 @@ $swimlane_by = isset($_GET['swimlane']) ? sanitize_key($_GET['swimlane']) : 'non
 
 // --- Pre-fetch data for filters and forms (for managers) ---
 $all_staff = $is_manager ? get_users(['role__in' => ['system_manager', 'finance_manager', 'team_member', 'administrator'], 'orderby' => 'display_name']) : [];
-$all_projects = $is_manager ? get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC']) : [];
+$all_projects = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC']);
 $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
 $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
 $labels = get_terms(['taxonomy' => 'task_label', 'hide_empty' => true]);
 $task_categories = get_terms(['taxonomy' => 'task_category', 'hide_empty' => false]);
 $organizational_positions = get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false]);
-
 
 // --- ROLE-BASED STATS CALCULATION ---
 $transient_key = 'puzzling_tasks_stats_' . $user_id;
@@ -343,6 +342,30 @@ if ( false === ( $stats = get_transient( $transient_key ) ) ) {
                 <h3><i class="fas fa-list-ul"></i> لیست پیشرفته وظایف</h3>
             </div>
             
+            <div class="pzl-tasks-filters" style="margin-bottom: 20px; padding: 0;">
+                <form method="get" class="pzl-form">
+                     <?php
+                     foreach ($_GET as $key => $value) {
+                         if (!in_array($key, ['s', 'project_filter', 'staff_filter', 'priority_filter', 'label_filter'])) {
+                             echo '<input type="hidden" name="' . esc_attr($key) . '" value="' . esc_attr($value) . '">';
+                         }
+                     }
+                     ?>
+                     <div class="pzl-form-row search-row">
+                         <div class="form-group search-field"><input type="search" name="s" placeholder="جستجوی عنوان وظیفه..." value="<?php echo esc_attr($search_query); ?>"></div>
+                     </div>
+                     <div class="pzl-form-row filter-row">
+                        <div class="form-group filter-field"><label>پروژه</label><select name="project_filter"><option value="">همه پروژه‌ها</option><?php foreach ($all_projects as $project) { echo '<option value="' . esc_attr($project->ID) . '" ' . selected($project_filter, $project->ID, false) . '>' . esc_html($project->post_title) . '</option>'; } ?></select></div>
+                        <?php if ($is_manager): ?>
+                        <div class="form-group filter-field"><label>کارمند</label><select name="staff_filter"><option value="">همه</option><?php foreach ($all_staff as $staff) { echo '<option value="' . esc_attr($staff->ID) . '" ' . selected($staff_filter, $staff->ID, false) . '>' . esc_html($staff->display_name) . '</option>'; } ?></select></div>
+                        <?php endif; ?>
+                        <div class="form-group filter-field"><label>اولویت</label><select name="priority_filter"><option value="">همه</option><?php foreach ($priorities as $p) { echo '<option value="' . esc_attr($p->slug) . '" ' . selected($priority_filter, $p->slug, false) . '>' . esc_html($p->name) . '</option>'; } ?></select></div>
+                        <div class="form-group filter-field"><label>برچسب</label><select name="label_filter"><option value="">همه</option><?php foreach ($labels as $l) { echo '<option value="' . esc_attr($l->slug) . '" ' . selected($label_filter, $l->slug, false) . '>' . esc_html($l->name) . '</option>'; } ?></select></div>
+                        <div class="form-group button-field"><button type="submit" class="pzl-button">فیلتر</button></div>
+                    </div>
+                </form>
+            </div>
+
             <?php if ($is_manager): ?>
             <div id="bulk-edit-container" class="pzl-card" style="display:none; margin-bottom: 20px; background: #f0f3f6;">
                 <h4>ویرایش دسته‌جمعی</h4>
@@ -419,6 +442,14 @@ if ( false === ( $stats = get_transient( $transient_key ) ) ) {
             <div class="pzl-card-header">
                 <h3><i class="fas fa-calendar-alt"></i> نمای تقویم</h3>
             </div>
+             <div class="pzl-tasks-filters" style="margin-bottom: 20px; padding: 0;">
+                <form method="get" class="pzl-form">
+                     <?php foreach ($_GET as $key => $value) { if ($key !== 'project_filter') { echo '<input type="hidden" name="' . esc_attr($key) . '" value="' . esc_attr($value) . '">'; } } ?>
+                     <div class="pzl-form-row">
+                        <div class="form-group filter-field"><label>فیلتر پروژه</label><select name="project_filter" id="calendar-project-filter"><option value="">همه پروژه‌ها</option><?php foreach ($all_projects as $project) { echo '<option value="' . esc_attr($project->ID) . '" ' . selected($project_filter, $project->ID, false) . '>' . esc_html($project->post_title) . '</option>'; } ?></select></div>
+                    </div>
+                </form>
+            </div>
             <div id="pzl-task-calendar"></div>
         </div>
     <?php elseif($active_tab === 'timeline'): ?>
@@ -455,7 +486,6 @@ if ( false === ( $stats = get_transient( $transient_key ) ) ) {
             <div class="pzl-tasks-filters pzl-card" style="margin-bottom: 20px; padding: 20px;">
                 <form method="get" class="pzl-form">
                      <?php
-                     // Keep existing query parameters
                      foreach ($_GET as $key => $value) {
                          if (!in_array($key, ['s', 'project_filter', 'staff_filter', 'priority_filter', 'label_filter', 'swimlane'])) {
                              echo '<input type="hidden" name="' . esc_attr($key) . '" value="' . esc_attr($value) . '">';

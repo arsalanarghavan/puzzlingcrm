@@ -1,6 +1,6 @@
 <?php
 /**
- * PuzzlingCRM AJAX Handler - V2.7 (User Deletion Added)
+ * PuzzlingCRM AJAX Handler - V2.8 (Assignee Update & Calendar Filter Added)
  *
  * Handles all AJAX requests for the plugin.
  *
@@ -17,7 +17,7 @@ class PuzzlingCRM_Ajax_Handler {
     public function __construct() {
         // --- Form Submissions (Refactored to AJAX) ---
         add_action('wp_ajax_puzzling_manage_user', [$this, 'ajax_manage_user']);
-        add_action('wp_ajax_puzzling_delete_user', [$this, 'ajax_delete_user']); // **NEW: User Deletion**
+        add_action('wp_ajax_puzzling_delete_user', [$this, 'ajax_delete_user']);
         add_action('wp_ajax_puzzling_manage_project', [$this, 'ajax_manage_project']);
         add_action('wp_ajax_puzzling_manage_contract', [$this, 'ajax_manage_contract']);
         add_action('wp_ajax_puzzling_add_project_to_contract', [$this, 'ajax_add_project_to_contract']);
@@ -32,6 +32,7 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_quick_add_task', [$this, 'quick_add_task']);
         add_action('wp_ajax_puzzling_update_task_status', [$this, 'update_task_status']);
         add_action('wp_ajax_puzzling_delete_task', [$this, 'delete_task']);
+        add_action('wp_ajax_puzzling_update_task_assignee', [$this, 'ajax_update_task_assignee']); // **NEW: Assignee Update**
 
         // --- Notification Actions ---
         add_action('wp_ajax_puzzling_get_notifications', [$this, 'get_notifications']);
@@ -69,6 +70,32 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_bulk_edit_tasks', [$this, 'bulk_edit_tasks']);
         add_action('wp_ajax_puzzling_save_task_as_template', [$this, 'save_task_as_template']);
         add_action('wp_ajax_puzzling_send_custom_sms', [$this, 'send_custom_sms']);
+    }
+
+    /**
+     * AJAX handler for updating a task's assignee from the modal.
+     */
+    public function ajax_update_task_assignee() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_tasks') || !isset($_POST['task_id']) || !isset($_POST['assignee_id'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $task_id = intval($_POST['task_id']);
+        $assignee_id = intval($_POST['assignee_id']);
+        $new_assignee = get_userdata($assignee_id);
+
+        if (!$new_assignee) {
+            wp_send_json_error(['message' => 'کاربر انتخاب شده معتبر نیست.']);
+        }
+
+        update_post_meta($task_id, '_assigned_to', $assignee_id);
+        $this->_log_task_activity($task_id, sprintf('مسئول وظیفه را به "%s" تغییر داد.', $new_assignee->display_name));
+        
+        // Optionally send a notification email to the new assignee
+        // $this->send_task_assignment_email($assignee_id, $task_id);
+
+        wp_send_json_success(['message' => 'مسئول وظیفه با موفقیت به‌روزرسانی شد.']);
     }
     
     /**
@@ -1154,7 +1181,19 @@ class PuzzlingCRM_Ajax_Handler {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('edit_tasks')) wp_send_json_error();
 
-        $tasks = new WP_Query(['post_type' => 'task', 'posts_per_page' => -1]);
+        $project_filter = isset($_POST['project_filter']) ? intval($_POST['project_filter']) : 0;
+        
+        $args = ['post_type' => 'task', 'posts_per_page' => -1];
+        if($project_filter > 0){
+            $args['meta_query'] = [
+                [
+                    'key' => '_project_id',
+                    'value' => $project_filter
+                ]
+            ];
+        }
+
+        $tasks = new WP_Query($args);
         $events = $gantt_data = $gantt_links = [];
 
         if ($tasks->have_posts()) {
@@ -1222,7 +1261,7 @@ class PuzzlingCRM_Ajax_Handler {
 
         foreach ($task_ids as $task_id) {
             if (!empty($actions['status'])) wp_set_post_terms($task_id, sanitize_key($actions['status']), 'task_status');
-            if (!empty($actions['assignee'])) update_post_meta($task_id, '_assigned_to', intval($actions['assignee']));
+            if (!empty($actions['assignee'])) update_post_meta($task_id, intval($actions['assignee']));
             if (!empty($actions['priority'])) wp_set_post_terms($task_id, intval($actions['priority']), 'task_priority');
         }
         

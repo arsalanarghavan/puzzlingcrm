@@ -1,6 +1,6 @@
 <?php
 /**
- * Template for the Task Details Modal Content - V2.3 (Aesthetic Polish)
+ * Template for the Task Details Modal Content - V2.4 (Editable Assignee)
  * Loaded via AJAX. Includes new Agile fields and actions.
  * @package PuzzlingCRM
  */
@@ -28,6 +28,7 @@ $activity_log = get_post_meta($task_id, '_task_activity_log', true) ?: [];
 $current_status_terms = wp_get_post_terms($task_id, 'task_status');
 $current_status_slug = !empty($current_status_terms) ? $current_status_terms[0]->slug : '';
 $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order']);
+$all_staff = get_users(['role__in' => ['system_manager', 'finance_manager', 'team_member', 'administrator'], 'orderby' => 'display_name']);
 ?>
 <div id="pzl-task-modal-body">
     <div class="pzl-modal-main-content">
@@ -205,7 +206,14 @@ $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, '
         </div>
         <div class="pzl-sidebar-item">
             <strong>مسئول:</strong>
-            <span><?php echo $assignee ? esc_html($assignee->display_name) : '---'; ?></span>
+            <select id="pzl-task-assignee-changer" data-task-id="<?php echo esc_attr($task_id); ?>">
+                <option value="0">---</option>
+                <?php foreach($all_staff as $staff): ?>
+                    <option value="<?php echo esc_attr($staff->ID); ?>" <?php selected($assigned_user_id, $staff->ID); ?>>
+                        <?php echo esc_html($staff->display_name); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
         </div>
         <div class="pzl-sidebar-item">
             <strong>ددلاین:</strong>
