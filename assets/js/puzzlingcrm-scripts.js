@@ -221,12 +221,15 @@ jQuery(document).ready(function($) {
         $('#pzl-task-modal-body').html('');
     }
 
+    // --- CORRECTED CODE ---
     $('body').on('click', '.pzl-task-card, .open-task-modal', function(e) {
-        if ($(e.target).is('select, a, button') || $(e.target).closest('a, button').length) {
+        // اگر روی لینکی کلیک شد که برای باز کردن مودال نیست، آن را نادیده بگیر
+        if ( !$(e.target).hasClass('open-task-modal') && ($(e.target).is('a, button, select') || $(e.target).closest('a, button, select').length) ) {
             return;
         }
         e.preventDefault();
-        openTaskModal($(this).closest('[data-task-id]').data('task-id'));
+        var taskId = $(this).data('task-id') || $(this).closest('[data-task-id]').data('task-id');
+        openTaskModal(taskId);
     });
     
     $('body').on('click', '#pzl-close-modal-btn, #pzl-task-modal-backdrop', function(e) {
