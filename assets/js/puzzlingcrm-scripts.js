@@ -165,7 +165,7 @@ jQuery(document).ready(function($) {
         var newRow = `
             <div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                 <input type="number" name="payment_amount[]" placeholder="مبلغ (تومان)" value="${amount}" style="flex-grow: 1;" required>
-                <input type="text" name="payment_due_date[]" class="jalali-datepicker" value="${date}" required>
+                <input type="text" name="payment_due_date[]" class="pzl-jalali-date-picker" value="${date}" required>
                 <select name="payment_status[]">
                     <option value="pending" ${status === 'pending' ? 'selected' : ''}>در انتظار پرداخت</option>
                     <option value="paid" ${status === 'paid' ? 'selected' : ''}>پرداخت شده</option>
@@ -174,7 +174,7 @@ jQuery(document).ready(function($) {
             </div>
         `;
         $('#payment-rows-container').append(newRow);
-        kamadatepicker('.jalali-datepicker');
+        kamadatepicker('.pzl-jalali-date-picker');
     }
     $('#add-payment-row').on('click', function() { addInstallmentRow(); });
     $('#payment-rows-container').on('click', '.remove-payment-row', function() { $(this).closest('.payment-row').remove(); });
