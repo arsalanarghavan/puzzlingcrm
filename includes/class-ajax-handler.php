@@ -312,7 +312,12 @@ class PuzzlingCRM_Ajax_Handler {
             // Save custom meta fields (looping through them)
             foreach ($_POST as $key => $value) {
                 if (strpos($key, 'pzl_') === 0) {
-                    update_user_meta($the_user_id, $key, sanitize_text_field($value));
+                    $sanitized_value = sanitize_text_field($value);
+                    // Check if it's a date field and convert it
+                    if ($key === 'pzl_birth_date' || $key === 'pzl_hire_date') {
+                        $sanitized_value = puzzling_jalali_to_gregorian($sanitized_value);
+                    }
+                    update_user_meta($the_user_id, $key, $sanitized_value);
                 }
             }
             
@@ -808,7 +813,7 @@ class PuzzlingCRM_Ajax_Handler {
 		}
 	
 		wp_send_json_success(['message' => 'تسک با موفقیت اضافه شد و اطلاع‌رسانی‌ها ارسال گردید.', 'reload' => true]);
-	}
+    }
 
     public function quick_add_task() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');

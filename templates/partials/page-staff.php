@@ -141,7 +141,7 @@ $profile_fields = [
 
                             if($user_to_edit) {
                                 $user_pos_terms = wp_get_object_terms($user_to_edit->ID, 'organizational_position');
-                                if(!empty($user_pos_terms) && !is_wp_error($user_pos_terms)){
+                                if(!is_wp_error($user_pos_terms) && !empty($user_pos_terms)){
                                     $user_pos = $user_pos_terms[0];
                                     if($user_pos->parent == 0){
                                         $current_dept_id = $user_pos->term_id;

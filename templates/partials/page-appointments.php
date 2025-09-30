@@ -26,6 +26,7 @@ $appt_to_edit = ($appt_id > 0) ? get_post($appt_id) : null;
                 <?php
                 $selected_customer = $appt_to_edit ? $appt_to_edit->post_author : '';
                 $datetime_str = $appt_to_edit ? get_post_meta($appt_to_edit->ID, '_appointment_datetime', true) : '';
+                // The value for the input MUST be in Gregorian format (YYYY-MM-DD) for the date picker to work.
                 $date_val = $datetime_str ? date('Y-m-d', strtotime($datetime_str)) : '';
                 $time_val = $datetime_str ? date('H:i', strtotime($datetime_str)) : '';
                 ?>
