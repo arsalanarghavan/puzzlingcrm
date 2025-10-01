@@ -1,6 +1,6 @@
 <?php
 /**
- * PuzzlingCRM AJAX Handler - V2.9 (Consultation Management Added)
+ * PuzzlingCRM AJAX Handler - V3.0 (Appointment Management Added)
  *
  * Handles all AJAX requests for the plugin.
  *
@@ -23,8 +23,11 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_add_project_to_contract', [$this, 'ajax_add_project_to_contract']);
         add_action('wp_ajax_puzzling_update_my_profile', [$this, 'ajax_update_my_profile']);
         add_action('wp_ajax_puzzling_add_services_from_product', [$this, 'ajax_add_services_from_product']);
-        add_action('wp_ajax_puzzling_manage_consultation', [$this, 'ajax_manage_consultation']); // NEW
-        add_action('wp_ajax_puzzling_convert_consultation_to_project', [$this, 'ajax_convert_consultation_to_project']); // NEW
+        add_action('wp_ajax_puzzling_manage_consultation', [$this, 'ajax_manage_consultation']);
+        add_action('wp_ajax_puzzling_convert_consultation_to_project', [$this, 'ajax_convert_consultation_to_project']);
+        add_action('wp_ajax_puzzling_manage_appointment', [$this, 'ajax_manage_appointment']); // NEW
+        add_action('wp_ajax_puzzling_delete_appointment', [$this, 'ajax_delete_appointment']); // NEW
+        add_action('wp_ajax_puzzling_client_request_appointment', [$this, 'ajax_client_request_appointment']); // NEW
 
         // --- Live Search Actions ---
         add_action('wp_ajax_puzzling_search_users', [$this, 'ajax_search_users']);
@@ -72,6 +75,122 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_bulk_edit_tasks', [$this, 'bulk_edit_tasks']);
         add_action('wp_ajax_puzzling_save_task_as_template', [$this, 'save_task_as_template']);
         add_action('wp_ajax_puzzling_send_custom_sms', [$this, 'send_custom_sms']);
+    }
+
+    /**
+     * AJAX handler for creating and updating appointments by manager.
+     */
+    public function ajax_manage_appointment() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $appointment_id = isset($_POST['appointment_id']) ? intval($_POST['appointment_id']) : 0;
+        $customer_id = intval($_POST['customer_id']);
+        $title = sanitize_text_field($_POST['title']);
+        $date = sanitize_text_field($_POST['date']);
+        $time = sanitize_text_field($_POST['time']);
+        $notes = wp_kses_post($_POST['notes']);
+        $status_slug = sanitize_key($_POST['status']);
+        
+        if (empty($customer_id) || empty($title) || empty($date) || empty($time)) {
+            wp_send_json_error(['message' => 'تمام فیلدهای ستاره‌دار الزامی هستند.']);
+        }
+
+        $datetime = puzzling_jalali_to_gregorian($date) . ' ' . $time;
+
+        $post_data = [
+            'post_title' => $title,
+            'post_content' => $notes,
+            'post_author' => $customer_id,
+            'post_status' => 'publish',
+            'post_type' => 'pzl_appointment',
+        ];
+
+        if ($appointment_id > 0) {
+            $post_data['ID'] = $appointment_id;
+            $result = wp_update_post($post_data, true);
+            $message = 'قرار ملاقات با موفقیت به‌روزرسانی شد.';
+        } else {
+            $result = wp_insert_post($post_data, true);
+            $message = 'قرار ملاقات جدید با موفقیت ثبت شد.';
+        }
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => 'خطا در پردازش قرار ملاقات.']);
+        }
+
+        $the_appointment_id = is_int($result) ? $result : $appointment_id;
+        
+        update_post_meta($the_appointment_id, '_appointment_datetime', $datetime);
+        wp_set_object_terms($the_appointment_id, $status_slug, 'appointment_status');
+
+        wp_send_json_success(['message' => $message, 'reload' => true]);
+    }
+
+    /**
+     * AJAX handler for deleting an appointment.
+     */
+    public function ajax_delete_appointment() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options') || !isset($_POST['appointment_id'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $appointment_id = intval($_POST['appointment_id']);
+        if (wp_delete_post($appointment_id, true)) {
+            wp_send_json_success(['message' => 'قرار ملاقات با موفقیت حذف شد.']);
+        } else {
+            wp_send_json_error(['message' => 'خطا در حذف قرار ملاقات.']);
+        }
+    }
+    
+    /**
+     * AJAX handler for client requesting an appointment.
+     */
+    public function ajax_client_request_appointment() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => 'برای ثبت درخواست باید وارد شوید.']);
+        }
+
+        $title = sanitize_text_field($_POST['title']);
+        $date = sanitize_text_field($_POST['date']);
+        $time = sanitize_text_field($_POST['time']);
+        $notes = wp_kses_post($_POST['notes']);
+
+        if (empty($title) || empty($date) || empty($time)) {
+            wp_send_json_error(['message' => 'موضوع، تاریخ و ساعت الزامی هستند.']);
+        }
+
+        $datetime = puzzling_jalali_to_gregorian($date) . ' ' . $time;
+        
+        $post_data = [
+            'post_title'   => $title,
+            'post_content' => $notes,
+            'post_author'  => get_current_user_id(),
+            'post_status'  => 'publish',
+            'post_type'    => 'pzl_appointment',
+        ];
+
+        $appointment_id = wp_insert_post($post_data, true);
+
+        if (is_wp_error($appointment_id)) {
+            wp_send_json_error(['message' => 'خطا در ثبت درخواست شما.']);
+        }
+
+        update_post_meta($appointment_id, '_appointment_datetime', $datetime);
+        wp_set_object_terms($appointment_id, 'pending', 'appointment_status');
+        
+        // Notify admins
+        $this->notify_all_admins('درخواست قرار ملاقات جدید', [
+            'content' => sprintf('یک درخواست قرار ملاقات جدید با موضوع "%s" توسط مشتری ثبت شد.', $title),
+            'type' => 'notification',
+            'object_id' => $appointment_id,
+        ]);
+
+        wp_send_json_success(['message' => 'درخواست شما با موفقیت ثبت شد. نتیجه از طریق داشبورد به شما اطلاع داده خواهد شد.', 'reload' => true]);
     }
 
     /**

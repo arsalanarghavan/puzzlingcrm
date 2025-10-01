@@ -1,6 +1,6 @@
 <?php
 /**
- * Template for Client to request an appointment.
+ * Template for Client to request an appointment - AJAX Powered.
  * @package PuzzlingCRM
  */
 if (!defined('ABSPATH')) exit;
@@ -9,9 +9,9 @@ if (!defined('ABSPATH')) exit;
     <h3><i class="fas fa-calendar-plus"></i> ثبت قرار ملاقات جدید</h3>
     <p>لطفاً برای درخواست قرار ملاقات جدید، فرم زیر را تکمیل کنید. ما درخواست شما را بررسی کرده و زمان‌بندی را با شما هماهنگ خواهیم کرد.</p>
 
-    <div class="pzl-form-container">
-        <form method="post" id="pzl-client-appointment-form">
-            <?php wp_nonce_field('puzzling_request_appointment_nonce', 'security'); ?>
+    <div class="pzl-form-container pzl-card">
+        <form method="post" id="pzl-client-appointment-form" class="pzl-form pzl-ajax-form" data-action="puzzling_client_request_appointment">
+            <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
 
             <div class="form-group">
                 <label for="appointment_title">موضوع:</label>
@@ -31,7 +31,9 @@ if (!defined('ABSPATH')) exit;
                 <label for="appointment_notes">یادداشت (اختیاری):</label>
                 <textarea id="appointment_notes" name="notes" rows="4" placeholder="جزئیات بیشتری که می‌خواهید ارائه دهید."></textarea>
             </div>
-            <button type="submit" class="pzl-button">ارسال درخواست</button>
+            <div class="form-submit">
+                <button type="submit" class="pzl-button">ارسال درخواست</button>
+            </div>
         </form>
     </div>
 </div>

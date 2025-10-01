@@ -195,9 +195,9 @@ class PuzzlingCRM_CPT_Manager {
             'supports'      => ['title', 'editor', 'author', 'custom-fields'],
         ]);
     }
-    
+
     public function register_taxonomies() {
-        // Consultation Status Taxonomy - NEW
+        // Consultation Status Taxonomy
         register_taxonomy('consultation_status', 'pzl_consultation', [
             'label' => __( 'نتیجه مشاوره', 'puzzlingcrm' ),
             'hierarchical' => true,
@@ -208,6 +208,20 @@ class PuzzlingCRM_CPT_Manager {
             'labels' => [
                 'name' => __( 'نتایج مشاوره', 'puzzlingcrm' ),
                 'singular_name' => __( 'نتیجه مشاوره', 'puzzlingcrm' ),
+            ]
+        ]);
+        
+        // Appointment Status Taxonomy - NEW
+        register_taxonomy('appointment_status', 'pzl_appointment', [
+            'label' => __( 'وضعیت قرار', 'puzzlingcrm' ),
+            'hierarchical' => true,
+            'public' => false,
+            'show_ui' => true,
+            'show_admin_column' => true,
+            'show_in_rest' => true,
+            'labels' => [
+                'name' => __( 'وضعیت‌های قرار', 'puzzlingcrm' ),
+                'singular_name' => __( 'وضعیت قرار', 'puzzlingcrm' ),
             ]
         ]);
 
@@ -285,12 +299,18 @@ class PuzzlingCRM_CPT_Manager {
         // Ticket Status Taxonomy
         register_taxonomy('ticket_status', 'ticket', ['label' => __( 'Ticket Status', 'puzzlingcrm' ), 'hierarchical' => true]);
     }
-
+    
     public static function create_default_terms() {
-        // Consultation Statuses - NEW
+        // Consultation Statuses
         $consultation_statuses = ['در حال پیگیری' => 'in-progress', 'تبدیل به پروژه' => 'converted', 'بسته شده' => 'closed'];
         foreach ($consultation_statuses as $name => $slug) {
             if ( ! term_exists( $slug, 'consultation_status' ) ) wp_insert_term( $name, 'consultation_status', ['slug' => $slug] );
+        }
+
+        // Appointment Statuses - NEW
+        $appointment_statuses = ['در انتظار تایید' => 'pending', 'تایید شده' => 'confirmed', 'لغو شده' => 'cancelled'];
+        foreach ($appointment_statuses as $name => $slug) {
+            if ( ! term_exists( $slug, 'appointment_status' ) ) wp_insert_term( $name, 'appointment_status', ['slug' => $slug] );
         }
 
         // Project Statuses
@@ -328,8 +348,6 @@ class PuzzlingCRM_CPT_Manager {
             if ( ! term_exists( $slug, 'ticket_status' ) ) wp_insert_term( $name, 'ticket_status', ['slug' => $slug] );
         }
     }
-    
-    // ... (The rest of the class remains the same)
     
     public function add_task_template_meta_box() {
         add_meta_box(
