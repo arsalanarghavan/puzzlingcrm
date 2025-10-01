@@ -31,6 +31,35 @@ class PuzzlingCRM_User_Profile {
         
         // Make the form can handle file uploads
         add_action( 'user_edit_form_tag', function(){ echo 'enctype="multipart/form-data"'; });
+        
+        // **NEW**: Enqueue scripts for the admin profile page
+        add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_scripts' ] );
+    }
+
+    /**
+     * **NEW**: Enqueues scripts and styles for the admin user profile pages.
+     */
+    public function enqueue_admin_scripts($hook) {
+        // Only load on user profile pages
+        if ($hook !== 'profile.php' && $hook !== 'user-edit.php') {
+            return;
+        }
+
+        // Enqueue kamadatepicker assets
+        wp_enqueue_script('kamadatepicker-js', PUZZLINGCRM_PLUGIN_URL . 'assets/js/kamadatepicker.min.js', ['jquery'], '1.5.3', true);
+        wp_enqueue_style('kamadatepicker-css', PUZZLINGCRM_PLUGIN_URL . 'assets/css/kamadatepicker.min.css', [], '1.5.3');
+
+        // Add inline script to initialize the datepicker on the correct fields
+        $script = "
+            jQuery(document).ready(function($) {
+                kamadatepicker('#pzl_birth_date, #pzl_hire_date', {
+                    buttonsColor: 'red',
+                    forceFarsiDigits: true,
+                    gotoToday: true,
+                });
+            });
+        ";
+        wp_add_inline_script('kamadatepicker-js', $script);
     }
 
     /**
@@ -40,7 +69,7 @@ class PuzzlingCRM_User_Profile {
         $this->profile_fields = [
             'identity_info' => [ 'title' => 'اطلاعات هویتی', 'fields' => [
                 'father_name' => ['label' => 'نام پدر', 'type' => 'text'],
-                'birth_date' => ['label' => 'تاریخ تولد', 'type' => 'date'],
+                'birth_date' => ['label' => 'تاریخ تولد', 'type' => 'text'],
                 'national_id' => ['label' => 'کد ملی', 'type' => 'text'],
                 'id_number' => ['label' => 'شماره شناسنامه', 'type' => 'text'],
                 'id_issue_place' => ['label' => 'محل صدور', 'type' => 'text'],
@@ -60,7 +89,7 @@ class PuzzlingCRM_User_Profile {
                 'organizational_position' => ['label' => 'جایگاه سازمانی (دپارتمان/عنوان)', 'type' => 'position_select'],
                 'personnel_code' => ['label' => 'کد پرسنلی', 'type' => 'text'],
                 'direct_manager' => ['label' => 'مدیر مستقیم', 'type' => 'text'],
-                'hire_date' => ['label' => 'تاریخ استخدام', 'type' => 'date'],
+                'hire_date' => ['label' => 'تاریخ استخدام', 'type' => 'text'],
                 'contract_type' => ['label' => 'نوع قرارداد', 'type' => 'select', 'options' => ['' => 'انتخاب کنید', 'permanent' => 'رسمی', 'contractual' => 'پیمانی', 'project' => 'پروژه‌ای']],
                 'job_status' => ['label' => 'وضعیت شغلی', 'type' => 'select', 'options' => ['' => 'انتخاب کنید', 'active' => 'فعال', 'on_leave' => 'مرخصی', 'mission' => 'ماموریت']],
             ]],
