@@ -15,7 +15,70 @@ if ( ! function_exists( 'puzzling_get_dashboard_url' ) ) {
         return home_url( add_query_arg( [], $wp->request ) );
     }
 }
+if ( ! function_exists( 'puzzling_can_user_view_ticket' ) ) {
+    /**
+     * Checks if a user has permission to view a specific ticket.
+     *
+     * @param int $ticket_id The ID of the ticket.
+     * @param int $user_id The ID of the user.
+     * @return bool True if the user can view, false otherwise.
+     */
+    function puzzling_can_user_view_ticket( $ticket_id, $user_id ) {
+        $ticket = get_post( $ticket_id );
+        if ( ! $ticket || $ticket->post_type !== 'ticket' ) {
+            return false;
+        }
 
+        $user = get_user_by( 'ID', $user_id );
+        if ( ! $user ) {
+            return false;
+        }
+
+        $user_roles = (array) $user->roles;
+
+        // Admins and system managers can see everything.
+        if ( in_array( 'administrator', $user_roles, true ) || in_array( 'system_manager', $user_roles, true ) ) {
+            return true;
+        }
+
+        // The author of the ticket (customer) can see their own ticket.
+        if ( (int) $ticket->post_author === $user_id ) {
+            return true;
+        }
+
+        // Team members can view if they are assigned or belong to the ticket's department.
+        if ( in_array( 'team_member', $user_roles, true ) ) {
+            // Check if directly assigned
+            $assigned_to = get_post_meta( $ticket_id, '_assigned_to', true );
+            if ( (int) $assigned_to === $user_id ) {
+                return true;
+            }
+
+            // Check if they belong to the department
+            $user_positions = wp_get_object_terms( $user_id, 'organizational_position' );
+            if ( ! is_wp_error( $user_positions ) && ! empty( $user_positions ) ) {
+                $user_department_ids = [];
+                foreach ( $user_positions as $pos ) {
+                    // A user belongs to a department if it's their main position or their position's parent.
+                    $user_department_ids[] = $pos->term_id;
+                    if ( $pos->parent ) {
+                        $user_department_ids[] = $pos->parent;
+                    }
+                }
+                $user_department_ids = array_unique( $user_department_ids );
+
+                $ticket_departments = wp_get_post_terms( $ticket_id, 'organizational_position', [ 'fields' => 'ids' ] );
+                if ( ! is_wp_error( $ticket_departments ) && ! empty( $ticket_departments ) ) {
+                    if ( ! empty( array_intersect( $user_department_ids, $ticket_departments ) ) ) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+}
 // **REVISED & STABILIZED V3: Renders the HTML for a single task card**
 if ( ! function_exists( 'puzzling_render_task_card' ) ) {
     function puzzling_render_task_card( $task_post ) {
@@ -212,4 +275,3 @@ function puzzling_get_default_task_status_slug() {
 
     return 'to-do'; // Fallback
 }
-?>

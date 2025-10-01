@@ -11,45 +11,27 @@ $current_user = wp_get_current_user();
 $is_manager = current_user_can('manage_options');
 $is_team_member = in_array('team_member', (array)$current_user->roles);
 
-
-// Security Check: Get the post and ensure the current user has permission to view it.
-$ticket = get_post($ticket_id_to_view);
-if ( !$ticket || $ticket->post_type !== 'ticket' || (!$is_manager && !$is_team_member && $ticket->post_author != $current_user->ID) ) {
+// Security Check using the new centralized function
+if (!function_exists('puzzling_can_user_view_ticket') || !puzzling_can_user_view_ticket($ticket_id_to_view, $current_user->ID)) {
     echo '<p>شما دسترسی لازم برای مشاهده این تیکت را ندارید یا تیکت مورد نظر یافت نشد.</p>';
     return;
 }
 
-// Team member access check
-if ($is_team_member && !$is_manager) {
-    $user_positions = wp_get_object_terms($current_user->ID, 'organizational_position');
-    $department_term_ids = [];
-    if (!is_wp_error($user_positions) && !empty($user_positions)) {
-        foreach ($user_positions as $pos) {
-            $department_term_ids[] = ($pos->parent) ? $pos->parent : $pos->term_id;
-        }
-    }
-    $ticket_departments = wp_get_post_terms($ticket->ID, 'organizational_position', ['fields' => 'ids']);
-    $assigned_to = get_post_meta($ticket->ID, '_assigned_to', true);
-
-    if (empty(array_intersect($department_term_ids, $ticket_departments)) && $assigned_to != $current_user->ID) {
-         echo '<p>شما دسترسی لازم برای مشاهده این تیکت را ندارید.</p>';
-         return;
-    }
-}
-
-
+$ticket = get_post($ticket_id_to_view);
 $post = $ticket;
 setup_postdata($post);
 
 $status_terms = get_the_terms($ticket->ID, 'ticket_status');
 $department_terms = get_the_terms($ticket->ID, 'organizational_position');
+$priority_terms = get_the_terms($ticket->ID, 'ticket_priority');
 $assigned_to_id = get_post_meta($ticket->ID, '_assigned_to', true);
 
 $status_name = !empty($status_terms) ? esc_html($status_terms[0]->name) : 'نامشخص';
 $status_slug = !empty($status_terms) ? esc_attr($status_terms[0]->slug) : 'default';
+$priority_name = !empty($priority_terms) ? esc_html($priority_terms[0]->name) : '---';
+$priority_slug = !empty($priority_terms) ? esc_attr($priority_terms[0]->slug) : 'default';
 $department_name = !empty($department_terms) ? esc_html($department_terms[0]->name) : '---';
 $assigned_to_name = $assigned_to_id ? get_the_author_meta('display_name', $assigned_to_id) : '---';
-
 
 $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
 ?>
@@ -63,6 +45,7 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
             <span>ارسال شده توسط: <?php echo esc_html(get_the_author_meta('display_name', $ticket->post_author)); ?></span>
             <span>در تاریخ: <?php echo jdate('Y/m/d H:i', strtotime(get_the_date('Y/m/d H:i', $ticket))); ?></span>
             <span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span>
+            <span class="pzl-priority-badge priority-<?php echo $priority_slug; ?>"><?php echo $priority_name; ?></span>
             <span><strong>دپارتمان:</strong> <?php echo $department_name; ?></span>
             <span><strong>مسئول:</strong> <?php echo $assigned_to_name; ?></span>
         </div>
@@ -71,6 +54,14 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
     <div class="ticket-content">
         <?php echo wp_kses_post(wpautop($ticket->post_content)); ?>
     </div>
+    
+    <?php if ($is_manager): ?>
+    <div class="pzl-card-actions" style="margin-bottom: 20px;">
+        <button id="pzl-convert-ticket-to-task" class="pzl-button pzl-button-sm" data-ticket-id="<?php echo esc_attr($ticket->ID); ?>">
+            <i class="fas fa-tasks"></i> تبدیل به وظیفه
+        </button>
+    </div>
+    <?php endif; ?>
 
     <div class="ticket-replies">
         <h3>پاسخ‌ها</h3>
@@ -97,6 +88,7 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
             <div class="form-group">
                 <label for="reply_attachments">پیوست فایل (اختیاری):</label>
                 <input type="file" name="reply_attachments[]" id="reply_attachments" multiple>
+				<p class="description">حداکثر حجم مجاز برای هر فایل: 5 مگابایت. فرمت‌های مجاز: jpg, png, pdf, zip, rar.</p>
             </div>
             
             <?php if ($is_manager || $is_team_member): ?>
@@ -113,6 +105,19 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
                     </select>
                 </div>
                  <div class="form-group-inline half-width">
+                    <label for="ticket_priority">تغییر اولویت به:</label>
+                    <select name="ticket_priority">
+                        <?php
+                        $priorities = get_terms(['taxonomy' => 'ticket_priority', 'hide_empty' => false]);
+                        foreach ($priorities as $priority) {
+                            echo '<option value="' . esc_attr($priority->term_id) . '" ' . selected($priority_terms[0]->term_id ?? 0, $priority->term_id, false) . '>' . esc_html($priority->name) . '</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
+            </div>
+            <div class="pzl-form-row">
+                 <div class="form-group-inline half-width">
                     <label for="department">تغییر دپارتمان:</label>
                     <?php
                         wp_dropdown_categories([
@@ -126,18 +131,18 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
                         ]);
                     ?>
                 </div>
-            </div>
-             <div class="form-group-inline">
-                <label for="assigned_to">ارجاع به کارمند:</label>
-                <select name="assigned_to">
-                    <option value="0">-- هیچکس --</option>
-                    <?php
-                    $staff_users = get_users(['role__in' => ['team_member', 'system_manager', 'administrator']]);
-                    foreach ($staff_users as $staff) {
-                        echo '<option value="' . esc_attr($staff->ID) . '" ' . selected($assigned_to_id, $staff->ID, false) . '>' . esc_html($staff->display_name) . '</option>';
-                    }
-                    ?>
-                </select>
+                <div class="form-group-inline half-width">
+                    <label for="assigned_to">ارجاع به کارمند:</label>
+                    <select name="assigned_to">
+                        <option value="0">-- هیچکس --</option>
+                        <?php
+                        $staff_users = get_users(['role__in' => ['team_member', 'system_manager', 'administrator']]);
+                        foreach ($staff_users as $staff) {
+                            echo '<option value="' . esc_attr($staff->ID) . '" ' . selected($assigned_to_id, $staff->ID, false) . '>' . esc_html($staff->display_name) . '</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
             </div>
             <?php endif; ?>
 
@@ -185,4 +190,3 @@ if (!function_exists('puzzling_ticket_comment_template')) {
 }
 
 wp_reset_postdata();
-?>

@@ -31,6 +31,8 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_manage_pro_invoice', [$this, 'ajax_manage_pro_invoice']); 
         add_action('wp_ajax_puzzling_new_ticket', [$this, 'ajax_new_ticket']);
         add_action('wp_ajax_puzzling_ticket_reply', [$this, 'ajax_ticket_reply']);
+        add_action('wp_ajax_puzzling_convert_ticket_to_task', [$this, 'ajax_convert_ticket_to_task']);
+
 
         // --- Live Search & Data Fetching ---
         add_action('wp_ajax_puzzling_search_users', [$this, 'ajax_search_users']);
@@ -972,15 +974,16 @@ class PuzzlingCRM_Ajax_Handler {
         if ( ! is_user_logged_in() ) {
             wp_send_json_error(['message' => 'برای ارسال تیکت باید وارد شوید.']);
         }
-
+    
         $title = sanitize_text_field($_POST['ticket_title']);
         $content = wp_kses_post($_POST['ticket_content']);
         $department_id = intval($_POST['department']);
+        $priority_id = intval($_POST['ticket_priority']);
         
-        if (empty($title) || empty($content) || empty($department_id)) {
-            wp_send_json_error(['message' => 'عنوان، دپارتمان و متن تیکت الزامی هستند.']);
+        if (empty($title) || empty($content) || empty($department_id) || empty($priority_id)) {
+            wp_send_json_error(['message' => 'عنوان، دپارتمان، اولویت و متن تیکت الزامی هستند.']);
         }
-
+    
         $ticket_id = wp_insert_post([
             'post_title' => $title,
             'post_content' => $content,
@@ -992,13 +995,24 @@ class PuzzlingCRM_Ajax_Handler {
         if (!is_wp_error($ticket_id)) {
             wp_set_object_terms($ticket_id, 'open', 'ticket_status');
             wp_set_object_terms($ticket_id, $department_id, 'organizational_position');
-
-            // Handle file attachments
+            wp_set_object_terms($ticket_id, $priority_id, 'ticket_priority');
+    
+            // Handle file attachments with validation
             if (!empty($_FILES['ticket_attachments'])) {
                 $attachment_ids = [];
                 $files = $_FILES['ticket_attachments'];
+                $allowed_mime_types = ['image/jpeg', 'image/png', 'application/pdf', 'application/zip', 'application/x-rar-compressed'];
+                
                 foreach ($files['name'] as $key => $value) {
                     if ($files['name'][$key]) {
+                        // File validation
+                        if ($files['size'][$key] > 5 * 1024 * 1024) { // 5MB limit
+                            continue; // Skip this file
+                        }
+                        if (!in_array($files['type'][$key], $allowed_mime_types)) {
+                            continue; // Skip this file
+                        }
+
                         $_FILES = ["ticket_attachment_single" => [
                             'name' => $files['name'][$key],
                             'type' => $files['type'][$key],
@@ -1016,34 +1030,34 @@ class PuzzlingCRM_Ajax_Handler {
                     update_post_meta($ticket_id, '_ticket_attachments', $attachment_ids);
                 }
             }
+    
+            // Notify only the relevant department members
+            $users_in_dept = get_users(['tax_query' => [['taxonomy' => 'organizational_position', 'field' => 'term_id', 'terms' => $department_id]]]);
+            foreach($users_in_dept as $user) {
+                PuzzlingCRM_Logger::add('تیکت جدید در دپارتمان شما', ['content' => sprintf("تیکت جدیدی با موضوع '%s' ثبت شد.", $title), 'type' => 'notification', 'object_id' => $ticket_id, 'user_id' => $user->ID]);
+            }
 
-            $this->notify_all_admins('تیکت جدید ثبت شد', ['content' => sprintf("تیکت جدیدی با موضوع '%s' توسط مشتری ثبت شد.", $title), 'type' => 'notification', 'object_id' => $ticket_id]);
             wp_send_json_success(['message' => 'تیکت شما با موفقیت ثبت شد.', 'reload' => true]);
         } else {
             wp_send_json_error(['message' => 'خطا در ثبت تیکت.']);
         }
     }
-
+    
     public function ajax_ticket_reply() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if ( ! is_user_logged_in() ) {
             wp_send_json_error(['message' => 'برای پاسخ به تیکت باید وارد شوید.']);
         }
-
+    
         $ticket_id = intval($_POST['ticket_id']);
         $comment_content = wp_kses_post($_POST['comment']);
         $ticket = get_post($ticket_id);
         $current_user = wp_get_current_user();
-        $is_manager = current_user_can('manage_options');
-        $is_team_member = in_array('team_member', (array)$current_user->roles);
-
-        if ( !$ticket || empty($comment_content) ) {
-            wp_send_json_error(['message' => 'تیکت یافت نشد یا متن پاسخ خالی است.']);
+    
+        if ( !puzzling_can_user_view_ticket($ticket_id, $current_user->ID) || empty($comment_content) ) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز یا متن پاسخ خالی است.']);
         }
-        if ( !$is_manager && !$is_team_member && $ticket->post_author != $current_user->ID ) {
-            wp_send_json_error(['message' => 'شما اجازه پاسخ به این تیکت را ندارید.']);
-        }
-
+    
         $comment_id = wp_insert_comment([
             'comment_post_ID' => $ticket_id,
             'comment_author' => $current_user->display_name,
@@ -1052,56 +1066,104 @@ class PuzzlingCRM_Ajax_Handler {
             'user_id' => $current_user->ID,
             'comment_approved' => 1
         ]);
-
+    
         if (is_wp_error($comment_id)) {
             wp_send_json_error(['message' => 'خطا در ثبت پاسخ.']);
         }
-
+    
         // Handle file attachments for the reply
         if (!empty($_FILES['reply_attachments'])) {
             $attachment_ids = [];
             $files = $_FILES['reply_attachments'];
+            $allowed_mime_types = ['image/jpeg', 'image/png', 'application/pdf', 'application/zip', 'application/x-rar-compressed'];
+
             foreach ($files['name'] as $key => $value) {
                 if ($files['name'][$key]) {
-                    $_FILES = ["reply_attachment_single" => [
-                        'name' => $files['name'][$key],
-                        'type' => $files['type'][$key],
-                        'tmp_name' => $files['tmp_name'][$key],
-                        'error' => $files['error'][$key],
-                        'size' => $files['size'][$key]
-                    ]];
-                    // Note: Attachments are attached to the main ticket post, not the comment itself.
-                    $attachment_id = media_handle_upload("reply_attachment_single", $ticket_id);
+                    if ($files['size'][$key] > 5 * 1024 * 1024 || !in_array($files['type'][$key], $allowed_mime_types)) {
+                        continue;
+                    }
+                    $_FILES = ["reply_attachment_single" => ['name' => $files['name'][$key],'type' => $files['type'][$key],'tmp_name' => $files['tmp_name'][$key],'error' => $files['error'][$key],'size' => $files['size'][$key]]];
+                    $attachment_id = media_handle_upload("reply_attachment_single", 0); // Not attached to post
                     if (!is_wp_error($attachment_id)) {
                         $attachment_ids[] = $attachment_id;
                     }
                 }
             }
             if (!empty($attachment_ids)) {
-                // We'll store attachment IDs in comment meta
                 add_comment_meta($comment_id, '_reply_attachments', $attachment_ids);
             }
         }
+    
+        $is_staff_reply = current_user_can('edit_others_posts');
+    
+        if ( $is_staff_reply ) {
+            if (isset($_POST['ticket_status'])) wp_set_object_terms($ticket_id, sanitize_key($_POST['ticket_status']), 'ticket_status');
+            if (isset($_POST['department'])) wp_set_object_terms($ticket_id, intval($_POST['department']), 'organizational_position');
+            if (isset($_POST['assigned_to'])) update_post_meta($ticket_id, '_assigned_to', intval($_POST['assigned_to']));
+            if (isset($_POST['ticket_priority'])) wp_set_object_terms($ticket_id, intval($_POST['ticket_priority']), 'ticket_priority');
 
-        if ( $is_manager || $is_team_member ) {
-            if (isset($_POST['ticket_status'])) {
-                wp_set_object_terms($ticket_id, sanitize_key($_POST['ticket_status']), 'ticket_status');
-            }
-            if (isset($_POST['department'])) {
-                wp_set_object_terms($ticket_id, intval($_POST['department']), 'organizational_position');
-            }
-            if (isset($_POST['assigned_to'])) {
-                update_post_meta($ticket_id, '_assigned_to', intval($_POST['assigned_to']));
-            }
-            
             PuzzlingCRM_Logger::add(__('پاسخ به تیکت شما', 'puzzlingcrm'), ['content' => sprintf(__("پشتیبانی به تیکت شما با موضوع '%s' پاسخ داد.", 'puzzlingcrm'), $ticket->post_title), 'type' => 'notification', 'user_id' => $ticket->post_author, 'object_id' => $ticket_id]);
-        } else {
+        } else { // Customer replied
             wp_set_object_terms( $ticket_id, 'in-progress', 'ticket_status' );
-            $this->notify_all_admins(__('پاسخ مشتری به تیکت', 'puzzlingcrm'), ['content' => sprintf(__("مشتری به تیکت '%s' پاسخ داد.", 'puzzlingcrm'), $ticket->post_title), 'type' => 'notification', 'object_id' => $ticket_id]);
+            $assigned_to_id = get_post_meta($ticket_id, '_assigned_to', true);
+            if ($assigned_to_id) { // Notify only the assigned staff member
+                PuzzlingCRM_Logger::add(__('پاسخ مشتری به تیکت', 'puzzlingcrm'), ['content' => sprintf(__("مشتری به تیکت '%s' پاسخ داد.", 'puzzlingcrm'), $ticket->post_title), 'type' => 'notification', 'object_id' => $ticket_id, 'user_id' => $assigned_to_id]);
+            } else { // Notify all admins/managers if no one is assigned
+                $this->notify_all_admins(__('پاسخ مشتری به تیکت', 'puzzlingcrm'), ['content' => sprintf(__("مشتری به تیکت '%s' پاسخ داد.", 'puzzlingcrm'), $ticket->post_title), 'type' => 'notification', 'object_id' => $ticket_id]);
+            }
         }
         
         wp_send_json_success(['message' => 'پاسخ شما با موفقیت ثبت شد.', 'reload' => true]);
     }
+
+    public function ajax_convert_ticket_to_task() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+    
+        $ticket_id = intval($_POST['ticket_id']);
+        $ticket = get_post($ticket_id);
+    
+        if (!$ticket || $ticket->post_type !== 'ticket') {
+            wp_send_json_error(['message' => 'تیکت یافت نشد.']);
+        }
+    
+        // Check if a task has already been created from this ticket
+        $existing_task = get_posts(['post_type' => 'task', 'meta_key' => '_created_from_ticket', 'meta_value' => $ticket_id, 'posts_per_page' => 1]);
+        if (!empty($existing_task)) {
+            wp_send_json_error(['message' => 'یک وظیفه از قبل برای این تیکت ایجاد شده است.']);
+        }
+    
+        $task_id = wp_insert_post([
+            'post_title' => '[تیکت] ' . $ticket->post_title,
+            'post_content' => 'این وظیفه از تیکت شماره ' . $ticket_id . " ایجاد شده است.\n\n" . $ticket->post_content,
+            'post_type' => 'task',
+            'post_status' => 'publish',
+            'post_author' => get_current_user_id(),
+        ]);
+    
+        if (is_wp_error($task_id)) {
+            wp_send_json_error(['message' => 'خطا در ایجاد وظیفه.']);
+        }
+    
+        // Link task to ticket
+        update_post_meta($task_id, '_created_from_ticket', $ticket_id);
+        // Set default status
+        wp_set_object_terms($task_id, 'to-do', 'task_status');
+    
+        // Add a comment to the ticket to show it was converted
+        wp_insert_comment([
+            'comment_post_ID' => $ticket_id,
+            'comment_content' => 'این تیکت به وظیفه شماره ' . $task_id . ' تبدیل شد.',
+            'user_id' => get_current_user_id(),
+            'comment_author' => 'سیستم',
+            'comment_approved' => 1,
+        ]);
+    
+        wp_send_json_success(['message' => 'تیکت با موفقیت به وظیفه تبدیل شد.', 'reload' => true]);
+    }
+
 
 
     /**

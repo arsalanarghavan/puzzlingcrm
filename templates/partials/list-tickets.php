@@ -39,25 +39,37 @@ if ($ticket_id_to_view > 0) {
             </div>
             <form id="puzzling-new-ticket-form" class="pzl-form pzl-ajax-form" data-action="puzzling_new_ticket" enctype="multipart/form-data">
                 <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
-                <div class="form-group">
-                    <label for="ticket_title">موضوع:</label>
-                    <input type="text" id="ticket_title" name="ticket_title" required>
-                </div>
-                 <div class="form-group">
-                    <label for="department">دپارتمان:</label>
-                    <?php
-                    // **MODIFIED**: Shows only parent-level organizational positions as departments
-                    wp_dropdown_categories([
-                        'taxonomy'         => 'organizational_position',
-                        'name'             => 'department',
-                        'id'               => 'department',
-                        'show_option_none' => __('انتخاب دپارتمان', 'puzzlingcrm'),
-                        'hierarchical'     => true,
-                        'hide_empty'       => false,
-                        'parent'           => 0, // This is the key change
-                        'required'         => true,
-                    ]);
-                    ?>
+                <div class="pzl-form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label for="ticket_title">موضوع:</label>
+                        <input type="text" id="ticket_title" name="ticket_title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="department">دپارتمان:</label>
+                        <?php
+                        wp_dropdown_categories([
+                            'taxonomy'         => 'organizational_position',
+                            'name'             => 'department',
+                            'id'               => 'department',
+                            'show_option_none' => __('انتخاب دپارتمان', 'puzzlingcrm'),
+                            'hierarchical'     => true,
+                            'hide_empty'       => false,
+                            'parent'           => 0, 
+                            'required'         => true,
+                        ]);
+                        ?>
+                    </div>
+                     <div class="form-group">
+                        <label for="ticket_priority">اولویت:</label>
+                        <select name="ticket_priority" id="ticket_priority" required>
+                            <?php
+                            $priorities = get_terms(['taxonomy' => 'ticket_priority', 'hide_empty' => false]);
+                            foreach ($priorities as $priority) {
+                                echo '<option value="' . esc_attr($priority->term_id) . '">' . esc_html($priority->name) . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="ticket_content">پیام شما:</label>
@@ -66,6 +78,7 @@ if ($ticket_id_to_view > 0) {
                 <div class="form-group">
                     <label for="ticket_attachments">پیوست فایل (اختیاری):</label>
                     <input type="file" name="ticket_attachments[]" id="ticket_attachments" multiple>
+					<p class="description">حداکثر حجم مجاز برای هر فایل: 5 مگابایت. فرمت‌های مجاز: jpg, png, pdf, zip, rar.</p>
                 </div>
                 <div class="form-submit">
                     <button type="submit" class="pzl-button">ارسال تیکت</button>
@@ -75,12 +88,24 @@ if ($ticket_id_to_view > 0) {
     <?php else: // List view ?>
         <div class="pzl-card">
             <?php
+            // Filtering
+            $status_filter = isset($_GET['status_filter']) ? sanitize_key($_GET['status_filter']) : '';
+            $priority_filter = isset($_GET['priority_filter']) ? sanitize_key($_GET['priority_filter']) : '';
+            
             $paged = get_query_var('paged') ? get_query_var('paged') : 1;
             $args = [
-                'post_type' => 'ticket', 'posts_per_page' => 10, 'post_status' => 'publish',
+                'post_type' => 'ticket', 'posts_per_page' => 15, 'post_status' => 'publish',
                 'paged' => $paged, 'orderby' => 'modified', 'order' => 'DESC',
+                'tax_query' => ['relation' => 'AND'],
             ];
 
+            if ($status_filter) {
+                $args['tax_query'][] = ['taxonomy' => 'ticket_status', 'field' => 'slug', 'terms' => $status_filter];
+            }
+            if ($priority_filter) {
+                $args['tax_query'][] = ['taxonomy' => 'ticket_priority', 'field' => 'slug', 'terms' => $priority_filter];
+            }
+            
             if ($is_team_member && !$is_manager) {
                 // Team members see tickets in their department or assigned to them
                 $user_positions = wp_get_object_terms($current_user_id, 'organizational_position');
@@ -92,19 +117,18 @@ if ($ticket_id_to_view > 0) {
                     }
                 }
                 
-                $args['tax_query'] = [
+                $args['tax_query']['relation'] = 'AND';
+                $args['tax_query'][] = [
                     'relation' => 'OR',
                     [
                         'taxonomy' => 'organizational_position',
                         'field'    => 'term_id',
-                        'terms'    => $department_term_ids,
-                    ]
-                ];
-                $args['meta_query'] = [
-                     'relation' => 'OR',
+                        'terms'    => array_unique($department_term_ids),
+                    ],
                     [
                         'key' => '_assigned_to',
                         'value' => $current_user_id,
+                        'compare' => '=',
                     ]
                 ];
 
@@ -117,6 +141,26 @@ if ($ticket_id_to_view > 0) {
             <div class="pzl-card-header">
                  <h3><i class="fas fa-list-ul"></i> لیست تیکت‌ها</h3>
             </div>
+
+            <form method="get" class="pzl-form">
+                <input type="hidden" name="view" value="tickets">
+                <div class="pzl-form-row" style="align-items: flex-end;">
+                    <div class="form-group">
+                        <select name="status_filter">
+                            <option value="">همه وضعیت‌ها</option>
+                            <?php foreach (get_terms(['taxonomy' => 'ticket_status', 'hide_empty' => false]) as $status) echo '<option value="'.esc_attr($status->slug).'" '.selected($status_filter, $status->slug, false).'>'.esc_html($status->name).'</option>'; ?>
+                        </select>
+                    </div>
+                     <div class="form-group">
+                        <select name="priority_filter">
+                            <option value="">همه اولویت‌ها</option>
+                            <?php foreach (get_terms(['taxonomy' => 'ticket_priority', 'hide_empty' => false]) as $priority) echo '<option value="'.esc_attr($priority->slug).'" '.selected($priority_filter, $priority->slug, false).'>'.esc_html($priority->name).'</option>'; ?>
+                        </select>
+                    </div>
+                    <div class="form-group"><button type="submit" class="pzl-button">فیلتر</button></div>
+                </div>
+            </form>
+
             <?php if ($tickets_query->have_posts()) : ?>
                 <table class="pzl-table">
                     <thead>
@@ -124,6 +168,7 @@ if ($ticket_id_to_view > 0) {
                             <th>موضوع</th>
                             <?php if ($is_manager || $is_team_member) echo '<th>مشتری/دپارتمان</th>'; ?>
                             <th>آخرین بروزرسانی</th>
+                            <th>اولویت</th>
                             <th>وضعیت</th>
                             <th></th>
                         </tr>
@@ -133,9 +178,12 @@ if ($ticket_id_to_view > 0) {
                             $ticket_id = get_the_ID();
                             $status_terms = get_the_terms($ticket_id, 'ticket_status');
                             $department_terms = get_the_terms($ticket_id, 'organizational_position');
+                            $priority_terms = get_the_terms($ticket_id, 'ticket_priority');
 
                             $status_name = !empty($status_terms) ? esc_html($status_terms[0]->name) : 'نامشخص';
                             $status_slug = !empty($status_terms) ? esc_attr($status_terms[0]->slug) : 'default';
+                            $priority_name = !empty($priority_terms) ? esc_html($priority_terms[0]->name) : '---';
+                            $priority_slug = !empty($priority_terms) ? esc_attr($priority_terms[0]->slug) : 'default';
                             $department_name = !empty($department_terms) ? esc_html($department_terms[0]->name) : '---';
                             
                             $view_url = add_query_arg(['ticket_id' => $ticket_id], $base_url);
@@ -146,6 +194,7 @@ if ($ticket_id_to_view > 0) {
                                     <td><?php echo esc_html(get_the_author()); ?> / <strong><?php echo $department_name; ?></strong></td>
                                 <?php endif; ?>
                                 <td><?php echo esc_html(get_the_modified_date('Y/m/d H:i')); ?></td>
+                                <td><span class="pzl-priority-badge priority-<?php echo $priority_slug; ?>"><?php echo $priority_name; ?></span></td>
                                 <td><span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span></td>
                                 <td><a href="<?php echo esc_url($view_url); ?>" class="pzl-button pzl-button-sm">مشاهده</a></td>
                             </tr>
@@ -165,7 +214,7 @@ if ($ticket_id_to_view > 0) {
                 </div>
                 <?php wp_reset_postdata(); ?>
             <?php else : ?>
-                <p>هیچ تیکتی یافت نشد.</p>
+                <p>هیچ تیکتی با این فیلترها یافت نشد.</p>
             <?php endif; ?>
         </div>
     <?php endif; ?>

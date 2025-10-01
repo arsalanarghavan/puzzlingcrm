@@ -298,6 +298,16 @@ class PuzzlingCRM_CPT_Manager {
 
         // Ticket Status Taxonomy
         register_taxonomy('ticket_status', 'ticket', ['label' => __( 'Ticket Status', 'puzzlingcrm' ), 'hierarchical' => true]);
+		
+		// Ticket Priority Taxonomy - NEW
+		register_taxonomy('ticket_priority', 'ticket', [
+			'label' => __( 'اولویت تیکت', 'puzzlingcrm' ),
+			'hierarchical' => true,
+			'public' => false,
+			'show_ui' => true,
+			'show_admin_column' => true,
+			'show_in_rest' => true,
+		]);
     }
     
     public static function create_default_terms() {
@@ -350,6 +360,14 @@ class PuzzlingCRM_CPT_Manager {
         foreach ($ticket_statuses as $name => $slug) {
             if ( ! term_exists( $slug, 'ticket_status' ) ) wp_insert_term( $name, 'ticket_status', ['slug' => $slug] );
         }
+		
+		// Ticket Priorities - NEW
+		$ticket_priorities = ['کم' => 'low', 'متوسط' => 'medium', 'زیاد' => 'high', 'فوری' => 'urgent'];
+		foreach ($ticket_priorities as $name => $slug) {
+			if ( ! term_exists( $slug, 'ticket_priority' ) ) {
+				wp_insert_term( $name, 'ticket_priority', ['slug' => $slug] );
+			}
+		}
     }
     
     public function add_task_template_meta_box() {

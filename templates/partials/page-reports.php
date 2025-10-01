@@ -25,6 +25,9 @@ $reports_url = add_query_arg('view', 'reports', $base_url); // Ensure view=repor
         <a href="<?php echo esc_url(add_query_arg('tab', 'tasks', $reports_url)); ?>" class="pzl-tab <?php echo $active_tab == 'tasks' ? 'active' : ''; ?>">
             <i class="fas fa-tasks"></i> گزارش وظایف
         </a>
+        <a href="<?php echo esc_url(add_query_arg('tab', 'tickets', $reports_url)); ?>" class="pzl-tab <?php echo $active_tab == 'tickets' ? 'active' : ''; ?>">
+            <i class="fas fa-life-ring"></i> گزارش تیکت‌ها
+        </a>
         <a href="<?php echo esc_url(add_query_arg('tab', 'agile', $reports_url)); ?>" class="pzl-tab <?php echo $active_tab == 'agile' ? 'active' : ''; ?>">
             <i class="fas fa-rocket"></i> گزارش Agile
         </a>
@@ -37,8 +40,10 @@ $reports_url = add_query_arg('view', 'reports', $base_url); // Ensure view=repor
             case 'tasks':
                 $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/reports/reports-tasks.php';
                 break;
+            case 'tickets':
+                $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/reports/reports-tickets.php';
+                break;
             case 'agile':
-                // Assuming you have created this file for Agile reports
                 $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/reports/reports-agile.php';
                 break;
             case 'finance':
