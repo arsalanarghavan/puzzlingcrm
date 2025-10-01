@@ -168,7 +168,7 @@ class PuzzlingCRM_CPT_Manager {
             'public'        => false,
             'show_ui'       => true,
             'show_in_menu'  => false,
-            'supports'      => ['title', 'editor', 'author', 'comments'],
+            'supports'      => ['title', 'editor', 'author', 'comments', 'custom-fields'],
         ]);
 
         // Appointment CPT
@@ -277,13 +277,13 @@ class PuzzlingCRM_CPT_Manager {
             ]
         ]);
         
-        // **REVERTED** to single hierarchical taxonomy for both Departments (parents) and Job Titles (children)
-        register_taxonomy('organizational_position', 'user', [
+        // **MODIFIED**: Now applies to users AND tickets for departments
+        register_taxonomy('organizational_position', ['user', 'ticket'], [
             'label' => __( 'Organizational Positions', 'puzzlingcrm' ),
             'public' => false,
             'show_ui' => true,
             'show_in_menu' => false, 
-            'hierarchical' => true, // This is the key change to allow parent/child relationships
+            'hierarchical' => true, 
             'rewrite' => false,
             'labels' => [
                 'name' => __( 'جایگاه‌های سازمانی', 'puzzlingcrm' ), 'singular_name' => __( 'جایگاه سازمانی', 'puzzlingcrm' ),
@@ -337,9 +337,12 @@ class PuzzlingCRM_CPT_Manager {
             if ( ! term_exists( $slug, 'task_priority' ) ) wp_insert_term( $name, 'task_priority', ['slug' => $slug] );
         }
         
-        // Default Organizational Position (as a department)
-        if ( ! term_exists( 'مدیریت', 'organizational_position' ) ) {
-            wp_insert_term( 'مدیریت', 'organizational_position' );
+        // Default Organizational Positions (Departments)
+        $departments = ['پشتیبانی فنی' => 'technical-support', 'فروش و مالی' => 'sales-finance', 'مدیریت' => 'management'];
+        foreach ($departments as $name => $slug) {
+             if ( ! term_exists( $slug, 'organizational_position' ) ) {
+                wp_insert_term( $name, 'organizational_position', ['slug' => $slug] );
+            }
         }
 
         // Ticket Statuses

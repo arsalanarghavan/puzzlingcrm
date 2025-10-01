@@ -28,12 +28,12 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_manage_appointment', [$this, 'ajax_manage_appointment']);
         add_action('wp_ajax_puzzling_delete_appointment', [$this, 'ajax_delete_appointment']);
         add_action('wp_ajax_puzzling_client_request_appointment', [$this, 'ajax_client_request_appointment']);
-        add_action('wp_ajax_puzzling_manage_pro_invoice', [$this, 'ajax_manage_pro_invoice']); // NEW: Pro-forma Invoice
+        add_action('wp_ajax_puzzling_manage_pro_invoice', [$this, 'ajax_manage_pro_invoice']); 
 
         // --- Live Search & Data Fetching ---
         add_action('wp_ajax_puzzling_search_users', [$this, 'ajax_search_users']);
-        add_action('wp_ajax_puzzling_get_projects_for_customer', [$this, 'ajax_get_projects_for_customer']); // NEW: For Pro-forma Invoice
-        add_action('wp_ajax_puzzling_generate_pro_invoice_pdf', [$this, 'ajax_generate_pro_invoice_pdf']); // NEW: For PDF Generation
+        add_action('wp_ajax_puzzling_get_projects_for_customer', [$this, 'ajax_get_projects_for_customer']);
+        add_action('wp_ajax_puzzling_generate_pro_invoice_pdf', [$this, 'ajax_generate_pro_invoice_pdf']);
 
         // --- Standard Task Actions ---
         add_action('wp_ajax_puzzling_add_task', [$this, 'add_task']);

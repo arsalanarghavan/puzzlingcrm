@@ -9,20 +9,48 @@ global $post;
 
 $current_user = wp_get_current_user();
 $is_manager = current_user_can('manage_options');
+$is_team_member = in_array('team_member', (array)$current_user->roles);
+
 
 // Security Check: Get the post and ensure the current user has permission to view it.
 $ticket = get_post($ticket_id_to_view);
-if ( !$ticket || $ticket->post_type !== 'ticket' || (!$is_manager && $ticket->post_author != $current_user->ID) ) {
+if ( !$ticket || $ticket->post_type !== 'ticket' || (!$is_manager && !$is_team_member && $ticket->post_author != $current_user->ID) ) {
     echo '<p>شما دسترسی لازم برای مشاهده این تیکت را ندارید یا تیکت مورد نظر یافت نشد.</p>';
     return;
 }
+
+// Team member access check
+if ($is_team_member && !$is_manager) {
+    $user_positions = wp_get_object_terms($current_user->ID, 'organizational_position');
+    $department_term_ids = [];
+    if (!is_wp_error($user_positions) && !empty($user_positions)) {
+        foreach ($user_positions as $pos) {
+            $department_term_ids[] = ($pos->parent) ? $pos->parent : $pos->term_id;
+        }
+    }
+    $ticket_departments = wp_get_post_terms($ticket->ID, 'organizational_position', ['fields' => 'ids']);
+    $assigned_to = get_post_meta($ticket->ID, '_assigned_to', true);
+
+    if (empty(array_intersect($department_term_ids, $ticket_departments)) && $assigned_to != $current_user->ID) {
+         echo '<p>شما دسترسی لازم برای مشاهده این تیکت را ندارید.</p>';
+         return;
+    }
+}
+
 
 $post = $ticket;
 setup_postdata($post);
 
 $status_terms = get_the_terms($ticket->ID, 'ticket_status');
+$department_terms = get_the_terms($ticket->ID, 'organizational_position');
+$assigned_to_id = get_post_meta($ticket->ID, '_assigned_to', true);
+
 $status_name = !empty($status_terms) ? esc_html($status_terms[0]->name) : 'نامشخص';
 $status_slug = !empty($status_terms) ? esc_attr($status_terms[0]->slug) : 'default';
+$department_name = !empty($department_terms) ? esc_html($department_terms[0]->name) : '---';
+$assigned_to_name = $assigned_to_id ? get_the_author_meta('display_name', $assigned_to_id) : '---';
+
+
 $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
 ?>
 
@@ -35,6 +63,8 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
             <span>ارسال شده توسط: <?php echo esc_html(get_the_author_meta('display_name', $ticket->post_author)); ?></span>
             <span>در تاریخ: <?php echo jdate('Y/m/d H:i', strtotime(get_the_date('Y/m/d H:i', $ticket))); ?></span>
             <span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span>
+            <span><strong>دپارتمان:</strong> <?php echo $department_name; ?></span>
+            <span><strong>مسئول:</strong> <?php echo $assigned_to_name; ?></span>
         </div>
     </div>
 
@@ -62,18 +92,46 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
         <form action="<?php echo esc_url(admin_url('admin-post.php')); ?>" method="post">
             <input type="hidden" name="action" value="puzzling_ticket_reply">
             <input type="hidden" name="ticket_id" value="<?php echo esc_attr($ticket->ID); ?>">
-            <input type="hidden" name="redirect_to" value="<?php echo esc_url(get_permalink()); ?>">
+            <input type="hidden" name="redirect_to" value="<?php echo esc_url(add_query_arg(null, null)); ?>">
             <?php wp_nonce_field('puzzling_ticket_reply_nonce', '_wpnonce_ticket_reply'); ?>
             <textarea name="comment" rows="7" required placeholder="پاسخ خود را اینجا بنویسید..."></textarea>
             
-            <?php if ($is_manager): ?>
-            <div class="form-group-inline">
-                <label for="ticket_status">تغییر وضعیت به:</label>
-                <select name="ticket_status">
+            <?php if ($is_manager || $is_team_member): ?>
+            <div class="pzl-form-row">
+                <div class="form-group-inline half-width">
+                    <label for="ticket_status">تغییر وضعیت به:</label>
+                    <select name="ticket_status">
+                        <?php
+                        $statuses = get_terms(['taxonomy' => 'ticket_status', 'hide_empty' => false]);
+                        foreach ($statuses as $status) {
+                            echo '<option value="' . esc_attr($status->slug) . '" ' . selected($status_slug, $status->slug, false) . '>' . esc_html($status->name) . '</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
+                 <div class="form-group-inline half-width">
+                    <label for="department">تغییر دپارتمان:</label>
                     <?php
-                    $statuses = get_terms(['taxonomy' => 'ticket_status', 'hide_empty' => false]);
-                    foreach ($statuses as $status) {
-                        echo '<option value="' . esc_attr($status->slug) . '" ' . selected($status_slug, $status->slug, false) . '>' . esc_html($status->name) . '</option>';
+                        wp_dropdown_categories([
+                            'taxonomy'         => 'organizational_position',
+                            'name'             => 'department',
+                            'selected'         => !empty($department_terms) ? $department_terms[0]->term_id : 0,
+                            'show_option_none' => __('انتخاب دپارتمان', 'puzzlingcrm'),
+                            'hierarchical'     => true,
+                            'hide_empty'       => false,
+                            'parent'           => 0, // Only show top-level departments
+                        ]);
+                    ?>
+                </div>
+            </div>
+             <div class="form-group-inline">
+                <label for="assigned_to">ارجاع به کارمند:</label>
+                <select name="assigned_to">
+                    <option value="0">-- هیچکس --</option>
+                    <?php
+                    $staff_users = get_users(['role__in' => ['team_member', 'system_manager', 'administrator']]);
+                    foreach ($staff_users as $staff) {
+                        echo '<option value="' . esc_attr($staff->ID) . '" ' . selected($assigned_to_id, $staff->ID, false) . '>' . esc_html($staff->display_name) . '</option>';
                     }
                     ?>
                 </select>
@@ -93,9 +151,9 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
 <?php
 if (!function_exists('puzzling_ticket_comment_template')) {
     function puzzling_ticket_comment_template($comment, $args, $depth) {
-        $ticket_author_id = get_post_field('post_author', $comment->comment_post_ID);
-        $is_client_reply = $comment->user_id == $ticket_author_id;
-        $reply_class = $is_client_reply ? 'client-reply' : 'admin-reply';
+        $user = get_user_by('id', $comment->user_id);
+        $is_staff_reply = $user && (user_can($user, 'manage_options') || in_array('team_member', (array)$user->roles));
+        $reply_class = $is_staff_reply ? 'admin-reply' : 'client-reply';
         ?>
         <li <?php comment_class($reply_class); ?> id="comment-<?php comment_ID(); ?>">
             <div class="comment-author">
