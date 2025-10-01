@@ -22,34 +22,28 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
         if (is_int($task_post)) {
             $task_post = get_post($task_post);
         }
-        // If the task object is invalid, return an empty string to avoid errors.
         if ( ! $task_post || ! is_a($task_post, 'WP_Post') ) {
             return '';
         }
         
         global $post;
-        // Backup the global $post object to prevent conflicts
         $original_post = $post;
         $post = $task_post;
         setup_postdata($post);
 
         $task_id = get_the_ID();
         
-        // --- Priority ---
         $priority_terms = wp_get_post_terms( $task_id, 'task_priority' );
         $priority_class = !empty($priority_terms) && !is_wp_error($priority_terms) ? 'priority-' . esc_attr($priority_terms[0]->slug) : 'priority-none';
         $priority_title = !empty($priority_terms) && !is_wp_error($priority_terms) ? esc_attr($priority_terms[0]->name) : 'بدون اولویت';
 
-        // --- Project ---
         $project_id = get_post_meta($task_id, '_project_id', true);
         $project_title = $project_id ? get_the_title($project_id) : '';
         $project_html = $project_title ? '<span class="pzl-card-project"><i class="far fa-folder"></i> ' . esc_html($project_title) . '</span>' : '';
 
-        // --- Assignee ---
         $assigned_user_id = get_post_meta($task_id, '_assigned_to', true);
         $assignee_avatar = $assigned_user_id ? get_avatar($assigned_user_id, 24) : '';
         
-        // --- Due Date ---
         $due_date = get_post_meta($task_id, '_due_date', true);
         $due_date_html = '';
         if ($due_date) {
@@ -65,7 +59,6 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
             $due_date_html = '<span class="pzl-card-due-date ' . $due_date_class . '"><i class="far fa-calendar-alt"></i> ' . jdate('Y/m/d', $due_timestamp) . '</span>';
         }
 
-        // --- Sub-tasks, Attachments, Comments ---
         $subtask_count = count(get_children(['post_parent' => $task_id, 'post_type' => 'task']));
         $subtask_html = $subtask_count > 0 ? '<span class="pzl-card-subtasks"><i class="fas fa-tasks"></i> ' . esc_html($subtask_count) . '</span>' : '';
 
@@ -76,7 +69,6 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
         $comment_count = get_comments_number();
         $comment_html = $comment_count > 0 ? '<span class="pzl-card-comments"><i class="far fa-comment"></i> ' . esc_html($comment_count) . '</span>' : '';
 
-        // --- Labels ---
         $labels = wp_get_post_terms($task_id, 'task_label');
         $labels_html = '';
         if (!empty($labels) && !is_wp_error($labels)) {
@@ -87,15 +79,12 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
             $labels_html .= '</div>';
         }
         
-        // --- Cover Image ---
         $cover_html = has_post_thumbnail($task_id) ? '<div class="pzl-card-cover">' . get_the_post_thumbnail($task_id, 'medium') . '</div>' : '';
 
-        // Restore the global $post object
         wp_reset_postdata();
         $post = $original_post;
-        if($post) setup_postdata($post); // Restore original post data if it exists
+        if($post) setup_postdata($post);
 
-        // --- Final Assembly ---
         return sprintf(
             '<div class="pzl-task-card" data-task-id="%d">
                 %s
@@ -130,11 +119,39 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
 }
 
 if ( ! function_exists( 'puzzling_jalali_to_gregorian' ) ) {
+    /**
+     * Converts a Jalali date string (with potential Farsi numerals) to Gregorian 'Y-m-d' format.
+     *
+     * @param string $jalali_date The Jalali date, e.g., '1404/07/08' or '۱۴۰۴/۰۷/۰۸'.
+     * @return string The Gregorian date, e.g., '2025-09-29', or an empty string on failure.
+     */
     function puzzling_jalali_to_gregorian($jalali_date) {
         if(empty($jalali_date)) return '';
+        
+        // *** CRITICAL FIX: Convert Farsi/Arabic numerals to English before any processing ***
+        $jalali_date = tr_num($jalali_date, 'en');
+        
+        // Normalize separators
+        $jalali_date = str_replace('-', '/', $jalali_date);
+        
         $parts = explode('/', $jalali_date);
-        if(count($parts) !== 3) return $jalali_date; // Return original if format is wrong
-        $gregorian_parts = jalali_to_gregorian((int)$parts[0], (int)$parts[1], (int)$parts[2]);
+        if(count($parts) !== 3) return ''; // Return empty string for incorrect format
+
+        // Ensure parts are integers
+        $j_y = intval($parts[0]);
+        $j_m = intval($parts[1]);
+        $j_d = intval($parts[2]);
+        
+        // Basic validation to prevent errors in jdf.php if parts become zero after conversion
+        if ($j_y < 1000 || $j_m < 1 || $j_m > 12 || $j_d < 1 || $j_d > 31) {
+             return '';
+        }
+        
+        if (function_exists('jcheckdate') && !jcheckdate($j_m, $j_d, $j_y)) {
+            return ''; // Return empty for invalid Jalali dates
+        }
+
+        $gregorian_parts = jalali_to_gregorian($j_y, $j_m, $j_d);
         return implode('-', $gregorian_parts);
     }
 }

@@ -211,6 +211,106 @@ jQuery(document).ready(function($) {
     $('#add-payment-row').on('click', function() { addInstallmentRow(); });
     $('#payment-rows-container').on('click', '.remove-payment-row', function() { $(this).closest('.payment-row').remove(); });
     
+    // --- Pro-forma Invoice Page Logic ---
+    var invoiceForm = $('#pzl-pro-invoice-form');
+    if (invoiceForm.length) {
+
+        // Function to calculate totals
+        function calculateInvoiceTotals() {
+            var subtotal = 0;
+            var totalDiscount = 0;
+            $('#invoice-items-body tr').each(function() {
+                var price = parseFloat($(this).find('.item-price').val().replace(/,/g, '')) || 0;
+                var discount = parseFloat($(this).find('.item-discount').val().replace(/,/g, '')) || 0;
+                var itemTotal = price - discount;
+                subtotal += price;
+                totalDiscount += discount;
+                $(this).find('.item-total').text(itemTotal.toLocaleString('fa-IR'));
+            });
+            var finalTotal = subtotal - totalDiscount;
+            $('#subtotal').text(subtotal.toLocaleString('fa-IR') + ' تومان');
+            $('#final-total').text(finalTotal.toLocaleString('fa-IR') + ' تومان');
+        }
+
+        // Add new item row
+        $('#add-invoice-item').on('click', function() {
+            var newRow = `
+                <tr>
+                    <td><input type="text" name="item_title[]" class="item-title" required></td>
+                    <td><input type="text" name="item_desc[]" class="item-desc"></td>
+                    <td><input type="number" name="item_price[]" class="item-price" value="0" required></td>
+                    <td><input type="number" name="item_discount[]" class="item-discount" value="0"></td>
+                    <td class="item-total">0</td>
+                    <td><button type="button" class="pzl-button pzl-button-sm remove-item-btn" style="background: #dc3545 !important;">حذف</button></td>
+                </tr>
+            `;
+            $('#invoice-items-body').append(newRow);
+        });
+
+        // Remove item row
+        $('#invoice-items-container').on('click', '.remove-item-btn', function() {
+            $(this).closest('tr').remove();
+            calculateInvoiceTotals();
+        });
+
+        // Recalculate on input change
+        $('#invoice-items-container').on('input', '.item-price, .item-discount', function() {
+            calculateInvoiceTotals();
+        });
+
+        // Fetch projects when a customer is selected
+        $('#customer_id').on('change', function() {
+            var customerId = $(this).val();
+            var projectSelect = $('#project_id');
+            var invoiceNumberInput = $('#pro_invoice_number');
+            invoiceNumberInput.val('در انتظار انتخاب پروژه...');
+            projectSelect.html('<option value="">در حال بارگذاری...</option>').prop('disabled', true);
+
+            if (!customerId) {
+                projectSelect.html('<option value="">-- ابتدا مشتری را انتخاب کنید --</option>').prop('disabled', false);
+                return;
+            }
+
+            $.ajax({
+                url: puzzlingcrm_ajax_obj.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'puzzling_get_projects_for_customer',
+                    security: puzzlingcrm_ajax_obj.nonce,
+                    customer_id: customerId
+                },
+                success: function(response) {
+                    projectSelect.html('<option value="">-- انتخاب پروژه --</option>');
+                    if (response.success) {
+                        $.each(response.data, function(id, title) {
+                            projectSelect.append($('<option>', {
+                                value: id,
+                                text: title
+                            }));
+                        });
+                    }
+                    projectSelect.prop('disabled', false);
+                }
+            });
+        });
+
+        // Generate invoice number when project is selected
+        $('#project_id').on('change', function() {
+            var projectId = $(this).val();
+            var invoiceNumberInput = $('#pro_invoice_number');
+            if (projectId) {
+                var today = new Date();
+                var jDate = today.toLocaleDateString('fa-IR-u-nu-latn').slice(2, 10).replace(/\//g, '');
+                invoiceNumberInput.val('puz-' + jDate + '-' + projectId);
+            } else {
+                invoiceNumberInput.val('در انتظار انتخاب پروژه...');
+            }
+        });
+
+        // Initial calculation on page load
+        calculateInvoiceTotals();
+    }
+    
     // --- The rest of the file... ---
     // (All other functions like Kanban, Modals, etc. are correct and remain unchanged)
 
