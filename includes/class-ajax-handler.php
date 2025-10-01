@@ -310,10 +310,11 @@ class PuzzlingCRM_Ajax_Handler {
             $the_user_id = is_int($result) ? $result : $user_id;
             
             // Save custom meta fields (looping through them)
+            // *** THE FIX IS HERE ***
             foreach ($_POST as $key => $value) {
                 if (strpos($key, 'pzl_') === 0) {
                     $sanitized_value = sanitize_text_field($value);
-                    // Check if it's a date field and convert it
+                    // Check if it's a date field and convert it from Jalali to Gregorian before saving
                     if ($key === 'pzl_birth_date' || $key === 'pzl_hire_date') {
                         $sanitized_value = puzzling_jalali_to_gregorian($sanitized_value);
                     }
