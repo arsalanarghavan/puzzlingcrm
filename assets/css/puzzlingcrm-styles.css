@@ -1055,3 +1055,95 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* --- Pro-forma Invoice Item Styles (IMPROVED) --- */
+#invoice-items-body .pzl-form-row.invoice-item-row {
+    align-items: flex-end;
+    gap: 15px;
+    padding: 20px;
+    border: 1px solid #e9ecef;
+    border-radius: var(--pzl-border-radius);
+    margin-bottom: 15px;
+    background-color: #fdfdfd;
+}
+.invoice-item-row .form-group {
+    margin-bottom: 0;
+    position: relative;
+    flex-grow: 1;
+}
+.invoice-item-row .form-group label {
+    display: block;
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+.invoice-item-row .form-group input[type="text"] {
+    font-size: 14px;
+    padding: 10px 12px;
+}
+.invoice-item-row .form-group:nth-child(1) { flex: 1 1 25%; } /* Title */
+.invoice-item-row .form-group:nth-child(2) { flex: 1 1 30%; } /* Desc */
+.invoice-item-row .form-group:nth-child(3),
+.invoice-item-row .form-group:nth-child(4) { flex: 1 1 15%; } /* Price, Discount */
+
+.item-total-wrapper {
+    flex: 1 1 12%;
+    min-width: 100px;
+    text-align: left;
+    height: auto;
+    align-items: flex-start;
+    padding: 0;
+    background: none;
+}
+.item-total-wrapper .item-total {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: var(--pzl-secondary-color);
+    padding: 10px 12px;
+    display: block;
+    background-color: #e9ecef;
+    border-radius: var(--pzl-border-radius);
+    height: 46px;
+    line-height: 26px; /* Vertical align */
+}
+.item-total-wrapper label {
+    display: block !important;
+}
+
+.remove-btn-wrapper {
+    flex-basis: 50px;
+    flex-grow: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 5px; /* Align with inputs */
+}
+.remove-item-btn {
+    padding: 10px !important;
+    line-height: 1;
+}
+
+/* Financial Summary Styles */
+.pzl-financial-summary {
+    background: #f8f9fa;
+    border: 1px solid var(--pzl-border-color);
+    border-radius: var(--pzl-border-radius);
+    padding: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+}
+.pzl-financial-summary .summary-item span {
+    color: var(--pzl-text-light);
+    display: block;
+    margin-bottom: 5px;
+}
+.pzl-financial-summary .summary-item strong {
+    font-size: 1.5em;
+    font-weight: 700;
+}
+.pzl-financial-summary .summary-item #final-total {
+    color: var(--pzl-primary-color);
+}

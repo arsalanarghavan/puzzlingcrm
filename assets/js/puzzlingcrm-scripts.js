@@ -48,7 +48,6 @@ jQuery(document).ready(function($) {
             var id = $this.attr('id');
             
             // If the element doesn't have an ID, generate a unique one.
-            // This is crucial for the datepicker library to work on multiple elements.
             if (!id) {
                 id = 'pzl-datepicker-' + Date.now() + '-' + index;
                 $this.attr('id', id);
@@ -80,8 +79,13 @@ jQuery(document).ready(function($) {
         var formData = new FormData(form[0]);
         var action = form.data('action') || form.find('input[name="action"]').val();
         formData.append('action', action);
-        var nonce = form.find('input[name="security"]').val();
-        formData.append('security', nonce);
+        
+        // Unformat currency fields before submitting
+        form.find('.item-price, .item-discount').each(function() {
+            var name = $(this).attr('name');
+            var unformattedValue = $(this).val().replace(/,/g, '');
+            formData.set(name, unformattedValue);
+        });
 
         form.find('.wp-editor-area').each(function() {
             var editorId = $(this).attr('id');
@@ -91,13 +95,6 @@ jQuery(document).ready(function($) {
         });
         form.find('select:disabled').each(function() {
             formData.append($(this).attr('name'), $(this).val());
-        });
-
-        // **FIX for numeric inputs**: Remove commas before sending to server
-        form.find('.pzl-numeric-input').each(function() {
-            var name = $(this).attr('name');
-            var value = $(this).val().replace(/,/g, '');
-            formData.set(name, value);
         });
 
         $.ajax({
@@ -221,59 +218,72 @@ jQuery(document).ready(function($) {
     var invoiceForm = $('#pzl-pro-invoice-form');
     if (invoiceForm.length) {
 
+        function formatNumber(n) {
+            if (!n) return '0';
+            return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        function liveFormatNumber(input) {
+            var value = input.val().replace(/,/g, '');
+            var cursorPosition = input[0].selectionStart;
+            var originalLength = input.val().length;
+
+            if ($.isNumeric(value)) {
+                var formattedValue = formatNumber(value);
+                input.val(formattedValue);
+                
+                var newLength = formattedValue.length;
+                var lengthDifference = newLength - originalLength;
+                input[0].setSelectionRange(cursorPosition + lengthDifference, cursorPosition + lengthDifference);
+            }
+        }
+
+        $('#invoice-items-body').on('input', '.item-price, .item-discount', function() {
+            liveFormatNumber($(this));
+        });
+
         function calculateInvoiceTotals() {
             var subtotal = 0;
             var totalDiscount = 0;
-            $('#invoice-items-body tr').each(function() {
+            $('#invoice-items-body .invoice-item-row').each(function() {
                 var price = parseFloat($(this).find('.item-price').val().replace(/,/g, '')) || 0;
                 var discount = parseFloat($(this).find('.item-discount').val().replace(/,/g, '')) || 0;
+                var itemTotal = price - discount;
                 subtotal += price;
                 totalDiscount += discount;
+                $(this).find('.item-total').text(formatNumber(itemTotal));
             });
             var finalTotal = subtotal - totalDiscount;
-            $('#subtotal').text(subtotal.toLocaleString('fa-IR') + ' تومان');
-            $('#total-discount').text(totalDiscount.toLocaleString('fa-IR') + ' تومان');
-            $('#final-total').text(finalTotal.toLocaleString('fa-IR') + ' تومان');
+            $('#subtotal').text(formatNumber(subtotal) + ' تومان');
+            $('#final-total').text(formatNumber(finalTotal) + ' تومان');
         }
 
         $('#add-invoice-item').on('click', function() {
             var newRow = `
-                <tr>
-                    <td><input type="text" name="item_title[]" class="item-title" required></td>
-                    <td><input type="text" name="item_desc[]" class="item-desc"></td>
-                    <td><input type="text" name="item_price[]" class="item-price pzl-numeric-input" value="0" required></td>
-                    <td><input type="text" name="item_discount[]" class="item-discount pzl-numeric-input" value="0"></td>
-                    <td><button type="button" class="pzl-button pzl-button-sm remove-item-btn" style="background: #dc3545 !important;">حذف</button></td>
-                </tr>
+                <div class="pzl-form-row invoice-item-row">
+                    <div class="form-group"><input type="text" name="item_title[]" class="item-title" placeholder="عنوان خدمت" required></div>
+                    <div class="form-group"><input type="text" name="item_desc[]" class="item-desc" placeholder="توضیحات"></div>
+                    <div class="form-group"><input type="text" name="item_price[]" class="item-price" value="0" placeholder="قیمت" required></div>
+                    <div class="form-group"><input type="text" name="item_discount[]" class="item-discount" value="0" placeholder="تخفیف"></div>
+                    <div class="form-group item-total-wrapper"><label>مبلغ کل</label><span class="item-total">0</span></div>
+                    <div class="form-group remove-btn-wrapper"><button type="button" class="pzl-button pzl-button-sm remove-item-btn" style="background: #dc3545 !important;">حذف</button></div>
+                </div>
             `;
             $('#invoice-items-body').append(newRow);
         });
 
         $('#invoice-items-container').on('click', '.remove-item-btn', function() {
-            $(this).closest('tr').remove();
+            $(this).closest('.invoice-item-row').remove();
             calculateInvoiceTotals();
         });
 
         $('#invoice-items-container').on('input', '.item-price, .item-discount', function() {
             calculateInvoiceTotals();
         });
-        
-        // **NEW**: Format number inputs with commas
-        $('body').on('input', '.pzl-numeric-input', function(e) {
-            let value = $(this).val().replace(/[^0-9]/g, '');
-            if (value) {
-                $(this).val(parseInt(value, 10).toLocaleString('en-US'));
-            } else {
-                $(this).val('');
-            }
-        });
 
-        // **FIXED**: Fetch projects when a customer is selected
         $('#customer_id').on('change', function() {
             var customerId = $(this).val();
             var projectSelect = $('#project_id');
-            var invoiceNumberInput = $('#pro_invoice_number');
-            invoiceNumberInput.val('در انتظار انتخاب پروژه...');
             projectSelect.html('<option value="">در حال بارگذاری...</option>').prop('disabled', true);
 
             if (!customerId) {
@@ -284,19 +294,12 @@ jQuery(document).ready(function($) {
             $.ajax({
                 url: puzzlingcrm_ajax_obj.ajax_url,
                 type: 'POST',
-                data: {
-                    action: 'puzzling_get_projects_for_customer',
-                    security: puzzlingcrm_ajax_obj.nonce,
-                    customer_id: customerId
-                },
+                data: { action: 'puzzling_get_projects_for_customer', security: puzzlingcrm_ajax_obj.nonce, customer_id: customerId },
                 success: function(response) {
                     projectSelect.html('<option value="">-- انتخاب پروژه --</option>');
                     if (response.success && response.data) {
                         $.each(response.data, function(index, project) {
-                            projectSelect.append($('<option>', {
-                                value: project.ID,
-                                text: project.post_title
-                            }));
+                            projectSelect.append($('<option>', { value: project.id, text: project.title }));
                         });
                     }
                     projectSelect.prop('disabled', false);
@@ -304,25 +307,24 @@ jQuery(document).ready(function($) {
             });
         });
 
-        // **FIXED**: Generate invoice number with padding
         $('#project_id').on('change', function() {
             var projectId = $(this).val();
             var invoiceNumberInput = $('#pro_invoice_number');
             if (projectId) {
-                // Let server generate the final number, but show a user-friendly preview
-                 invoiceNumberInput.val('puz-YYMMDD-' + projectId);
+                var todayJalali = new Date().toLocaleDateString('fa-IR-u-nu-latn');
+                var parts = todayJalali.split('/');
+                var year = parts[0].slice(-2);
+                var month = ('0' + parts[1]).slice(-2);
+                var day = ('0' + parts[2]).slice(-2);
+                invoiceNumberInput.val('puz-' + year + month + day + '-' + projectId);
             } else {
                 invoiceNumberInput.val('در انتظار انتخاب پروژه...');
             }
-        });
+        }).trigger('change');
 
-        // Initial calculation on page load
         calculateInvoiceTotals();
     }
     
-    // --- The rest of the file... ---
-    // (All other functions like Kanban, Modals, etc. remain unchanged)
-
     // --- Kanban Board: Drag and Drop ---
     if ($('#pzl-task-board, .pzl-swimlane-board').length) {
         $('.pzl-task-list').sortable({
