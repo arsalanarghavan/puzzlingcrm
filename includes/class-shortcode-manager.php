@@ -17,6 +17,7 @@ class PuzzlingCRM_Shortcode_Manager {
         add_shortcode( 'puzzling_tasks', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_tasks' ] );
 
         // Manager-only shortcodes
+        add_shortcode( 'puzzling_consultations', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_consultations' ] );
         add_shortcode( 'puzzling_customers', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_customers' ] );
         add_shortcode( 'puzzling_staff', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_staff' ] );
         add_shortcode( 'puzzling_subscriptions', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_subscriptions' ] );

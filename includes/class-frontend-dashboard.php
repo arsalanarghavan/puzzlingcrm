@@ -201,4 +201,6 @@ class PuzzlingCRM_Frontend_Dashboard {
     public static function render_page_reports() { $role = self::get_user_role(); return ($role === 'system_manager' || $role === 'finance_manager') ? self::render_partial('page-reports') : '<p>' . __('You do not have permission to view this page.', 'puzzlingcrm') . '</p>'; }
     public static function render_page_settings() { return self::get_user_role() === 'system_manager' ? self::render_partial('page-settings') : '<p>' . __('You do not have permission to view this page.', 'puzzlingcrm') . '</p>'; }
     public static function render_page_logs() { return self::get_user_role() === 'system_manager' ? self::render_partial('page-logs') : '<p>' . __('You do not have permission to view this page.', 'puzzlingcrm') . '</p>'; }
+    public static function render_page_consultations() { return self::get_user_role() === 'system_manager' ? self::render_partial('page-consultations') : '<p>' . __('You do not have permission to view this page.', 'puzzlingcrm') . '</p>'; }
+
 }
