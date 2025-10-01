@@ -1,10 +1,15 @@
 <?php
 /**
- * Template for System Manager to Manage Consultations - VISUALLY REVAMPED
+ * Template for System Manager to Manage Consultations - VISUALLY REVAMPED & FIXED
  * @package PuzzlingCRM
  */
 if (!defined('ABSPATH')) exit;
 if (!current_user_can('manage_options')) return;
+
+// Ensure default consultation statuses exist. This is a robust fix for plugin updates.
+if ( ! term_exists( 'in-progress', 'consultation_status' ) ) {
+    PuzzlingCRM_CPT_Manager::create_default_terms();
+}
 
 $action = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 $consultation_id = isset($_GET['consultation_id']) ? intval($_GET['consultation_id']) : 0;
