@@ -260,13 +260,30 @@ jQuery(document).ready(function($) {
 
         $('#add-invoice-item').on('click', function() {
             var newRow = `
-                <div class="pzl-form-row invoice-item-row">
-                    <div class="form-group"><input type="text" name="item_title[]" class="item-title" placeholder="عنوان خدمت" required></div>
-                    <div class="form-group"><input type="text" name="item_desc[]" class="item-desc" placeholder="توضیحات"></div>
-                    <div class="form-group"><input type="text" name="item_price[]" class="item-price" value="0" placeholder="قیمت" required></div>
-                    <div class="form-group"><input type="text" name="item_discount[]" class="item-discount" value="0" placeholder="تخفیف"></div>
-                    <div class="form-group item-total-wrapper"><label>مبلغ کل</label><span class="item-total">0</span></div>
-                    <div class="form-group remove-btn-wrapper"><button type="button" class="pzl-button pzl-button-sm remove-item-btn" style="background: #dc3545 !important;">حذف</button></div>
+                <div class="pzl-form-row invoice-item-row" style="flex-wrap: nowrap; align-items: flex-end; gap: 10px;">
+                    <div class="form-group" style="flex: 3 1 150px;">
+                        <label>عنوان خدمت</label>
+                        <input type="text" name="item_title[]" class="item-title" required>
+                    </div>
+                    <div class="form-group" style="flex: 4 1 200px;">
+                        <label>توضیحات</label>
+                        <input type="text" name="item_desc[]" class="item-desc">
+                    </div>
+                    <div class="form-group" style="flex: 2 1 100px;">
+                        <label>قیمت (تومان)</label>
+                        <input type="text" name="item_price[]" class="item-price" value="0" required>
+                    </div>
+                    <div class="form-group" style="flex: 2 1 100px;">
+                        <label>تخفیف (تومان)</label>
+                        <input type="text" name="item_discount[]" class="item-discount" value="0">
+                    </div>
+                    <div class="form-group item-total-wrapper" style="flex: 2 1 100px;">
+                        <label>مبلغ کل</label>
+                        <span class="item-total">0</span>
+                    </div>
+                    <div class="form-group remove-btn-wrapper" style="flex: 0 0 auto;">
+                        <button type="button" class="pzl-button pzl-button-sm remove-item-btn" style="background: #dc3545 !important;">حذف</button>
+                    </div>
                 </div>
             `;
             $('#invoice-items-body').append(newRow);
