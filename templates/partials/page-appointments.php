@@ -6,7 +6,7 @@
 if (!defined('ABSPATH')) exit;
 if (!current_user_can('manage_options')) return;
 
-// Ensure default appointment statuses exist.
+// Ensure default appointment statuses exist. This is a robust fix for plugin updates.
 if ( ! term_exists( 'pending', 'appointment_status' ) ) {
     PuzzlingCRM_CPT_Manager::create_default_terms();
 }
