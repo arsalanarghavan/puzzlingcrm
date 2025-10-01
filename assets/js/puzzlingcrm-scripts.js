@@ -93,6 +93,13 @@ jQuery(document).ready(function($) {
             formData.append($(this).attr('name'), $(this).val());
         });
 
+        // **FIX for numeric inputs**: Remove commas before sending to server
+        form.find('.pzl-numeric-input').each(function() {
+            var name = $(this).attr('name');
+            var value = $(this).val().replace(/,/g, '');
+            formData.set(name, value);
+        });
+
         $.ajax({
             url: puzzlingcrm_ajax_obj.ajax_url,
             type: 'POST',
@@ -205,7 +212,6 @@ jQuery(document).ready(function($) {
             </div>
         `;
         $('#payment-rows-container').append(newRow);
-        // **FIXED**: Call the robust initializer function after adding a new row
         initKamaDatepickers();
     }
     $('#add-payment-row').on('click', function() { addInstallmentRow(); });
@@ -215,50 +221,54 @@ jQuery(document).ready(function($) {
     var invoiceForm = $('#pzl-pro-invoice-form');
     if (invoiceForm.length) {
 
-        // Function to calculate totals
         function calculateInvoiceTotals() {
             var subtotal = 0;
             var totalDiscount = 0;
             $('#invoice-items-body tr').each(function() {
                 var price = parseFloat($(this).find('.item-price').val().replace(/,/g, '')) || 0;
                 var discount = parseFloat($(this).find('.item-discount').val().replace(/,/g, '')) || 0;
-                var itemTotal = price - discount;
                 subtotal += price;
                 totalDiscount += discount;
-                $(this).find('.item-total').text(itemTotal.toLocaleString('fa-IR'));
             });
             var finalTotal = subtotal - totalDiscount;
             $('#subtotal').text(subtotal.toLocaleString('fa-IR') + ' تومان');
+            $('#total-discount').text(totalDiscount.toLocaleString('fa-IR') + ' تومان');
             $('#final-total').text(finalTotal.toLocaleString('fa-IR') + ' تومان');
         }
 
-        // Add new item row
         $('#add-invoice-item').on('click', function() {
             var newRow = `
                 <tr>
                     <td><input type="text" name="item_title[]" class="item-title" required></td>
                     <td><input type="text" name="item_desc[]" class="item-desc"></td>
-                    <td><input type="number" name="item_price[]" class="item-price" value="0" required></td>
-                    <td><input type="number" name="item_discount[]" class="item-discount" value="0"></td>
-                    <td class="item-total">0</td>
+                    <td><input type="text" name="item_price[]" class="item-price pzl-numeric-input" value="0" required></td>
+                    <td><input type="text" name="item_discount[]" class="item-discount pzl-numeric-input" value="0"></td>
                     <td><button type="button" class="pzl-button pzl-button-sm remove-item-btn" style="background: #dc3545 !important;">حذف</button></td>
                 </tr>
             `;
             $('#invoice-items-body').append(newRow);
         });
 
-        // Remove item row
         $('#invoice-items-container').on('click', '.remove-item-btn', function() {
             $(this).closest('tr').remove();
             calculateInvoiceTotals();
         });
 
-        // Recalculate on input change
         $('#invoice-items-container').on('input', '.item-price, .item-discount', function() {
             calculateInvoiceTotals();
         });
+        
+        // **NEW**: Format number inputs with commas
+        $('body').on('input', '.pzl-numeric-input', function(e) {
+            let value = $(this).val().replace(/[^0-9]/g, '');
+            if (value) {
+                $(this).val(parseInt(value, 10).toLocaleString('en-US'));
+            } else {
+                $(this).val('');
+            }
+        });
 
-        // Fetch projects when a customer is selected
+        // **FIXED**: Fetch projects when a customer is selected
         $('#customer_id').on('change', function() {
             var customerId = $(this).val();
             var projectSelect = $('#project_id');
@@ -281,11 +291,11 @@ jQuery(document).ready(function($) {
                 },
                 success: function(response) {
                     projectSelect.html('<option value="">-- انتخاب پروژه --</option>');
-                    if (response.success) {
-                        $.each(response.data, function(id, title) {
+                    if (response.success && response.data) {
+                        $.each(response.data, function(index, project) {
                             projectSelect.append($('<option>', {
-                                value: id,
-                                text: title
+                                value: project.ID,
+                                text: project.post_title
                             }));
                         });
                     }
@@ -294,14 +304,13 @@ jQuery(document).ready(function($) {
             });
         });
 
-        // Generate invoice number when project is selected
+        // **FIXED**: Generate invoice number with padding
         $('#project_id').on('change', function() {
             var projectId = $(this).val();
             var invoiceNumberInput = $('#pro_invoice_number');
             if (projectId) {
-                var today = new Date();
-                var jDate = today.toLocaleDateString('fa-IR-u-nu-latn').slice(2, 10).replace(/\//g, '');
-                invoiceNumberInput.val('puz-' + jDate + '-' + projectId);
+                // Let server generate the final number, but show a user-friendly preview
+                 invoiceNumberInput.val('puz-YYMMDD-' + projectId);
             } else {
                 invoiceNumberInput.val('در انتظار انتخاب پروژه...');
             }
@@ -312,7 +321,7 @@ jQuery(document).ready(function($) {
     }
     
     // --- The rest of the file... ---
-    // (All other functions like Kanban, Modals, etc. are correct and remain unchanged)
+    // (All other functions like Kanban, Modals, etc. remain unchanged)
 
     // --- Kanban Board: Drag and Drop ---
     if ($('#pzl-task-board, .pzl-swimlane-board').length) {

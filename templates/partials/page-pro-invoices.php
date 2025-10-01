@@ -1,6 +1,6 @@
 <?php
 /**
- * Template for System Manager to Manage Pro-forma Invoices - V2 (Advanced & Dynamic)
+ * Template for System Manager to Manage Pro-forma Invoices - V3 (UI/UX Revamp)
  * @package PuzzlingCRM
  */
 if (!defined('ABSPATH')) exit;
@@ -23,17 +23,7 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
 
                 <h4><i class="fas fa-info-circle"></i> اطلاعات پایه</h4>
                 <div class="pzl-form-row">
-                    <div class="form-group">
-                        <label for="pro_invoice_number">شماره پیش‌فاکتور</label>
-                        <input type="text" id="pro_invoice_number" name="pro_invoice_number" value="<?php echo $invoice_to_edit ? esc_attr(get_post_meta($invoice_id, '_pro_invoice_number', true)) : 'در انتظار انتخاب پروژه...'; ?>" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="issue_date">تاریخ صدور</label>
-                        <input type="text" id="issue_date" name="issue_date" value="<?php echo jdate('Y/m/d'); ?>" class="pzl-jalali-date-picker" required>
-                    </div>
-                </div>
-                <div class="pzl-form-row">
-                    <div class="form-group">
+                    <div class="form-group half-width">
                         <label for="customer_id">مربوط به مشتری</label>
                         <select name="customer_id" id="customer_id" required>
                             <option value="">-- انتخاب مشتری --</option>
@@ -46,7 +36,7 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
                             ?>
                         </select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group half-width">
                         <label for="project_id">مربوط به پروژه</label>
                         <select name="project_id" id="project_id" required>
                             <option value="">-- ابتدا مشتری را انتخاب کنید --</option>
@@ -62,19 +52,28 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
                         </select>
                     </div>
                 </div>
+                 <div class="pzl-form-row">
+                    <div class="form-group half-width">
+                        <label for="pro_invoice_number">شماره پیش‌فاکتور</label>
+                        <input type="text" id="pro_invoice_number" name="pro_invoice_number" value="<?php echo $invoice_to_edit ? esc_attr(get_post_meta($invoice_id, '_pro_invoice_number', true)) : 'در انتظار انتخاب پروژه...'; ?>" readonly>
+                    </div>
+                    <div class="form-group half-width">
+                        <label for="issue_date">تاریخ صدور</label>
+                        <input type="text" id="issue_date" name="issue_date" value="<?php echo jdate('Y/m/d'); ?>" class="pzl-jalali-date-picker" required>
+                    </div>
+                </div>
 
                 <hr>
                 <h4><i class="fas fa-cogs"></i> جزئیات خدمات و قیمت</h4>
                 <div id="invoice-items-container">
-                    <table class="pzl-table">
+                    <table class="pzl-table pzl-table-editable">
                         <thead>
                             <tr>
-                                <th>عنوان خدمت</th>
-                                <th>توضیحات</th>
-                                <th>قیمت واحد (تومان)</th>
+                                <th style="width: 30%;">عنوان خدمت</th>
+                                <th style="width: 35%;">توضیحات</th>
+                                <th>قیمت (تومان)</th>
                                 <th>تخفیف (تومان)</th>
-                                <th>مبلغ کل</th>
-                                <th></th>
+                                <th style="width: 50px;"></th>
                             </tr>
                         </thead>
                         <tbody id="invoice-items-body">
@@ -85,9 +84,8 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
                                     echo '<tr>';
                                     echo '<td><input type="text" name="item_title[]" class="item-title" value="' . esc_attr($item['title']) . '" required></td>';
                                     echo '<td><input type="text" name="item_desc[]" class="item-desc" value="' . esc_attr($item['desc']) . '"></td>';
-                                    echo '<td><input type="number" name="item_price[]" class="item-price" value="' . esc_attr($item['price']) . '" required></td>';
-                                    echo '<td><input type="number" name="item_discount[]" class="item-discount" value="' . esc_attr($item['discount']) . '"></td>';
-                                    echo '<td class="item-total">' . number_format((float)$item['price'] - (float)$item['discount']) . '</td>';
+                                    echo '<td><input type="text" name="item_price[]" class="item-price pzl-numeric-input" value="' . esc_attr(number_format((float)$item['price'])) . '" required></td>';
+                                    echo '<td><input type="text" name="item_discount[]" class="item-discount pzl-numeric-input" value="' . esc_attr(number_format((float)$item['discount'])) . '"></td>';
                                     echo '<td><button type="button" class="pzl-button pzl-button-sm remove-item-btn" style="background: #dc3545 !important;">حذف</button></td>';
                                     echo '</tr>';
                                 }
@@ -100,23 +98,30 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
 
                 <hr>
                 <h4><i class="fas fa-file-invoice-dollar"></i> اطلاعات مالی</h4>
-                <div class="pzl-form-row">
-                    <div class="form-group">
-                        <label>جمع کل:</label>
+                <div class="pzl-invoice-totals">
+                    <div class="total-row">
+                        <span>جمع کل:</span>
                         <strong id="subtotal">0 تومان</strong>
                     </div>
-                    <div class="form-group">
-                        <label>مبلغ نهایی (پس از تخفیف):</label>
-                        <strong id="final-total" style="color: var(--pzl-primary-color); font-size: 1.2em;">0 تومان</strong>
+                     <div class="total-row">
+                        <span>مجموع تخفیف:</span>
+                        <strong id="total-discount">0 تومان</strong>
+                    </div>
+                    <div class="total-row final-total">
+                        <span>مبلغ نهایی:</span>
+                        <strong id="final-total">0 تومان</strong>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="payment_method">نحوه پرداخت:</label>
-                    <textarea id="payment_method" name="payment_method" rows="3"><?php echo $invoice_to_edit ? esc_textarea(get_post_meta($invoice_id, '_payment_method', true)) : ''; ?></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="notes">یادداشت‌ها:</label>
-                    <textarea id="notes" name="notes" rows="4"><?php echo $invoice_to_edit ? esc_textarea($invoice_to_edit->post_content) : ''; ?></textarea>
+                
+                <div class="pzl-form-row">
+                    <div class="form-group half-width">
+                        <label for="payment_method">نحوه پرداخت:</label>
+                        <textarea id="payment_method" name="payment_method" rows="4"><?php echo $invoice_to_edit ? esc_textarea(get_post_meta($invoice_id, '_payment_method', true)) : ''; ?></textarea>
+                    </div>
+                    <div class="form-group half-width">
+                        <label for="notes">یادداشت‌ها:</label>
+                        <textarea id="notes" name="notes" rows="4"><?php echo $invoice_to_edit ? esc_textarea($invoice_to_edit->post_content) : ''; ?></textarea>
+                    </div>
                 </div>
 
                 <div class="form-submit">
@@ -145,7 +150,7 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
                             <td><strong><?php echo esc_html(get_post_meta($invoice_id, '_pro_invoice_number', true)); ?></strong></td>
                             <td><?php echo $customer ? esc_html($customer->display_name) : '---'; ?></td>
                             <td><?php echo $project_id ? get_the_title($project_id) : '---'; ?></td>
-                            <td><?php echo esc_html(number_format(get_post_meta($invoice_id, '_final_total', true))); ?> تومان</td>
+                            <td><?php echo esc_html(number_format((float)get_post_meta($invoice_id, '_final_total', true))); ?> تومان</td>
                             <td><?php echo get_the_date('Y/m/d'); ?></td>
                             <td>
                                 <a href="<?php echo add_query_arg(['action' => 'edit', 'invoice_id' => $invoice_id]); ?>" class="pzl-button pzl-button-sm">ویرایش</a>

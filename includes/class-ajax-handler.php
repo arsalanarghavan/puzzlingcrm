@@ -90,9 +90,19 @@ class PuzzlingCRM_Ajax_Handler {
         }
 
         $customer_id = intval($_POST['customer_id']);
-        $projects = get_posts(['post_type' => 'project', 'author' => $customer_id, 'posts_per_page' => -1, 'fields' => 'id=>post_title']);
+        $projects_posts = get_posts(['post_type' => 'project', 'author' => $customer_id, 'posts_per_page' => -1]);
         
-        wp_send_json_success($projects);
+        $projects_data = [];
+        if ($projects_posts) {
+            foreach ($projects_posts as $project) {
+                $projects_data[] = [
+                    'id'    => $project->ID,
+                    'title' => $project->post_title,
+                ];
+            }
+        }
+        
+        wp_send_json_success($projects_data);
     }
     
     /**
@@ -115,13 +125,9 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'انتخاب مشتری، پروژه و تاریخ صدور الزامی است.']);
         }
 
-        // *** FIX: Convert Jalali date to Gregorian before using it with PHP functions ***
         $issue_date_gregorian = puzzling_jalali_to_gregorian($issue_date_jalali);
-
-        // Generate invoice number using a valid timestamp
         $invoice_number = 'puz-' . jdate('ymd', strtotime($issue_date_gregorian), '', 'en') . '-' . $project_id;
         
-        // Prepare items
         $items = [];
         $subtotal = 0;
         $total_discount = 0;
@@ -166,39 +172,26 @@ class PuzzlingCRM_Ajax_Handler {
 
         $the_invoice_id = is_int($result) ? $result : $invoice_id;
 
-        // Save meta data
         update_post_meta($the_invoice_id, '_pro_invoice_number', $invoice_number);
         update_post_meta($the_invoice_id, '_project_id', $project_id);
-        update_post_meta($the_invoice_id, '_issue_date', $issue_date_gregorian); // Store Gregorian date
+        update_post_meta($the_invoice_id, '_issue_date', $issue_date_gregorian);
         update_post_meta($the_invoice_id, '_invoice_items', $items);
         update_post_meta($the_invoice_id, '_subtotal', $subtotal);
         update_post_meta($the_invoice_id, '_total_discount', $total_discount);
         update_post_meta($the_invoice_id, '_final_total', $final_total);
         update_post_meta($the_invoice_id, '_payment_method', $payment_method);
         
-        // TODO: Trigger PDF generation, email, and SMS notifications here.
-        
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
     
-    /**
-     * AJAX handler for generating a pro-forma invoice PDF.
-     * (Placeholder for future implementation)
-     */
     public function ajax_generate_pro_invoice_pdf() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'شما دسترسی لازم را ندارید.']);
         }
-        
-        // PDF generation logic will be implemented here in the future.
-        // For now, it will indicate that the feature is not ready.
         wp_send_json_error(['message' => 'قابلیت تولید PDF هنوز پیاده‌سازی نشده است.']);
     }
     
-    /**
-     * AJAX handler for creating and updating appointments by manager.
-     */
     public function ajax_manage_appointment() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
@@ -248,9 +241,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
 
-    /**
-     * AJAX handler for deleting an appointment.
-     */
     public function ajax_delete_appointment() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options') || !isset($_POST['appointment_id'])) {
@@ -265,9 +255,6 @@ class PuzzlingCRM_Ajax_Handler {
         }
     }
     
-    /**
-     * AJAX handler for client requesting an appointment.
-     */
     public function ajax_client_request_appointment() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!is_user_logged_in()) {
@@ -302,7 +289,6 @@ class PuzzlingCRM_Ajax_Handler {
         update_post_meta($appointment_id, '_appointment_datetime', $datetime);
         wp_set_object_terms($appointment_id, 'pending', 'appointment_status');
         
-        // Notify admins
         $this->notify_all_admins('درخواست قرار ملاقات جدید', [
             'content' => sprintf('یک درخواست قرار ملاقات جدید با موضوع "%s" توسط مشتری ثبت شد.', $title),
             'type' => 'notification',
@@ -312,9 +298,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => 'درخواست شما با موفقیت ثبت شد. نتیجه از طریق داشبورد به شما اطلاع داده خواهد شد.', 'reload' => true]);
     }
 
-    /**
-     * AJAX handler for creating and updating consultations.
-     */
     public function ajax_manage_consultation() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
@@ -369,9 +352,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
     
-    /**
-     * AJAX handler for converting a consultation to a project.
-     */
     public function ajax_convert_consultation_to_project() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
@@ -389,13 +369,11 @@ class PuzzlingCRM_Ajax_Handler {
         $email = get_post_meta($consultation_id, '_consultation_email', true);
         $phone = get_post_meta($consultation_id, '_consultation_phone', true);
 
-        // Find or create user
         $customer_id = 0;
         if (!empty($email) && email_exists($email)) {
             $user = get_user_by('email', $email);
             $customer_id = $user->ID;
         } else {
-            // Create a new user
             $username = !empty($email) ? sanitize_user(substr($email, 0, strpos($email, '@')), true) : sanitize_user('user_' . $phone, true);
             if (empty($username) || username_exists($username)) {
                 $username = 'user_' . time();
@@ -410,7 +388,6 @@ class PuzzlingCRM_Ajax_Handler {
             update_user_meta($customer_id, 'pzl_mobile_phone', $phone);
         }
 
-        // Create Contract
         $contract_id = wp_insert_post([
             'post_title' => 'قرارداد برای ' . $name,
             'post_author' => $customer_id,
@@ -422,7 +399,6 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'خطا در ایجاد قرارداد.']);
         }
         
-        // Create Project
         $project_id = wp_insert_post([
             'post_title' => 'پروژه جدید برای ' . $name,
             'post_author' => $customer_id,
@@ -434,10 +410,8 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'خطا در ایجاد پروژه.']);
         }
         
-        // Link project to contract
         update_post_meta($project_id, '_contract_id', $contract_id);
         
-        // Update consultation status
         wp_set_object_terms($consultation_id, 'converted', 'consultation_status');
 
         $edit_contract_url = add_query_arg(['view' => 'contracts', 'action' => 'edit', 'contract_id' => $contract_id], puzzling_get_dashboard_url());
@@ -445,9 +419,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => 'مشاوره با موفقیت به پروژه تبدیل شد. در حال انتقال به صفحه قرارداد...', 'redirect_url' => $edit_contract_url]);
     }
 
-    /**
-     * AJAX handler for updating a task's assignee from the modal.
-     */
     public function ajax_update_task_assignee() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('edit_tasks') || !isset($_POST['task_id']) || !isset($_POST['assignee_id'])) {
@@ -469,9 +440,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => 'مسئول وظیفه با موفقیت به‌روزرسانی شد.']);
     }
     
-    /**
-     * AJAX handler for deleting a user.
-     */
     public function ajax_delete_user() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
 
@@ -506,9 +474,6 @@ class PuzzlingCRM_Ajax_Handler {
     }
 
 
-    /**
-     * AJAX handler for live searching users in the customer management page.
-     */
     public function ajax_search_users() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
@@ -581,9 +546,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['html' => $output_html]);
     }
 
-    /**
-     * AJAX handler for users updating their own profile.
-     */
     public function ajax_update_my_profile() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!is_user_logged_in()) {
@@ -621,7 +583,7 @@ class PuzzlingCRM_Ajax_Handler {
         }
 
         if (!empty($_FILES['pzl_profile_picture']['name'])) {
-            $attachment_id = media_handle_upload('pzl_profile_picture', 0); // 0 means not attached to a post
+            $attachment_id = media_handle_upload('pzl_profile_picture', 0);
             if (!is_wp_error($attachment_id)) {
                 update_user_meta($user_id, 'pzl_profile_picture_id', $attachment_id);
             }
@@ -630,9 +592,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => 'پروفایل شما با موفقیت به‌روزرسانی شد.', 'reload' => true]);
     }
     
-    /**
-     * Universal AJAX handler for creating and updating users (staff and customers).
-     */
     public function ajax_manage_user() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
 
@@ -705,9 +664,6 @@ class PuzzlingCRM_Ajax_Handler {
         }
     }
 
-    /**
-     * AJAX handler for creating and updating projects.
-     */
     public function ajax_manage_project() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
@@ -766,9 +722,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
     
-    /**
-     * AJAX handler for creating and updating contracts.
-     */
     public function ajax_manage_contract() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
@@ -854,9 +807,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
 
-    /**
-     * AJAX handler to add a new project to an existing contract.
-     */
     public function ajax_add_project_to_contract() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
@@ -896,9 +846,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => 'پروژه جدید با موفقیت به قرارداد اضافه شد.', 'reload' => true]);
     }
     
-    /**
-     * AJAX handler to create projects from a WooCommerce product for a contract.
-     */
     public function ajax_add_services_from_product() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
@@ -956,9 +903,6 @@ class PuzzlingCRM_Ajax_Handler {
         }
     }
 
-    /**
-     * Logs an activity to a task's metadata.
-     */
     private function _log_task_activity($task_id, $activity_text) {
         $activity_log = get_post_meta($task_id, '_task_activity_log', true);
         if (!is_array($activity_log)) {
@@ -983,9 +927,6 @@ class PuzzlingCRM_Ajax_Handler {
         }
     }
 
-    /**
-     * Executes automation rules based on a trigger.
-     */
     private function execute_automations($trigger, $task_id, $trigger_value = null) {
         $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
         $automations = $settings['automations'] ?? [];
@@ -1664,9 +1605,6 @@ class PuzzlingCRM_Ajax_Handler {
         }
     }
     
-    /**
-     * AJAX handler for creating/updating task categories.
-     */
     public function ajax_manage_task_category() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
@@ -1698,9 +1636,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
 
-    /**
-     * AJAX handler for deleting a task category.
-     */
     public function ajax_delete_task_category() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
@@ -1721,9 +1656,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => 'دسته‌بندی با موفقیت حذف شد.', 'reload' => true]);
     }
     
-    /**
-     * AJAX handler for managing organizational positions (hierarchical).
-     */
     public function ajax_manage_position() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
@@ -1756,9 +1688,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
 
-    /**
-     * AJAX handler for deleting an organizational position.
-     */
     public function ajax_delete_position() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
