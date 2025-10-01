@@ -11,7 +11,7 @@ $current_user_id = $current_user->ID;
 $is_manager = current_user_can('manage_options');
 $is_team_member = in_array('team_member', (array)$current_user->roles);
 
-$base_url = remove_query_arg(['puzzling_notice', 'action', 'ticket_id']);
+$base_url = remove_query_arg(['puzzling_notice', 'action', 'ticket_id', 's']);
 $active_tab = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 
 
@@ -73,7 +73,7 @@ if ($ticket_id_to_view > 0) {
                 </div>
                 <div class="form-group">
                     <label for="ticket_content">پیام شما:</label>
-                    <textarea id="ticket_content" name="ticket_content" rows="6" required></textarea>
+                    <?php wp_editor('', 'ticket_content', ['textarea_name' => 'ticket_content', 'media_buttons' => false, 'textarea_rows' => 8]); ?>
                 </div>
                 <div class="form-group">
                     <label for="ticket_attachments">پیوست فایل (اختیاری):</label>
@@ -91,6 +91,7 @@ if ($ticket_id_to_view > 0) {
             // Filtering
             $status_filter = isset($_GET['status_filter']) ? sanitize_key($_GET['status_filter']) : '';
             $priority_filter = isset($_GET['priority_filter']) ? sanitize_key($_GET['priority_filter']) : '';
+            $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
             
             $paged = get_query_var('paged') ? get_query_var('paged') : 1;
             $args = [
@@ -104,6 +105,9 @@ if ($ticket_id_to_view > 0) {
             }
             if ($priority_filter) {
                 $args['tax_query'][] = ['taxonomy' => 'ticket_priority', 'field' => 'slug', 'terms' => $priority_filter];
+            }
+            if ($search_query) {
+                $args['s'] = $search_query;
             }
             
             if ($is_team_member && !$is_manager) {
@@ -145,6 +149,9 @@ if ($ticket_id_to_view > 0) {
             <form method="get" class="pzl-form">
                 <input type="hidden" name="view" value="tickets">
                 <div class="pzl-form-row" style="align-items: flex-end;">
+                    <div class="form-group" style="flex: 2;">
+                        <input type="search" name="s" placeholder="جستجو در عنوان تیکت..." value="<?php echo esc_attr($search_query); ?>">
+                    </div>
                     <div class="form-group">
                         <select name="status_filter">
                             <option value="">همه وضعیت‌ها</option>

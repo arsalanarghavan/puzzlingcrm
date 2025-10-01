@@ -574,4 +574,39 @@ jQuery(document).ready(function($) {
     $('#workflow-status-manager').on('click', '.delete-status-btn', function() { if (!confirm('آیا از حذف این وضعیت مطمئن هستید؟ وظایف به ستون "To Do" منتقل خواهند شد.')) return; var btn = $(this); var termId = btn.data('term-id'); var listItem = btn.closest('li'); $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_delete_status', security: puzzling_ajax_nonce, term_id: termId }, success: function(response) { if (response.success) { listItem.remove(); } else { showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error'); } } }); });
     
     $('#add-services-from-product').on('click', function() { var button = $(this); var productId = $('#product_id_for_automation').val(); var contractId = $('input[name="contract_id"]').val(); if (!productId) { showPuzzlingAlert(puzzling_lang.info_title, 'لطفاً ابتدا یک محصول را انتخاب کنید.', 'info'); return; } button.text('در حال پردازش...').prop('disabled', true); $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_add_services_from_product', security: puzzlingcrm_ajax_obj.nonce, contract_id: contractId, product_id: productId }, success: function(response) { if (response.success) { showPuzzlingAlert(puzzling_lang.success_title, response.data.message, 'success', true); } else { showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error'); } }, error: function() { showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error'); }, complete: function() { button.text('افزودن خدمات محصول').prop('disabled', false); } }); });
+
+    // --- Canned Response Selector ---
+    $('body').on('change', '#canned_response_selector', function() {
+        var responseId = $(this).val();
+        if (!responseId) {
+            return;
+        }
+        
+        var editor = tinymce.get('comment');
+        if (!editor) {
+            return;
+        }
+
+        editor.setContent('<p><i class="fas fa-spinner fa-spin"></i> در حال بارگذاری...</p>');
+
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'puzzling_get_canned_response',
+                security: puzzlingcrm_ajax_obj.nonce,
+                response_id: responseId
+            },
+            success: function(response) {
+                if (response.success) {
+                    editor.setContent(response.data.content);
+                } else {
+                    editor.setContent('<p style="color:red;">خطا در بارگذاری پاسخ.</p>');
+                }
+            },
+            error: function() {
+                 editor.setContent('<p style="color:red;">خطای سرور.</p>');
+            }
+        });
+    });
 });

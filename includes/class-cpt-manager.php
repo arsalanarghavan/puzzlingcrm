@@ -26,6 +26,22 @@ class PuzzlingCRM_CPT_Manager {
     }
 
     public function register_post_types() {
+        // Canned Response CPT - NEW
+        register_post_type( 'pzl_canned_response', [
+            'labels'        => [
+                'name'          => __( 'پاسخ‌های آماده', 'puzzlingcrm' ),
+                'singular_name' => __( 'پاسخ آماده', 'puzzlingcrm' ),
+                'add_new_item'  => __( 'افزودن پاسخ جدید', 'puzzlingcrm' ),
+                'add_new'       => __( 'افزودن جدید', 'puzzlingcrm' ),
+                'edit_item'     => __( 'ویرایش پاسخ آماده', 'puzzlingcrm' ),
+            ],
+            'public'        => false,
+            'show_ui'       => true,
+            'show_in_menu'  => 'puzzling-crm-info',
+            'supports'      => ['title', 'editor'],
+            'hierarchical'  => false,
+        ]);
+        
         // Consultation CPT - NEW
         register_post_type( 'pzl_consultation', [
             'labels'        => [

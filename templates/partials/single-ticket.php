@@ -77,13 +77,27 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
         </ul>
     </div>
     
-    <?php if ($status_slug !== 'closed'): ?>
     <div class="ticket-reply-form">
         <h3>ارسال پاسخ جدید</h3>
         <form class="pzl-form pzl-ajax-form" data-action="puzzling_ticket_reply" enctype="multipart/form-data">
             <input type="hidden" name="ticket_id" value="<?php echo esc_attr($ticket->ID); ?>">
             <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
-            <textarea name="comment" rows="7" required placeholder="پاسخ خود را اینجا بنویسید..."></textarea>
+
+            <?php if ($is_manager || $is_team_member): 
+                $canned_responses = get_posts(['post_type' => 'pzl_canned_response', 'posts_per_page' => -1]);
+            ?>
+            <div class="form-group">
+                <label for="canned_response_selector">پاسخ‌های آماده:</label>
+                <select id="canned_response_selector">
+                    <option value="">-- انتخاب پاسخ آماده --</option>
+                    <?php foreach($canned_responses as $response): ?>
+                        <option value="<?php echo esc_attr($response->ID); ?>"><?php echo esc_html($response->post_title); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <?php endif; ?>
+            
+            <?php wp_editor('', 'comment', ['textarea_name' => 'comment', 'media_buttons' => false, 'textarea_rows' => 10]); ?>
             
             <div class="form-group">
                 <label for="reply_attachments">پیوست فایل (اختیاری):</label>
@@ -92,6 +106,12 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
             </div>
             
             <?php if ($is_manager || $is_team_member): ?>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="is_internal_note" value="1">
+                    ثبت به عنوان یادداشت داخلی (به مشتری نمایش داده نمی‌شود)
+                </label>
+            </div>
             <div class="pzl-form-row">
                 <div class="form-group-inline half-width">
                     <label for="ticket_status">تغییر وضعیت به:</label>
@@ -149,11 +169,6 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
             <button type="submit" class="pzl-button">ارسال پاسخ</button>
         </form>
     </div>
-    <?php else: ?>
-    <div class="ticket-closed-notice">
-        <p><i class="fas fa-lock"></i> این تیکت بسته شده است و امکان ارسال پاسخ جدید وجود ندارد.</p>
-    </div>
-    <?php endif; ?>
 </div>
 
 <?php
@@ -161,13 +176,23 @@ if (!function_exists('puzzling_ticket_comment_template')) {
     function puzzling_ticket_comment_template($comment, $args, $depth) {
         $user = get_user_by('id', $comment->user_id);
         $is_staff_reply = $user && (user_can($user, 'manage_options') || in_array('team_member', (array)$user->roles));
-        $reply_class = $is_staff_reply ? 'admin-reply' : 'client-reply';
+        $is_internal_note = get_comment_meta($comment->comment_ID, '_is_internal_note', true);
+
+        $reply_class = 'client-reply';
+        if ($is_internal_note) {
+            $reply_class = 'internal-note';
+        } elseif ($is_staff_reply) {
+            $reply_class = 'admin-reply';
+        }
         ?>
         <li <?php comment_class($reply_class); ?> id="comment-<?php comment_ID(); ?>">
             <div class="comment-author">
                 <?php echo get_avatar($comment, 48); ?>
                 <strong class="author-name"><?php echo get_comment_author(); ?></strong>
                 <span class="comment-date"><?php printf('%1$s در %2$s', jdate('Y/m/d', strtotime(get_comment_date())), get_comment_time()); ?></span>
+                <?php if ($is_internal_note): ?>
+                    <span class="internal-note-badge"><i class="fas fa-user-shield"></i> یادداشت داخلی</span>
+                <?php endif; ?>
             </div>
             <div class="comment-content">
                 <?php comment_text(); ?>
@@ -190,3 +215,4 @@ if (!function_exists('puzzling_ticket_comment_template')) {
 }
 
 wp_reset_postdata();
+?>
