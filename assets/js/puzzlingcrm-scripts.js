@@ -7,7 +7,7 @@ jQuery(document).ready(function($) {
     var calendar; // Make calendar object globally accessible within this scope
 
     /**
-     * SweetAlert Integration for Notifications - V2 (Corrected Redirect Logic)
+     * SweetAlert Integration for Notifications
      */
     function showPuzzlingAlert(title, text, icon, reloadPage = false) {
         if (typeof Swal === 'undefined') {
@@ -17,7 +17,6 @@ jQuery(document).ready(function($) {
             }
             return;
         }
-
         Swal.fire({
             title: title,
             text: text,
@@ -36,6 +35,35 @@ jQuery(document).ready(function($) {
             }
         });
     }
+    
+    /**
+     * **NEW & ROBUST**: Initializes Kama Date Picker on all relevant fields.
+     * This function ensures each datepicker has a unique ID and is only initialized once.
+     */
+    function initKamaDatepickers() {
+        $('.pzl-jalali-date-picker:not(.kama-init-done)').each(function(index) {
+            var $this = $(this);
+            var id = $this.attr('id');
+            // If element doesn't have an ID, generate a unique one
+            if (!id) {
+                id = 'pzl-datepicker-' + Date.now() + '-' + index;
+                $this.attr('id', id);
+            }
+            
+            // Initialize the datepicker using its unique ID
+            kamadatepicker(id, {
+                buttonsColor: "red",
+                forceFarsiDigits: true,
+                gotoToday: true,
+            });
+            
+            // Mark as initialized to prevent re-initialization
+            $this.addClass('kama-init-done');
+        });
+    }
+
+    // Initial call for datepickers on page load
+    initKamaDatepickers();
 
     /**
      * Generic AJAX Form Submission Handler
@@ -44,10 +72,8 @@ jQuery(document).ready(function($) {
         var submitButton = form.find('button[type="submit"]');
         var originalButtonHtml = submitButton.html();
         var formData = new FormData(form[0]);
-        
         var action = form.data('action') || form.find('input[name="action"]').val();
         formData.append('action', action);
-        
         var nonce = form.find('input[name="security"]').val();
         formData.append('security', nonce);
 
@@ -57,7 +83,6 @@ jQuery(document).ready(function($) {
                 formData.set($(this).attr('name'), tinymce.get(editorId).getContent());
             }
         });
-
         form.find('select:disabled').each(function() {
             formData.append($(this).attr('name'), $(this).val());
         });
@@ -174,7 +199,8 @@ jQuery(document).ready(function($) {
             </div>
         `;
         $('#payment-rows-container').append(newRow);
-        kamadatepicker('.pzl-jalali-date-picker');
+        // **FIXED**: Call the robust initializer function
+        initKamaDatepickers();
     }
     $('#add-payment-row').on('click', function() { addInstallmentRow(); });
     $('#payment-rows-container').on('click', '.remove-payment-row', function() { $(this).closest('.payment-row').remove(); });
@@ -222,9 +248,7 @@ jQuery(document).ready(function($) {
         $('#pzl-task-modal-body').html('');
     }
 
-    // --- CORRECTED CODE ---
     $('body').on('click', '.pzl-task-card, .open-task-modal', function(e) {
-        // اگر روی لینکی کلیک شد که برای باز کردن مودال نیست، آن را نادیده بگیر
         if ( !$(e.target).hasClass('open-task-modal') && ($(e.target).is('a, button, select') || $(e.target).closest('a, button, select').length) ) {
             return;
         }
@@ -426,11 +450,4 @@ jQuery(document).ready(function($) {
     
     // --- Automation from Product in Contract Edit Page ---
     $('#add-services-from-product').on('click', function() { var button = $(this); var productId = $('#product_id_for_automation').val(); var contractId = $('input[name="contract_id"]').val(); if (!productId) { showPuzzlingAlert(puzzling_lang.info_title, 'لطفاً ابتدا یک محصول را انتخاب کنید.', 'info'); return; } button.text('در حال پردازش...').prop('disabled', true); $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_add_services_from_product', security: puzzlingcrm_ajax_obj.nonce, contract_id: contractId, product_id: productId }, success: function(response) { if (response.success) { showPuzzlingAlert(puzzling_lang.success_title, response.data.message, 'success', true); } else { showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error'); } }, error: function() { showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error'); }, complete: function() { button.text('افزودن خدمات محصول').prop('disabled', false); } }); });
-
-    // --- **FIXED**: Initialize Jalali Datepickers ---
-    kamadatepicker('.pzl-jalali-date-picker', {
-        buttonsColor: "red",
-        forceFarsiDigits: true,
-        gotoToday: true,
-    });
 });
