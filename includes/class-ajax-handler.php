@@ -91,6 +91,7 @@ class PuzzlingCRM_Ajax_Handler {
         $date = sanitize_text_field($_POST['date']);
         $time = sanitize_text_field($_POST['time']);
         $status_slug = sanitize_key($_POST['status']);
+        $notes = isset($_POST['notes']) ? wp_kses_post($_POST['notes']) : ''; // Get notes content
 
         if (empty($name) || empty($phone)) {
             wp_send_json_error(['message' => 'نام و شماره تماس الزامی است.']);
@@ -101,6 +102,7 @@ class PuzzlingCRM_Ajax_Handler {
         
         $post_data = [
             'post_title' => $post_title,
+            'post_content' => $notes, // Save notes to post_content
             'post_status' => 'publish',
             'post_type' => 'pzl_consultation',
         ];
@@ -156,19 +158,18 @@ class PuzzlingCRM_Ajax_Handler {
             $customer_id = $user->ID;
         } else {
             // Create a new user
-            $password = wp_generate_password();
-            $customer_id = wp_create_user($email, $password, $email);
-            if (is_wp_error($customer_id)) {
-                // Fallback if email is invalid, use phone to create a username
-                $username = 'user_' . $phone;
-                $customer_id = wp_create_user($username, $password, $email);
+            $username = !empty($email) ? sanitize_user(substr($email, 0, strpos($email, '@')), true) : sanitize_user('user_' . $phone, true);
+            if (empty($username) || username_exists($username)) {
+                $username = 'user_' . time();
             }
-            if (!is_wp_error($customer_id)) {
-                wp_update_user(['ID' => $customer_id, 'display_name' => $name, 'role' => 'customer']);
-                update_user_meta($customer_id, 'pzl_mobile_phone', $phone);
-            } else {
+            $password = wp_generate_password();
+            $customer_id = wp_create_user($username, $password, $email);
+
+            if (is_wp_error($customer_id)) {
                  wp_send_json_error(['message' => 'خطا در ایجاد کاربر جدید: ' . $customer_id->get_error_message()]);
             }
+            wp_update_user(['ID' => $customer_id, 'display_name' => $name, 'first_name' => $name, 'role' => 'customer']);
+            update_user_meta($customer_id, 'pzl_mobile_phone', $phone);
         }
 
         // Create Contract
@@ -205,8 +206,6 @@ class PuzzlingCRM_Ajax_Handler {
 
         wp_send_json_success(['message' => 'مشاوره با موفقیت به پروژه تبدیل شد. در حال انتقال به صفحه قرارداد...', 'redirect_url' => $edit_contract_url]);
     }
-    
-    // ... (The rest of the class remains the same)
 
     /**
      * AJAX handler for updating a task's assignee from the modal.
@@ -221,12 +220,13 @@ class PuzzlingCRM_Ajax_Handler {
         $assignee_id = intval($_POST['assignee_id']);
         $new_assignee = get_userdata($assignee_id);
 
-        if (!$new_assignee) {
+        if (!$new_assignee && $assignee_id > 0) {
             wp_send_json_error(['message' => 'کاربر انتخاب شده معتبر نیست.']);
         }
 
         update_post_meta($task_id, '_assigned_to', $assignee_id);
-        $this->_log_task_activity($task_id, sprintf('مسئول وظیفه را به "%s" تغییر داد.', $new_assignee->display_name));
+        $log_message = ($assignee_id > 0) ? sprintf('مسئول وظیفه را به "%s" تغییر داد.', $new_assignee->display_name) : 'مسئول وظیفه را حذف کرد.';
+        $this->_log_task_activity($task_id, $log_message);
         
         wp_send_json_success(['message' => 'مسئول وظیفه با موفقیت به‌روزرسانی شد.']);
     }
@@ -441,9 +441,12 @@ class PuzzlingCRM_Ajax_Handler {
         } else {
             $the_user_id = is_int($result) ? $result : $user_id;
             
+            // Save custom meta fields (looping through them)
+            // *** THE FIX IS HERE ***
             foreach ($_POST as $key => $value) {
                 if (strpos($key, 'pzl_') === 0) {
                     $sanitized_value = sanitize_text_field($value);
+                    // Check if it's a date field and convert it from Jalali to Gregorian before saving
                     if ($key === 'pzl_birth_date' || $key === 'pzl_hire_date') {
                         $sanitized_value = puzzling_jalali_to_gregorian($sanitized_value);
                     }
@@ -451,9 +454,12 @@ class PuzzlingCRM_Ajax_Handler {
                 }
             }
             
+            // **CORRECTED LOGIC for saving Department and Job Title**
             $department_id = isset($_POST['department']) ? intval($_POST['department']) : 0;
             $job_title_id = isset($_POST['job_title']) ? intval($_POST['job_title']) : 0;
 
+            // The job title (child term) takes precedence.
+            // If no job title is selected, the department (parent term) is used.
             $term_to_set = 0;
             if ($job_title_id > 0) {
                 $term_to_set = $job_title_id;
@@ -461,8 +467,10 @@ class PuzzlingCRM_Ajax_Handler {
                 $term_to_set = $department_id;
             }
 
+            // Set the determined term for the user. If both are 0, it will clear the terms.
             wp_set_object_terms($the_user_id, $term_to_set, 'organizational_position', false);
             
+            // Handle profile picture upload
             if (!empty($_FILES['pzl_profile_picture']['name'])) {
                 $attachment_id = media_handle_upload('pzl_profile_picture', $the_user_id);
                 if (!is_wp_error($attachment_id)) {
@@ -522,10 +530,13 @@ class PuzzlingCRM_Ajax_Handler {
 
         $the_project_id = is_int($result) ? $result : $project_id;
         
+        // Link to contract
         update_post_meta($the_project_id, '_contract_id', $contract_id);
         
+        // Set status
         wp_set_object_terms($the_project_id, $project_status_id, 'project_status');
         
+        // Handle logo
         if (isset($_FILES['project_logo']) && $_FILES['project_logo']['error'] == 0) {
             $attachment_id = media_handle_upload('project_logo', $the_project_id);
             if (!is_wp_error($attachment_id)) {
@@ -587,6 +598,7 @@ class PuzzlingCRM_Ajax_Handler {
             '_project_end_date' => $end_date_gregorian,
         ];
     
+        // Installments
         $payment_amounts = isset($_POST['payment_amount']) ? (array) $_POST['payment_amount'] : [];
         $payment_due_dates = isset($_POST['payment_due_date']) ? (array) $_POST['payment_due_date'] : [];
         $payment_statuses = isset($_POST['payment_status']) ? (array) $_POST['payment_status'] : [];
@@ -645,6 +657,7 @@ class PuzzlingCRM_Ajax_Handler {
              wp_send_json_error(['message' => 'قرارداد معتبر نیست.']);
         }
 
+        // Create the new project
         $project_id = wp_insert_post([
             'post_title' => $project_title,
             'post_author' => $contract->post_author,
@@ -656,8 +669,10 @@ class PuzzlingCRM_Ajax_Handler {
             wp_send_json_error(['message' => 'خطا در ایجاد پروژه جدید.']);
         }
 
+        // Link project to the contract
         update_post_meta($project_id, '_contract_id', $contract_id);
         
+        // Set a default status
         $active_status = get_term_by('slug', 'active', 'project_status');
         if ($active_status) {
             wp_set_object_terms($project_id, $active_status->term_id, 'project_status');
@@ -799,6 +814,7 @@ class PuzzlingCRM_Ajax_Handler {
 			wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
 		}
 	
+		// --- Get all settings ---
 		$settings = PuzzlingCRM_Settings_Handler::get_all_settings();
 		$notification_prefs = $settings['notifications']['new_task'] ?? [];
 	
@@ -812,6 +828,7 @@ class PuzzlingCRM_Ajax_Handler {
 		$task_labels = isset($_POST['task_labels']) ? sanitize_text_field($_POST['task_labels']) : '';
 		$show_to_customer = isset($_POST['show_to_customer']) ? 1 : 0;
 	
+		// Assignment logic
 		$assigned_to_user = isset($_POST['assigned_to']) ? intval($_POST['assigned_to']) : 0;
 		$assigned_to_role = isset($_POST['assigned_role']) ? intval($_POST['assigned_role']) : 0;
 	
@@ -835,11 +852,13 @@ class PuzzlingCRM_Ajax_Handler {
 			wp_send_json_error(['message' => 'خطا در ایجاد تسک.']);
 		}
 	
+		// Save metadata
 		update_post_meta($task_id, '_project_id', $project_id);
 		update_post_meta($task_id, '_show_to_customer', $show_to_customer);
 		if (!empty($due_date)) update_post_meta($task_id, '_due_date', $due_date);
 		if (!empty($story_points)) update_post_meta($task_id, '_story_points', $story_points);
 	
+		// Set taxonomies
 		wp_set_post_terms($task_id, $task_category_id, 'task_category');
         wp_set_post_terms($task_id, puzzling_get_default_task_status_slug(), 'task_status');
 		if (!empty($task_labels)) {
@@ -847,6 +866,7 @@ class PuzzlingCRM_Ajax_Handler {
 			wp_set_post_terms($task_id, $labels_array, 'task_label');
 		}
 	
+		// Handle user/role assignment
 		$assigned_user_ids = [];
 		if ($assigned_to_user > 0) {
 			update_post_meta($task_id, '_assigned_to', $assigned_to_user);
@@ -863,6 +883,7 @@ class PuzzlingCRM_Ajax_Handler {
 	
 		$this->_log_task_activity($task_id, 'وظیفه را ایجاد کرد.');
 	
+		// File attachments
 		if (!empty($_FILES['task_attachments'])) {
             $attachment_ids = [];
             $files = $_FILES['task_attachments'];
@@ -887,6 +908,7 @@ class PuzzlingCRM_Ajax_Handler {
             }
 		}
 	
+		// --- Send Notifications based on settings ---
 		$project_title = get_the_title($project_id);
 		$notification_message_plain = "تسک جدید '{$title}' در پروژه '{$project_title}' به شما تخصیص داده شد.";
 		$notification_message_html = "تسک جدید <b>'{$title}'</b> در پروژه <b>'{$project_title}'</b> به شما تخصیص داده شد.";
@@ -895,12 +917,15 @@ class PuzzlingCRM_Ajax_Handler {
 			$user = get_userdata($user_id_to_notify);
 			if (!$user) continue;
 	
+			// 1. Internal Notification (Always)
 			PuzzlingCRM_Logger::add('تسک جدید به شما محول شد', ['content' => $notification_message_plain, 'type' => 'notification', 'user_id' => $user_id_to_notify, 'object_id' => $task_id]);
 	
+			// 2. Email Notification
 			if (!empty($notification_prefs['email'])) {
 				$this->send_task_assignment_email($user_id_to_notify, $task_id);
 			}
 	
+			// 3. SMS Notification
 			if (!empty($notification_prefs['sms'])) {
 				$sms_handler = PuzzlingCRM_Cron_Handler::get_sms_handler($settings);
 				$phone = get_user_meta($user_id_to_notify, 'pzl_mobile_phone', true);
@@ -909,6 +934,7 @@ class PuzzlingCRM_Ajax_Handler {
 				}
 			}
 	
+			// 4. Telegram Notification
 			if (!empty($notification_prefs['telegram'])) {
 				$bot_token = $settings['telegram_bot_token'] ?? '';
 				$chat_id = $settings['telegram_chat_id'] ?? '';
@@ -951,6 +977,7 @@ class PuzzlingCRM_Ajax_Handler {
             wp_set_post_terms($task_id, $medium_priority->term_id, 'task_priority');
         }
 
+		// Set default category to "Project-Based"
 		$default_cat = get_term_by('slug', 'project-based', 'task_category');
 		if ($default_cat) {
 			wp_set_object_terms($task_id, $default_cat->term_id, 'task_category');

@@ -1,6 +1,6 @@
 <?php
 /**
- * Template for System Manager to Manage Consultations
+ * Template for System Manager to Manage Consultations - VISUALLY REVAMPED
  * @package PuzzlingCRM
  */
 if (!defined('ABSPATH')) exit;
@@ -22,22 +22,22 @@ $item_to_edit = ($consultation_id > 0) ? get_post($consultation_id) : null;
                 <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
 
                 <div class="pzl-form-row">
-                    <div class="form-group">
-                        <label for="name">نام درخواست کننده</label>
+                    <div class="form-group half-width">
+                        <label for="name">نام درخواست کننده (ضروری)</label>
                         <input type="text" id="name" name="name" value="<?php echo $item_to_edit ? esc_attr($item_to_edit->post_title) : ''; ?>" required>
                     </div>
-                    <div class="form-group">
-                        <label for="phone">شماره تماس</label>
+                    <div class="form-group half-width">
+                        <label for="phone">شماره تماس (ضروری)</label>
                         <input type="tel" id="phone" name="phone" value="<?php echo $item_to_edit ? esc_attr(get_post_meta($consultation_id, '_consultation_phone', true)) : ''; ?>" required class="ltr-input">
-                    </div>
-                     <div class="form-group">
-                        <label for="email">ایمیل</label>
-                        <input type="email" id="email" name="email" value="<?php echo $item_to_edit ? esc_attr(get_post_meta($consultation_id, '_consultation_email', true)) : ''; ?>" class="ltr-input">
                     </div>
                 </div>
 
                 <div class="pzl-form-row">
-                    <div class="form-group">
+                    <div class="form-group half-width">
+                        <label for="email">ایمیل</label>
+                        <input type="email" id="email" name="email" value="<?php echo $item_to_edit ? esc_attr(get_post_meta($consultation_id, '_consultation_email', true)) : ''; ?>" class="ltr-input">
+                    </div>
+                    <div class="form-group half-width">
                         <label for="type">نوع مشاوره</label>
                         <select id="type" name="type" required>
                             <?php 
@@ -47,17 +47,20 @@ $item_to_edit = ($consultation_id > 0) ? get_post($consultation_id) : null;
                             <option value="in-person" <?php selected($current_type, 'in-person'); ?>>حضوری</option>
                         </select>
                     </div>
-                    <div class="form-group">
+                </div>
+
+                <div class="pzl-form-row">
+                    <div class="form-group half-width">
                         <label for="date">تاریخ قرار</label>
-                        <input type="text" id="date" name="date" class="pzl-jalali-date-picker" value="<?php echo $item_to_edit ? esc_attr(puzzling_gregorian_to_jalali(date('Y-m-d', strtotime(get_post_meta($consultation_id, '_consultation_datetime', true))))) : ''; ?>">
+                        <input type="text" id="date" name="date" class="pzl-jalali-date-picker" value="<?php echo $item_to_edit && get_post_meta($consultation_id, '_consultation_datetime', true) ? esc_attr(puzzling_gregorian_to_jalali(date('Y-m-d', strtotime(get_post_meta($consultation_id, '_consultation_datetime', true))))) : ''; ?>">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group half-width">
                         <label for="time">ساعت قرار</label>
-                        <input type="time" id="time" name="time" value="<?php echo $item_to_edit ? esc_attr(date('H:i', strtotime(get_post_meta($consultation_id, '_consultation_datetime', true)))) : ''; ?>">
+                        <input type="time" id="time" name="time" value="<?php echo $item_to_edit && get_post_meta($consultation_id, '_consultation_datetime', true) ? esc_attr(date('H:i', strtotime(get_post_meta($consultation_id, '_consultation_datetime', true)))) : ''; ?>">
                     </div>
                 </div>
 
-                 <div class="form-group">
+                 <div class="form-group full-width">
                     <label for="status">نتیجه مشاوره</label>
                      <select id="status" name="status" required>
                         <?php
@@ -69,6 +72,11 @@ $item_to_edit = ($consultation_id > 0) ? get_post($consultation_id) : null;
                         }
                         ?>
                     </select>
+                </div>
+                
+                 <div class="form-group full-width">
+                    <label for="notes">یادداشت‌ها و جزئیات جلسه</label>
+                    <textarea id="notes" name="notes" rows="4"><?php echo $item_to_edit ? esc_textarea($item_to_edit->post_content) : ''; ?></textarea>
                 </div>
                 
                 <div class="form-submit">
