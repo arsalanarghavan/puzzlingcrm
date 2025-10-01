@@ -37,32 +37,38 @@ jQuery(document).ready(function($) {
     }
     
     /**
-     * **NEW & ROBUST**: Initializes Kama Date Picker on all relevant fields.
-     * This function ensures each datepicker has a unique ID and is only initialized once.
+     * **FINAL FIX**: Initializes Kama Date Picker on all relevant fields,
+     * including dynamically added ones. This function can be called anytime
+     * new content is added to the page.
      */
     function initKamaDatepickers() {
+        // Find all datepicker fields that have NOT been initialized yet.
         $('.pzl-jalali-date-picker:not(.kama-init-done)').each(function(index) {
             var $this = $(this);
             var id = $this.attr('id');
-            // If element doesn't have an ID, generate a unique one
+            
+            // If the element doesn't have an ID, generate a unique one.
+            // This is crucial for the datepicker library to work on multiple elements.
             if (!id) {
                 id = 'pzl-datepicker-' + Date.now() + '-' + index;
                 $this.attr('id', id);
             }
             
-            // Initialize the datepicker using its unique ID
-            kamadatepicker(id, {
-                buttonsColor: "red",
-                forceFarsiDigits: true,
-                gotoToday: true,
-            });
+            // Initialize the datepicker using its unique ID.
+            if (typeof kamadatepicker !== 'undefined') {
+                kamadatepicker(id, {
+                    buttonsColor: "red",
+                    forceFarsiDigits: true,
+                    gotoToday: true,
+                });
+            }
             
-            // Mark as initialized to prevent re-initialization
+            // Mark the element as initialized to prevent re-initialization.
             $this.addClass('kama-init-done');
         });
     }
 
-    // Initial call for datepickers on page load
+    // --- Initial call for datepickers on page load ---
     initKamaDatepickers();
 
     /**
@@ -199,12 +205,12 @@ jQuery(document).ready(function($) {
             </div>
         `;
         $('#payment-rows-container').append(newRow);
-        // **FIXED**: Call the robust initializer function
+        // **FIXED**: Call the robust initializer function after adding a new row
         initKamaDatepickers();
     }
     $('#add-payment-row').on('click', function() { addInstallmentRow(); });
     $('#payment-rows-container').on('click', '.remove-payment-row', function() { $(this).closest('.payment-row').remove(); });
-
+    
     // --- Kanban Board: Drag and Drop ---
     if ($('#pzl-task-board, .pzl-swimlane-board').length) {
         $('.pzl-task-list').sortable({
@@ -267,7 +273,6 @@ jQuery(document).ready(function($) {
         openTaskModal(openTaskIdFromUrl);
     }
     
-    // --- Task Modal Dynamic Actions (Status/Assignee Change) ---
     $('body').on('change', '#pzl-task-status-changer, #pzl-task-assignee-changer', function() {
         var select = $(this);
         var taskId = select.data('task-id');
@@ -300,7 +305,6 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // --- Calendar and Gantt Initialization (Localized & Filterable) ---
     var calendarEl = document.getElementById('pzl-task-calendar');
     if (calendarEl && typeof FullCalendar !== 'undefined') {
         calendar = new FullCalendar.Calendar(calendarEl, {
@@ -363,13 +367,11 @@ jQuery(document).ready(function($) {
         });
     }
     
-    // --- Select All Checkbox in Task List ---
     $('#select-all-tasks').on('change', function() {
         var isChecked = $(this).is(':checked');
         $('.task-checkbox').prop('checked', isChecked).trigger('change');
     });
 
-    // Show/hide bulk edit container
     $('body').on('change', '.task-checkbox', function() {
         if ($('.task-checkbox:checked').length > 0) {
             $('#bulk-edit-container').slideDown();
@@ -378,14 +380,12 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Cancel Bulk Edit
     $('#cancel-bulk-edit').on('click', function() {
         $('#bulk-edit-container').slideUp();
         $('.task-checkbox').prop('checked', false);
         $('#select-all-tasks').prop('checked', false);
     });
 
-    // Apply Bulk Edit
     $('#apply-bulk-edit').on('click', function() {
         var task_ids = [];
         $('.task-checkbox:checked').each(function() {
@@ -412,30 +412,25 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // --- Quick Add Task Controls ---
     $('.pzl-task-board-container').on('click', '.add-card-btn', function() { $(this).hide(); $(this).siblings('.add-card-form').slideDown(200).find('textarea').focus(); });
     $('.pzl-task-board-container').on('click', '.cancel-add-card', function() { var form = $(this).closest('.add-card-form'); form.slideUp(200); form.siblings('.add-card-btn').show(); form.find('textarea').val(''); });
     function submitQuickAddTask(form) { var textarea = form.find('textarea'); var title = textarea.val().trim(); if (!title) { textarea.focus(); return; } var column = form.closest('.pzl-task-column'); var statusSlug = column.data('status-slug'); var taskList = column.find('.pzl-task-list'); var projectId = new URLSearchParams(window.location.search).get('project_filter') || 0; var staffId = new URLSearchParams(window.location.search).get('staff_filter') || 0; if (!projectId || !staffId) { showPuzzlingAlert(puzzling_lang.info_title, 'برای استفاده از افزودن سریع، لطفاً ابتدا برد را بر اساس پروژه و کارمند فیلتر کنید.', 'info'); return; } $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_quick_add_task', security: puzzling_ajax_nonce, title: title, status_slug: statusSlug, project_id: projectId, assigned_to: staffId }, beforeSend: function() { form.find('.submit-add-card').prop('disabled', true).text('...'); }, success: function(response) { if (response.success) { taskList.append(response.data.task_html); textarea.val('').focus(); } else { showPuzzlingAlert(puzzling_lang.error_title, response.data.message || 'خطای ناشناخته', 'error'); } }, error: function() { showPuzzlingAlert(puzzling_lang.error_title, 'یک خطای ارتباطی رخ داد.', 'error'); }, complete: function() { form.find('.submit-add-card').prop('disabled', false).text('افزودن'); } }); }
     $('.pzl-task-board-container').on('click', '.submit-add-card', function() { submitQuickAddTask($(this).closest('.add-card-form')); });
     $('.pzl-task-board-container').on('keydown', '.add-card-form textarea', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitQuickAddTask($(this).closest('.add-card-form')); } });
     
-    // --- Modal Tabs & Content ---
     $('body').on('click', '.pzl-modal-tab-link', function(e){ e.preventDefault(); var tabId = $(this).data('tab'); $('.pzl-modal-tab-link').removeClass('active'); $(this).addClass('active'); $('.pzl-modal-tab-content').hide(); $('#' + tabId).show(); });
     $('body').on('click', '#pzl-task-description-viewer', function() { $(this).hide(); $('#pzl-task-description-editor').show(); });
     $('body').on('click', '#pzl-cancel-edit-content', function() { $('#pzl-task-description-editor').hide(); $('#pzl-task-description-viewer').show(); });
     $('body').on('click', '#pzl-save-task-content', function() { var newContent = $('#pzl-task-content-input').val(); var button = $(this); button.text('در حال ذخیره...').prop('disabled', true); $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_save_task_content', security: puzzling_ajax_nonce, task_id: currentTaskId, content: newContent }, success: function(response) { if (response.success) { var viewer = $('#pzl-task-description-viewer'); viewer.html(response.data.new_content_html || '<p class="pzl-no-content">توضیحاتی ثبت نشده.</p>'); $('#pzl-task-description-editor').hide(); viewer.show(); } else { showPuzzlingAlert(puzzling_lang.error_title, 'خطا در ذخیره‌سازی.', 'error'); } }, error: function() { showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error'); }, complete: function() { button.text('ذخیره').prop('disabled', false); } }); });
     $('body').on('click', '#pzl-submit-comment', function() { var commentText = $('#pzl-new-comment-text').val(); if (!commentText.trim()) return; var button = $(this); button.text('در حال ارسال...').prop('disabled', true); $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_add_task_comment', security: puzzling_ajax_nonce, task_id: currentTaskId, comment_text: commentText }, success: function(response) { if (response.success) { $('.pzl-comment-list').append(response.data.comment_html); $('#pzl-new-comment-text').val(''); } else { showPuzzlingAlert(puzzling_lang.error_title, 'خطا در ثبت نظر.', 'error'); } }, error: function() { showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error'); }, complete: function() { button.text('ارسال نظر').prop('disabled', false); } }); });
     
-    // --- Checklist, Time Log, etc. ---
     $('body').on('submit', '#pzl-add-checklist-item-form', function(e){ e.preventDefault(); var input = $(this).find('input[type="text"]'); var text = input.val().trim(); if(!text) return; $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_manage_checklist', security: puzzling_ajax_nonce, task_id: currentTaskId, sub_action: 'add', text: text }, success: function(response){ if(response.success){ openTaskModal(currentTaskId); } } }); });
     $('body').on('change', '.pzl-checklist-item input[type="checkbox"]', function(){ var itemId = $(this).closest('.pzl-checklist-item').data('item-id'); $.post(puzzlingcrm_ajax_obj.ajax_url, { action: 'puzzling_manage_checklist', security: puzzling_ajax_nonce, task_id: currentTaskId, sub_action: 'toggle', item_id: itemId }); });
     $('body').on('click', '.pzl-delete-checklist-item', function(){ if(!confirm('آیا از حذف این آیتم مطمئن هستید؟')) return; var item = $(this).closest('.pzl-checklist-item'); var itemId = item.data('item-id'); item.css('opacity', '0.5'); $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_manage_checklist', security: puzzling_ajax_nonce, task_id: currentTaskId, sub_action: 'delete', item_id: itemId }, success: function(response){ if(response.success) item.remove(); else item.css('opacity', '1'); } }); });
     $('body').on('submit', '#pzl-log-time-form', function(e){ e.preventDefault(); var form = $(this); var hours = form.find('input[name="hours"]').val(); var description = form.find('input[name="description"]').val(); $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_log_time', security: puzzling_ajax_nonce, task_id: currentTaskId, hours: hours, description: description }, success: function(response){ if(response.success){ openTaskModal(currentTaskId); } else { showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error'); } } }); });
     
-    // --- Project Deletion ---
     $('.pzl-projects-manager-wrapper').on('click', '.delete-project', function(e) { e.preventDefault(); var link = $(this); var projectId = link.data('project-id'); var nonce = link.data('nonce'); Swal.fire({ title: puzzling_lang.confirm_title, text: puzzling_lang.confirm_delete_project, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: puzzling_lang.confirm_button, cancelButtonText: puzzling_lang.cancel_button }).then((result) => { if (result.isConfirmed) { var projectCard = link.closest('.pzl-project-card-item'); $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_delete_project', security: puzzling_ajax_nonce, _wpnonce: nonce, project_id: projectId }, beforeSend: function() { projectCard.css('opacity', '0.5'); }, success: function(response) { if (response.success) { projectCard.slideUp(function() { $(this).remove(); }); showPuzzlingAlert(puzzling_lang.success_title, response.data.message, 'success'); } else { showPuzzlingAlert(puzzling_lang.error_title, response.data.message || 'خطای ناشناخته', 'error'); projectCard.css('opacity', '1'); } }, error: function() { showPuzzlingAlert(puzzling_lang.error_title, 'یک خطای ناشناخته رخ داد.', 'error'); projectCard.css('opacity', '1'); } }); } }); });
     
-    // --- Notification Center ---
     function fetchNotifications() { $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_get_notifications', security: puzzling_ajax_nonce }, success: function(response) { if (response.success) { $('.pzl-notification-panel ul').html(response.data.html); var count = parseInt(response.data.count); if (count > 0) { $('.pzl-notification-count').text(count).show(); } else { $('.pzl-notification-count').hide(); } } } }); }
     $('.pzl-notification-bell').on('click', function(e) { e.stopPropagation(); $('.pzl-notification-panel').toggle(); });
     $(document).on('click', function() { $('.pzl-notification-panel').hide(); });
@@ -443,11 +438,10 @@ jQuery(document).ready(function($) {
     $('.pzl-notification-panel').on('click', 'li.pzl-unread', function() { var item = $(this); var id = item.data('id'); item.removeClass('pzl-unread').addClass('pzl-read'); var countEl = $('.pzl-notification-count'); var currentCount = parseInt(countEl.text()) - 1; if (currentCount > 0) { countEl.text(currentCount); } else { countEl.hide(); } $.post(puzzlingcrm_ajax_obj.ajax_url, { action: 'puzzling_mark_notification_read', security: puzzling_ajax_nonce, id: id }); });
     fetchNotifications(); setInterval(fetchNotifications, 120000);
 
-    // --- Workflow Status Management ---
     if ($('#status-sortable-list').length) { $('#status-sortable-list').sortable({ axis: 'y', placeholder: 'ui-state-highlight', stop: function(event, ui) { var order = $(this).sortable('toArray', { attribute: 'data-term-id' }); $.post(puzzlingcrm_ajax_obj.ajax_url, { action: 'puzzling_save_status_order', security: puzzling_ajax_nonce, order: order }); } }).disableSelection(); }
     $('#add-new-status-form').on('submit', function(e) { e.preventDefault(); var form = $(this); var newName = $('#new-status-name').val().trim(); if (!newName) return; $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_add_new_status', security: puzzling_ajax_nonce, name: newName }, success: function(response) { if (response.success) { var newStatusHTML = '<li data-term-id="' + response.data.term_id + '"><i class="fas fa-grip-vertical"></i> ' + response.data.name + ' <span class="delete-status-btn" data-term-id="' + response.data.term_id + '">&times;</span></li>'; $('#status-sortable-list').append(newStatusHTML); form.trigger('reset'); } else { showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error'); } } }); });
     $('#workflow-status-manager').on('click', '.delete-status-btn', function() { if (!confirm('آیا از حذف این وضعیت مطمئن هستید؟ وظایف به ستون "To Do" منتقل خواهند شد.')) return; var btn = $(this); var termId = btn.data('term-id'); var listItem = btn.closest('li'); $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_delete_status', security: puzzling_ajax_nonce, term_id: termId }, success: function(response) { if (response.success) { listItem.remove(); } else { showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error'); } } }); });
     
-    // --- Automation from Product in Contract Edit Page ---
     $('#add-services-from-product').on('click', function() { var button = $(this); var productId = $('#product_id_for_automation').val(); var contractId = $('input[name="contract_id"]').val(); if (!productId) { showPuzzlingAlert(puzzling_lang.info_title, 'لطفاً ابتدا یک محصول را انتخاب کنید.', 'info'); return; } button.text('در حال پردازش...').prop('disabled', true); $.ajax({ url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST', data: { action: 'puzzling_add_services_from_product', security: puzzlingcrm_ajax_obj.nonce, contract_id: contractId, product_id: productId }, success: function(response) { if (response.success) { showPuzzlingAlert(puzzling_lang.success_title, response.data.message, 'success', true); } else { showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error'); } }, error: function() { showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error'); }, complete: function() { button.text('افزودن خدمات محصول').prop('disabled', false); } }); });
+
 });
