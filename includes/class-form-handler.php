@@ -17,7 +17,6 @@ class PuzzlingCRM_Form_Handler {
      */
     public function __construct() {
         add_action( 'init', [ $this, 'router' ] );
-        add_action( 'admin_post_puzzling_ticket_reply', [ $this, 'handle_ticket_reply_form' ] );
     }
     
     /**
@@ -50,12 +49,7 @@ class PuzzlingCRM_Form_Handler {
         }
 
         // --- Handle Legacy POST Actions (if any remain) ---
-        if (!isset($_POST['puzzling_action']) && !isset($_POST['ticket_title'])) return;
-        
-        if (isset($_POST['ticket_title'])) { // A simple way to detect the new ticket form
-            $this->handle_new_ticket_form();
-            return;
-        }
+        if (!isset($_POST['puzzling_action'])) return;
         
         $action = sanitize_key($_POST['puzzling_action']);
 
@@ -142,74 +136,6 @@ class PuzzlingCRM_Form_Handler {
         } else {
              wp_die('خطا در ایجاد پروژه.');
         }
-    }
-    
-    public function handle_new_ticket_form() {
-        if ( ! is_user_logged_in() || ! wp_verify_nonce( $_POST['security'], 'puzzling_new_ticket_nonce' ) ) {
-             wp_die(__('بررسی امنیتی ناموفق بود.', 'puzzlingcrm'));
-        }
-
-        $title = sanitize_text_field($_POST['ticket_title']);
-        $content = wp_kses_post($_POST['ticket_content']);
-        $department_id = intval($_POST['department']);
-        
-        if (empty($title) || empty($content) || empty($department_id)) {
-            wp_die(__('عنوان، دپارتمان و متن تیکت الزامی هستند.', 'puzzlingcrm'));
-        }
-
-        $ticket_id = wp_insert_post([
-            'post_title' => $title,
-            'post_content' => $content,
-            'post_type' => 'ticket',
-            'post_status' => 'publish',
-            'post_author' => get_current_user_id(),
-        ]);
-        
-        if (!is_wp_error($ticket_id)) {
-            wp_set_object_terms($ticket_id, 'open', 'ticket_status');
-            wp_set_object_terms($ticket_id, $department_id, 'organizational_position');
-            $this->notify_all_admins('تیکت جدید ثبت شد', ['content' => sprintf("تیکت جدیدی با موضوع '%s' توسط مشتری ثبت شد.", $title), 'type' => 'notification', 'object_id' => $ticket_id]);
-        }
-        
-        wp_safe_redirect(add_query_arg('puzzling_notice', 'ticket_created_success', wp_get_referer()));
-        exit;
-    }
-    
-    public function handle_ticket_reply_form() {
-        if ( ! is_user_logged_in() || ! wp_verify_nonce( $_POST['_wpnonce_ticket_reply'], 'puzzling_ticket_reply_nonce' ) ) {
-            wp_die(__('بررسی امنیتی ناموفق بود.', 'puzzlingcrm'));
-        }
-
-        $ticket_id = intval($_POST['ticket_id']);
-        $comment_content = wp_kses_post($_POST['comment']);
-        $ticket = get_post($ticket_id);
-        $current_user = wp_get_current_user();
-        $is_manager = current_user_can('manage_options');
-        $is_team_member = in_array('team_member', (array)$current_user->roles);
-
-
-        if ( !$ticket || empty($comment_content) ) wp_die(__('تیکت یافت نشد یا متن پاسخ خالی است.', 'puzzlingcrm'));
-        if ( !$is_manager && !$is_team_member && $ticket->post_author != $current_user->ID ) wp_die(__("شما اجازه پاسخ به این تیکت را ندارید.", 'puzzlingcrm'));
-
-        wp_insert_comment([
-            'comment_post_ID' => $ticket_id, 'comment_author' => $current_user->display_name,
-            'comment_author_email' => $current_user->user_email, 'comment_content' => $comment_content,
-            'user_id' => $current_user->ID, 'comment_approved' => 1
-        ]);
-
-        if ( $is_manager || $is_team_member ) {
-            if (isset($_POST['ticket_status'])) wp_set_object_terms( $ticket_id, sanitize_key($_POST['ticket_status']), 'ticket_status' );
-            if (isset($_POST['department'])) wp_set_object_terms($ticket_id, intval($_POST['department']), 'organizational_position');
-            if (isset($_POST['assigned_to'])) update_post_meta($ticket_id, '_assigned_to', intval($_POST['assigned_to']));
-            
-            PuzzlingCRM_Logger::add(__('پاسخ به تیکت شما', 'puzzlingcrm'), ['content' => sprintf(__("پشتیبانی به تیکت شما با موضوع '%s' پاسخ داد.", 'puzzlingcrm'), $ticket->post_title), 'type' => 'notification', 'user_id' => $ticket->post_author, 'object_id' => $ticket_id]);
-        } else {
-            wp_set_object_terms( $ticket_id, 'in-progress', 'ticket_status' );
-            $this->notify_all_admins(__('پاسخ مشتری به تیکت', 'puzzlingcrm'), ['content' => sprintf(__("مشتری به تیکت '%s' پاسخ داد.", 'puzzlingcrm'), $ticket->post_title), 'type' => 'notification', 'object_id' => $ticket_id]);
-        }
-        
-        wp_safe_redirect(isset($_POST['redirect_to']) ? esc_url_raw($_POST['redirect_to']) : wp_get_referer());
-        exit;
     }
     
     private function handle_payment_request() {

@@ -89,12 +89,15 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
     <?php if ($status_slug !== 'closed'): ?>
     <div class="ticket-reply-form">
         <h3>ارسال پاسخ جدید</h3>
-        <form action="<?php echo esc_url(admin_url('admin-post.php')); ?>" method="post">
-            <input type="hidden" name="action" value="puzzling_ticket_reply">
+        <form class="pzl-form pzl-ajax-form" data-action="puzzling_ticket_reply" enctype="multipart/form-data">
             <input type="hidden" name="ticket_id" value="<?php echo esc_attr($ticket->ID); ?>">
-            <input type="hidden" name="redirect_to" value="<?php echo esc_url(add_query_arg(null, null)); ?>">
-            <?php wp_nonce_field('puzzling_ticket_reply_nonce', '_wpnonce_ticket_reply'); ?>
+            <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
             <textarea name="comment" rows="7" required placeholder="پاسخ خود را اینجا بنویسید..."></textarea>
+            
+            <div class="form-group">
+                <label for="reply_attachments">پیوست فایل (اختیاری):</label>
+                <input type="file" name="reply_attachments[]" id="reply_attachments" multiple>
+            </div>
             
             <?php if ($is_manager || $is_team_member): ?>
             <div class="pzl-form-row">
@@ -163,6 +166,18 @@ if (!function_exists('puzzling_ticket_comment_template')) {
             </div>
             <div class="comment-content">
                 <?php comment_text(); ?>
+                 <?php
+                $attachments = get_comment_meta($comment->comment_ID, '_reply_attachments', true);
+                if (!empty($attachments) && is_array($attachments)) {
+                    echo '<div class="ticket-attachments"><strong>پیوست‌ها:</strong><ul>';
+                    foreach ($attachments as $attachment_id) {
+                        $file_url = wp_get_attachment_url($attachment_id);
+                        $file_name = get_the_title($attachment_id);
+                        echo '<li><a href="' . esc_url($file_url) . '" target="_blank">' . esc_html($file_name) . '</a></li>';
+                    }
+                    echo '</ul></div>';
+                }
+                ?>
             </div>
         </li>
         <?php

@@ -37,8 +37,8 @@ if ($ticket_id_to_view > 0) {
             <div class="pzl-card-header">
                 <h3><i class="fas fa-plus-circle"></i> ارسال تیکت جدید</h3>
             </div>
-            <form id="puzzling-new-ticket-form" method="post" class="pzl-form">
-                <?php wp_nonce_field('puzzling_new_ticket_nonce', 'security'); ?>
+            <form id="puzzling-new-ticket-form" class="pzl-form pzl-ajax-form" data-action="puzzling_new_ticket" enctype="multipart/form-data">
+                <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
                 <div class="form-group">
                     <label for="ticket_title">موضوع:</label>
                     <input type="text" id="ticket_title" name="ticket_title" required>
@@ -62,6 +62,10 @@ if ($ticket_id_to_view > 0) {
                 <div class="form-group">
                     <label for="ticket_content">پیام شما:</label>
                     <textarea id="ticket_content" name="ticket_content" rows="6" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="ticket_attachments">پیوست فایل (اختیاری):</label>
+                    <input type="file" name="ticket_attachments[]" id="ticket_attachments" multiple>
                 </div>
                 <div class="form-submit">
                     <button type="submit" class="pzl-button">ارسال تیکت</button>
@@ -167,11 +171,3 @@ if ($ticket_id_to_view > 0) {
     <?php endif; ?>
     </div>
 </div>
-
-<style>
-.pzl-status-badge { display: inline-block; padding: 4px 12px; border-radius: 15px; font-size: 12px; color: #fff; text-align: center; min-width: 90px;}
-.status-open { background-color: #0073aa; }
-.status-in-progress { background-color: var(--pzl-warning-color, #ffc107); color: #333; }
-.status-answered { background-color: var(--pzl-success-color, #28a745); }
-.status-closed { background-color: #777; }
-</style>
