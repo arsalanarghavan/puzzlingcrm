@@ -86,7 +86,7 @@ class PuzzlingCRM {
         new PuzzlingCRM_Ajax_Handler();
         new PuzzlingCRM_Cron_Handler();
         new PuzzlingCRM_Agile_Handler();
-        new PuzzlingCRM_Automation_Handler(); // **NEW: Initialize Automation Handler**
+        new PuzzlingCRM_Automation_Handler();
     }
 
     /**
@@ -99,11 +99,14 @@ class PuzzlingCRM {
         // Main stylesheet
         wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
         
-        // Enqueue jQuery UI Sortable & Datepicker
+        // *** NEW: Enqueue our custom datepicker style ***
+        wp_enqueue_style( 'puzzling-datepicker-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzling-datepicker.css', [], PUZZLINGCRM_VERSION );
+        
+        // Enqueue jQuery UI Sortable & Datepicker (Gregorian)
         wp_enqueue_script('jquery-ui-sortable');
         wp_enqueue_script('jquery-ui-datepicker');
 
-        // *** ADDED THIS LINE FOR SWEETALERT ***
+        // SweetAlert
         wp_enqueue_script('sweetalert2', 'https://cdn.jsdelivr.net/npm/sweetalert2@11', [], '11', true);
 
         // Enqueue FullCalendar assets
@@ -113,13 +116,11 @@ class PuzzlingCRM {
         wp_enqueue_script('dhtmlx-gantt', 'https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js', [], '8.0', true);
         wp_enqueue_style('dhtmlx-gantt', 'https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css', [], '8.0');
         
-        // ** NEW **: Enqueue Persian Datepicker assets from CDN
-        wp_enqueue_style('persian-datepicker-css', 'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css', [], '1.2.0');
-        wp_enqueue_script('persian-date', 'https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js', [], '1.1.0', true);
-        wp_enqueue_script('persian-datepicker-js', 'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js', ['jquery', 'persian-date'], '1.2.0', true);
+        // *** NEW: Enqueue our custom datepicker script ***
+        wp_enqueue_script( 'puzzling-datepicker-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzling-datepicker.js', ['jquery'], PUZZLINGCRM_VERSION, true );
 
         // Main scripts file
-        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable', 'jquery-ui-datepicker', 'sweetalert2', 'fullcalendar', 'dhtmlx-gantt', 'persian-datepicker-js'], PUZZLINGCRM_VERSION, true );
+        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable', 'sweetalert2', 'fullcalendar', 'dhtmlx-gantt', 'puzzling-datepicker-scripts'], PUZZLINGCRM_VERSION, true );
         
         // Data for JS
         $all_users = get_users(['role__in' => ['team_member', 'system_manager', 'administrator']]);

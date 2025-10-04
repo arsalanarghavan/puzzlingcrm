@@ -1,0 +1,87 @@
+/*
+ * PuzzlingCRM Custom Jalali Date Picker Styles
+ */
+.pzl-datepicker-container {
+    position: absolute;
+    z-index: 10000;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    padding: 10px;
+    font-family: 'Vazirmatn', sans-serif;
+    width: 280px;
+    display: none;
+    direction: rtl;
+}
+
+.pzl-datepicker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0 10px;
+}
+
+.pzl-datepicker-header button {
+    background: none !important;
+    border: none !important;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 5px 10px;
+    color: #333 !important;
+}
+
+.pzl-datepicker-header button:hover {
+    background: #f0f0f0 !important;
+    border-radius: 4px;
+}
+
+.pzl-datepicker-month-year {
+    font-weight: bold;
+    font-size: 15px;
+}
+
+.pzl-datepicker-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.pzl-datepicker-day, .pzl-datepicker-day-name {
+    text-align: center;
+    padding: 8px 0;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.pzl-datepicker-day-name {
+    font-weight: bold;
+    font-size: 12px;
+    color: #666;
+    cursor: default;
+}
+
+.pzl-datepicker-day:not(.empty):hover {
+    background: #f0f0f0;
+}
+
+.pzl-datepicker-day.today {
+    font-weight: bold;
+    border: 1px solid #F0192A;
+    color: #F0192A;
+}
+
+.pzl-datepicker-today {
+    width: 100%;
+    margin-top: 10px;
+    background: #f7f7f7 !important;
+    border: 1px solid #ddd !important;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #333 !important;
+}
+.pzl-datepicker-today:hover {
+    background: #efefef !important;
+}

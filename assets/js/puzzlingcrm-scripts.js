@@ -1,26 +1,9 @@
 /**
- * Initializes Persian Date Picker on all relevant fields.
- * This function is now standalone to be called safely.
+ * PuzzlingCRM Main Scripts - V3.2
+ * Core AJAX, UI, and business logic.
+ * Datepicker functionality is now in puzzling-datepicker.js
  */
-function initPuzzlingDatepickers(container = document.body) {
-    // Find all datepicker fields that have NOT been initialized yet.
-    jQuery(container).find('.pzl-jalali-date-picker:not(.pzl-init-done)').each(function(index) {
-        var $this = jQuery(this);
-        
-        // Initialize the datepicker using the correct function name for the library
-        if (typeof jQuery.fn.persianDatepicker !== 'undefined') {
-            $this.persianDatepicker({
-                format: 'YYYY/MM/DD',
-                autoClose: true
-            });
-        }
-        
-        // Mark the element as initialized
-        $this.addClass('pzl-init-done');
-    });
-}
 
-// --- Main Document Ready Function ---
 jQuery(document).ready(function($) {
     // --- Global Variables ---
     var puzzling_ajax_nonce = puzzlingcrm_ajax_obj.nonce;
@@ -55,28 +38,6 @@ jQuery(document).ready(function($) {
             }
         });
     }
-
-    // --- Use a delayed execution for the datepicker to bypass theme script conflicts ---
-    setTimeout(function() {
-        initPuzzlingDatepickers();
-
-        const observer = new MutationObserver(function(mutationsList) {
-            for (const mutation of mutationsList) {
-                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                    mutation.addedNodes.forEach(node => {
-                        if (node.nodeType === 1) { // ELEMENT_NODE
-                            if ($(node).hasClass('pzl-jalali-date-picker')) {
-                                initPuzzlingDatepickers($(node).parent());
-                            } else {
-                                initPuzzlingDatepickers(node);
-                            }
-                        }
-                    });
-                }
-            }
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-    }, 500); // 500ms delay to ensure other scripts have run
 
     /**
      * Generic AJAX Form Submission Handler
@@ -193,12 +154,30 @@ jQuery(document).ready(function($) {
             return;
         }
         var installmentAmount = Math.round(totalAmount / totalInstallments);
-        var startDate = new Date(startDateStr);
+        
+        let parts = startDateStr.split('/');
+        let jYear = parseInt(parts[0]);
+        let jMonth = parseInt(parts[1]);
+        let jDay = parseInt(parts[2]);
+
         $('#payment-rows-container').html('');
         for (var i = 0; i < totalInstallments; i++) {
-            var dueDate = new Date(startDate);
-            dueDate.setDate(startDate.getDate() + (i * intervalDays));
-            var inputDate = dueDate.getFullYear() + '-' + ('0' + (dueDate.getMonth() + 1)).slice(-2) + '-' + ('0' + dueDate.getDate()).slice(-2);
+            let totalDaysToAdd = jDay + (i * intervalDays);
+            let finalYear = jYear;
+            let finalMonth = jMonth;
+            
+            // A simplified logic for date calculation.
+            while(totalDaysToAdd > 30) {
+                 totalDaysToAdd -= 30; // Assuming 30 days for simplicity
+                 finalMonth++;
+                 if(finalMonth > 12) {
+                     finalMonth = 1;
+                     finalYear++;
+                 }
+            }
+            let finalDay = totalDaysToAdd;
+
+            var inputDate = finalYear + '/' + ('0' + finalMonth).slice(-2) + '/' + ('0' + finalDay).slice(-2);
             addInstallmentRow(installmentAmount, inputDate, 'pending');
         }
     });
@@ -217,6 +196,7 @@ jQuery(document).ready(function($) {
             </div>
         `;
         $('#payment-rows-container').append(newRow);
+        // Datepicker will be auto-initialized by the MutationObserver in puzzling-datepicker.js
     }
     $('#add-payment-row').on('click', function() { addInstallmentRow(); });
     $('#payment-rows-container').on('click', '.remove-payment-row', function() { $(this).closest('.payment-row').remove(); });
@@ -414,7 +394,7 @@ jQuery(document).ready(function($) {
     $('body').on('change', '#pzl-task-status-changer, #pzl-task-assignee-changer', function() {
         var select = $(this);
         var taskId = select.data('task-id');
-        var field = select.data('field');
+        var field = select.is('#pzl-task-status-changer') ? 'status' : 'assignee';
         var value = select.val();
         select.prop('disabled', true);
         $.ajax({
