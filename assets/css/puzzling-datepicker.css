@@ -1,5 +1,6 @@
 /*
- * PuzzlingCRM Custom Jalali Date Picker Styles
+ * PuzzlingCRM Custom Jalali Date Picker Styles - V2
+ * with month/year picker and new theme color.
  */
 .pzl-datepicker-container {
     position: absolute;
@@ -10,9 +11,10 @@
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     padding: 10px;
     font-family: 'Vazirmatn', sans-serif;
-    width: 280px;
+    width: 290px;
     display: none;
     direction: rtl;
+    user-select: none;
 }
 
 .pzl-datepicker-header {
@@ -30,16 +32,23 @@
     font-weight: bold;
     padding: 5px 10px;
     color: #333 !important;
+    border-radius: 4px;
 }
 
 .pzl-datepicker-header button:hover {
     background: #f0f0f0 !important;
-    border-radius: 4px;
 }
 
 .pzl-datepicker-month-year {
     font-weight: bold;
     font-size: 15px;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+.pzl-datepicker-month-year:hover {
+    background: #f0f0f0;
 }
 
 .pzl-datepicker-grid {
@@ -53,6 +62,7 @@
     padding: 8px 0;
     cursor: pointer;
     border-radius: 4px;
+    font-size: 14px;
 }
 
 .pzl-datepicker-day-name {
@@ -63,25 +73,62 @@
 }
 
 .pzl-datepicker-day:not(.empty):hover {
-    background: #f0f0f0;
+    background: #e9ecef;
 }
 
 .pzl-datepicker-day.today {
     font-weight: bold;
     border: 1px solid #F0192A;
-    color: #F0192A;
+}
+
+.pzl-datepicker-day.selected {
+    background-color: #F0192A;
+    color: #fff;
+    font-weight: bold;
 }
 
 .pzl-datepicker-today {
     width: 100%;
     margin-top: 10px;
-    background: #f7f7f7 !important;
-    border: 1px solid #ddd !important;
+    background: #F0192A !important;
+    border: 1px solid #F0192A !important;
+    color: #fff !important;
     padding: 8px;
     border-radius: 4px;
     cursor: pointer;
-    color: #333 !important;
+    transition: background-color 0.2s;
 }
 .pzl-datepicker-today:hover {
-    background: #efefef !important;
+    background: #d91626 !important;
+}
+
+/* Month/Year Picker Styles */
+.pzl-datepicker-view {
+    display: none;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    animation: fadeIn 0.2s ease-in-out;
+}
+.pzl-datepicker-view.active {
+    display: grid;
+}
+
+.pzl-datepicker-month, .pzl-datepicker-year {
+    padding: 12px 5px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+}
+.pzl-datepicker-month:hover, .pzl-datepicker-year:hover {
+    background: #e9ecef;
+}
+.pzl-datepicker-month.selected, .pzl-datepicker-year.selected {
+    background: #F0192A;
+    color: #fff;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
 }

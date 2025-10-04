@@ -1,9 +1,10 @@
 jQuery(document).ready(function($) {
     /**
-     * A lightweight, dependency-free Jalali Date Picker for PuzzlingCRM.
+     * PuzzlingCRM Custom Jalali Date Picker - V2
+     * with Month/Year selection and new theme.
      */
     function PuzzlingJalaliDatePicker() {
-        // Helper function to convert Gregorian to Jalali
+        // Helper functions (toJalali, toGregorian) remain the same
         function toJalali(gy, gm, gd) {
             var g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
             var jy = (gy <= 1600) ? 0 : 979;
@@ -21,7 +22,6 @@ jQuery(document).ready(function($) {
             return [jy, jm, jd];
         }
 
-        // Helper function to convert Jalali to Gregorian
         function toGregorian(jy, jm, jd) {
             var gy = (jy <= 979) ? 621 : 1600;
             jy -= (jy <= 979) ? 0 : 979;
@@ -52,27 +52,48 @@ jQuery(document).ready(function($) {
         function createPicker(input) {
             if (input.data('pzl-datepicker-active')) return;
             input.data('pzl-datepicker-active', true);
-            
-            // Set autocomplete to off to prevent browser's datepicker
             input.attr('autocomplete', 'off');
 
             let currentYear = todayJalali[0];
             let currentMonth = todayJalali[1];
+            let currentView = 'days'; // Can be 'days', 'months', 'years'
 
             const pickerContainer = $('<div class="pzl-datepicker-container"></div>');
             const pickerHeader = $('<div class="pzl-datepicker-header"></div>').appendTo(pickerContainer);
-            const prevMonthBtn = $('<button type="button" class="pzl-datepicker-prev">&lt;</button>').appendTo(pickerHeader);
+            const prevBtn = $('<button type="button" class="pzl-datepicker-prev">&lt;</button>').appendTo(pickerHeader);
             const monthYearDisplay = $('<span class="pzl-datepicker-month-year"></span>').appendTo(pickerHeader);
-            const nextMonthBtn = $('<button type="button" class="pzl-datepicker-next">&gt;</button>').appendTo(pickerHeader);
+            const nextBtn = $('<button type="button" class="pzl-datepicker-next">&gt;</button>').appendTo(pickerHeader);
+            
             const calendarGrid = $('<div class="pzl-datepicker-grid"></div>').appendTo(pickerContainer);
+            const monthGrid = $('<div class="pzl-datepicker-view" id="pzl-month-view"></div>').appendTo(pickerContainer);
+            const yearGrid = $('<div class="pzl-datepicker-view" id="pzl-year-view"></div>').appendTo(pickerContainer);
+            
             const todayBtn = $('<button type="button" class="pzl-datepicker-today">امروز</button>').appendTo(pickerContainer);
 
             $('body').append(pickerContainer);
 
-            function renderCalendar(year, month) {
-                monthYearDisplay.text(monthNames[month - 1] + ' ' + year);
-                calendarGrid.empty();
+            function switchView(view) {
+                currentView = view;
+                calendarGrid.hide();
+                monthGrid.hide().removeClass('active');
+                yearGrid.hide().removeClass('active');
+                todayBtn.toggle(view === 'days');
 
+                if (view === 'days') {
+                    calendarGrid.show();
+                    monthYearDisplay.text(monthNames[currentMonth - 1] + ' ' + currentYear);
+                } else if (view === 'months') {
+                    monthGrid.addClass('active');
+                    monthYearDisplay.text(currentYear);
+                } else if (view === 'years') {
+                    yearGrid.addClass('active');
+                    let startYear = Math.floor(currentYear / 10) * 10;
+                    monthYearDisplay.text(startYear + ' - ' + (startYear + 9));
+                }
+            }
+
+            function renderDays(year, month) {
+                calendarGrid.empty();
                 dayNames.forEach(day => calendarGrid.append(`<div class="pzl-datepicker-day-name">${day}</div>`));
                 
                 let gregorianStartDate = toGregorian(year, month, 1);
@@ -81,14 +102,15 @@ jQuery(document).ready(function($) {
 
                 let daysInMonth = (month <= 6) ? 31 : (month <= 11) ? 30 : (toGregorian(year + 1, 1, 1)[0] - toGregorian(year, 1, 1)[0] > 365) ? 30 : 29;
 
-                for (let i = 0; i < firstDayOfWeek; i++) {
-                    calendarGrid.append('<div class="pzl-datepicker-day empty"></div>');
-                }
+                for (let i = 0; i < firstDayOfWeek; i++) calendarGrid.append('<div class="pzl-datepicker-day empty"></div>');
 
                 for (let day = 1; day <= daysInMonth; day++) {
                     let dayCell = $(`<div class="pzl-datepicker-day">${day}</div>`);
                     if (year === todayJalali[0] && month === todayJalali[1] && day === todayJalali[2]) {
                         dayCell.addClass('today');
+                    }
+                    if (input.val() === `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`) {
+                        dayCell.addClass('selected');
                     }
                     dayCell.on('click', function() {
                         let selectedDate = `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
@@ -98,27 +120,74 @@ jQuery(document).ready(function($) {
                     calendarGrid.append(dayCell);
                 }
             }
+
+            function renderMonths() {
+                monthGrid.empty();
+                for (let i = 0; i < 12; i++) {
+                    let monthCell = $(`<div class="pzl-datepicker-month">${monthNames[i]}</div>`);
+                    if (i + 1 === currentMonth) monthCell.addClass('selected');
+                    monthCell.on('click', function() {
+                        currentMonth = i + 1;
+                        switchView('days');
+                        renderDays(currentYear, currentMonth);
+                    });
+                    monthGrid.append(monthCell);
+                }
+            }
             
-            function showPicker() {
-                $('.pzl-datepicker-container').hide(); // Hide any other open pickers
-                let offset = input.offset();
-                pickerContainer.css({ top: offset.top + input.outerHeight() + 5, left: offset.left, right: 'auto' }).show();
-                 // Adjust position if it goes off-screen
-                if(offset.left + pickerContainer.width() > $(window).width()) {
-                    pickerContainer.css({left: 'auto', right: $(window).width() - (offset.left + input.outerWidth())});
+            function renderYears(startYear) {
+                yearGrid.empty();
+                 for (let i = -1; i < 11; i++) { // Show 12 years
+                    const year = startYear + i;
+                    let yearCell = $(`<div class="pzl-datepicker-year">${year}</div>`);
+                    if(i === -1 || i === 10) yearCell.css('color', '#999');
+                    if (year === currentYear) yearCell.addClass('selected');
+                    yearCell.on('click', function() {
+                        currentYear = year;
+                        switchView('months');
+                        renderMonths();
+                    });
+                    yearGrid.append(yearCell);
                 }
             }
 
-            prevMonthBtn.on('click', function() {
-                currentMonth--;
-                if (currentMonth < 1) { currentMonth = 12; currentYear--; }
-                renderCalendar(currentYear, currentMonth);
+            monthYearDisplay.on('click', function() {
+                if (currentView === 'days') switchView('months');
+                else if (currentView === 'months') switchView('years');
             });
 
-            nextMonthBtn.on('click', function() {
-                currentMonth++;
-                if (currentMonth > 12) { currentMonth = 1; currentYear++; }
-                renderCalendar(currentYear, currentMonth);
+            prevBtn.on('click', function() {
+                if (currentView === 'days') {
+                    currentMonth--;
+                    if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+                    renderDays(currentYear, currentMonth);
+                    monthYearDisplay.text(monthNames[currentMonth - 1] + ' ' + currentYear);
+                } else if (currentView === 'months') {
+                    currentYear--;
+                    monthYearDisplay.text(currentYear);
+                } else if (currentView === 'years') {
+                    currentYear -= 10;
+                    renderYears(Math.floor(currentYear / 10) * 10);
+                    let startYear = Math.floor(currentYear / 10) * 10;
+                    monthYearDisplay.text(startYear + ' - ' + (startYear + 9));
+                }
+            });
+
+            nextBtn.on('click', function() {
+                if (currentView === 'days') {
+                    currentMonth++;
+                    if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+                    renderDays(currentYear, currentMonth);
+                     monthYearDisplay.text(monthNames[currentMonth - 1] + ' ' + currentYear);
+                } else if (currentView === 'months') {
+                    currentYear++;
+                    monthYearDisplay.text(currentYear);
+                } else if (currentView === 'years') {
+                    currentYear += 10;
+                    renderYears(Math.floor(currentYear / 10) * 10);
+                    let startYear = Math.floor(currentYear / 10) * 10;
+                    monthYearDisplay.text(startYear + ' - ' + (startYear + 9));
+                }
             });
             
             todayBtn.on('click', function() {
@@ -137,8 +206,17 @@ jQuery(document).ready(function($) {
                     currentYear = todayJalali[0];
                     currentMonth = todayJalali[1];
                 }
-                renderCalendar(currentYear, currentMonth);
-                showPicker();
+                switchView('days');
+                renderDays(currentYear, currentMonth);
+                renderMonths();
+                renderYears(Math.floor(currentYear / 10) * 10);
+
+                let offset = input.offset();
+                $('.pzl-datepicker-container').hide();
+                pickerContainer.css({ top: offset.top + input.outerHeight() + 5, left: offset.left, right: 'auto' }).show();
+                if(offset.left + pickerContainer.width() > $(window).width()) {
+                    pickerContainer.css({left: 'auto', right: $(window).width() - (offset.left + input.outerWidth())});
+                }
             });
         }
         
@@ -150,7 +228,6 @@ jQuery(document).ready(function($) {
         
         initializeAllPickers();
 
-        // Use a MutationObserver to initialize datepickers on dynamically added content (e.g., in modals or AJAX-loaded forms)
         const observer = new MutationObserver(function(mutationsList) {
             for (const mutation of mutationsList) {
                 if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
@@ -160,7 +237,6 @@ jQuery(document).ready(function($) {
         });
         observer.observe(document.body, { childList: true, subtree: true });
         
-        // Hide picker when clicking outside
         $(document).on('click', function(e) {
             if (!$(e.target).closest('.pzl-datepicker-container').length && !$(e.target).hasClass('pzl-jalali-date-picker')) {
                 $('.pzl-datepicker-container').hide();
@@ -168,6 +244,5 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // Run the datepicker initializer
     PuzzlingJalaliDatePicker();
 });
