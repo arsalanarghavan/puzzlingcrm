@@ -1,10 +1,41 @@
+/**
+ * Initializes Kama Date Picker on all relevant fields.
+ * This function is now standalone to be called safely.
+ */
+function initPuzzlingDatepickers(container = document.body) {
+    // Find all datepicker fields that have NOT been initialized yet.
+    jQuery(container).find('.pzl-jalali-date-picker:not(.kama-init-done)').each(function(index) {
+        var $this = jQuery(this);
+        var id = $this.attr('id');
+        
+        // If the element doesn't have an ID, generate a unique one.
+        if (!id) {
+            id = 'pzl-datepicker-' + Date.now() + '-' + index;
+            $this.attr('id', id);
+        }
+        
+        // Initialize the datepicker
+        if (typeof kamadatepicker !== 'undefined') {
+            kamadatepicker(id, {
+                buttonsColor: "red",
+                forceFarsiDigits: true,
+                gotoToday: true,
+            });
+        }
+        
+        // Mark the element as initialized
+        $this.addClass('kama-init-done');
+    });
+}
+
+// --- Main Document Ready Function ---
 jQuery(document).ready(function($) {
     // --- Global Variables ---
     var puzzling_ajax_nonce = puzzlingcrm_ajax_obj.nonce;
     var puzzling_lang = puzzlingcrm_ajax_obj.lang;
     var currentTaskId = null;
-    var searchTimer; // Timer for live search delay
-    var calendar; // Make calendar object globally accessible within this scope
+    var searchTimer;
+    var calendar;
 
     /**
      * SweetAlert Integration for Notifications
@@ -12,9 +43,7 @@ jQuery(document).ready(function($) {
     function showPuzzlingAlert(title, text, icon, reloadPage = false) {
         if (typeof Swal === 'undefined') {
             alert(title + "\n" + text);
-            if (reloadPage) {
-                window.location.reload();
-            }
+            if (reloadPage) { window.location.reload(); }
             return;
         }
         Swal.fire({
@@ -28,68 +57,34 @@ jQuery(document).ready(function($) {
             if (reloadPage) {
                 let currentUrl = new URL(window.location.href);
                 let params = currentUrl.searchParams;
-                let paramsToRemove = ['puzzling_notice', '_wpnonce', 'deleted', 'updated', 'open_task_id'];
-                paramsToRemove.forEach(param => params.delete(param));
+                ['puzzling_notice', '_wpnonce', 'deleted', 'updated', 'open_task_id'].forEach(param => params.delete(param));
                 currentUrl.search = params.toString();
                 window.location.href = currentUrl.toString();
             }
         });
     }
 
-    /**
-     * **ROBUST FIX V3**: Initializes Kama Date Picker on all relevant fields,
-     * including dynamically added ones using MutationObserver.
-     */
-    function initKamaDatepickers(container = document.body) {
-        // Find all datepicker fields that have NOT been initialized yet.
-        $(container).find('.pzl-jalali-date-picker:not(.kama-init-done)').each(function(index) {
-            var $this = $(this);
-            var id = $this.attr('id');
-            
-            // If the element doesn't have an ID, generate a unique one.
-            if (!id) {
-                id = 'pzl-datepicker-' + Date.now() + '-' + index;
-                $this.attr('id', id);
-            }
-            
-            // Initialize the datepicker using its unique ID.
-            if (typeof kamadatepicker !== 'undefined') {
-                kamadatepicker(id, {
-                    buttonsColor: "red",
-                    forceFarsiDigits: true,
-                    gotoToday: true,
-                });
-            }
-            
-            // Mark the element as initialized to prevent re-initialization.
-            $this.addClass('kama-init-done');
-        });
-    }
+    // --- Use a delayed execution for the datepicker to bypass theme script conflicts ---
+    setTimeout(function() {
+        initPuzzlingDatepickers();
 
-    // --- Initial call for datepickers on page load ---
-    initKamaDatepickers();
-
-    // --- Use MutationObserver to detect dynamically added datepickers ---
-    const observer = new MutationObserver(function(mutationsList, observer) {
-        for(const mutation of mutationsList) {
-            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                mutation.addedNodes.forEach(node => {
-                    // Check if the added node itself is a datepicker or contains datepickers
-                    if (node.nodeType === 1) { // ELEMENT_NODE
-                        if ($(node).hasClass('pzl-jalali-date-picker')) {
-                            initKamaDatepickers($(node).parent());
-                        } else {
-                            initKamaDatepickers(node);
+        const observer = new MutationObserver(function(mutationsList) {
+            for (const mutation of mutationsList) {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === 1) { // ELEMENT_NODE
+                            if ($(node).hasClass('pzl-jalali-date-picker')) {
+                                initPuzzlingDatepickers($(node).parent());
+                            } else {
+                                initPuzzlingDatepickers(node);
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
-        }
-    });
-
-    // Start observing the document body for added nodes
-    observer.observe(document.body, { childList: true, subtree: true });
-
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    }, 500); // 500ms delay to ensure other scripts have run
 
     /**
      * Generic AJAX Form Submission Handler
@@ -100,14 +95,11 @@ jQuery(document).ready(function($) {
         var formData = new FormData(form[0]);
         var action = form.data('action') || form.find('input[name="action"]').val();
         formData.append('action', action);
-        
-        // Unformat currency fields before submitting
-        form.find('.item-price, .item-discount').each(function() {
-            var name = $(this).attr('name');
-            var unformattedValue = $(this).val().replace(/,/g, '');
-            formData.set(name, unformattedValue);
-        });
 
+        // Handle specific form data preparations
+        form.find('.item-price, .item-discount').each(function() {
+            formData.set($(this).attr('name'), $(this).val().replace(/,/g, ''));
+        });
         form.find('.wp-editor-area').each(function() {
             var editorId = $(this).attr('id');
             if (typeof tinymce !== 'undefined' && tinymce.get(editorId)) {
@@ -130,8 +122,8 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     showPuzzlingAlert(puzzling_lang.success_title, response.data.message, 'success', response.data.reload || false);
-                     if (response.data.redirect_url) {
-                        setTimeout(function(){ window.location.href = response.data.redirect_url; }, 1500);
+                    if (response.data.redirect_url) {
+                        setTimeout(function() { window.location.href = response.data.redirect_url; }, 1500);
                     }
                 } else {
                     showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error');
@@ -141,7 +133,7 @@ jQuery(document).ready(function($) {
                 showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error');
             },
             complete: function(xhr) {
-                 var response = xhr.responseJSON;
+                var response = xhr.responseJSON;
                 if (!(response && response.success && (response.data.reload || response.data.redirect_url))) {
                     submitButton.html(originalButtonHtml).prop('disabled', false);
                 }
@@ -233,7 +225,6 @@ jQuery(document).ready(function($) {
             </div>
         `;
         $('#payment-rows-container').append(newRow);
-        // initKamaDatepickers(); // Observer will handle this
     }
     $('#add-payment-row').on('click', function() { addInstallmentRow(); });
     $('#payment-rows-container').on('click', '.remove-payment-row', function() { $(this).closest('.payment-row').remove(); });
@@ -618,7 +609,7 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'puzzling_get_canned_response',
-                security: puzzling_ajax_nonce,
+                security: puzzlingcrm_ajax_obj.nonce,
                 response_id: responseId
             },
             success: function(response) {
