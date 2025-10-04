@@ -113,12 +113,13 @@ class PuzzlingCRM {
         wp_enqueue_script('dhtmlx-gantt', 'https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js', [], '8.0', true);
         wp_enqueue_style('dhtmlx-gantt', 'https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css', [], '8.0');
         
-        // Enqueue kamadatepicker assets
-        wp_enqueue_script('kamadatepicker-js', PUZZLINGCRM_PLUGIN_URL . 'assets/js/kamadatepicker.min.js', ['jquery'], '1.5.3', true);
-        wp_enqueue_style('kamadatepicker-css', PUZZLINGCRM_PLUGIN_URL . 'assets/css/kamadatepicker.min.css', [], '1.5.3');
+        // ** NEW **: Enqueue Persian Datepicker assets from CDN
+        wp_enqueue_style('persian-datepicker-css', 'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css', [], '1.2.0');
+        wp_enqueue_script('persian-date', 'https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js', [], '1.1.0', true);
+        wp_enqueue_script('persian-datepicker-js', 'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js', ['jquery', 'persian-date'], '1.2.0', true);
 
         // Main scripts file
-        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable', 'jquery-ui-datepicker', 'sweetalert2', 'fullcalendar', 'dhtmlx-gantt', 'kamadatepicker-js'], PUZZLINGCRM_VERSION, true );
+        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable', 'jquery-ui-datepicker', 'sweetalert2', 'fullcalendar', 'dhtmlx-gantt', 'persian-datepicker-js'], PUZZLINGCRM_VERSION, true );
         
         // Data for JS
         $all_users = get_users(['role__in' => ['team_member', 'system_manager', 'administrator']]);

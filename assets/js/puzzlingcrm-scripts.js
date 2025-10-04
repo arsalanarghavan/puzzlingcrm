@@ -37,13 +37,12 @@ jQuery(document).ready(function($) {
     }
 
     /**
-     * **FINAL FIX**: Initializes Kama Date Picker on all relevant fields,
-     * including dynamically added ones. This function can be called anytime
-     * new content is added to the page.
+     * **ROBUST FIX V3**: Initializes Kama Date Picker on all relevant fields,
+     * including dynamically added ones using MutationObserver.
      */
-    function initKamaDatepickers() {
+    function initKamaDatepickers(container = document.body) {
         // Find all datepicker fields that have NOT been initialized yet.
-        $('.pzl-jalali-date-picker:not(.kama-init-done)').each(function(index) {
+        $(container).find('.pzl-jalali-date-picker:not(.kama-init-done)').each(function(index) {
             var $this = $(this);
             var id = $this.attr('id');
             
@@ -69,6 +68,28 @@ jQuery(document).ready(function($) {
 
     // --- Initial call for datepickers on page load ---
     initKamaDatepickers();
+
+    // --- Use MutationObserver to detect dynamically added datepickers ---
+    const observer = new MutationObserver(function(mutationsList, observer) {
+        for(const mutation of mutationsList) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                mutation.addedNodes.forEach(node => {
+                    // Check if the added node itself is a datepicker or contains datepickers
+                    if (node.nodeType === 1) { // ELEMENT_NODE
+                        if ($(node).hasClass('pzl-jalali-date-picker')) {
+                            initKamaDatepickers($(node).parent());
+                        } else {
+                            initKamaDatepickers(node);
+                        }
+                    }
+                });
+            }
+        }
+    });
+
+    // Start observing the document body for added nodes
+    observer.observe(document.body, { childList: true, subtree: true });
+
 
     /**
      * Generic AJAX Form Submission Handler
@@ -109,6 +130,9 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     showPuzzlingAlert(puzzling_lang.success_title, response.data.message, 'success', response.data.reload || false);
+                     if (response.data.redirect_url) {
+                        setTimeout(function(){ window.location.href = response.data.redirect_url; }, 1500);
+                    }
                 } else {
                     showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error');
                 }
@@ -118,7 +142,7 @@ jQuery(document).ready(function($) {
             },
             complete: function(xhr) {
                  var response = xhr.responseJSON;
-                if (!(response && response.success && response.data.reload)) {
+                if (!(response && response.success && (response.data.reload || response.data.redirect_url))) {
                     submitButton.html(originalButtonHtml).prop('disabled', false);
                 }
             }
@@ -149,7 +173,7 @@ jQuery(document).ready(function($) {
     });
     
     // --- User Deletion ---
-    $('#pzl-users-table-body').on('click', '.delete-user-btn', function(e) {
+    $('body').on('click', '.delete-user-btn', function(e) {
         e.preventDefault();
         var button = $(this);
         var userId = button.data('user-id');
@@ -209,7 +233,7 @@ jQuery(document).ready(function($) {
             </div>
         `;
         $('#payment-rows-container').append(newRow);
-        initKamaDatepickers();
+        // initKamaDatepickers(); // Observer will handle this
     }
     $('#add-payment-row').on('click', function() { addInstallmentRow(); });
     $('#payment-rows-container').on('click', '.remove-payment-row', function() { $(this).closest('.payment-row').remove(); });
@@ -594,7 +618,7 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'puzzling_get_canned_response',
-                security: puzzlingcrm_ajax_obj.nonce,
+                security: puzzling_ajax_nonce,
                 response_id: responseId
             },
             success: function(response) {

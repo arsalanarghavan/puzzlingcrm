@@ -221,7 +221,7 @@ if ( ! function_exists( 'puzzling_jalali_to_gregorian' ) ) {
 
 if ( ! function_exists( 'puzzling_gregorian_to_jalali' ) ) {
     function puzzling_gregorian_to_jalali($gregorian_date) {
-        if(empty($gregorian_date) || $gregorian_date == '0000-00-00') return '';
+        if(empty($gregorian_date) || $gregorian_date == '0000-00-00' || strtotime($gregorian_date) === false) return '';
         return jdate('Y/m/d', strtotime($gregorian_date));
     }
 }

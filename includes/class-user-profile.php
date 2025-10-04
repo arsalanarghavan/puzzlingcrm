@@ -32,12 +32,12 @@ class PuzzlingCRM_User_Profile {
         // Make the form can handle file uploads
         add_action( 'user_edit_form_tag', function(){ echo 'enctype="multipart/form-data"'; });
         
-        // **NEW**: Enqueue scripts for the admin profile page
+        // Enqueue scripts for the admin profile page
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_scripts' ] );
     }
 
     /**
-     * **NEW**: Enqueues scripts and styles for the admin user profile pages.
+     * Enqueues scripts and styles for the admin user profile pages.
      */
     public function enqueue_admin_scripts($hook) {
         // Only load on user profile pages
@@ -45,21 +45,13 @@ class PuzzlingCRM_User_Profile {
             return;
         }
 
-        // Enqueue kamadatepicker assets
-        wp_enqueue_script('kamadatepicker-js', PUZZLINGCRM_PLUGIN_URL . 'assets/js/kamadatepicker.min.js', ['jquery'], '1.5.3', true);
-        wp_enqueue_style('kamadatepicker-css', PUZZLINGCRM_PLUGIN_URL . 'assets/css/kamadatepicker.min.css', [], '1.5.3');
+        // ** NEW **: Enqueue Persian Datepicker assets from CDN
+        wp_enqueue_style('persian-datepicker-css', 'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css', [], '1.2.0');
+        wp_enqueue_script('persian-date', 'https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js', [], '1.1.0', true);
+        wp_enqueue_script('persian-datepicker-js', 'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js', ['jquery', 'persian-date'], '1.2.0', true);
 
-        // Add inline script to initialize the datepicker on the correct fields
-        $script = "
-            jQuery(document).ready(function($) {
-                kamadatepicker('#pzl_birth_date, #pzl_hire_date', {
-                    buttonsColor: 'red',
-                    forceFarsiDigits: true,
-                    gotoToday: true,
-                });
-            });
-        ";
-        wp_add_inline_script('kamadatepicker-js', $script);
+        // Enqueue the main script which now handles initialization globally
+        wp_enqueue_script('puzzling-admin-profile-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'persian-datepicker-js'], PUZZLINGCRM_VERSION, true);
     }
 
     /**
@@ -137,6 +129,9 @@ class PuzzlingCRM_User_Profile {
                     <th><label for="<?php echo esc_attr($meta_key); ?>"><?php echo esc_html($field['label']); ?></label></th>
                     <td>
                         <?php
+                        $field_class = ($field_key === 'birth_date' || $field_key === 'hire_date') ? 'pzl-jalali-date-picker' : '';
+                        $display_value = ($field_key === 'birth_date' || $field_key === 'hire_date') ? puzzling_gregorian_to_jalali($value) : $value;
+                        
                         switch ($field['type']) {
                             case 'textarea':
                                 echo '<textarea name="' . esc_attr($meta_key) . '" id="' . esc_attr($meta_key) . '" rows="5" cols="30" class="regular-text">' . esc_textarea($value) . '</textarea>';
@@ -162,7 +157,7 @@ class PuzzlingCRM_User_Profile {
                                 ]);
                                 break;
                             default:
-                                echo '<input type="' . esc_attr($field['type']) . '" name="' . esc_attr($meta_key) . '" id="' . esc_attr($meta_key) . '" value="' . esc_attr($value) . '" class="regular-text" />';
+                                echo '<input type="' . esc_attr($field['type']) . '" name="' . esc_attr($meta_key) . '" id="' . esc_attr($meta_key) . '" value="' . esc_attr($display_value) . '" class="regular-text ' . $field_class . '" />';
                         }
                         ?>
                     </td>
@@ -181,7 +176,11 @@ class PuzzlingCRM_User_Profile {
                 if ($field['type'] === 'position_select') continue; // Handled separately
                 $meta_key = 'pzl_' . $field_key;
                 if (isset($_POST[$meta_key])) {
-                    update_user_meta($user_id, $meta_key, sanitize_text_field($_POST[$meta_key]));
+                    $value = sanitize_text_field($_POST[$meta_key]);
+                    if ($field_key === 'birth_date' || $field_key === 'hire_date') {
+                        $value = puzzling_jalali_to_gregorian($value);
+                    }
+                    update_user_meta($user_id, $meta_key, $value);
                 }
             }
         }
