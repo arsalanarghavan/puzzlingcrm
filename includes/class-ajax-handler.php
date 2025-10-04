@@ -20,6 +20,7 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_delete_user', [$this, 'ajax_delete_user']);
         add_action('wp_ajax_puzzling_manage_project', [$this, 'ajax_manage_project']);
         add_action('wp_ajax_puzzling_manage_contract', [$this, 'ajax_manage_contract']);
+        add_action('wp_ajax_puzzling_cancel_contract', [$this, 'ajax_cancel_contract']); // New action
         add_action('wp_ajax_puzzling_add_project_to_contract', [$this, 'ajax_add_project_to_contract']);
         add_action('wp_ajax_puzzling_update_my_profile', [$this, 'ajax_update_my_profile']);
         add_action('wp_ajax_puzzling_add_services_from_product', [$this, 'ajax_add_services_from_product']);
@@ -799,94 +800,6 @@ class PuzzlingCRM_Ajax_Handler {
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
     
-    /**
-     * AJAX handler for creating and updating contracts.
-     */
-    public function ajax_manage_contract() {
-        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
-        }
-    
-        $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
-        $customer_id = intval($_POST['customer_id']);
-    
-        if (empty($customer_id)) {
-            wp_send_json_error(['message' => 'انتخاب مشتری الزامی است.']);
-        }
-        
-        $contract_title = sprintf('قرارداد با %s', get_the_author_meta('display_name', $customer_id));
-        if (isset($_POST['contract_title']) && !empty($_POST['contract_title'])) {
-            $contract_title = sanitize_text_field($_POST['contract_title']);
-        }
-        
-        $contract_data = [
-            'post_title' => $contract_title,
-            'post_author' => $customer_id,
-            'post_status' => 'publish',
-            'post_type' => 'contract',
-        ];
-    
-        $start_date_jalali = sanitize_text_field($_POST['_project_start_date']);
-        $start_date_gregorian = puzzling_jalali_to_gregorian($start_date_jalali);
-        $duration = sanitize_key($_POST['_project_contract_duration']);
-        $end_date_gregorian = '';
-    
-        if($start_date_gregorian && $duration) {
-            $end_date = new DateTime($start_date_gregorian);
-            switch ($duration) {
-                case '1-month': $end_date->modify('+1 month'); break;
-                case '3-months': $end_date->modify('+3 months'); break;
-                case '6-months': $end_date->modify('+6 months'); break;
-                case '12-months': $end_date->modify('+1 year'); break;
-            }
-            $end_date_gregorian = $end_date->format('Y-m-d');
-        }
-    
-        $contract_meta = [
-            '_project_subscription_model' => sanitize_key($_POST['_project_subscription_model']),
-            '_project_contract_duration' => $duration,
-            '_project_start_date' => $start_date_gregorian,
-            '_project_end_date' => $end_date_gregorian,
-        ];
-    
-        $payment_amounts = isset($_POST['payment_amount']) ? (array) $_POST['payment_amount'] : [];
-        $payment_due_dates = isset($_POST['payment_due_date']) ? (array) $_POST['payment_due_date'] : [];
-        $payment_statuses = isset($_POST['payment_status']) ? (array) $_POST['payment_status'] : [];
-        $installments = [];
-        for ($i = 0; $i < count($payment_amounts); $i++) {
-            if (!empty($payment_amounts[$i]) && !empty($payment_due_dates[$i])) {
-                $installments[] = [
-                    'amount' => sanitize_text_field(str_replace(',', '', $payment_amounts[$i])), 
-                    'due_date' => puzzling_jalali_to_gregorian(sanitize_text_field($payment_due_dates[$i])), 
-                    'status' => sanitize_key($payment_statuses[$i] ?? 'pending'),
-                ];
-            }
-        }
-    
-        if ($contract_id > 0) {
-            $contract_data['ID'] = $contract_id;
-            $result = wp_update_post($contract_data, true);
-            $message = 'قرارداد با موفقیت به‌روزرسانی شد.';
-        } else {
-            $result = wp_insert_post($contract_data, true);
-            $message = 'قرارداد جدید با موفقیت ایجاد شد.';
-        }
-    
-        if (is_wp_error($result)) {
-            wp_send_json_error(['message' => 'خطا در پردازش قرارداد.']);
-        }
-        
-        $the_contract_id = is_int($result) ? $result : $contract_id;
-        
-        foreach ($contract_meta as $key => $value) {
-            update_post_meta($the_contract_id, $key, $value);
-        }
-        update_post_meta($the_contract_id, '_installments', $installments);
-        
-        wp_send_json_success(['message' => $message, 'reload' => true]);
-    }
-
     /**
      * AJAX handler to add a new project to an existing contract.
      */

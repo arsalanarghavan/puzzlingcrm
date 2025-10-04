@@ -256,6 +256,20 @@ class PuzzlingCRM_CPT_Manager {
             ]
         ]);
 
+        // Contract Status Taxonomy - NEW
+        register_taxonomy('contract_status', 'contract', [
+            'label' => __( 'وضعیت قرارداد', 'puzzlingcrm' ),
+            'hierarchical' => true,
+            'public' => false,
+            'show_ui' => true,
+            'show_admin_column' => true,
+            'show_in_rest' => true,
+            'labels' => [
+                'name' => __( 'وضعیت‌های قرارداد', 'puzzlingcrm' ),
+                'singular_name' => __( 'وضعیت قرارداد', 'puzzlingcrm' ),
+            ]
+        ]);
+
 		// Task Category Taxonomy
 		register_taxonomy('task_category', ['task', 'pzl_task_template'], [
             'label' => __( 'Task Category', 'puzzlingcrm' ),
@@ -343,6 +357,12 @@ class PuzzlingCRM_CPT_Manager {
         $project_statuses = ['فعال' => 'active', 'تکمیل شده' => 'completed', 'در انتظار' => 'on-hold', 'لغو شده' => 'cancelled'];
         foreach ($project_statuses as $name => $slug) {
             if ( ! term_exists( $slug, 'project_status' ) ) wp_insert_term( $name, 'project_status', ['slug' => $slug] );
+        }
+
+        // Contract Statuses - NEW
+        $contract_statuses = ['فعال' => 'active', 'لغو شده' => 'cancelled', 'تکمیل شده' => 'completed'];
+        foreach ($contract_statuses as $name => $slug) {
+            if ( ! term_exists( $slug, 'contract_status' ) ) wp_insert_term( $name, 'contract_status', ['slug' => $slug] );
         }
 
 		// Task Categories

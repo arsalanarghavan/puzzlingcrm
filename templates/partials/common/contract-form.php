@@ -3,16 +3,46 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 if ( ! current_user_can('manage_options') ) return;
 
 $contract_to_edit = isset($puzzling_contract) ? $puzzling_contract : null;
+$is_cancelled = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_contract_status', true) === 'cancelled' : false;
 ?>
 <div class="pzl-form-container">
-    <h3><i class="fas fa-file-signature"></i> <?php echo $contract_to_edit ? 'ویرایش قرارداد' : 'ایجاد قرارداد جدید'; ?></h3>
-    <form id="manage-contract-form" class="pzl-ajax-form" data-action="puzzling_manage_contract" method="post" enctype="multipart/form-data">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <h3><i class="fas fa-file-signature"></i> <?php echo $contract_to_edit ? 'ویرایش قرارداد' : 'ایجاد قرارداد جدید'; ?></h3>
+        <?php if ($contract_to_edit && !$is_cancelled): ?>
+            <button type="button" id="cancel-contract-btn" class="pzl-button" style="background-color: var(--pzl-danger-color) !important;">لغو قرارداد</button>
+        <?php endif; ?>
+    </div>
+
+    <?php if ($is_cancelled): 
+        $cancellation_reason = get_post_meta($contract_to_edit->ID, '_cancellation_reason', true);
+        $cancellation_date = get_post_meta($contract_to_edit->ID, '_cancellation_date', true);
+    ?>
+        <div class="pzl-alert pzl-alert-error">
+            <h4>این قرارداد لغو شده است.</h4>
+            <p><strong>تاریخ لغو:</strong> <?php echo jdate('Y/m/d', strtotime($cancellation_date)); ?></p>
+            <p><strong>دلیل لغو:</strong> <?php echo esc_html($cancellation_reason); ?></p>
+        </div>
+    <?php endif; ?>
+
+    <form id="manage-contract-form" class="pzl-ajax-form" data-action="puzzling_manage_contract" method="post" enctype="multipart/form-data" <?php if ($is_cancelled) echo 'style="opacity: 0.6; pointer-events: none;"'; ?>>
         <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
         <input type="hidden" name="contract_id" value="<?php echo $contract_to_edit ? esc_attr($contract_to_edit->ID) : '0'; ?>">
 
-        <h4><i class="fas fa-user-tie"></i> اطلاعات مشتری و قرارداد</h4>
+        <h4><i class="fas fa-info-circle"></i> اطلاعات پایه</h4>
+        
         <div class="pzl-form-row">
-            <div class="form-group">
+            <div class="form-group half-width">
+                <label for="contract_number">شماره قرارداد</label>
+                <input type="text" id="contract_number" name="contract_number" value="<?php echo $contract_to_edit ? esc_attr(get_post_meta($contract_to_edit->ID, '_contract_number', true)) : 'با انتخاب مشتری و تاریخ تولید می‌شود'; ?>" readonly class="ltr-input">
+            </div>
+            <div class="form-group half-width">
+                <label for="_project_start_date">تاریخ شروع قرارداد</label>
+                <input type="text" id="_project_start_date" name="_project_start_date" value="<?php echo $contract_to_edit ? esc_attr(puzzling_gregorian_to_jalali(get_post_meta($contract_to_edit->ID, '_project_start_date', true))) : ''; ?>" class="pzl-jalali-date-picker" required>
+            </div>
+        </div>
+
+        <div class="pzl-form-row">
+            <div class="form-group half-width">
                 <label for="customer_id">مشتری (ضروری):</label>
                 <select name="customer_id" id="customer_id" required <?php echo $contract_to_edit ? 'disabled' : ''; ?>>
                     <option value="">-- انتخاب مشتری --</option>
@@ -26,55 +56,67 @@ $contract_to_edit = isset($puzzling_contract) ? $puzzling_contract : null;
                 </select>
                  <?php if ($contract_to_edit) : ?>
                     <input type="hidden" name="customer_id" value="<?php echo esc_attr($selected_customer); ?>">
-                    <p class="description">مشتری پس از ایجاد قرارداد قابل تغییر نیست.</p>
                 <?php endif; ?>
             </div>
-             <div class="form-group">
+            <div class="form-group half-width">
+                <label for="_project_contract_duration">مدت قرارداد:</label>
+                <select name="_project_contract_duration" id="_project_contract_duration">
+                    <?php 
+                    $durations = ['یک ماهه' => '1-month', 'سه ماهه' => '3-months', 'شش ماهه' => '6-months', 'یک ساله' => '12-months']; 
+                    $current_duration = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_project_contract_duration', true) : '1-month';
+                    foreach ($durations as $label => $value) { 
+                        echo '<option value="' . esc_attr($value) . '" ' . selected($current_duration, $value, false) . '>' . esc_html($label) . '</option>';
+                    } 
+                    ?>
+                </select>
+            </div>
+        </div>
+
+        <div class="pzl-form-row">
+            <div class="form-group half-width">
                 <label for="contract_title">عنوان قرارداد (اختیاری):</label>
                 <input type="text" id="contract_title" name="contract_title" value="<?php echo $contract_to_edit ? esc_attr($contract_to_edit->post_title) : ''; ?>" placeholder="مثال: قرارداد پشتیبانی سالانه">
             </div>
+            <div class="form-group half-width">
+                <label for="_project_subscription_model">مدل اشتراک:</label>
+                <select name="_project_subscription_model" id="_project_subscription_model">
+                    <?php 
+                    $models = ['یکبار پرداخت' => 'onetime', 'اشتراکی' => 'subscription']; 
+                    $current_model = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_project_subscription_model', true) : 'onetime';
+                    foreach ($models as $label => $value) { 
+                        echo '<option value="' . esc_attr($value) . '" ' . selected($current_model, $value, false) . '>' . esc_html($label) . '</option>';
+                    } 
+                    ?>
+                </select>
+            </div>
         </div>
         
-         <div class="pzl-form-row">
-            <div class="form-group"><label for="_project_subscription_model">مدل اشتراک:</label><select name="_project_subscription_model" id="_project_subscription_model"><?php $models = ['یکبار پرداخت' => 'onetime', 'اشتراکی' => 'subscription']; $current_model = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_project_subscription_model', true) : 'onetime'; foreach ($models as $label => $value) { echo '<option value="' . esc_attr($value) . '" ' . selected($current_model, $value, false) . '>' . esc_html($label) . '</option>'; } ?></select></div>
-            <div class="form-group"><label for="_project_contract_duration">مدت قرارداد:</label><select name="_project_contract_duration" id="_project_contract_duration"><?php $durations = ['یک ماهه' => '1-month', 'سه ماهه' => '3-months', 'شش ماهه' => '6-months', 'یک ساله' => '12-months']; $current_duration = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_project_contract_duration', true) : '1-month'; foreach ($durations as $label => $value) { echo '<option value="' . esc_attr($value) . '" ' . selected($current_duration, $value, false) . '>' . esc_html($label) . '</option>'; } ?></select></div>
-        </div>
+        <input type="hidden" id="_project_end_date" name="_project_end_date" value="<?php echo $contract_to_edit ? esc_attr(get_post_meta($contract_to_edit->ID, '_project_end_date', true)) : ''; ?>">
 
-         <div class="pzl-form-row">
-            <div class="form-group">
-                <label for="_project_start_date">تاریخ شروع:</label>
-                <input type="text" id="_project_start_date" name="_project_start_date" value="<?php echo $contract_to_edit ? esc_attr(puzzling_gregorian_to_jalali(get_post_meta($contract_to_edit->ID, '_project_start_date', true))) : ''; ?>" class="pzl-jalali-date-picker">
-            </div>
-            <div class="form-group">
-                <label for="_project_end_date">تاریخ پایان:</label>
-                <input type="text" id="_project_end_date" name="_project_end_date" value="<?php echo $contract_to_edit ? esc_attr(puzzling_gregorian_to_jalali(get_post_meta($contract_to_edit->ID, '_project_end_date', true))) : ''; ?>" class="pzl-jalali-date-picker" readonly>
-            </div>
-        </div>
-        
-        <?php if (!$contract_to_edit): ?>
-        <hr>
-        <h4><i class="fas fa-magic"></i> محاسبه‌گر اقساط (اختیاری)</h4>
-        <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-            <div class="form-group">
-                <label for="total_amount">مبلغ کل قرارداد (تومان)</label>
-                <input type="text" id="total_amount" placeholder="مثال: 30000000">
-            </div>
-            <div class="form-group">
-                <label for="total_installments">تعداد کل اقساط</label>
-                <input type="number" id="total_installments" placeholder="مثال: 6">
-            </div>
-            <div class="form-group">
-                <label for="installment_interval">فاصله بین اقساط (روز)</label>
-                <input type="number" id="installment_interval" placeholder="مثال: 30 برای ماهانه">
-            </div>
-            <div class="form-group">
-                <label for="start_date">تاریخ اولین قسط</label>
-                <input type="text" id="start_date" class="pzl-jalali-date-picker">
+        <?php if ($contract_to_edit) : ?>
+        <div id="pzl-automation-from-product" style="margin-top: 30px; border-top: 1px solid #dee2e6; padding-top: 20px;">
+            <h4><i class="fas fa-magic"></i> افزودن خدمات از محصول</h4>
+            <p class="description">یک محصول اشتراکی یا گروهی را انتخاب کنید تا پروژه‌های مرتبط با خدمات آن به صورت خودکار به این قرارداد اضافه شوند.</p>
+            <div class="pzl-form-row" style="align-items: flex-end;">
+                <div class="form-group" style="flex: 2;">
+                    <label for="product_id_for_automation">انتخاب محصول:</label>
+                    <select id="product_id_for_automation">
+                        <option value="">-- انتخاب کنید --</option>
+                        <?php
+                        $products = wc_get_products(['type' => ['subscription', 'grouped', 'bundle'], 'limit' => -1, 'status' => 'publish']);
+                        foreach ($products as $product) {
+                            echo '<option value="' . esc_attr($product->get_id()) . '">' . esc_html($product->get_name()) . '</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                     <button type="button" id="add-services-from-product" class="pzl-button">افزودن خدمات محصول</button>
+                </div>
             </div>
         </div>
-        <button type="button" id="calculate-installments" class="pzl-button">محاسبه و تولید اقساط</button>
         <?php endif; ?>
-
+        
         <hr>
         <h4><i class="fas fa-calculator"></i> اقساط قرارداد</h4>
         <div id="payment-rows-container">
@@ -85,6 +127,7 @@ $contract_to_edit = isset($puzzling_contract) ? $puzzling_contract : null;
                 <select name="payment_status[]">
                     <option value="pending" <?php selected($inst['status'] ?? 'pending', 'pending'); ?>>در انتظار</option>
                     <option value="paid" <?php selected($inst['status'] ?? 'pending', 'paid'); ?>>پرداخت شده</option>
+                    <option value="cancelled" <?php selected($inst['status'] ?? 'pending', 'cancelled'); ?>>لغو شده</option>
                 </select>
                 <button type="button" class="pzl-button pzl-button-sm remove-payment-row" style="background: #dc3545 !important;">حذف</button>
             </div>
@@ -92,31 +135,8 @@ $contract_to_edit = isset($puzzling_contract) ? $puzzling_contract : null;
         </div>
         <button type="button" id="add-payment-row" class="pzl-button" style="align-self: flex-start;">افزودن قسط دستی</button>
         
-        <hr style="margin: 20px 0;">
-        <button type="submit" name="submit_contract" class="pzl-button" style="font-size: 16px;"><?php echo $contract_to_edit ? 'ذخیره تغییرات قرارداد' : 'ایجاد قرارداد'; ?></button>
-    </form>
-    
-    <?php if ($contract_to_edit) : ?>
-    <div id="pzl-automation-from-product" style="margin-top: 30px; border-top: 1px solid #dee2e6; padding-top: 20px;">
-        <h4><i class="fas fa-magic"></i> افزودن خدمات از محصول</h4>
-        <p class="description">یک محصول اشتراکی یا گروهی را انتخاب کنید تا پروژه‌های مرتبط با خدمات آن به صورت خودکار به این قرارداد اضافه شوند.</p>
-        <div class="pzl-form-row" style="align-items: flex-end;">
-            <div class="form-group" style="flex: 2;">
-                <label for="product_id_for_automation">انتخاب محصول:</label>
-                <select id="product_id_for_automation">
-                    <option value="">-- انتخاب کنید --</option>
-                    <?php
-                    $products = wc_get_products(['type' => ['subscription', 'grouped', 'bundle'], 'limit' => -1, 'status' => 'publish']);
-                    foreach ($products as $product) {
-                        echo '<option value="' . esc_attr($product->get_id()) . '">' . esc_html($product->get_name()) . '</option>';
-                    }
-                    ?>
-                </select>
-            </div>
-            <div class="form-group">
-                 <button type="button" id="add-services-from-product" class="pzl-button">افزودن خدمات محصول</button>
-            </div>
+        <div class="form-submit">
+            <button type="submit" name="submit_contract" class="pzl-button" style="font-size: 16px;"><?php echo $contract_to_edit ? 'ذخیره تغییرات قرارداد' : 'ایجاد قرارداد'; ?></button>
         </div>
-    </div>
-    <?php endif; ?>
+    </form>
 </div>
