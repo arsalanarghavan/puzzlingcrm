@@ -85,6 +85,9 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_bulk_edit_tasks', [$this, 'bulk_edit_tasks']);
         add_action('wp_ajax_puzzling_save_task_as_template', [$this, 'save_task_as_template']);
         add_action('wp_ajax_puzzling_send_custom_sms', [$this, 'send_custom_sms']);
+        
+        // --- Canned Responses ---
+        add_action('wp_ajax_puzzling_get_canned_response', [$this, 'ajax_get_canned_response']);
     }
 
     /**
@@ -1200,7 +1203,7 @@ class PuzzlingCRM_Ajax_Handler {
      * Executes automation rules based on a trigger.
      */
     private function execute_automations($trigger, $task_id, $trigger_value = null) {
-        $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+        $settings = PuzzlingCRM_Settings_Handler::get_setting('automations', []);
         $automations = $settings['automations'] ?? [];
 
         foreach ($automations as $automation) {

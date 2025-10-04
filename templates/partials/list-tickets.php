@@ -121,20 +121,22 @@ if ($ticket_id_to_view > 0) {
                     }
                 }
                 
-                $args['tax_query']['relation'] = 'AND';
-                $args['tax_query'][] = [
+                $args['meta_query'] = [
                     'relation' => 'OR',
-                    [
-                        'taxonomy' => 'organizational_position',
-                        'field'    => 'term_id',
-                        'terms'    => array_unique($department_term_ids),
-                    ],
                     [
                         'key' => '_assigned_to',
                         'value' => $current_user_id,
                         'compare' => '=',
                     ]
                 ];
+
+                if (!empty($department_term_ids)) {
+                    $args['tax_query'][] = [
+                        'taxonomy' => 'organizational_position',
+                        'field'    => 'term_id',
+                        'terms'    => array_unique($department_term_ids),
+                    ];
+                }
 
             } elseif (!$is_manager) { // Customer
                 $args['author'] = $current_user_id;
