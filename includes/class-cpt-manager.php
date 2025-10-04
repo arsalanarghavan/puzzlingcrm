@@ -372,7 +372,12 @@ class PuzzlingCRM_CPT_Manager {
         }
 
         // Ticket Statuses
-        $ticket_statuses = [__('Open', 'puzzlingcrm') => 'open', __('In Progress', 'puzzlingcrm') => 'in-progress', __('Answered', 'puzzlingcrm') => 'answered', __('Closed', 'puzzlingcrm') => 'closed'];
+        $ticket_statuses = [
+            __('Open', 'puzzlingcrm') => 'open',
+            __('Waiting for Customer', 'puzzlingcrm') => 'waiting-on-customer',
+            __('Waiting for Support', 'puzzlingcrm') => 'waiting-on-support',
+            __('Closed', 'puzzlingcrm') => 'closed'
+        ];
         foreach ($ticket_statuses as $name => $slug) {
             if ( ! term_exists( $slug, 'ticket_status' ) ) wp_insert_term( $name, 'ticket_status', ['slug' => $slug] );
         }

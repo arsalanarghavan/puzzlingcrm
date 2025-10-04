@@ -76,100 +76,152 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
             ?>
         </ul>
     </div>
+
+    <?php if ($status_slug === 'closed' && get_current_user_id() == $ticket->post_author && !get_post_meta($ticket->ID, '_ticket_rating', true)): ?>
+        <?php
+            // Generate a one-time token for CSAT
+            $csat_token = get_post_meta($ticket->ID, '_csat_token', true);
+            if (empty($csat_token)) {
+                $csat_token = wp_generate_password(32, false);
+                update_post_meta($ticket->ID, '_csat_token', $csat_token);
+            }
+        ?>
+        <div class="pzl-card" id="csat-section">
+            <h4>به این گفتگو امتیاز دهید</h4>
+            <p>نظر شما به ما در بهبود کیفیت خدمات کمک می‌کند.</p>
+            <form class="pzl-form pzl-ajax-form" data-action="puzzling_submit_ticket_rating">
+                <input type="hidden" name="ticket_id" value="<?php echo esc_attr($ticket->ID); ?>">
+                <input type="hidden" name="token" value="<?php echo esc_attr($csat_token); ?>">
+                <div class="form-group">
+                    <div class="pzl-star-rating">
+                        <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="عالی"></label>
+                        <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="خوب"></label>
+                        <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="متوسط"></label>
+                        <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="ضعیف"></label>
+                        <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="بسیار ضعیف"></label>
+                    </div>
+                </div>
+                 <div class="form-submit">
+                    <button type="submit" class="pzl-button">ثبت امتیاز</button>
+                </div>
+            </form>
+        </div>
+    <?php elseif ($status_slug !== 'closed'): ?>
+        <div class="ticket-reply-form">
+            <h3>ارسال پاسخ جدید</h3>
+            <form class="pzl-form pzl-ajax-form" data-action="puzzling_ticket_reply" enctype="multipart/form-data">
+                <input type="hidden" name="ticket_id" value="<?php echo esc_attr($ticket->ID); ?>">
+                <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
     
-    <div class="ticket-reply-form">
-        <h3>ارسال پاسخ جدید</h3>
-        <form class="pzl-form pzl-ajax-form" data-action="puzzling_ticket_reply" enctype="multipart/form-data">
-            <input type="hidden" name="ticket_id" value="<?php echo esc_attr($ticket->ID); ?>">
-            <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
+                <?php if ($is_manager || $is_team_member): 
+                    $canned_responses = get_posts(['post_type' => 'pzl_canned_response', 'posts_per_page' => -1]);
+                ?>
+                <div class="form-group">
+                    <label for="canned_response_selector">پاسخ‌های آماده:</label>
+                    <select id="canned_response_selector">
+                        <option value="">-- انتخاب پاسخ آماده --</option>
+                        <?php foreach($canned_responses as $response): ?>
+                            <option value="<?php echo esc_attr($response->ID); ?>"><?php echo esc_html($response->post_title); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <?php endif; ?>
+                
+                <?php wp_editor('', 'comment', ['textarea_name' => 'comment', 'media_buttons' => false, 'textarea_rows' => 10]); ?>
+                
+                <div class="form-group">
+                    <label for="reply_attachments">پیوست فایل (اختیاری):</label>
+                    <input type="file" name="reply_attachments[]" id="reply_attachments" multiple>
+    				<p class="description">حداکثر حجم مجاز برای هر فایل: 5 مگابایت. فرمت‌های مجاز: jpg, png, pdf, zip, rar.</p>
+                </div>
+                
+                <?php if ($is_manager || $is_team_member): ?>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="is_internal_note" value="1">
+                        ثبت به عنوان یادداشت داخلی (به مشتری نمایش داده نمی‌شود)
+                    </label>
+                </div>
+                <div class="pzl-form-row">
+                    <div class="form-group-inline half-width">
+                        <label for="ticket_status">تغییر وضعیت به:</label>
+                        <select name="ticket_status">
+                            <?php
+                            $statuses = get_terms(['taxonomy' => 'ticket_status', 'hide_empty' => false]);
+                            foreach ($statuses as $status) {
+                                echo '<option value="' . esc_attr($status->slug) . '" ' . selected($status_slug, $status->slug, false) . '>' . esc_html($status->name) . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                     <div class="form-group-inline half-width">
+                        <label for="ticket_priority">تغییر اولویت به:</label>
+                        <select name="ticket_priority">
+                            <?php
+                            $priorities = get_terms(['taxonomy' => 'ticket_priority', 'hide_empty' => false]);
+                            foreach ($priorities as $priority) {
+                                echo '<option value="' . esc_attr($priority->term_id) . '" ' . selected($priority_terms[0]->term_id ?? 0, $priority->term_id, false) . '>' . esc_html($priority->name) . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="pzl-form-row">
+                     <div class="form-group-inline half-width">
+                        <label for="department">تغییر دپارتمان:</label>
+                        <?php
+                            wp_dropdown_categories([
+                                'taxonomy'         => 'organizational_position',
+                                'name'             => 'department',
+                                'selected'         => !empty($department_terms) ? $department_terms[0]->term_id : 0,
+                                'show_option_none' => __('انتخاب دپارتمان', 'puzzlingcrm'),
+                                'hierarchical'     => true,
+                                'hide_empty'       => false,
+                                'parent'           => 0, // Only show top-level departments
+                            ]);
+                        ?>
+                    </div>
+                    <div class="form-group-inline half-width">
+                        <label for="assigned_to">ارجاع به کارمند:</label>
+                        <select name="assigned_to">
+                            <option value="0">-- هیچکس --</option>
+                            <?php
+                            $staff_users = get_users(['role__in' => ['team_member', 'system_manager', 'administrator']]);
+                            foreach ($staff_users as $staff) {
+                                echo '<option value="' . esc_attr($staff->ID) . '" ' . selected($assigned_to_id, $staff->ID, false) . '>' . esc_html($staff->display_name) . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                </div>
+                <?php endif; ?>
 
-            <?php if ($is_manager || $is_team_member): 
-                $canned_responses = get_posts(['post_type' => 'pzl_canned_response', 'posts_per_page' => -1]);
-            ?>
-            <div class="form-group">
-                <label for="canned_response_selector">پاسخ‌های آماده:</label>
-                <select id="canned_response_selector">
-                    <option value="">-- انتخاب پاسخ آماده --</option>
-                    <?php foreach($canned_responses as $response): ?>
-                        <option value="<?php echo esc_attr($response->ID); ?>"><?php echo esc_html($response->post_title); ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <?php endif; ?>
-            
-            <?php wp_editor('', 'comment', ['textarea_name' => 'comment', 'media_buttons' => false, 'textarea_rows' => 10]); ?>
-            
-            <div class="form-group">
-                <label for="reply_attachments">پیوست فایل (اختیاری):</label>
-                <input type="file" name="reply_attachments[]" id="reply_attachments" multiple>
-				<p class="description">حداکثر حجم مجاز برای هر فایل: 5 مگابایت. فرمت‌های مجاز: jpg, png, pdf, zip, rar.</p>
-            </div>
-            
-            <?php if ($is_manager || $is_team_member): ?>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" name="is_internal_note" value="1">
-                    ثبت به عنوان یادداشت داخلی (به مشتری نمایش داده نمی‌شود)
-                </label>
-            </div>
-            <div class="pzl-form-row">
-                <div class="form-group-inline half-width">
-                    <label for="ticket_status">تغییر وضعیت به:</label>
-                    <select name="ticket_status">
-                        <?php
-                        $statuses = get_terms(['taxonomy' => 'ticket_status', 'hide_empty' => false]);
-                        foreach ($statuses as $status) {
-                            echo '<option value="' . esc_attr($status->slug) . '" ' . selected($status_slug, $status->slug, false) . '>' . esc_html($status->name) . '</option>';
-                        }
-                        ?>
-                    </select>
-                </div>
-                 <div class="form-group-inline half-width">
-                    <label for="ticket_priority">تغییر اولویت به:</label>
-                    <select name="ticket_priority">
-                        <?php
-                        $priorities = get_terms(['taxonomy' => 'ticket_priority', 'hide_empty' => false]);
-                        foreach ($priorities as $priority) {
-                            echo '<option value="' . esc_attr($priority->term_id) . '" ' . selected($priority_terms[0]->term_id ?? 0, $priority->term_id, false) . '>' . esc_html($priority->name) . '</option>';
-                        }
-                        ?>
-                    </select>
-                </div>
-            </div>
-            <div class="pzl-form-row">
-                 <div class="form-group-inline half-width">
-                    <label for="department">تغییر دپارتمان:</label>
-                    <?php
-                        wp_dropdown_categories([
-                            'taxonomy'         => 'organizational_position',
-                            'name'             => 'department',
-                            'selected'         => !empty($department_terms) ? $department_terms[0]->term_id : 0,
-                            'show_option_none' => __('انتخاب دپارتمان', 'puzzlingcrm'),
-                            'hierarchical'     => true,
-                            'hide_empty'       => false,
-                            'parent'           => 0, // Only show top-level departments
-                        ]);
-                    ?>
-                </div>
-                <div class="form-group-inline half-width">
-                    <label for="assigned_to">ارجاع به کارمند:</label>
-                    <select name="assigned_to">
-                        <option value="0">-- هیچکس --</option>
-                        <?php
-                        $staff_users = get_users(['role__in' => ['team_member', 'system_manager', 'administrator']]);
-                        foreach ($staff_users as $staff) {
-                            echo '<option value="' . esc_attr($staff->ID) . '" ' . selected($assigned_to_id, $staff->ID, false) . '>' . esc_html($staff->display_name) . '</option>';
-                        }
-                        ?>
-                    </select>
-                </div>
-            </div>
-            <?php endif; ?>
-
-            <button type="submit" class="pzl-button">ارسال پاسخ</button>
-        </form>
-    </div>
+                <button type="submit" class="pzl-button">ارسال پاسخ</button>
+            </form>
+        </div>
+    <?php endif; ?>
 </div>
+
+<style>
+/* Add these styles to your main CSS file for the star rating */
+.pzl-star-rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: center;
+}
+.pzl-star-rating input[type="radio"] { display: none; }
+.pzl-star-rating label {
+    font-size: 3rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.pzl-star-rating input[type="radio"]:checked ~ label,
+.pzl-star-rating label:hover,
+.pzl-star-rating label:hover ~ label {
+    color: #ffc107;
+}
+</style>
 
 <?php
 if (!function_exists('puzzling_ticket_comment_template')) {

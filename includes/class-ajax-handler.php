@@ -1,6 +1,6 @@
 <?php
 /**
- * PuzzlingCRM AJAX Handler - V3.1 (Pro-forma Invoice Management Added & Fixed)
+ * PuzzlingCRM AJAX Handler - V3.2 (Ticketing System Overhaul)
  *
  * Handles all AJAX requests for the plugin.
  *
@@ -32,6 +32,9 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_new_ticket', [$this, 'ajax_new_ticket']);
         add_action('wp_ajax_puzzling_ticket_reply', [$this, 'ajax_ticket_reply']);
         add_action('wp_ajax_puzzling_convert_ticket_to_task', [$this, 'ajax_convert_ticket_to_task']);
+        // New AJAX action for CSAT
+        add_action('wp_ajax_puzzling_submit_ticket_rating', [$this, 'ajax_submit_ticket_rating']);
+        add_action('wp_ajax_nopriv_puzzling_submit_ticket_rating', [$this, 'ajax_submit_ticket_rating']);
 
 
         // --- Live Search & Data Fetching ---
