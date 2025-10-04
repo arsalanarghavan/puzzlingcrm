@@ -6,16 +6,9 @@ function initPuzzlingDatepickers(container = document.body) {
     // Find all datepicker fields that have NOT been initialized yet.
     jQuery(container).find('.pzl-jalali-date-picker:not(.pzl-init-done)').each(function(index) {
         var $this = jQuery(this);
-        var id = $this.attr('id');
         
-        // If the element doesn't have an ID, generate a unique one.
-        if (!id) {
-            id = 'pzl-datepicker-' + Date.now() + '-' + index;
-            $this.attr('id', id);
-        }
-        
-        // Initialize the datepicker using the correct function name
-        if (typeof persianDatepicker !== 'undefined') {
+        // Initialize the datepicker using the correct function name for the library
+        if (typeof jQuery.fn.persianDatepicker !== 'undefined') {
             $this.persianDatepicker({
                 format: 'YYYY/MM/DD',
                 autoClose: true
