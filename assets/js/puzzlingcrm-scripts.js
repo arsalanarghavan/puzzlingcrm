@@ -1,10 +1,10 @@
 /**
- * Initializes Kama Date Picker on all relevant fields.
+ * Initializes Persian Date Picker on all relevant fields.
  * This function is now standalone to be called safely.
  */
 function initPuzzlingDatepickers(container = document.body) {
     // Find all datepicker fields that have NOT been initialized yet.
-    jQuery(container).find('.pzl-jalali-date-picker:not(.kama-init-done)').each(function(index) {
+    jQuery(container).find('.pzl-jalali-date-picker:not(.pzl-init-done)').each(function(index) {
         var $this = jQuery(this);
         var id = $this.attr('id');
         
@@ -14,17 +14,16 @@ function initPuzzlingDatepickers(container = document.body) {
             $this.attr('id', id);
         }
         
-        // Initialize the datepicker
-        if (typeof kamadatepicker !== 'undefined') {
-            kamadatepicker(id, {
-                buttonsColor: "red",
-                forceFarsiDigits: true,
-                gotoToday: true,
+        // Initialize the datepicker using the correct function name
+        if (typeof persianDatepicker !== 'undefined') {
+            $this.persianDatepicker({
+                format: 'YYYY/MM/DD',
+                autoClose: true
             });
         }
         
         // Mark the element as initialized
-        $this.addClass('kama-init-done');
+        $this.addClass('pzl-init-done');
     });
 }
 
