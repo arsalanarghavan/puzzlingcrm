@@ -609,7 +609,7 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'puzzling_get_canned_response',
-                security: puzzlingcrm_ajax_obj.nonce,
+                security: puzzling_ajax_nonce,
                 response_id: responseId
             },
             success: function(response) {

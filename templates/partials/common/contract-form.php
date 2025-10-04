@@ -44,6 +44,30 @@ $contract_to_edit = isset($puzzling_contract) ? $puzzling_contract : null;
             <div class="form-group"><label for="_project_start_date">تاریخ شروع:</label><input type="text" id="_project_start_date" name="_project_start_date" value="<?php echo $contract_to_edit ? esc_attr(puzzling_gregorian_to_jalali(get_post_meta($contract_to_edit->ID, '_project_start_date', true))) : ''; ?>" class="pzl-jalali-date-picker"></div>
             <div class="form-group"><label for="_project_end_date">تاریخ پایان:</label><input type="text" id="_project_end_date" name="_project_end_date" value="<?php echo $contract_to_edit ? esc_attr(puzzling_gregorian_to_jalali(get_post_meta($contract_to_edit->ID, '_project_end_date', true))) : ''; ?>" class="pzl-jalali-date-picker" readonly></div>
         </div>
+        
+        <?php if (!$contract_to_edit): ?>
+        <hr>
+        <h4><i class="fas fa-magic"></i> محاسبه‌گر اقساط (اختیاری)</h4>
+        <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="total_amount">مبلغ کل قرارداد (تومان)</label>
+                <input type="text" id="total_amount" placeholder="مثال: 30000000">
+            </div>
+            <div class="form-group">
+                <label for="total_installments">تعداد کل اقساط</label>
+                <input type="number" id="total_installments" placeholder="مثال: 6">
+            </div>
+            <div class="form-group">
+                <label for="installment_interval">فاصله بین اقساط (روز)</label>
+                <input type="number" id="installment_interval" placeholder="مثال: 30 برای ماهانه">
+            </div>
+            <div class="form-group">
+                <label for="start_date">تاریخ اولین قسط</label>
+                <input type="text" id="start_date" class="pzl-jalali-date-picker">
+            </div>
+        </div>
+        <button type="button" id="calculate-installments" class="pzl-button">محاسبه و تولید اقساط</button>
+        <?php endif; ?>
 
         <hr>
         <h4><i class="fas fa-calculator"></i> اقساط قرارداد</h4>
@@ -66,7 +90,6 @@ $contract_to_edit = isset($puzzling_contract) ? $puzzling_contract : null;
                 <select id="product_id_for_automation">
                     <option value="">-- انتخاب کنید --</option>
                     <?php
-                    // Query for subscription, grouped, and bundled products
                     $products = wc_get_products(['type' => ['subscription', 'grouped', 'bundle'], 'limit' => -1, 'status' => 'publish']);
                     foreach ($products as $product) {
                         echo '<option value="' . esc_attr($product->get_id()) . '">' . esc_html($product->get_name()) . '</option>';
