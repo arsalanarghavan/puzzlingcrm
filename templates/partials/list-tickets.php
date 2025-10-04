@@ -1,7 +1,6 @@
 <?php
 /**
- * Template for listing tickets for the current user (client or admin).
- * Now with tabbing for a cleaner interface and department selection.
+ * Template for listing tickets and the new ticket form.
  * @package PuzzlingCRM
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -11,7 +10,7 @@ $current_user_id = $current_user->ID;
 $is_manager = current_user_can('manage_options');
 $is_team_member = in_array('team_member', (array)$current_user->roles);
 
-$base_url = remove_query_arg(['puzzling_notice', 'action', 'ticket_id', 's']);
+$base_url = remove_query_arg(['puzzling_notice', 'action', 'ticket_id', 's', 'status_filter', 'priority_filter', 'department_filter', 'paged']);
 $active_tab = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 
 
@@ -33,11 +32,11 @@ if ($ticket_id_to_view > 0) {
 
     <div class="pzl-dashboard-tab-content">
     <?php if ($active_tab === 'new'): ?>
-        <div class="pzl-card">
+        <div id="puzzling-new-ticket-form" class="pzl-card">
             <div class="pzl-card-header">
                 <h3><i class="fas fa-plus-circle"></i> ارسال تیکت جدید</h3>
             </div>
-            <form id="puzzling-new-ticket-form" class="pzl-form pzl-ajax-form" data-action="puzzling_new_ticket" enctype="multipart/form-data">
+            <form class="pzl-form pzl-ajax-form" data-action="puzzling_new_ticket" enctype="multipart/form-data">
                 <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
                 <div class="pzl-form-row">
                     <div class="form-group" style="flex: 2;">
@@ -76,9 +75,16 @@ if ($ticket_id_to_view > 0) {
                     <?php wp_editor('', 'ticket_content', ['textarea_name' => 'ticket_content', 'media_buttons' => false, 'textarea_rows' => 8]); ?>
                 </div>
                 <div class="form-group">
-                    <label for="ticket_attachments">پیوست فایل (اختیاری):</label>
-                    <input type="file" name="ticket_attachments[]" id="ticket_attachments" multiple>
-					<p class="description">حداکثر حجم مجاز برای هر فایل: 5 مگابایت. فرمت‌های مجاز: jpg, png, pdf, zip, rar.</p>
+                    <label>پیوست فایل (اختیاری):</label>
+                    <div class="pzl-file-uploader-container">
+                        <input type="file" name="ticket_attachments[]" id="ticket_attachments" multiple class="pzl-file-input">
+                        <label for="ticket_attachments" class="pzl-file-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>فایل‌های خود را انتخاب کنید یا اینجا بکشید</span>
+                        </label>
+                        <div id="new-ticket-attachments-preview" class="pzl-attachments-preview"></div>
+                    </div>
+                    <p class="description">حداکثر حجم مجاز: 5 مگابایت. فرمت‌های مجاز: jpg, png, pdf, zip, rar.</p>
                 </div>
                 <div class="form-submit">
                     <button type="submit" class="pzl-button">ارسال تیکت</button>
@@ -91,6 +97,7 @@ if ($ticket_id_to_view > 0) {
             // Filtering
             $status_filter = isset($_GET['status_filter']) ? sanitize_key($_GET['status_filter']) : '';
             $priority_filter = isset($_GET['priority_filter']) ? sanitize_key($_GET['priority_filter']) : '';
+            $department_filter = isset($_GET['department_filter']) ? intval($_GET['department_filter']) : 0;
             $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
             
             $paged = get_query_var('paged') ? get_query_var('paged') : 1;
@@ -106,12 +113,14 @@ if ($ticket_id_to_view > 0) {
             if ($priority_filter) {
                 $args['tax_query'][] = ['taxonomy' => 'ticket_priority', 'field' => 'slug', 'terms' => $priority_filter];
             }
+            if ($department_filter > 0) {
+                 $args['tax_query'][] = ['taxonomy' => 'organizational_position', 'field' => 'term_id', 'terms' => $department_filter];
+            }
             if ($search_query) {
                 $args['s'] = $search_query;
             }
             
             if ($is_team_member && !$is_manager) {
-                // Team members see tickets in their department or assigned to them
                 $user_positions = wp_get_object_terms($current_user_id, 'organizational_position');
                 $department_term_ids = [];
 
@@ -123,11 +132,7 @@ if ($ticket_id_to_view > 0) {
                 
                 $args['meta_query'] = [
                     'relation' => 'OR',
-                    [
-                        'key' => '_assigned_to',
-                        'value' => $current_user_id,
-                        'compare' => '=',
-                    ]
+                    ['key' => '_assigned_to', 'value' => $current_user_id, 'compare' => '='],
                 ];
 
                 if (!empty($department_term_ids)) {
@@ -149,23 +154,37 @@ if ($ticket_id_to_view > 0) {
             </div>
 
             <form method="get" class="pzl-form">
+                <input type="hidden" name="page" value="<?php echo esc_attr($_REQUEST['page'] ?? ''); ?>">
                 <input type="hidden" name="view" value="tickets">
                 <div class="pzl-form-row" style="align-items: flex-end;">
                     <div class="form-group" style="flex: 2;">
-                        <input type="search" name="s" placeholder="جستجو در عنوان تیکت..." value="<?php echo esc_attr($search_query); ?>">
+                        <label for="s">جستجو:</label>
+                        <input type="search" name="s" id="s" placeholder="جستجو در عنوان تیکت..." value="<?php echo esc_attr($search_query); ?>">
                     </div>
                     <div class="form-group">
-                        <select name="status_filter">
-                            <option value="">همه وضعیت‌ها</option>
+                        <label for="status_filter">وضعیت:</label>
+                        <select name="status_filter" id="status_filter">
+                            <option value="">همه</option>
                             <?php foreach (get_terms(['taxonomy' => 'ticket_status', 'hide_empty' => false]) as $status) echo '<option value="'.esc_attr($status->slug).'" '.selected($status_filter, $status->slug, false).'>'.esc_html($status->name).'</option>'; ?>
                         </select>
                     </div>
                      <div class="form-group">
-                        <select name="priority_filter">
-                            <option value="">همه اولویت‌ها</option>
+                        <label for="priority_filter">اولویت:</label>
+                        <select name="priority_filter" id="priority_filter">
+                            <option value="">همه</option>
                             <?php foreach (get_terms(['taxonomy' => 'ticket_priority', 'hide_empty' => false]) as $priority) echo '<option value="'.esc_attr($priority->slug).'" '.selected($priority_filter, $priority->slug, false).'>'.esc_html($priority->name).'</option>'; ?>
                         </select>
                     </div>
+                    <?php if ($is_manager || $is_team_member): ?>
+                    <div class="form-group">
+                        <label for="department_filter">دپارتمان:</label>
+                        <?php wp_dropdown_categories([
+                                'taxonomy' => 'organizational_position', 'name' => 'department_filter', 'id' => 'department_filter',
+                                'show_option_all' => 'همه', 'selected' => $department_filter,
+                                'hierarchical' => true, 'hide_empty' => false, 'parent' => 0,
+                            ]); ?>
+                    </div>
+                    <?php endif; ?>
                     <div class="form-group"><button type="submit" class="pzl-button">فیلتر</button></div>
                 </div>
             </form>
@@ -217,7 +236,7 @@ if ($ticket_id_to_view > 0) {
                         'base' => add_query_arg('paged', '%#%'),
                         'total' => $tickets_query->max_num_pages,
                         'current' => max( 1, $paged ),
-                        'format' => '?paged=%#%', 'prev_text' => '« قبلی', 'next_text' => 'بعدی »',
+                        'format' => '&paged=%#%', 'prev_text' => '« قبلی', 'next_text' => 'بعدی »',
                     ]);
                     ?>
                 </div>

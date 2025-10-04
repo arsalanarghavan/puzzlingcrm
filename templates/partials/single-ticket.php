@@ -79,7 +79,6 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
 
     <?php if ($status_slug === 'closed' && get_current_user_id() == $ticket->post_author && !get_post_meta($ticket->ID, '_ticket_rating', true)): ?>
         <?php
-            // Generate a one-time token for CSAT
             $csat_token = get_post_meta($ticket->ID, '_csat_token', true);
             if (empty($csat_token)) {
                 $csat_token = wp_generate_password(32, false);
@@ -107,7 +106,7 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
             </form>
         </div>
     <?php elseif ($status_slug !== 'closed'): ?>
-        <div class="ticket-reply-form">
+        <div id="pzl-single-ticket-wrapper" class="ticket-reply-form">
             <h3>ارسال پاسخ جدید</h3>
             <form class="pzl-form pzl-ajax-form" data-action="puzzling_ticket_reply" enctype="multipart/form-data">
                 <input type="hidden" name="ticket_id" value="<?php echo esc_attr($ticket->ID); ?>">
@@ -127,23 +126,32 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
                 </div>
                 <?php endif; ?>
                 
-                <?php wp_editor('', 'comment', ['textarea_name' => 'comment', 'media_buttons' => false, 'textarea_rows' => 10]); ?>
+                <div class="form-group">
+                    <?php wp_editor('', 'comment', ['textarea_name' => 'comment', 'media_buttons' => false, 'textarea_rows' => 10]); ?>
+                </div>
                 
                 <div class="form-group">
-                    <label for="reply_attachments">پیوست فایل (اختیاری):</label>
-                    <input type="file" name="reply_attachments[]" id="reply_attachments" multiple>
-    				<p class="description">حداکثر حجم مجاز برای هر فایل: 5 مگابایت. فرمت‌های مجاز: jpg, png, pdf, zip, rar.</p>
+                    <label>پیوست فایل (اختیاری):</label>
+                    <div class="pzl-file-uploader-container">
+                        <input type="file" name="reply_attachments[]" id="reply_attachments" multiple class="pzl-file-input">
+                        <label for="reply_attachments" class="pzl-file-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>فایل‌های خود را انتخاب کنید یا اینجا بکشید</span>
+                        </label>
+                        <div id="reply-attachments-preview" class="pzl-attachments-preview"></div>
+                    </div>
+                    <p class="description">حداکثر حجم مجاز: 5 مگابایت. فرمت‌های مجاز: jpg, png, pdf, zip, rar.</p>
                 </div>
                 
                 <?php if ($is_manager || $is_team_member): ?>
                 <div class="form-group">
-                    <label>
-                        <input type="checkbox" name="is_internal_note" value="1">
-                        ثبت به عنوان یادداشت داخلی (به مشتری نمایش داده نمی‌شود)
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal;">
+                        <input type="checkbox" name="is_internal_note" value="1" style="width: auto;">
+                        <span>ثبت به عنوان یادداشت داخلی (به مشتری نمایش داده نمی‌شود)</span>
                     </label>
                 </div>
                 <div class="pzl-form-row">
-                    <div class="form-group-inline half-width">
+                    <div class="form-group half-width">
                         <label for="ticket_status">تغییر وضعیت به:</label>
                         <select name="ticket_status">
                             <?php
@@ -154,7 +162,7 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
                             ?>
                         </select>
                     </div>
-                     <div class="form-group-inline half-width">
+                     <div class="form-group half-width">
                         <label for="ticket_priority">تغییر اولویت به:</label>
                         <select name="ticket_priority">
                             <?php
@@ -167,7 +175,7 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
                     </div>
                 </div>
                 <div class="pzl-form-row">
-                     <div class="form-group-inline half-width">
+                     <div class="form-group half-width">
                         <label for="department">تغییر دپارتمان:</label>
                         <?php
                             wp_dropdown_categories([
@@ -177,11 +185,11 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
                                 'show_option_none' => __('انتخاب دپارتمان', 'puzzlingcrm'),
                                 'hierarchical'     => true,
                                 'hide_empty'       => false,
-                                'parent'           => 0, // Only show top-level departments
+                                'parent'           => 0,
                             ]);
                         ?>
                     </div>
-                    <div class="form-group-inline half-width">
+                    <div class="form-group half-width">
                         <label for="assigned_to">ارجاع به کارمند:</label>
                         <select name="assigned_to">
                             <option value="0">-- هیچکس --</option>
@@ -195,33 +203,13 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
                     </div>
                 </div>
                 <?php endif; ?>
-
-                <button type="submit" class="pzl-button">ارسال پاسخ</button>
+                <div class="form-submit">
+                    <button type="submit" class="pzl-button">ارسال پاسخ</button>
+                </div>
             </form>
         </div>
     <?php endif; ?>
 </div>
-
-<style>
-/* Add these styles to your main CSS file for the star rating */
-.pzl-star-rating {
-    display: flex;
-    flex-direction: row-reverse;
-    justify-content: center;
-}
-.pzl-star-rating input[type="radio"] { display: none; }
-.pzl-star-rating label {
-    font-size: 3rem;
-    color: #ddd;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-.pzl-star-rating input[type="radio"]:checked ~ label,
-.pzl-star-rating label:hover,
-.pzl-star-rating label:hover ~ label {
-    color: #ffc107;
-}
-</style>
 
 <?php
 if (!function_exists('puzzling_ticket_comment_template')) {

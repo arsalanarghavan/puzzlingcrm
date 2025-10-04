@@ -32,9 +32,9 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_new_ticket', [$this, 'ajax_new_ticket']);
         add_action('wp_ajax_puzzling_ticket_reply', [$this, 'ajax_ticket_reply']);
         add_action('wp_ajax_puzzling_convert_ticket_to_task', [$this, 'ajax_convert_ticket_to_task']);
-        // New AJAX action for CSAT
         add_action('wp_ajax_puzzling_submit_ticket_rating', [$this, 'ajax_submit_ticket_rating']);
         add_action('wp_ajax_nopriv_puzzling_submit_ticket_rating', [$this, 'ajax_submit_ticket_rating']);
+        add_action('wp_ajax_puzzling_get_canned_response', [$this, 'ajax_get_canned_response']);
 
 
         // --- Live Search & Data Fetching ---
@@ -85,9 +85,22 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_bulk_edit_tasks', [$this, 'bulk_edit_tasks']);
         add_action('wp_ajax_puzzling_save_task_as_template', [$this, 'save_task_as_template']);
         add_action('wp_ajax_puzzling_send_custom_sms', [$this, 'send_custom_sms']);
-        
-        // --- Canned Responses ---
-        add_action('wp_ajax_puzzling_get_canned_response', [$this, 'ajax_get_canned_response']);
+    }
+
+    public function ajax_get_canned_response() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_posts') || !isset($_POST['response_id'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+    
+        $response_id = intval($_POST['response_id']);
+        $response = get_post($response_id);
+    
+        if ($response && $response->post_type === 'pzl_canned_response') {
+            wp_send_json_success(['content' => $response->post_content]);
+        } else {
+            wp_send_json_error(['message' => 'پاسخ یافت نشد.']);
+        }
     }
 
     /**

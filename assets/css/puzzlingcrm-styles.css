@@ -1,6 +1,6 @@
 /*
  * PuzzlingCRM Stylesheet
- * Version: 3.0.0 (Final UI Polish)
+ * Version: 3.1.2 (Full Layout & Ticket System Fix)
  */
 
 /* --- ریشه و متغیرهای اصلی --- */
@@ -1358,4 +1358,115 @@ li.internal-note { background-color: #fffbe6; border-color: #ffe58f; }
     padding: 2px 8px;
     border-radius: 10px;
     margin-right: 10px;
+}
+
+/* --- Professional File Uploader Styles --- */
+.pzl-file-uploader-container {
+    position: relative;
+}
+
+.pzl-file-input {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+}
+
+.pzl-file-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    padding: 40px 20px;
+    border: 2px dashed var(--pzl-border-color);
+    border-radius: var(--pzl-border-radius);
+    background-color: #fcfcfc;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    color: var(--pzl-text-light);
+}
+
+.pzl-file-label:hover,
+.pzl-file-input:focus + .pzl-file-label,
+.pzl-file-label.is-dragover {
+    border-color: var(--pzl-primary-color);
+    background-color: #fff8f8;
+    color: var(--pzl-primary-color);
+}
+
+.pzl-file-label i {
+    font-size: 48px;
+    color: inherit !important;
+}
+
+.pzl-file-label span {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.pzl-attachments-preview {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+}
+
+.pzl-preview-item {
+    position: relative;
+    border: 1px solid var(--pzl-border-color);
+    border-radius: var(--pzl-border-radius);
+    overflow: hidden;
+    background-color: #f8f9fa;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.pzl-preview-item .pzl-preview-thumbnail {
+    width: 100%;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.pzl-preview-item .pzl-preview-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pzl-preview-item .pzl-preview-thumbnail i {
+    font-size: 40px;
+    color: var(--pzl-text-light);
+}
+
+.pzl-preview-info {
+    padding: 10px;
+    background-color: #fff;
+    font-size: 12px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- Force White Icons on WP Editor Toolbar --- */
+.wp-editor-tools .wp-editor-container .mce-btn i.mce-ico {
+    color: #ffffff !important;
+}
+
+/* This is for the "Text" tab toolbar (Quicktags) */
+.puzzling-dashboard-wrapper .quicktags-toolbar input[type="button"] {
+    background: var(--pzl-secondary-color) !important;
+    border-color: #000 !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+.puzzling-dashboard-wrapper .quicktags-toolbar input[type="button"]:hover {
+    background: var(--pzl-primary-color) !important;
 }
