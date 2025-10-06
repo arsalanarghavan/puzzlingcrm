@@ -88,6 +88,95 @@ class PuzzlingCRM_Ajax_Handler {
         add_action('wp_ajax_puzzling_send_custom_sms', [$this, 'send_custom_sms']);
     }
 
+    public function ajax_cancel_contract() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم را ندارید.']);
+        }
+
+        $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
+        $reason = isset($_POST['reason']) ? sanitize_textarea_field($_POST['reason']) : 'دلیلی ذکر نشده است.';
+
+        if ($contract_id > 0) {
+            update_post_meta($contract_id, '_contract_status', 'cancelled');
+            update_post_meta($contract_id, '_cancellation_reason', $reason);
+            update_post_meta($contract_id, '_cancellation_date', current_time('mysql'));
+            
+            wp_send_json_success(['message' => 'قرارداد با موفقیت لغو شد.', 'reload' => true]);
+        } else {
+            wp_send_json_error(['message' => 'شناسه قرارداد نامعتبر است.']);
+        }
+    }
+    
+    public function ajax_manage_contract() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم برای مدیریت قراردادها را ندارید.']);
+        }
+
+        $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
+        $customer_id = isset($_POST['customer_id']) ? intval($_POST['customer_id']) : 0;
+        $start_date_jalali = isset($_POST['_project_start_date']) ? sanitize_text_field($_POST['_project_start_date']) : '';
+
+        if (empty($customer_id) || empty($start_date_jalali)) {
+            wp_send_json_error(['message' => 'انتخاب مشتری و تاریخ شروع الزامی است.']);
+        }
+
+        $start_date_gregorian = puzzling_jalali_to_gregorian($start_date_jalali);
+        $contract_number = 'puz-' . jdate('ymd', strtotime($start_date_gregorian), '', 'en') . '-' . $customer_id;
+        $customer_data = get_userdata($customer_id);
+
+        $post_data = [
+            'post_title' => isset($_POST['contract_title']) && !empty($_POST['contract_title']) ? sanitize_text_field($_POST['contract_title']) : 'قرارداد برای ' . $customer_data->display_name,
+            'post_author' => $customer_id,
+            'post_status' => 'publish',
+            'post_type' => 'contract',
+        ];
+
+        if ($contract_id > 0) {
+            $post_data['ID'] = $contract_id;
+            $result = wp_update_post($post_data, true);
+            $message = 'قرارداد با موفقیت به‌روزرسانی شد.';
+        } else {
+            $result = wp_insert_post($post_data, true);
+            $message = 'قرارداد جدید با موفقیت ایجاد شد.';
+        }
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => 'خطا در ذخیره‌سازی قرارداد.']);
+        }
+
+        $the_contract_id = is_int($result) ? $result : $contract_id;
+
+        // Save meta data
+        update_post_meta($the_contract_id, '_contract_number', $contract_number);
+        update_post_meta($the_contract_id, '_project_start_date', $start_date_gregorian);
+        // ... save other meta fields ...
+        $duration = isset($_POST['_project_contract_duration']) ? sanitize_key($_POST['_project_contract_duration']) : '1-month';
+        update_post_meta($the_contract_id, '_project_contract_duration', $duration);
+        $end_date = date('Y-m-d', strtotime($start_date_gregorian . ' +' . str_replace('-', ' ', $duration)));
+        update_post_meta($the_contract_id, '_project_end_date', $end_date);
+        update_post_meta($the_contract_id, '_project_subscription_model', sanitize_key($_POST['_project_subscription_model']));
+
+
+        // Save installments
+        $installments = [];
+        if (isset($_POST['payment_amount']) && is_array($_POST['payment_amount'])) {
+            for ($i = 0; $i < count($_POST['payment_amount']); $i++) {
+                if (!empty($_POST['payment_amount'][$i])) {
+                    $installments[] = [
+                        'amount' => sanitize_text_field($_POST['payment_amount'][$i]),
+                        'due_date' => puzzling_jalali_to_gregorian(sanitize_text_field($_POST['payment_due_date'][$i])),
+                        'status' => sanitize_key($_POST['payment_status'][$i]),
+                    ];
+                }
+            }
+        }
+        update_post_meta($the_contract_id, '_installments', $installments);
+
+        wp_send_json_success(['message' => $message, 'reload' => true]);
+    }
+
     public function ajax_get_canned_response() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('edit_posts') || !isset($_POST['response_id'])) {

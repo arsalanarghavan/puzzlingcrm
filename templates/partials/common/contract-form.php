@@ -118,7 +118,18 @@ $is_cancelled = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_contr
         <?php endif; ?>
         
         <hr>
-        <h4><i class="fas fa-calculator"></i> اقساط قرارداد</h4>
+
+        <h4><i class="fas fa-calculator"></i> محاسبه‌گر و لیست اقساط</h4>
+        <div class="pzl-card" style="background: #f8f9fa;">
+            <div class="pzl-form-row" style="align-items: flex-end; gap: 15px;">
+                <div class="form-group"><label for="total_amount">مبلغ کل (تومان)</label><input type="text" id="total_amount" placeholder="مثال: 30000000"></div>
+                <div class="form-group"><label for="total_installments">تعداد اقساط</label><input type="number" id="total_installments" placeholder="مثال: 6" value="1"></div>
+                <div class="form-group"><label for="installment_interval">فاصله (روز)</label><input type="number" id="installment_interval" placeholder="مثال: 30" value="30"></div>
+                <div class="form-group"><label for="start_date">تاریخ اولین قسط</label><input type="text" id="start_date" class="pzl-jalali-date-picker"></div>
+                <div class="form-group"><button type="button" id="calculate-installments" class="pzl-button">محاسبه</button></div>
+            </div>
+        </div>
+
         <div id="payment-rows-container">
             <?php if ($contract_to_edit) { $installments = get_post_meta($contract_to_edit->ID, '_installments', true); if (!empty($installments) && is_array($installments)) { foreach ($installments as $index => $inst) { ?>
             <div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
