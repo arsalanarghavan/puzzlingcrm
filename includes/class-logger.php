@@ -9,25 +9,28 @@ class PuzzlingCRM_Logger {
      * @param string $title The main message/title of the log.
      * @param array $args Optional arguments.
      * - 'content' (string) Detailed description.
-     * - 'type' (string) 'log' for general activity, 'notification' for user-facing alerts.
+     * - 'type' (string) 'log' for general activity, 'notification' for user-facing alerts, 'system_error' for system issues.
      * - 'user_id' (int) The user ID this log is associated with (e.g., the customer).
      * - 'object_id' (int) The ID of the related post (e.g., contract ID, task ID).
      */
     public static function add( $title, $args = [] ) {
         $defaults = [
             'content'   => '',
-            'type'      => 'log', // 'log' or 'notification'
+            'type'      => 'log', // 'log', 'notification', or 'system_error'
             'user_id'   => get_current_user_id(),
             'object_id' => 0,
         ];
         $args = wp_parse_args( $args, $defaults );
+
+        // For system errors, the author should be a system user (e.g., admin with ID 1)
+        $author_id = ($args['type'] === 'system_error') ? 1 : $args['user_id'];
 
         $log_id = wp_insert_post([
             'post_title'    => sanitize_text_field( $title ),
             'post_content'  => wp_kses_post( $args['content'] ),
             'post_type'     => 'puzzling_log',
             'post_status'   => 'publish',
-            'post_author'   => $args['user_id'], // Associate log with the relevant user
+            'post_author'   => $author_id,
         ]);
 
         if ( ! is_wp_error( $log_id ) ) {
