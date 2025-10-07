@@ -86,7 +86,15 @@ class PuzzlingCRM_Form_Handler {
             PuzzlingCRM_Settings_Handler::update_settings($new_settings);
         }
         
-        $this->redirect_with_notice('settings_saved');
+        // ** THE FIX IS HERE **
+        // Get the redirect URL directly from the form submission to ensure we return to the correct tab.
+        $redirect_url = wp_get_referer();
+        if ( !$redirect_url ) {
+            // Fallback to the _wp_http_referer field if the server variable is not available.
+            $redirect_url = isset($_POST['_wp_http_referer']) ? wp_unslash($_POST['_wp_http_referer']) : home_url('/');
+        }
+
+        $this->redirect_with_notice('settings_saved', $redirect_url);
     }
 
     private function redirect_with_notice($notice_key, $base_url = '') {

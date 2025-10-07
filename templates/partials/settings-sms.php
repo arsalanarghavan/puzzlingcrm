@@ -15,6 +15,7 @@ $active_service = $settings['sms_service'] ?? 'melipayamak';
 <div class="pzl-form-container">
     <h4><i class="fas fa-cogs"></i> تنظیمات سامانه پیامک</h4>
     <form id="puzzling-sms-settings-form" method="post" class="pzl-form" style="margin-top: 20px;">
+        <input type="hidden" name="puzzling_action" value="save_puzzling_settings">
         <?php wp_nonce_field('puzzling_save_settings_nonce', 'security'); ?>
 
         <div class="form-group">
