@@ -99,50 +99,6 @@ jQuery(document).ready(function($) {
         handleAjaxFormSubmit($(this));
     });
 
-    // --- Live User Search ---
-    $('#user-live-search-input').on('keyup', function() {
-        var searchInput = $(this);
-        var query = searchInput.val();
-        var resultsContainer = $('#pzl-users-table-body');
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(function() {
-            $.ajax({
-                url: puzzlingcrm_ajax_obj.ajax_url,
-                type: 'POST',
-                data: { action: 'puzzling_search_users', security: puzzling_ajax_nonce, query: query },
-                beforeSend: function() { resultsContainer.html('<tr><td colspan="5"><div class="pzl-loader" style="margin: 20px auto; width: 30px; height: 30px;"></div></td></tr>'); },
-                success: function(response) { if (response.success) { resultsContainer.html(response.data.html); } else { resultsContainer.html('<tr><td colspan="5">خطا در جستجو.</td></tr>'); } },
-                error: function() { resultsContainer.html('<tr><td colspan="5">خطای سرور.</td></tr>'); }
-            });
-        }, 500);
-    });
-    
-    // --- User Deletion ---
-    $('body').on('click', '.delete-user-btn', function(e) {
-        e.preventDefault();
-        var button = $(this);
-        var userId = button.data('user-id');
-        var nonce = button.data('nonce');
-        Swal.fire({
-            title: 'آیا مطمئن هستید؟', text: "این عمل غیرقابل بازگشت است و تمام اطلاعات کاربر حذف خواهد شد.", icon: 'warning',
-            showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'بله، حذف کن!', cancelButtonText: 'انصراف'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                var userRow = button.closest('tr');
-                $.ajax({
-                    url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
-                    data: { action: 'puzzling_delete_user', security: puzzling_ajax_nonce, user_id: userId, nonce: nonce },
-                    beforeSend: function() { userRow.css('opacity', '0.5'); },
-                    success: function(response) {
-                        if (response.success) { userRow.fadeOut(400, function() { $(this).remove(); }); showPuzzlingAlert('موفقیت‌آمیز', response.data.message, 'success'); }
-                        else { showPuzzlingAlert('خطا', response.data.message, 'error'); userRow.css('opacity', '1'); }
-                    },
-                    error: function() { showPuzzlingAlert('خطا', 'یک خطای ناشناخته در سرور رخ داد.', 'error'); userRow.css('opacity', '1'); }
-                });
-            }
-        });
-    });
-
     // --- Contract Form Logic ---
     if ($('#manage-contract-form').length) {
         function updateContractNumber() {
@@ -354,66 +310,6 @@ jQuery(document).ready(function($) {
                 else { editor.setContent('<p style="color:red;">خطا در بارگذاری پاسخ.</p>'); }
             },
             error: function() { editor.setContent('<p style="color:red;">خطای سرور.</p>'); }
-        });
-    });
-    
-    // --- SMS Modal Logic (CORRECTLY PLACED) ---
-    $('body').on('click', '.send-sms-btn', function() {
-        var userId = $(this).data('user-id');
-        var userName = $(this).data('user-name');
-    
-        $('#sms-modal-user-name').text(userName);
-        $('#sms-modal-user-id').val(userId);
-    
-        $('#pzl-sms-modal-backdrop, #pzl-sms-modal-wrap').fadeIn(200);
-        $('#sms_message').focus();
-    });
-
-    function closeSmsModal() {
-        $('#pzl-sms-modal-backdrop, #pzl-sms-modal-wrap').fadeOut(200);
-        $('#pzl-send-sms-form')[0].reset();
-    }
-
-    $('body').on('click', '#pzl-close-sms-modal-btn, #pzl-sms-modal-backdrop', function(e) {
-        if ($(e.target).is('#pzl-close-sms-modal-btn') || $(e.target).is('#pzl-sms-modal-backdrop')) {
-            closeSmsModal();
-        }
-    });
-
-    $('#pzl-send-sms-form').on('submit', function(e) {
-        e.preventDefault();
-        var form = $(this);
-        var submitButton = form.find('button[type="submit"]');
-        var originalButtonHtml = submitButton.html();
-        var message = $('#sms_message').val();
-        var userId = $('#sms-modal-user-id').val();
-
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'puzzling_send_custom_sms',
-                security: puzzlingcrm_ajax_obj.nonce,
-                user_id: userId,
-                message: message
-            },
-            beforeSend: function() {
-                submitButton.html('<i class="fas fa-spinner fa-spin"></i> در حال ارسال...').prop('disabled', true);
-            },
-            success: function(response) {
-                if (response.success) {
-                    showPuzzlingAlert('موفق', response.data.message, 'success');
-                    closeSmsModal();
-                } else {
-                    showPuzzlingAlert('خطا', response.data.message, 'error');
-                }
-            },
-            error: function() {
-                showPuzzlingAlert('خطا', 'خطای سرور.', 'error');
-            },
-            complete: function() {
-                submitButton.html(originalButtonHtml).prop('disabled', false);
-            }
         });
     });
 
