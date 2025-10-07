@@ -155,6 +155,46 @@ jQuery(document).ready(function($) {
         });
     }
 
+    // Moved outside of the if block to ensure it always binds
+    $('body').on('click', '#add-services-from-product', function() {
+        var button = $(this);
+        var contractId = $('input[name="contract_id"]').val();
+        var productId = $('#product_id_for_automation').val();
+
+        if (!productId) {
+            showPuzzlingAlert('خطا', 'لطفاً ابتدا یک محصول را انتخاب کنید.', 'error');
+            return;
+        }
+
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'puzzling_add_services_from_product',
+                security: puzzling_ajax_nonce,
+                contract_id: contractId,
+                product_id: productId
+            },
+            beforeSend: function() {
+                button.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+            },
+            success: function(response) {
+                if (response.success) {
+                    showPuzzlingAlert('موفق', response.data.message, 'success', true);
+                } else {
+                    showPuzzlingAlert('خطا', response.data.message, 'error');
+                }
+            },
+            error: function() {
+                showPuzzlingAlert('خطا', 'خطای سرور.', 'error');
+            },
+            complete: function() {
+                button.html('افزودن خدمات محصول').prop('disabled', false);
+            }
+        });
+    });
+
+
     // --- Intelligent Installment Calculation ---
     $('#calculate-installments').on('click', function() {
         var totalAmount = parseFloat($('#total_amount').val().replace(/,/g, ''));
