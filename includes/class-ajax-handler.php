@@ -123,6 +123,13 @@ class PuzzlingCRM_Ajax_Handler {
         }
 
         $start_date_gregorian = puzzling_jalali_to_gregorian($start_date_jalali);
+
+        // ** CRITICAL FIX **: Validate the converted date before proceeding.
+        if (empty($start_date_gregorian)) {
+            wp_send_json_error(['message' => 'فرمت تاریخ شروع نامعتبر است. لطفاً تاریخ را به صورت صحیح (مثال: 1403/05/10) وارد کنید.']);
+            return; // Stop execution
+        }
+
         $contract_number = 'puz-' . jdate('ymd', strtotime($start_date_gregorian), '', 'en') . '-' . $customer_id;
         $customer_data = get_userdata($customer_id);
 
@@ -151,7 +158,7 @@ class PuzzlingCRM_Ajax_Handler {
         // Save meta data
         update_post_meta($the_contract_id, '_contract_number', $contract_number);
         update_post_meta($the_contract_id, '_project_start_date', $start_date_gregorian);
-        // ... save other meta fields ...
+        
         $duration = isset($_POST['_project_contract_duration']) ? sanitize_key($_POST['_project_contract_duration']) : '1-month';
         update_post_meta($the_contract_id, '_project_contract_duration', $duration);
         $end_date = date('Y-m-d', strtotime($start_date_gregorian . ' +' . str_replace('-', ' ', $duration)));
