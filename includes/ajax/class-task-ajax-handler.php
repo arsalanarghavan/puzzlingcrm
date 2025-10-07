@@ -463,8 +463,15 @@ class PuzzlingCRM_Task_Ajax_Handler {
                 $this->_log_task_activity($task_id, sprintf('ددلاین را به "%s" تغییر داد.', sanitize_text_field($value)));
                 break;
             case 'assignee':
-                update_post_meta($task_id, '_assigned_to', intval($value));
-                $this->_log_task_activity($task_id, sprintf('مسئول وظیفه را به "%s" تغییر داد.', get_userdata(intval($value))->display_name));
+                $assignee_id = intval($value);
+                update_post_meta($task_id, '_assigned_to', $assignee_id);
+                $new_assignee = get_userdata($assignee_id);
+                if ($new_assignee) {
+                    $log_message = sprintf('مسئول وظیفه را به "%s" تغییر داد.', $new_assignee->display_name);
+                } else {
+                    $log_message = 'مسئول وظیفه را حذف کرد.';
+                }
+                $this->_log_task_activity($task_id, $log_message);
                 break;
         }
 

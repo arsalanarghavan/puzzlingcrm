@@ -109,9 +109,20 @@ class PuzzlingCRM_Project_Ajax_Handler {
         $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
         $customer_id = isset($_POST['customer_id']) ? intval($_POST['customer_id']) : 0;
         $start_date_jalali = isset($_POST['_project_start_date']) ? sanitize_text_field($_POST['_project_start_date']) : '';
+        $contract_title = isset($_POST['contract_title']) && !empty($_POST['contract_title']) ? sanitize_text_field($_POST['contract_title']) : '';
 
         if (empty($customer_id) || empty($start_date_jalali)) {
             wp_send_json_error(['message' => 'انتخاب مشتری و تاریخ شروع الزامی است.']);
+        }
+
+        $customer_data = get_userdata($customer_id);
+        if (!$customer_data) {
+            wp_send_json_error(['message' => 'مشتری انتخاب شده معتبر نیست.']);
+            return; // Exit
+        }
+
+        if (empty($contract_title)) {
+            $contract_title = 'قرارداد برای ' . $customer_data->display_name;
         }
 
         $start_date_gregorian = puzzling_jalali_to_gregorian($start_date_jalali);
@@ -123,10 +134,9 @@ class PuzzlingCRM_Project_Ajax_Handler {
         }
 
         $contract_number = 'puz-' . jdate('ymd', $start_timestamp, '', 'en') . '-' . $customer_id;
-        $customer_data = get_userdata($customer_id);
-
+        
         $post_data = [
-            'post_title' => isset($_POST['contract_title']) && !empty($_POST['contract_title']) ? sanitize_text_field($_POST['contract_title']) : 'قرارداد برای ' . $customer_data->display_name,
+            'post_title' => $contract_title,
             'post_author' => $customer_id,
             'post_status' => 'publish',
             'post_type' => 'contract',

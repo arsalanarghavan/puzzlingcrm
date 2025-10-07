@@ -4,6 +4,14 @@
 require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/lib/fpdf/fpdf.php';
 
 class PuzzlingCRM_PDF_Reporter extends FPDF {
+
+    function __construct($orientation='P', $unit='mm', $size='A4') {
+        parent::__construct($orientation, $unit, $size);
+        // Add a Unicode font (like Vazirmatn)
+        // Make sure you have the vazirmatn.php, vazirmatn.z, and vazirmatn.ctg.z files in the font directory
+        $this->AddFont('Vazirmatn', '', 'Vazirmatn-Regular.php', true);
+    }
+    
     // Page header
     function Header() {
         // Logo
@@ -12,16 +20,14 @@ class PuzzlingCRM_PDF_Reporter extends FPDF {
             $this->Image($logo_path, 10, 8, 33);
         }
         
-        // Add Vazirmatn font for Persian support
-        // Note: You need to generate the font file using FPDF tutorials if it doesn't work out of the box.
-        // For simplicity, we use Arial here. For full Persian support, font conversion is needed.
-        $this->SetFont('Arial', 'B', 15);
+        // Set font to our Persian font
+        $this->SetFont('Vazirmatn', '', 15);
         
         // Move to the right
         $this->Cell(80);
         
         // Title
-        $header_text = iconv('UTF-8', 'windows-1252', 'گزارش کار روزانه');
+        $header_text = 'گزارش کار روزانه'; // No need for iconv
         $this->Cell(30, 10, $header_text, 1, 0, 'C');
         
         // Line break
@@ -42,20 +48,35 @@ class PuzzlingCRM_PDF_Reporter extends FPDF {
     // A method to create the task table
     function TaskTable($header, $data) {
         // Column widths
-        $w = array(30, 95, 30, 35);
+        $w = array(40, 85, 30, 35); // Adjusted width for project
+        
+        // Set font for header
+        $this->SetFont('Vazirmatn', '', 12);
         
         // Header
+        $this->SetFillColor(240, 240, 240);
+        $this->SetTextColor(0);
+        $this->SetDrawColor(128, 128, 128);
+        $this->SetLineWidth(.3);
+
         for($i=0; $i<count($header); $i++) {
-            $this->Cell($w[$i], 7, iconv('UTF-8', 'windows-1252', $header[$i]), 1, 0, 'C');
+            $this->Cell($w[$i], 7, $header[$i], 1, 0, 'C', true);
         }
         $this->Ln();
         
+        // Set font for data
+        $this->SetFont('Vazirmatn', '', 10);
+        $this->SetFillColor(255);
+        
         // Data
         foreach($data as $row) {
-            $this->Cell($w[0], 6, iconv('UTF-8', 'windows-1252', $row[0]), 'LR');
-            $this->Cell($w[1], 6, iconv('UTF-8', 'windows-1252', $row[1]), 'LR');
-            $this->Cell($w[2], 6, iconv('UTF-8', 'windows-1252', $row[2]), 'LR', 0, 'L');
-            $this->Cell($w[3], 6, iconv('UTF-8', 'windows-1252', $row[3]), 'LR', 0, 'L');
+            // Set text direction to RTL for all cells in the row
+            $this->setRTL(true);
+            
+            $this->Cell($w[0], 6, $row[0], 'LR');
+            $this->Cell($w[1], 6, $row[1], 'LR');
+            $this->Cell($w[2], 6, $row[2], 'LR', 0, 'L'); // Keep alignment L for English-like text
+            $this->Cell($w[3], 6, $row[3], 'LR', 0, 'L');
             $this->Ln();
         }
         // Closing line

@@ -93,8 +93,7 @@ class PuzzlingCRM_Consultation_Ajax_Handler {
 
         // Find or create user
         $customer_id = 0;
-        if (!empty($email) && email_exists($email)) {
-            $user = get_user_by('email', $email);
+        if (!empty($email) && ($user = get_user_by('email', $email))) {
             $customer_id = $user->ID;
         } else {
             // Create a new user
