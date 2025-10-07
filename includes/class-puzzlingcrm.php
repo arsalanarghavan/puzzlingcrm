@@ -52,7 +52,7 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-shortcode-manager.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-frontend-dashboard.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-form-handler.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-ajax-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-main-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cron-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-settings-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-logger.php';
@@ -83,7 +83,7 @@ class PuzzlingCRM {
         new PuzzlingCRM_User_Profile();
         new PuzzlingCRM_Shortcode_Manager();
         new PuzzlingCRM_Form_Handler();
-        new PuzzlingCRM_Ajax_Handler();
+        new PuzzlingCRM_Main_Ajax_Handler();
         new PuzzlingCRM_Cron_Handler();
         new PuzzlingCRM_Agile_Handler();
         new PuzzlingCRM_Automation_Handler();
