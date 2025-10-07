@@ -4,6 +4,32 @@
  * Datepicker functionality is now in puzzling-datepicker.js
  */
 
+// Define this function in the global scope so other scripts can access it.
+function showPuzzlingAlert(title, text, icon, reloadPage = false) {
+    if (typeof Swal === 'undefined') {
+        alert(title + "\n" + text);
+        if (reloadPage) { window.location.reload(); }
+        return;
+    }
+    Swal.fire({
+        title: title,
+        text: text,
+        icon: icon,
+        confirmButtonText: puzzlingcrm_ajax_obj.lang.ok_button || 'باشه',
+        timer: reloadPage ? 2000 : 4000,
+        timerProgressBar: true
+    }).then(() => {
+        if (reloadPage) {
+            let currentUrl = new URL(window.location.href);
+            let params = currentUrl.searchParams;
+            ['puzzling_notice', '_wpnonce', 'deleted', 'updated', 'open_task_id'].forEach(param => params.delete(param));
+            currentUrl.search = params.toString();
+            window.location.href = currentUrl.toString();
+        }
+    });
+}
+
+
 jQuery(document).ready(function($) {
     // --- Global Variables ---
     var puzzling_ajax_nonce = puzzlingcrm_ajax_obj.nonce;
@@ -11,33 +37,6 @@ jQuery(document).ready(function($) {
     var currentTaskId = null;
     var searchTimer;
     var calendar;
-
-    /**
-     * SweetAlert Integration for Notifications
-     */
-    function showPuzzlingAlert(title, text, icon, reloadPage = false) {
-        if (typeof Swal === 'undefined') {
-            alert(title + "\n" + text);
-            if (reloadPage) { window.location.reload(); }
-            return;
-        }
-        Swal.fire({
-            title: title,
-            text: text,
-            icon: icon,
-            confirmButtonText: puzzling_lang.ok_button || 'باشه',
-            timer: reloadPage ? 2000 : 4000,
-            timerProgressBar: true
-        }).then(() => {
-            if (reloadPage) {
-                let currentUrl = new URL(window.location.href);
-                let params = currentUrl.searchParams;
-                ['puzzling_notice', '_wpnonce', 'deleted', 'updated', 'open_task_id'].forEach(param => params.delete(param));
-                currentUrl.search = params.toString();
-                window.location.href = currentUrl.toString();
-            }
-        });
-    }
 
     /**
      * Generic AJAX Form Submission Handler

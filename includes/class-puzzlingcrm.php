@@ -119,12 +119,12 @@ class PuzzlingCRM {
         // *** NEW: Enqueue our custom datepicker script ***
         wp_enqueue_script( 'puzzling-datepicker-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzling-datepicker.js', ['jquery'], PUZZLINGCRM_VERSION, true );
 
-        // --- NEW: Enqueue separated script files ---
-        wp_enqueue_script( 'puzzling-user-management', PUZZLINGCRM_PLUGIN_URL . 'assets/js/user-management.js', ['jquery', 'sweetalert2'], PUZZLINGCRM_VERSION, true );
-        wp_enqueue_script( 'puzzling-sms-modal', PUZZLINGCRM_PLUGIN_URL . 'assets/js/sms-modal.js', ['jquery', 'sweetalert2'], PUZZLINGCRM_VERSION, true );
-
-        // Main scripts file (now depends on the new files)
-        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable', 'sweetalert2', 'fullcalendar', 'dhtmlx-gantt', 'puzzling-datepicker-scripts', 'puzzling-user-management', 'puzzling-sms-modal'], PUZZLINGCRM_VERSION, true );
+        // Main scripts file (must be loaded before other custom scripts that depend on it)
+        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable', 'sweetalert2', 'fullcalendar', 'dhtmlx-gantt', 'puzzling-datepicker-scripts'], PUZZLINGCRM_VERSION, true );
+        
+        // --- NEW: Enqueue separated script files (now depend on the main script) ---
+        wp_enqueue_script( 'puzzling-user-management', PUZZLINGCRM_PLUGIN_URL . 'assets/js/user-management.js', ['jquery', 'sweetalert2', 'puzzlingcrm-scripts'], PUZZLINGCRM_VERSION, true );
+        wp_enqueue_script( 'puzzling-sms-modal', PUZZLINGCRM_PLUGIN_URL . 'assets/js/sms-modal.js', ['jquery', 'sweetalert2', 'puzzlingcrm-scripts'], PUZZLINGCRM_VERSION, true );
         
         // Data for JS
         $all_users = get_users(['role__in' => ['team_member', 'system_manager', 'administrator']]);
