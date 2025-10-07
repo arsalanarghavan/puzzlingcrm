@@ -275,3 +275,36 @@ function puzzling_get_default_task_status_slug() {
 
     return 'to-do'; // Fallback
 }
+
+if ( ! function_exists( 'puzzling_get_sms_handler' ) ) {
+    /**
+     * Retrieves the correct SMS handler instance based on saved settings.
+     *
+     * @param array $settings The plugin's settings array.
+     * @return PuzzlingCRM_SMS_Service_Interface|null The handler instance or null if not configured.
+     */
+    function puzzling_get_sms_handler( $settings ) {
+        $active_service = $settings['sms_service'] ?? null;
+        $handler = null;
+
+        switch ($active_service) {
+            case 'melipayamak':
+                $username = $settings['melipayamak_username'] ?? '';
+                $password = $settings['melipayamak_password'] ?? '';
+                $sender_number = $settings['melipayamak_sender_number'] ?? '';
+                if ($username && $password && $sender_number) {
+                    $handler = new CSM_Melipayamak_Handler($username, $password, $sender_number);
+                }
+                break;
+            case 'parsgreen':
+                $signature = $settings['parsgreen_signature'] ?? '';
+                $sender_number = $settings['parsgreen_sender_number'] ?? '';
+                if ($signature && $sender_number) {
+                    $handler = new PuzzlingCRM_ParsGreen_Handler($signature, $sender_number);
+                }
+                break;
+        }
+
+        return $handler;
+    }
+}

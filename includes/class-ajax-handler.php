@@ -1352,7 +1352,7 @@ class PuzzlingCRM_Ajax_Handler {
 			if (!empty($notification_prefs['email'])) $this->send_task_assignment_email($user_id_to_notify, $task_id);
 	
 			if (!empty($notification_prefs['sms'])) {
-				$sms_handler = PuzzlingCRM_Cron_Handler::get_sms_handler($settings);
+				$sms_handler = puzzling_get_sms_handler($settings);
 				$phone = get_user_meta($user_id_to_notify, 'pzl_mobile_phone', true);
 				if ($sms_handler && !empty($phone)) $sms_handler->send_sms($phone, $notification_message_plain);
 			}
@@ -1888,7 +1888,7 @@ class PuzzlingCRM_Ajax_Handler {
             }
             
             $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
-            $sms_handler = PuzzlingCRM_Cron_Handler::get_sms_handler($settings);
+            $sms_handler = puzzling_get_sms_handler($settings);
 
             if (!$sms_handler) {
                 wp_send_json_error(['message' => 'سرویس پیامک به درستی پیکربندی نشده است. لطفاً به بخش تنظیمات مراجعه کنید.']);
