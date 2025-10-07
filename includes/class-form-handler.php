@@ -41,28 +41,54 @@ class PuzzlingCRM_Form_Handler {
                  case 'verify_payment': $this->handle_payment_verification(); return;
                  case 'delete_form': $this->handle_delete_form(); return; // This is a GET link with nonce
                  case 'download_tasks_pdf': // **ADDED FOR PDF EXPORT**
-                    if (wp_verify_nonce($_GET['_wpnonce'], 'download_tasks_pdf_nonce')) {
+                    if (isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'download_tasks_pdf_nonce')) {
                         $this->handle_tasks_pdf_export();
                     }
                     return;
              }
         }
 
-        // --- Handle Legacy POST Actions (if any remain) ---
+        // --- Handle POST Actions ---
         if (!isset($_POST['puzzling_action'])) return;
         
         $action = sanitize_key($_POST['puzzling_action']);
 
-        // Only handle specific, non-AJAX form submissions here
-        if ($action === 'submit_automation_form') { 
-            $this->handle_submit_automation_form(); 
-            return; 
+        // Route to the correct handler based on the action
+        switch($action) {
+            case 'save_puzzling_settings':
+                $this->handle_save_settings();
+                return;
+            case 'submit_automation_form': 
+                $this->handle_submit_automation_form(); 
+                return; 
         }
-        
-        // All other actions like 'manage_user', 'manage_project' are now handled via AJAX.
-        // This prevents this file from interfering with AJAX submissions.
     }
     
+    /**
+     * NEW: Handles saving all settings from the settings page tabs.
+     */
+    private function handle_save_settings() {
+        if (!isset($_POST['security']) || !wp_verify_nonce($_POST['security'], 'puzzling_save_settings_nonce')) {
+            $this->redirect_with_notice('security_failed');
+        }
+        if (!current_user_can('manage_options')) {
+            $this->redirect_with_notice('permission_denied');
+        }
+
+        if (isset($_POST['puzzling_settings']) && is_array($_POST['puzzling_settings'])) {
+            $current_settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+            // Sanitize and remove slashes from submitted data
+            $submitted_settings = stripslashes_deep($_POST['puzzling_settings']);
+            
+            // Merge new settings with old ones to not lose data from other tabs
+            $new_settings = array_merge($current_settings, $submitted_settings);
+
+            PuzzlingCRM_Settings_Handler::update_settings($new_settings);
+        }
+        
+        $this->redirect_with_notice('settings_saved');
+    }
+
     private function redirect_with_notice($notice_key, $base_url = '') {
         $url = empty($base_url) ? wp_get_referer() : $base_url;
         if (!$url) $url = home_url('/');
@@ -142,7 +168,7 @@ class PuzzlingCRM_Form_Handler {
         $contract_id = isset($_GET['contract_id']) ? intval($_GET['contract_id']) : 0;
         $installment_index = isset($_GET['installment_index']) ? intval($_GET['installment_index']) : 0;
 
-        if (!$contract_id || !wp_verify_nonce($_GET['_wpnonce'], 'pay_installment_' . $contract_id . '_' . $installment_index)) {
+        if (!$contract_id || !isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'pay_installment_' . $contract_id . '_' . $installment_index)) {
             $this->redirect_with_notice('security_failed');
         }
         
