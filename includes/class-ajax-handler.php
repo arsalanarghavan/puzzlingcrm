@@ -123,14 +123,15 @@ class PuzzlingCRM_Ajax_Handler {
         }
 
         $start_date_gregorian = puzzling_jalali_to_gregorian($start_date_jalali);
+        $start_timestamp = strtotime($start_date_gregorian);
 
         // ** CRITICAL FIX **: Validate the converted date before proceeding.
-        if (empty($start_date_gregorian)) {
-            wp_send_json_error(['message' => 'فرمت تاریخ شروع نامعتبر است. لطفاً تاریخ را به صورت صحیح (مثال: 1403/05/10) وارد کنید.']);
+        if (empty($start_date_gregorian) || $start_timestamp === false) {
+            wp_send_json_error(['message' => 'فرمت تاریخ شروع قرارداد نامعتبر است. لطفاً از فرمت صحیح (مثال: 1403/05/10) استفاده کنید.']);
             return; // Stop execution
         }
 
-        $contract_number = 'puz-' . jdate('ymd', strtotime($start_date_gregorian), '', 'en') . '-' . $customer_id;
+        $contract_number = 'puz-' . jdate('ymd', $start_timestamp, '', 'en') . '-' . $customer_id;
         $customer_data = get_userdata($customer_id);
 
         $post_data = [
@@ -171,9 +172,14 @@ class PuzzlingCRM_Ajax_Handler {
         if (isset($_POST['payment_amount']) && is_array($_POST['payment_amount'])) {
             for ($i = 0; $i < count($_POST['payment_amount']); $i++) {
                 if (!empty($_POST['payment_amount'][$i])) {
+                    $due_date_gregorian = puzzling_jalali_to_gregorian(sanitize_text_field($_POST['payment_due_date'][$i]));
+                    if (empty($due_date_gregorian) || strtotime($due_date_gregorian) === false) {
+                        wp_send_json_error(['message' => 'فرمت تاریخ قسط شماره ' . ($i + 1) . ' نامعتبر است.']);
+                        return;
+                    }
                     $installments[] = [
                         'amount' => sanitize_text_field($_POST['payment_amount'][$i]),
-                        'due_date' => puzzling_jalali_to_gregorian(sanitize_text_field($_POST['payment_due_date'][$i])),
+                        'due_date' => $due_date_gregorian,
                         'status' => sanitize_key($_POST['payment_status'][$i]),
                     ];
                 }
@@ -183,7 +189,7 @@ class PuzzlingCRM_Ajax_Handler {
 
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
-
+    
     public function ajax_get_canned_response() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('edit_posts') || !isset($_POST['response_id'])) {
