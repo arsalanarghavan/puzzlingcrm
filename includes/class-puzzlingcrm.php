@@ -42,6 +42,7 @@ class PuzzlingCRM {
 
     /**
      * Load the required dependencies for this plugin.
+     * **MODIFIED**: Now loads the main AJAX handler instead of the old monolithic one.
      */
     private function load_dependencies() {
         // Core Classes
@@ -52,13 +53,13 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-shortcode-manager.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-frontend-dashboard.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-form-handler.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-main-ajax-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-main-ajax-handler.php'; // **CORRECTED**
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cron-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-settings-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-logger.php';
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-agile-handler.php'; // **NEW: Agile Handler**
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-automation-handler.php'; // **NEW: Automation Handler**
-        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-pdf-reporter.php'; // **ADDED FOR PDF EXPORT**
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-agile-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-automation-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-pdf-reporter.php';
         
         // SMS Interface and Integrations
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-sms-service-interface.php';
@@ -70,8 +71,8 @@ class PuzzlingCRM {
     }
 
     /**
-     * Register all of the hooks related to the public-facing functionality
-     * of the plugin.
+     * Register all of the hooks related to the functionality of the plugin.
+     * **MODIFIED**: Initializes the new main AJAX handler.
      */
     private function define_hooks() {
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_dashboard_assets' ] );
@@ -83,7 +84,7 @@ class PuzzlingCRM {
         new PuzzlingCRM_User_Profile();
         new PuzzlingCRM_Shortcode_Manager();
         new PuzzlingCRM_Form_Handler();
-        new PuzzlingCRM_Main_Ajax_Handler();
+        new PuzzlingCRM_Main_Ajax_Handler(); // **CORRECTED**
         new PuzzlingCRM_Cron_Handler();
         new PuzzlingCRM_Agile_Handler();
         new PuzzlingCRM_Automation_Handler();
@@ -99,7 +100,7 @@ class PuzzlingCRM {
         // Main stylesheet
         wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
         
-        // *** NEW: Enqueue our custom datepicker style ***
+        // Custom datepicker style
         wp_enqueue_style( 'puzzling-datepicker-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzling-datepicker.css', [], PUZZLINGCRM_VERSION );
         
         // Enqueue jQuery UI Sortable & Datepicker (Gregorian)
@@ -116,13 +117,13 @@ class PuzzlingCRM {
         wp_enqueue_script('dhtmlx-gantt', 'https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js', [], '8.0', true);
         wp_enqueue_style('dhtmlx-gantt', 'https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css', [], '8.0');
         
-        // *** NEW: Enqueue our custom datepicker script ***
+        // Custom datepicker script
         wp_enqueue_script( 'puzzling-datepicker-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzling-datepicker.js', ['jquery'], PUZZLINGCRM_VERSION, true );
 
-        // Main scripts file (must be loaded before other custom scripts that depend on it)
+        // Main scripts file
         wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable', 'sweetalert2', 'fullcalendar', 'dhtmlx-gantt', 'puzzling-datepicker-scripts'], PUZZLINGCRM_VERSION, true );
         
-        // --- NEW: Enqueue separated script files (now depend on the main script) ---
+        // Separated script files
         wp_enqueue_script( 'puzzling-user-management', PUZZLINGCRM_PLUGIN_URL . 'assets/js/user-management.js', ['jquery', 'sweetalert2', 'puzzlingcrm-scripts'], PUZZLINGCRM_VERSION, true );
         wp_enqueue_script( 'puzzling-sms-modal', PUZZLINGCRM_PLUGIN_URL . 'assets/js/sms-modal.js', ['jquery', 'sweetalert2', 'puzzlingcrm-scripts'], PUZZLINGCRM_VERSION, true );
         
