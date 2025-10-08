@@ -132,8 +132,6 @@ class PuzzlingCRM_Project_Ajax_Handler {
             wp_send_json_error(['message' => 'فرمت تاریخ شروع قرارداد نامعتبر است. لطفاً از فرمت صحیح (مثال: 1403/05/10) استفاده کنید.']);
             return;
         }
-
-        $contract_number = 'puz-' . jdate('ymd', $start_timestamp, '', 'en') . '-' . $customer_id;
         
         $post_data = [
             'post_title' => $contract_title,
@@ -156,8 +154,13 @@ class PuzzlingCRM_Project_Ajax_Handler {
         }
 
         $the_contract_id = is_int($result) ? $result : $contract_id;
+        
+        // **تغییر کلیدی: شماره قرارداد فقط برای قراردادهای جدید تولید می‌شود**
+        if ($contract_id == 0 && $result) {
+            $contract_number = 'puz-' . jdate('ymd', $start_timestamp, '', 'en') . '-' . $customer_id;
+            update_post_meta($the_contract_id, '_contract_number', $contract_number);
+        }
 
-        update_post_meta($the_contract_id, '_contract_number', $contract_number);
         update_post_meta($the_contract_id, '_project_start_date', $start_date_gregorian);
         
         $duration = isset($_POST['_project_contract_duration']) ? sanitize_key($_POST['_project_contract_duration']) : '1-month';
