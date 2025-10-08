@@ -352,18 +352,18 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // --- Delete Contract Button ---
+    // --- Delete Contract Button (FIXED) ---
     $('body').on('click', '#delete-contract-btn', function() {
         var button = $(this);
         var contractId = button.data('contract-id');
-        var nonce = button.data('nonce');
+        var nonce = button.data('nonce'); // This is the nonce for this specific action
 
         Swal.fire({
-            title: 'آیا مطمئن هستید؟',
-            text: "این عمل قابل بازگشت نیست! قرارداد و تمام اطلاعات مرتبط با آن برای همیشه حذف خواهد شد.",
-            icon: 'error',
+            title: 'آیا از حذف کامل مطمئن هستید؟',
+            text: "این عمل غیرقابل بازگشت است! قرارداد و تمام پروژه‌ها و فاکتورهای مرتبط برای همیشه حذف خواهند شد.",
+            icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'بله، حذف کن!',
+            confirmButtonText: 'بله، حذف دائمی شود!',
             cancelButtonText: 'انصراف',
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6'
@@ -374,25 +374,27 @@ jQuery(document).ready(function($) {
                     type: 'POST',
                     data: {
                         action: 'puzzling_delete_contract',
-                        security: nonce,
-                        contract_id: contractId
+                        contract_id: contractId,
+                        nonce: nonce, // Action-specific nonce for wp_verify_nonce
+                        security: puzzlingcrm_ajax_obj.nonce // General AJAX nonce for check_ajax_referer
                     },
                     beforeSend: function() {
                         button.html('<i class="fas fa-spinner fa-spin"></i> در حال حذف...').prop('disabled', true);
                     },
                     success: function(response) {
                         if (response.success) {
-                            showPuzzlingAlert('موفق', response.data.message, 'success');
-                            if (response.data.redirect_url) {
-                                setTimeout(function() { window.location.href = response.data.redirect_url; }, 1500);
-                            }
+                            showPuzzlingAlert('موفقیت', response.data.message, 'success');
+                            // Redirect to contracts list after successful deletion
+                            setTimeout(function() { 
+                                window.location.href = puzzlingcrm_ajax_obj.admin_url + 'admin.php?page=puzzling-contracts'; 
+                            }, 1500);
                         } else {
                             showPuzzlingAlert('خطا', response.data.message, 'error');
                             button.html('حذف دائمی قرارداد').prop('disabled', false);
                         }
                     },
                     error: function() {
-                        showPuzzlingAlert('خطا', 'خطای سرور.', 'error');
+                        showPuzzlingAlert('خطا', 'یک خطای پیش‌بینی نشده در ارتباط با سرور رخ داد.', 'error');
                         button.html('حذف دائمی قرارداد').prop('disabled', false);
                     }
                 });

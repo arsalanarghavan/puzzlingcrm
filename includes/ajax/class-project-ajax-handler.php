@@ -16,6 +16,9 @@ class PuzzlingCRM_Project_Ajax_Handler {
         add_action('wp_ajax_puzzling_add_project_to_contract', [$this, 'ajax_add_project_to_contract']);
         add_action('wp_ajax_puzzling_add_services_from_product', [$this, 'ajax_add_services_from_product']);
         add_action('wp_ajax_puzzling_get_projects_for_customer', [$this, 'ajax_get_projects_for_customer']);
+        
+        // ثبت اکشن جدید برای حذف قرارداد
+        add_action('wp_ajax_puzzling_delete_contract', [$this, 'ajax_delete_contract']);
     }
 
     public function ajax_manage_project() {
@@ -154,8 +157,8 @@ class PuzzlingCRM_Project_Ajax_Handler {
         }
 
         $the_contract_id = is_int($result) ? $result : $contract_id;
-        
-        // **تغییر کلیدی: شماره قرارداد فقط برای قراردادهای جدید تولید می‌شود**
+
+        // **منطق اصلاح‌شده: شماره قرارداد فقط برای قراردادهای جدید تولید می‌شود**
         if ($contract_id == 0 && $result) {
             $contract_number = 'puz-' . jdate('ymd', $start_timestamp, '', 'en') . '-' . $customer_id;
             update_post_meta($the_contract_id, '_contract_number', $contract_number);
@@ -190,6 +193,49 @@ class PuzzlingCRM_Project_Ajax_Handler {
         update_post_meta($the_contract_id, '_installments', $installments);
 
         wp_send_json_success(['message' => $message, 'reload' => true]);
+    }
+    
+    /**
+     * تابع جدید برای حذف کامل قرارداد و موارد مرتبط
+     */
+    public function ajax_delete_contract() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+
+        if (!current_user_can('manage_options') || !isset($_POST['contract_id']) || !isset($_POST['nonce'])) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+        
+        $contract_id = intval($_POST['contract_id']);
+        if (!wp_verify_nonce($_POST['nonce'], 'puzzling_delete_contract_' . $contract_id)) {
+            wp_send_json_error(['message' => 'خطای امنیتی. عدم تطابق Nonce.']);
+        }
+        
+        $contract = get_post($contract_id);
+        if (!$contract || $contract->post_type !== 'contract') {
+            wp_send_json_error(['message' => 'قرارداد یافت نشد.']);
+        }
+        
+        // **مهم: حذف تمام موارد مرتبط با قرارداد**
+        $related_items_query = new WP_Query([
+            'post_type'      => ['project', 'pro_invoice'], // پروژه‌ها و فاکتورها (در صورت لزوم پست تایپ‌های دیگر را اضافه کنید)
+            'posts_per_page' => -1,
+            'meta_key'       => '_contract_id',
+            'meta_value'     => $contract_id
+        ]);
+
+        if ($related_items_query->have_posts()) {
+            foreach ($related_items_query->posts as $related_post) {
+                wp_delete_post($related_post->ID, true); // true برای حذف دائمی
+            }
+        }
+        
+        // در نهایت، حذف خود قرارداد
+        if (wp_delete_post($contract_id, true)) {
+            PuzzlingCRM_Logger::add('قرارداد حذف شد', ['content' => "قرارداد '{$contract->post_title}' و تمام موارد مرتبط با آن توسط " . wp_get_current_user()->display_name . " حذف شد.", 'type' => 'log']);
+            wp_send_json_success(['message' => 'قرارداد و تمام داده‌های مرتبط با آن با موفقیت حذف شدند.']);
+        } else {
+            wp_send_json_error(['message' => 'خطا در حذف قرارداد اصلی.']);
+        }
     }
 
     public function ajax_cancel_contract() {
