@@ -8,12 +8,20 @@ $is_cancelled = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_contr
 <div class="pzl-form-container">
     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <h3><i class="fas fa-file-signature"></i> <?php echo $contract_to_edit ? 'ویرایش قرارداد' : 'ایجاد قرارداد جدید'; ?></h3>
-        <?php if ($contract_to_edit && !$is_cancelled): ?>
-            <button type="button" id="cancel-contract-btn" class="pzl-button" style="background-color: var(--pzl-danger-color) !important;">لغو قرارداد</button>
+        <?php if ($contract_to_edit): ?>
+            <div>
+                <?php if (!$is_cancelled): ?>
+                    <button type="button" id="cancel-contract-btn" class="pzl-button" style="background-color: var(--pzl-danger-color) !important;">لغو قرارداد</button>
+                <?php endif; ?>
+                <button type="button" id="delete-contract-btn" class="pzl-button"
+                        data-contract-id="<?php echo esc_attr($contract_to_edit->ID); ?>"
+                        data-nonce="<?php echo wp_create_nonce('puzzling_delete_contract_' . $contract_to_edit->ID); ?>"
+                        style="background-color: #a01c26 !important; margin-left: 5px;">حذف دائمی قرارداد</button>
+            </div>
         <?php endif; ?>
     </div>
 
-    <?php if ($is_cancelled): 
+    <?php if ($is_cancelled):
         $cancellation_reason = get_post_meta($contract_to_edit->ID, '_cancellation_reason', true);
         $cancellation_date = get_post_meta($contract_to_edit->ID, '_cancellation_date', true);
     ?>
@@ -29,7 +37,7 @@ $is_cancelled = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_contr
         <input type="hidden" name="contract_id" value="<?php echo $contract_to_edit ? esc_attr($contract_to_edit->ID) : '0'; ?>">
 
         <h4><i class="fas fa-info-circle"></i> اطلاعات پایه</h4>
-        
+
         <div class="pzl-form-row">
             <div class="form-group half-width">
                 <label for="contract_number">شماره قرارداد</label>
@@ -61,12 +69,12 @@ $is_cancelled = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_contr
             <div class="form-group half-width">
                 <label for="_project_contract_duration">مدت قرارداد:</label>
                 <select name="_project_contract_duration" id="_project_contract_duration">
-                    <?php 
-                    $durations = ['یک ماهه' => '1-month', 'سه ماهه' => '3-months', 'شش ماهه' => '6-months', 'یک ساله' => '12-months']; 
+                    <?php
+                    $durations = ['یک ماهه' => '1-month', 'سه ماهه' => '3-months', 'شش ماهه' => '6-months', 'یک ساله' => '12-months'];
                     $current_duration = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_project_contract_duration', true) : '1-month';
-                    foreach ($durations as $label => $value) { 
+                    foreach ($durations as $label => $value) {
                         echo '<option value="' . esc_attr($value) . '" ' . selected($current_duration, $value, false) . '>' . esc_html($label) . '</option>';
-                    } 
+                    }
                     ?>
                 </select>
             </div>
@@ -80,17 +88,17 @@ $is_cancelled = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_contr
             <div class="form-group half-width">
                 <label for="_project_subscription_model">مدل اشتراک:</label>
                 <select name="_project_subscription_model" id="_project_subscription_model">
-                    <?php 
-                    $models = ['یکبار پرداخت' => 'onetime', 'اشتراکی' => 'subscription']; 
+                    <?php
+                    $models = ['یکبار پرداخت' => 'onetime', 'اشتراکی' => 'subscription'];
                     $current_model = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_project_subscription_model', true) : 'onetime';
-                    foreach ($models as $label => $value) { 
+                    foreach ($models as $label => $value) {
                         echo '<option value="' . esc_attr($value) . '" ' . selected($current_model, $value, false) . '>' . esc_html($label) . '</option>';
-                    } 
+                    }
                     ?>
                 </select>
             </div>
         </div>
-        
+
         <input type="hidden" id="_project_end_date" name="_project_end_date" value="<?php echo $contract_to_edit ? esc_attr(get_post_meta($contract_to_edit->ID, '_project_end_date', true)) : ''; ?>">
 
         <?php if ($contract_to_edit) : ?>
@@ -116,7 +124,7 @@ $is_cancelled = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_contr
             </div>
         </div>
         <?php endif; ?>
-        
+
         <hr>
 
         <h4><i class="fas fa-calculator"></i> محاسبه‌گر و لیست اقساط</h4>
@@ -145,7 +153,7 @@ $is_cancelled = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_contr
             <?php } } } ?>
         </div>
         <button type="button" id="add-payment-row" class="pzl-button" style="align-self: flex-start;">افزودن قسط دستی</button>
-        
+
         <div class="form-submit">
             <button type="submit" name="submit_contract" class="pzl-button" style="font-size: 16px;"><?php echo $contract_to_edit ? 'ذخیره تغییرات قرارداد' : 'ایجاد قرارداد'; ?></button>
         </div>

@@ -352,4 +352,52 @@ jQuery(document).ready(function($) {
         });
     });
 
+    // --- Delete Contract Button ---
+    $('body').on('click', '#delete-contract-btn', function() {
+        var button = $(this);
+        var contractId = button.data('contract-id');
+        var nonce = button.data('nonce');
+
+        Swal.fire({
+            title: 'آیا مطمئن هستید؟',
+            text: "این عمل قابل بازگشت نیست! قرارداد و تمام اطلاعات مرتبط با آن برای همیشه حذف خواهد شد.",
+            icon: 'error',
+            showCancelButton: true,
+            confirmButtonText: 'بله، حذف کن!',
+            cancelButtonText: 'انصراف',
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: puzzlingcrm_ajax_obj.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'puzzling_delete_contract',
+                        security: nonce,
+                        contract_id: contractId
+                    },
+                    beforeSend: function() {
+                        button.html('<i class="fas fa-spinner fa-spin"></i> در حال حذف...').prop('disabled', true);
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showPuzzlingAlert('موفق', response.data.message, 'success');
+                            if (response.data.redirect_url) {
+                                setTimeout(function() { window.location.href = response.data.redirect_url; }, 1500);
+                            }
+                        } else {
+                            showPuzzlingAlert('خطا', response.data.message, 'error');
+                            button.html('حذف دائمی قرارداد').prop('disabled', false);
+                        }
+                    },
+                    error: function() {
+                        showPuzzlingAlert('خطا', 'خطای سرور.', 'error');
+                        button.html('حذف دائمی قرارداد').prop('disabled', false);
+                    }
+                });
+            }
+        });
+    });
+
 }); // End of jQuery(document).ready

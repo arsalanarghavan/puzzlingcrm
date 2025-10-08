@@ -118,7 +118,7 @@ class PuzzlingCRM_Project_Ajax_Handler {
         $customer_data = get_userdata($customer_id);
         if (!$customer_data) {
             wp_send_json_error(['message' => 'مشتری انتخاب شده معتبر نیست.']);
-            return; // Exit
+            return;
         }
 
         if (empty($contract_title)) {
@@ -250,14 +250,30 @@ class PuzzlingCRM_Project_Ajax_Handler {
     
     public function ajax_add_services_from_product() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        $current_user = wp_get_current_user();
+
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        PuzzlingCRM_Logger::add('افزودن خدمات از محصول', [
+            'content' => 'درخواست افزودن خدمات از محصول توسط کاربر ' . $current_user->display_name . ' آغاز شد.',
+            'type' => 'log'
+        ]);
+
+        if (!function_exists('wc_get_product')) {
+            $error_msg = 'قابلیت افزودن خدمات از محصول به دلیل فعال نبودن ووکامرس شکست خورد.';
+            PuzzlingCRM_Logger::add('خطا: ووکامرس غیرفعال', ['content' => $error_msg, 'type' => 'error']);
+            wp_send_json_error(['message' => 'برای استفاده از این قابلیت، افزونه ووکامرس باید نصب و فعال باشد.']);
+            return;
         }
 
         $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
         $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
         
         if (empty($contract_id) || empty($product_id)) {
+            $error_msg = 'اطلاعات قرارداد (ID: ' . $contract_id . ') یا محصول (ID: ' . $product_id . ') ناقص است.';
+            PuzzlingCRM_Logger::add('خطا: اطلاعات ناقص', ['content' => $error_msg, 'type' => 'error']);
             wp_send_json_error(['message' => 'اطلاعات قرارداد یا محصول ناقص است.']);
         }
 
@@ -265,13 +281,15 @@ class PuzzlingCRM_Project_Ajax_Handler {
         $product = wc_get_product($product_id);
 
         if (!$contract || !$product) {
+            $error_msg = 'قرارداد (ID: ' . $contract_id . ') یا محصول (ID: ' . $product_id . ') یافت نشد.';
+            PuzzlingCRM_Logger::add('خطا: منبع یافت نشد', ['content' => $error_msg, 'type' => 'error']);
             wp_send_json_error(['message' => 'قرارداد یا محصول یافت نشد.']);
         }
 
         $created_projects_count = 0;
         $child_products = [];
         
-        if ($product->is_type('grouped')) {
+        if ($product->is_type('grouped') || $product->is_type('bundle')) {
             $child_products = $product->get_children();
         } else {
             $child_products[] = $product->get_id();
@@ -299,8 +317,12 @@ class PuzzlingCRM_Project_Ajax_Handler {
         }
 
         if($created_projects_count > 0) {
+            $success_msg = $created_projects_count . ' پروژه از محصول "' . $product->get_name() . '" برای قرارداد شماره ' . $contract_id . ' ایجاد شد.';
+            PuzzlingCRM_Logger::add('موفقیت در افزودن خدمات', ['content' => $success_msg, 'type' => 'log']);
             wp_send_json_success(['message' => $created_projects_count . ' پروژه با موفقیت از محصول ایجاد و به این قرارداد متصل شد.', 'reload' => true]);
         } else {
+            $error_msg = 'هیچ پروژه‌ای از محصول "' . $product->get_name() . '" برای قرارداد شماره ' . $contract_id . ' ایجاد نشد.';
+            PuzzlingCRM_Logger::add('خطا: پروژه‌ای ایجاد نشد', ['content' => $error_msg, 'type' => 'warning']);
             wp_send_json_error(['message' => 'هیچ پروژه‌ای از محصول انتخاب شده ایجاد نشد. ممکن است محصول فاقد خدمات قابل تبدیل به پروژه باشد.']);
         }
     }
