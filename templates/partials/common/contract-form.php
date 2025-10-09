@@ -4,6 +4,10 @@ if ( ! current_user_can('manage_options') ) return;
 
 $contract_to_edit = isset($puzzling_contract) ? $puzzling_contract : null;
 $is_cancelled = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_contract_status', true) === 'cancelled' : false;
+
+// اطلاعات جدید برای مبلغ کل و تعداد اقساط
+$total_amount_value = $contract_to_edit ? esc_attr(get_post_meta($contract_to_edit->ID, '_total_amount', true)) : '';
+$total_installments_value = $contract_to_edit ? esc_attr(get_post_meta($contract_to_edit->ID, '_total_installments', true)) : '1';
 ?>
 <div class="pzl-form-container">
     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -130,8 +134,8 @@ $is_cancelled = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_contr
         <h4><i class="fas fa-calculator"></i> محاسبه‌گر و لیست اقساط</h4>
         <div class="pzl-card" style="background: #f8f9fa;">
             <div class="pzl-form-row" style="align-items: flex-end; gap: 15px;">
-                <div class="form-group"><label for="total_amount">مبلغ کل (تومان)</label><input type="text" id="total_amount" placeholder="مثال: 30000000"></div>
-                <div class="form-group"><label for="total_installments">تعداد اقساط</label><input type="number" id="total_installments" placeholder="مثال: 6" value="1"></div>
+                <div class="form-group"><label for="total_amount">مبلغ کل (تومان)</label><input type="text" id="total_amount" name="total_amount" value="<?php echo esc_attr($total_amount_value); ?>" placeholder="مثال: 30000000"></div>
+                <div class="form-group"><label for="total_installments">تعداد اقساط</label><input type="number" id="total_installments" name="total_installments" placeholder="مثال: 6" value="<?php echo esc_attr($total_installments_value); ?>"></div>
                 <div class="form-group"><label for="installment_interval">فاصله (روز)</label><input type="number" id="installment_interval" placeholder="مثال: 30" value="30"></div>
                 <div class="form-group"><label for="start_date">تاریخ اولین قسط</label><input type="text" id="start_date" class="pzl-jalali-date-picker"></div>
                 <div class="form-group"><button type="button" id="calculate-installments" class="pzl-button">محاسبه</button></div>
@@ -141,7 +145,7 @@ $is_cancelled = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_contr
         <div id="payment-rows-container">
             <?php if ($contract_to_edit) { $installments = get_post_meta($contract_to_edit->ID, '_installments', true); if (!empty($installments) && is_array($installments)) { foreach ($installments as $index => $inst) { ?>
             <div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                <input type="number" name="payment_amount[]" placeholder="مبلغ (تومان)" value="<?php echo esc_attr($inst['amount']); ?>" required>
+                <input type="text" name="payment_amount[]" class="item-price" placeholder="مبلغ (تومان)" value="<?php echo esc_attr($inst['amount']); ?>" required>
                 <input type="text" name="payment_due_date[]" value="<?php echo esc_attr(puzzling_gregorian_to_jalali($inst['due_date'])); ?>" class="pzl-jalali-date-picker" required>
                 <select name="payment_status[]">
                     <option value="pending" <?php selected($inst['status'] ?? 'pending', 'pending'); ?>>در انتظار</option>

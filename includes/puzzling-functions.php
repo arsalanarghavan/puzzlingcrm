@@ -308,3 +308,4 @@ if ( ! function_exists( 'puzzling_get_sms_handler' ) ) {
         return $handler;
     }
 }
+// END OF FILE - NO CLOSING PHP TAG

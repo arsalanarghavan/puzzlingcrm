@@ -39,7 +39,7 @@ jQuery(document).ready(function($) {
     var calendar;
 
     /**
-     * Generic AJAX Form Submission Handler
+     * Generic AJAX Form Submission Handler (با پشتیبانی از خطای ساختاریافته و تشخیص فساد JSON)
      */
     function handleAjaxFormSubmit(form) {
         var submitButton = form.find('button[type="submit"]');
@@ -49,6 +49,7 @@ jQuery(document).ready(function($) {
         formData.append('action', action);
 
         // Handle specific form data preparations
+        // NEW FIX: استفاده از کلاس .item-price برای مبلغ قسط در contract-form.php
         form.find('.item-price, .item-discount').each(function() {
             formData.set($(this).attr('name'), $(this).val().replace(/,/g, ''));
         });
@@ -78,11 +79,20 @@ jQuery(document).ready(function($) {
                         setTimeout(function() { window.location.href = response.data.redirect_url; }, 1500);
                     }
                 } else {
-                    showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error');
+                    // مدیریت خطای ساختاریافته (JSON معتبر با فلگ success: false)
+                    let errorCode = response.data.error_code || '---';
+                    let errorMessage = response.data.message || puzzling_lang.server_error;
+                    let errorTitle = puzzling_lang.error_title + ' (کد خطا: ' + errorCode + ')';
+                    
+                    showPuzzlingAlert(errorTitle, errorMessage, 'error');
                 }
             },
-            error: function() {
-                showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error');
+            error: function(xhr, status, error) { 
+                // مدیریت خطای شبکه یا فساد JSON
+                let errorDetails = (xhr.status === 0) ? 'خطای شبکه' : 'پاسخ سرور نامعتبر (JSON Corrupt)';
+                let message = puzzling_lang.server_error + ': ' + errorDetails;
+                
+                showPuzzlingAlert(puzzling_lang.error_title, message, 'error');
             },
             complete: function(xhr) {
                 var response = xhr.responseJSON;
@@ -101,15 +111,18 @@ jQuery(document).ready(function($) {
     // --- Contract Form Logic ---
     if ($('#manage-contract-form').length) {
         function updateContractNumber() {
-            const customerId = $('#customer_id').val();
-            const startDate = $('#_project_start_date').val();
-            if (customerId && startDate) {
-                const parts = startDate.split('/');
-                if(parts.length === 3) {
-                    const year = parts[0].slice(-2);
-                    const month = ('0' + parts[1]).slice(-2);
-                    const day = ('0' + parts[2]).slice(-2);
-                    $('#contract_number').val(`puz-${year}${month}${day}-${customerId}`);
+            const contractIdField = $('input[name="contract_id"]');
+            if (contractIdField.val() === '0' || $('#contract_number').val() === 'با انتخاب مشتری و تاریخ تولید می‌شود') {
+                const customerId = $('#customer_id').val();
+                const startDate = $('#_project_start_date').val();
+                if (customerId && startDate) {
+                    const parts = startDate.split('/');
+                    if(parts.length === 3) {
+                        const year = parts[0].slice(-2);
+                        const month = ('0' + parts[1]).slice(-2);
+                        const day = ('0' + parts[2]).slice(-2);
+                        $('#contract_number').val(`puz-${year}${month}${day}-${customerId}`);
+                    }
                 }
             }
         }
@@ -146,9 +159,20 @@ jQuery(document).ready(function($) {
                         },
                         success: function(response) {
                             if (response.success) { showPuzzlingAlert('موفق', response.data.message, 'success', true); }
-                            else { showPuzzlingAlert('خطا', response.data.message, 'error'); }
+                            else { 
+                                // مدیریت خطای ساختاریافته برای لغو
+                                let errorCode = response.data.error_code || '---';
+                                let errorMessage = response.data.message || puzzling_lang.server_error;
+                                let errorTitle = puzzling_lang.error_title + ' (کد خطا: ' + errorCode + ')';
+                                showPuzzlingAlert(errorTitle, errorMessage, 'error');
+                            }
                         },
-                        error: function() { showPuzzlingAlert('خطا', 'خطای سرور.', 'error'); }
+                        error: function(xhr, status, error) { 
+                             // مدیریت خطای شبکه یا فساد JSON
+                            let errorDetails = (xhr.status === 0) ? 'خطای شبکه' : 'پاسخ سرور نامعتبر (JSON Corrupt)';
+                            let message = puzzling_lang.server_error + ': ' + errorDetails;
+                            showPuzzlingAlert(puzzling_lang.error_title, message, 'error');
+                        }
                     });
                 }
             });
@@ -162,7 +186,7 @@ jQuery(document).ready(function($) {
         var productId = $('#product_id_for_automation').val();
 
         if (!productId) {
-            showPuzzlingAlert('خطا', 'لطفاً ابتدا یک محصول را انتخاب کنید.', 'error');
+            showPuzzlingAlert('خطا (کد خطا: PRJ_302)', 'لطفاً ابتدا یک محصول را انتخاب کنید.', 'error');
             return;
         }
 
@@ -182,11 +206,18 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     showPuzzlingAlert('موفق', response.data.message, 'success', true);
                 } else {
-                    showPuzzlingAlert('خطا', response.data.message, 'error');
+                    // مدیریت خطای ساختاریافته برای افزودن خدمات
+                    let errorCode = response.data.error_code || '---';
+                    let errorMessage = response.data.message || puzzling_lang.server_error;
+                    let errorTitle = puzzling_lang.error_title + ' (کد خطا: ' + errorCode + ')';
+                    showPuzzlingAlert(errorTitle, errorMessage, 'error');
                 }
             },
-            error: function() {
-                showPuzzlingAlert('خطا', 'خطای سرور.', 'error');
+            error: function(xhr, status, error) { 
+                // مدیریت خطای شبکه یا فساد JSON
+                let errorDetails = (xhr.status === 0) ? 'خطای شبکه' : 'پاسخ سرور نامعتبر (JSON Corrupt)';
+                let message = puzzling_lang.server_error + ': ' + errorDetails;
+                showPuzzlingAlert(puzzling_lang.error_title, message, 'error');
             },
             complete: function() {
                 button.html('افزودن خدمات محصول').prop('disabled', false);
@@ -197,7 +228,9 @@ jQuery(document).ready(function($) {
 
     // --- Intelligent Installment Calculation ---
     $('#calculate-installments').on('click', function() {
-        var totalAmount = parseFloat($('#total_amount').val().replace(/,/g, ''));
+        // NEW FIX: خواندن مبلغ کل با حذف کاما و استفاده از آن
+        var totalAmountRaw = $('#total_amount').val().replace(/,/g, '');
+        var totalAmount = parseFloat(totalAmountRaw);
         var totalInstallments = parseInt($('#total_installments').val());
         var intervalDays = parseInt($('#installment_interval').val());
         var startDateStr = $('#start_date').val();
@@ -215,20 +248,30 @@ jQuery(document).ready(function($) {
             let totalDaysToAdd = jDay + (i * intervalDays);
             let finalYear = jYear;
             let finalMonth = jMonth;
+            while(finalMonth > 12) { finalMonth -= 12; finalYear++; }
             while(totalDaysToAdd > 30) {
                  totalDaysToAdd -= 30;
                  finalMonth++;
                  if(finalMonth > 12) { finalMonth = 1; finalYear++; }
             }
             let finalDay = totalDaysToAdd;
+            // Basic adjustment for month overflow
+            if (finalDay <= 0) { 
+                finalDay = 1; 
+            }
             var inputDate = finalYear + '/' + ('0' + finalMonth).slice(-2) + '/' + ('0' + finalDay).slice(-2);
-            addInstallmentRow(installmentAmount, inputDate, 'pending');
+            addInstallmentRow(installmentAmount.toLocaleString('en-US'), inputDate, 'pending'); // نمایش مبلغ با کاما
         }
+        // Re-initialize date picker on new elements
+        $('.pzl-jalali-date-picker').datepicker({});
     });
 
     function addInstallmentRow(amount = '', date = '', status = 'pending') {
-        var newRow = `<div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;"><input type="number" name="payment_amount[]" placeholder="مبلغ (تومان)" value="${amount}" style="flex-grow: 1;" required><input type="text" name="payment_due_date[]" class="pzl-jalali-date-picker" value="${date}" required><select name="payment_status[]"><option value="pending" ${status === 'pending' ? 'selected' : ''}>در انتظار پرداخت</option><option value="paid" ${status === 'paid' ? 'selected' : ''}>پرداخت شده</option><option value="cancelled" ${status === 'cancelled' ? 'selected' : ''}>لغو شده</option></select><button type="button" class="pzl-button pzl-button-sm remove-payment-row" style="background: #dc3545 !important;">حذف</button></div>`;
+        // NEW FIX: تغییر type ورودی مبلغ به text و افزودن کلاس item-price برای حذف کاما در هنگام ارسال
+        var newRow = `<div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;"><input type="text" name="payment_amount[]" class="item-price" placeholder="مبلغ (تومان)" value="${amount}" style="flex-grow: 1;" required><input type="text" name="payment_due_date[]" class="pzl-jalali-date-picker" value="${date}" required><select name="payment_status[]"><option value="pending" ${status === 'pending' ? 'selected' : ''}>در انتظار پرداخت</option><option value="paid" ${status === 'paid' ? 'selected' : ''}>پرداخت شده</option><option value="cancelled" ${status === 'cancelled' ? 'selected' : ''}>لغو شده</option></select><button type="button" class="pzl-button pzl-button-sm remove-payment-row" style="background: #dc3545 !important;">حذف</button></div>`;
         $('#payment-rows-container').append(newRow);
+        // Re-initialize date picker on the new element
+        $('#payment-rows-container').find('.payment-row:last-child .pzl-jalali-date-picker').datepicker({});
     }
     $('#add-payment-row').on('click', function() { addInstallmentRow(); });
     $('#payment-rows-container').on('click', '.remove-payment-row', function() { $(this).closest('.payment-row').remove(); });
@@ -248,8 +291,23 @@ jQuery(document).ready(function($) {
                 $.ajax({
                     url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
                     data: { action: 'puzzling_update_task_status', security: puzzling_ajax_nonce, task_id: taskId, new_status_slug: newStatusSlug },
-                    success: function(response) { if (!response.success) { showPuzzlingAlert(puzzling_lang.error_title, response.data.message, 'error'); $(this).sortable('cancel'); } },
-                    error: function() { showPuzzlingAlert(puzzling_lang.error_title, puzzling_lang.server_error, 'error'); $(this).sortable('cancel'); },
+                    success: function(response) { 
+                        if (!response.success) { 
+                            // مدیریت خطای ساختاریافته برای به‌روزرسانی وضعیت وظیفه
+                            let errorCode = response.data.error_code || '---';
+                            let errorMessage = response.data.message || puzzling_lang.server_error;
+                            let errorTitle = puzzling_lang.error_title + ' (کد خطا: ' + errorCode + ')';
+                            showPuzzlingAlert(errorTitle, errorMessage, 'error'); 
+                            $(this).sortable('cancel'); 
+                        } 
+                    },
+                    error: function(xhr, status, error) { 
+                        // مدیریت خطای شبکه یا فساد JSON
+                        let errorDetails = (xhr.status === 0) ? 'خطای شبکه' : 'پاسخ سرور نامعتبر (JSON Corrupt)';
+                        let message = puzzling_lang.server_error + ': ' + errorDetails;
+                        showPuzzlingAlert(puzzling_lang.error_title, message, 'error'); 
+                        $(this).sortable('cancel'); 
+                    },
                     complete: function() { taskCard.css('opacity', '1'); }
                 });
             }
@@ -265,7 +323,16 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
             data: { action: 'puzzling_get_task_details', security: puzzling_ajax_nonce, task_id: taskId },
-            success: function(response) { if (response.success) { $('#pzl-task-modal-body').html(response.data.html); } else { $('#pzl-task-modal-body').html('<p>خطا در بارگذاری اطلاعات وظیفه.</p>'); } },
+            success: function(response) { 
+                if (response.success) { 
+                    $('#pzl-task-modal-body').html(response.data.html); 
+                } else { 
+                    // مدیریت خطای ساختاریافته برای جزئیات وظیفه
+                    let errorCode = response.data.error_code || '---';
+                    let errorMessage = response.data.message || 'خطا در بارگذاری اطلاعات وظیفه.';
+                    $('#pzl-task-modal-body').html('<p style="color:red;">' + errorMessage + ' (کد خطا: ' + errorCode + ')</p>'); 
+                } 
+            },
             error: function() { $('#pzl-task-modal-body').html('<p>خطای ارتباط با سرور.</p>'); }
         });
     }
@@ -346,7 +413,12 @@ jQuery(document).ready(function($) {
             data: { action: 'puzzling_get_canned_response', security: puzzling_ajax_nonce, response_id: responseId },
             success: function(response) {
                 if (response.success) { editor.setContent(response.data.content); }
-                else { editor.setContent('<p style="color:red;">خطا در بارگذاری پاسخ.</p>'); }
+                else { 
+                    // مدیریت خطای ساختاریافته برای پاسخ آماده
+                    let errorCode = response.data.error_code || '---';
+                    let errorMessage = response.data.message || 'خطا در بارگذاری پاسخ.';
+                    editor.setContent('<p style="color:red;">' + errorMessage + ' (کد خطا: ' + errorCode + ')</p>'); 
+                }
             },
             error: function() { editor.setContent('<p style="color:red;">خطای سرور.</p>'); }
         });
@@ -389,12 +461,19 @@ jQuery(document).ready(function($) {
                                 window.location.href = puzzlingcrm_ajax_obj.admin_url + 'admin.php?page=puzzling-contracts'; 
                             }, 1500);
                         } else {
-                            showPuzzlingAlert('خطا', response.data.message, 'error');
+                            // مدیریت خطای ساختاریافته برای حذف
+                            let errorCode = response.data.error_code || '---';
+                            let errorMessage = response.data.message || puzzling_lang.server_error;
+                            let errorTitle = puzzling_lang.error_title + ' (کد خطا: ' + errorCode + ')';
+                            showPuzzlingAlert(errorTitle, errorMessage, 'error');
                             button.html('حذف دائمی قرارداد').prop('disabled', false);
                         }
                     },
-                    error: function() {
-                        showPuzzlingAlert('خطا', 'یک خطای پیش‌بینی نشده در ارتباط با سرور رخ داد.', 'error');
+                    error: function(xhr, status, error) { 
+                        // مدیریت خطای شبکه یا فساد JSON
+                        let errorDetails = (xhr.status === 0) ? 'خطای شبکه' : 'پاسخ سرور نامعتبر (JSON Corrupt)';
+                        let message = 'یک خطای پیش‌بینی نشده در ارتباط با سرور رخ داد' + ': ' + errorDetails;
+                        showPuzzlingAlert('خطا', message, 'error');
                         button.html('حذف دائمی قرارداد').prop('disabled', false);
                     }
                 });

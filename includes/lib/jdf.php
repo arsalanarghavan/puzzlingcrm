@@ -676,5 +676,3 @@ function jdate_words($array, $mod = '')
  }
  return ($mod === '') ? $out : implode($mod, $out);
 }
-
-?>

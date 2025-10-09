@@ -17,6 +17,7 @@ class PuzzlingCRM_Main_Ajax_Handler {
     }
 
     private function load_dependencies() {
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-error-codes.php'; // <-- خط جدید
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-user-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-project-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-task-ajax-handler.php';

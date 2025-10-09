@@ -21,10 +21,23 @@ class PuzzlingCRM_Project_Ajax_Handler {
         add_action('wp_ajax_puzzling_delete_contract', [$this, 'ajax_delete_contract']);
     }
 
+    // --- تابع کمکی برای پاکسازی بافر خروجی و ارسال خطا ---
+    private function clean_buffer_and_send_error($code, $extra_data = []) {
+        if (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        PuzzlingCRM_Error_Codes::send_error($code, $extra_data);
+    }
+    // -----------------------------------------------------------------
+
     public function ajax_manage_project() {
-        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        ob_start(); // Output Buffering دفاعی
+        
+        if (!check_ajax_referer('puzzlingcrm-ajax-nonce', 'security', false)) {
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_NONCE_FAILED);
+        }
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_ACCESS_DENIED);
         }
 
         $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
@@ -34,12 +47,12 @@ class PuzzlingCRM_Project_Ajax_Handler {
         $project_status_id = intval($_POST['project_status']);
 
         if (empty($project_title) || empty($contract_id)) {
-            wp_send_json_error(['message' => 'عنوان پروژه و انتخاب قرارداد الزامی است.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_MISSING_PROJECT_DATA);
         }
 
         $contract = get_post($contract_id);
         if (!$contract) {
-            wp_send_json_error(['message' => 'قرارداد انتخاب شده معتبر نیست.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_CONTRACT_INVALID);
         }
         $customer_id = $contract->post_author;
 
@@ -61,7 +74,8 @@ class PuzzlingCRM_Project_Ajax_Handler {
         }
 
         if (is_wp_error($result)) {
-            wp_send_json_error(['message' => 'خطا در پردازش پروژه.']);
+            $extra_info = ['wp_error_message' => $result->get_error_message()];
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_PROJECT_SAVE_FAILED, $extra_info);
         }
 
         $the_project_id = is_int($result) ? $result : $project_id;
@@ -76,64 +90,86 @@ class PuzzlingCRM_Project_Ajax_Handler {
             }
         }
         
+        PuzzlingCRM_Logger::add('پروژه مدیریت شد', [
+            'action' => $project_id > 0 ? 'به‌روزرسانی' : 'ایجاد',
+            'project_id' => $the_project_id,
+            'contract_id' => $contract_id,
+        ], 'success');
+
+        ob_end_clean(); // پاکسازی نهایی بافر
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
 
     public function ajax_delete_project() {
-        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-        if (!current_user_can('delete_posts') || !isset($_POST['project_id']) || !isset($_POST['nonce'])) {
-            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        ob_start();
+        if (!current_user_can('delete_posts')) {
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_ACCESS_DENIED);
+        }
+        if (!check_ajax_referer('puzzlingcrm-ajax-nonce', 'security', false)) {
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_NONCE_FAILED);
+        }
+        if (!isset($_POST['project_id']) || !isset($_POST['nonce'])) {
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_MISSING_PROJECT_DATA);
         }
         
         $project_id = intval($_POST['project_id']);
         if (!wp_verify_nonce($_POST['nonce'], 'puzzling_delete_project_' . $project_id)) {
-            wp_send_json_error(['message' => 'خطای امنیتی.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_NONCE_FAILED, ['specific_nonce' => 'failed']);
         }
         
         $project = get_post($project_id);
         if (!$project || $project->post_type !== 'project') {
-            wp_send_json_error(['message' => 'پروژه یافت نشد.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_PROJECT_NOT_FOUND, ['project_id' => $project_id]);
         }
         
         if (wp_delete_post($project_id, true)) {
             PuzzlingCRM_Logger::add('پروژه حذف شد', ['content' => "پروژه '{$project->post_title}' توسط " . wp_get_current_user()->display_name . " حذف شد.", 'type' => 'log']);
+            ob_end_clean(); 
             wp_send_json_success(['message' => 'پروژه با موفقیت حذف شد.']);
         } else {
-            wp_send_json_error(['message' => 'خطا در حذف پروژه.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_PROJECT_DELETE_FAILED, ['project_id' => $project_id]);
         }
     }
 
     public function ajax_manage_contract() {
-        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        ob_start(); // Output Buffering دفاعی
+
+        if (!check_ajax_referer('puzzlingcrm-ajax-nonce', 'security', false)) {
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_NONCE_FAILED);
+        }
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'شما دسترسی لازم برای مدیریت قراردادها را ندارید.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_ACCESS_DENIED);
         }
 
         $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
         $customer_id = isset($_POST['customer_id']) ? intval($_POST['customer_id']) : 0;
         $start_date_jalali = isset($_POST['_project_start_date']) ? sanitize_text_field($_POST['_project_start_date']) : '';
         $contract_title = isset($_POST['contract_title']) && !empty($_POST['contract_title']) ? sanitize_text_field($_POST['contract_title']) : '';
+        
+        // **NEW FIX: دریافت مبلغ کل و تعداد اقساط از POST و ذخیره آنها**
+        $total_amount = isset($_POST['total_amount']) ? sanitize_text_field($_POST['total_amount']) : '';
+        $total_installments = isset($_POST['total_installments']) ? intval($_POST['total_installments']) : 1;
+
 
         if (empty($customer_id) || empty($start_date_jalali)) {
-            wp_send_json_error(['message' => 'انتخاب مشتری و تاریخ شروع الزامی است.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_MISSING_CONTRACT_DATA);
         }
 
         $customer_data = get_userdata($customer_id);
         if (!$customer_data) {
-            wp_send_json_error(['message' => 'مشتری انتخاب شده معتبر نیست.']);
-            return;
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_INVALID_CUSTOMER, ['customer_id' => $customer_id]);
         }
-
+        
+        $customer_display_name = $customer_data->display_name ?? 'مشتری نامشخص';
         if (empty($contract_title)) {
-            $contract_title = 'قرارداد برای ' . $customer_data->display_name;
+            $contract_title = 'قرارداد برای ' . $customer_display_name;
         }
 
         $start_date_gregorian = puzzling_jalali_to_gregorian($start_date_jalali);
         $start_timestamp = strtotime($start_date_gregorian);
 
         if (empty($start_date_gregorian) || $start_timestamp === false) {
-            wp_send_json_error(['message' => 'فرمت تاریخ شروع قرارداد نامعتبر است. لطفاً از فرمت صحیح (مثال: 1403/05/10) استفاده کنید.']);
-            return;
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_INVALID_START_DATE, ['input_date' => $start_date_jalali]);
         }
         
         $post_data = [
@@ -153,12 +189,17 @@ class PuzzlingCRM_Project_Ajax_Handler {
         }
 
         if (is_wp_error($result)) {
-            wp_send_json_error(['message' => 'خطا در ذخیره‌سازی قرارداد.']);
+            $extra_info = ['wp_error_message' => $result->get_error_message()];
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_CONTRACT_SAVE_FAILED, $extra_info);
         }
 
         $the_contract_id = is_int($result) ? $result : $contract_id;
 
-        // **منطق اصلاح‌شده: شماره قرارداد فقط برای قراردادهای جدید تولید می‌شود**
+        // **ذخیره مبلغ کل و تعداد اقساط**
+        update_post_meta($the_contract_id, '_total_amount', preg_replace('/[^\d]/', '', $total_amount));
+        update_post_meta($the_contract_id, '_total_installments', $total_installments);
+
+
         if ($contract_id == 0 && $result) {
             $contract_number = 'puz-' . jdate('ymd', $start_timestamp, '', 'en') . '-' . $customer_id;
             update_post_meta($the_contract_id, '_contract_number', $contract_number);
@@ -177,13 +218,14 @@ class PuzzlingCRM_Project_Ajax_Handler {
         if (isset($_POST['payment_amount']) && is_array($_POST['payment_amount'])) {
             for ($i = 0; $i < count($_POST['payment_amount']); $i++) {
                 if (!empty($_POST['payment_amount'][$i])) {
-                    $due_date_gregorian = puzzling_jalali_to_gregorian(sanitize_text_field($_POST['payment_due_date'][$i]));
+                    $jalali_date = sanitize_text_field($_POST['payment_due_date'][$i]);
+                    $due_date_gregorian = puzzling_jalali_to_gregorian($jalali_date);
                     if (empty($due_date_gregorian) || strtotime($due_date_gregorian) === false) {
-                        wp_send_json_error(['message' => 'فرمت تاریخ قسط شماره ' . ($i + 1) . ' نامعتبر است.']);
-                        return;
+                        $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_INVALID_INSTALLMENT_DATE, ['input_date' => $jalali_date, 'installment_index' => $i + 1]);
                     }
                     $installments[] = [
-                        'amount' => sanitize_text_field($_POST['payment_amount'][$i]),
+                        // **NEW FIX: حذف کاراکترهای غیر عددی از مبلغ**
+                        'amount' => preg_replace('/[^\d]/', '', sanitize_text_field($_POST['payment_amount'][$i])),
                         'due_date' => $due_date_gregorian,
                         'status' => sanitize_key($_POST['payment_status'][$i]),
                     ];
@@ -191,7 +233,14 @@ class PuzzlingCRM_Project_Ajax_Handler {
             }
         }
         update_post_meta($the_contract_id, '_installments', $installments);
-
+        
+        PuzzlingCRM_Logger::add('قرارداد مدیریت شد', [
+            'action' => $contract_id > 0 ? 'به‌روزرسانی' : 'ایجاد',
+            'contract_id' => $the_contract_id,
+            'customer_id' => $customer_id,
+        ], 'success');
+        
+        ob_end_clean(); // پاکسازی نهایی بافر
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
     
@@ -199,25 +248,29 @@ class PuzzlingCRM_Project_Ajax_Handler {
      * تابع جدید برای حذف کامل قرارداد و موارد مرتبط
      */
     public function ajax_delete_contract() {
-        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-
-        if (!current_user_can('manage_options') || !isset($_POST['contract_id']) || !isset($_POST['nonce'])) {
-            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        ob_start();
+        if (!current_user_can('manage_options')) {
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_ACCESS_DENIED);
+        }
+        if (!check_ajax_referer('puzzlingcrm-ajax-nonce', 'security', false)) {
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_NONCE_FAILED);
+        }
+        if (!isset($_POST['contract_id']) || !isset($_POST['nonce'])) {
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_MISSING_CONTRACT_DATA);
         }
         
         $contract_id = intval($_POST['contract_id']);
         if (!wp_verify_nonce($_POST['nonce'], 'puzzling_delete_contract_' . $contract_id)) {
-            wp_send_json_error(['message' => 'خطای امنیتی. عدم تطابق Nonce.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_NONCE_FAILED, ['specific_nonce' => 'failed']);
         }
         
         $contract = get_post($contract_id);
         if (!$contract || $contract->post_type !== 'contract') {
-            wp_send_json_error(['message' => 'قرارداد یافت نشد.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_CONTRACT_NOT_FOUND, ['contract_id' => $contract_id]);
         }
         
-        // **مهم: حذف تمام موارد مرتبط با قرارداد**
         $related_items_query = new WP_Query([
-            'post_type'      => ['project', 'pro_invoice'], // پروژه‌ها و فاکتورها (در صورت لزوم پست تایپ‌های دیگر را اضافه کنید)
+            'post_type'      => ['project', 'pro_invoice'], 
             'posts_per_page' => -1,
             'meta_key'       => '_contract_id',
             'meta_value'     => $contract_id
@@ -225,55 +278,68 @@ class PuzzlingCRM_Project_Ajax_Handler {
 
         if ($related_items_query->have_posts()) {
             foreach ($related_items_query->posts as $related_post) {
-                wp_delete_post($related_post->ID, true); // true برای حذف دائمی
+                wp_delete_post($related_post->ID, true); 
             }
         }
         
-        // در نهایت، حذف خود قرارداد
         if (wp_delete_post($contract_id, true)) {
             PuzzlingCRM_Logger::add('قرارداد حذف شد', ['content' => "قرارداد '{$contract->post_title}' و تمام موارد مرتبط با آن توسط " . wp_get_current_user()->display_name . " حذف شد.", 'type' => 'log']);
-            wp_send_json_success(['message' => 'قرارداد و تمام داده‌های مرتبط با آن با موفقیت حذف شدند.']);
+            ob_end_clean();
+            // **FIX: این پاسخ موفقیت آمیز است و خرابی را رفع می‌کند**
+            wp_send_json_success(['message' => 'قرارداد و تمام داده‌های مرتبط با آن با موفقیت حذف شدند.', 'reload' => true]);
         } else {
-            wp_send_json_error(['message' => 'خطا در حذف قرارداد اصلی.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_CONTRACT_DELETE_FAILED, ['contract_id' => $contract_id]);
         }
     }
 
     public function ajax_cancel_contract() {
-        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        ob_start();
+        if (!check_ajax_referer('puzzlingcrm-ajax-nonce', 'security', false)) {
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_NONCE_FAILED);
+        }
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'شما دسترسی لازم را ندارید.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_ACCESS_DENIED);
         }
 
         $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
         $reason = isset($_POST['reason']) ? sanitize_textarea_field($_POST['reason']) : 'دلیلی ذکر نشده است.';
 
-        if ($contract_id > 0) {
+        if ($contract_id > 0 && get_post($contract_id) && get_post($contract_id)->post_type === 'contract') {
             update_post_meta($contract_id, '_contract_status', 'cancelled');
             update_post_meta($contract_id, '_cancellation_reason', $reason);
             update_post_meta($contract_id, '_cancellation_date', current_time('mysql'));
             
+            PuzzlingCRM_Logger::add('قرارداد لغو شد', [
+                'contract_id' => $contract_id,
+                'reason' => $reason,
+            ], 'warning');
+            
+            ob_end_clean();
             wp_send_json_success(['message' => 'قرارداد با موفقیت لغو شد.', 'reload' => true]);
         } else {
-            wp_send_json_error(['message' => 'شناسه قرارداد نامعتبر است.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_CANCEL_CONTRACT_FAILED, ['contract_id' => $contract_id]);
         }
     }
 
     public function ajax_add_project_to_contract() {
-        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        ob_start();
+        if (!check_ajax_referer('puzzlingcrm-ajax-nonce', 'security', false)) {
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_NONCE_FAILED);
+        }
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_ACCESS_DENIED);
         }
 
         $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
         $project_title = isset($_POST['project_title']) ? sanitize_text_field($_POST['project_title']) : '';
         
         if (empty($contract_id) || empty($project_title)) {
-            wp_send_json_error(['message' => 'اطلاعات قرارداد یا عنوان پروژه ناقص است.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_MISSING_PROJECT_DATA);
         }
 
         $contract = get_post($contract_id);
         if (!$contract || $contract->post_type !== 'contract') {
-             wp_send_json_error(['message' => 'قرارداد معتبر نیست.']);
+             $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_CONTRACT_INVALID, ['contract_id' => $contract_id]);
         }
 
         $project_id = wp_insert_post([
@@ -284,7 +350,8 @@ class PuzzlingCRM_Project_Ajax_Handler {
         ], true);
 
         if (is_wp_error($project_id)) {
-            wp_send_json_error(['message' => 'خطا در ایجاد پروژه جدید.']);
+            $extra_info = ['wp_error_message' => $project_id->get_error_message()];
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_PROJECT_SAVE_FAILED, $extra_info);
         }
 
         update_post_meta($project_id, '_contract_id', $contract_id);
@@ -294,45 +361,46 @@ class PuzzlingCRM_Project_Ajax_Handler {
             wp_set_object_terms($project_id, $active_status->term_id, 'project_status');
         }
 
+        PuzzlingCRM_Logger::add('پروژه به قرارداد اضافه شد', [
+            'project_id' => $project_id,
+            'contract_id' => $contract_id,
+        ], 'success');
+        
+        ob_end_clean();
         wp_send_json_success(['message' => 'پروژه جدید با موفقیت به قرارداد اضافه شد.', 'reload' => true]);
     }
     
     public function ajax_add_services_from_product() {
-        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-        $current_user = wp_get_current_user();
-
+        ob_start();
+        if (!check_ajax_referer('puzzlingcrm-ajax-nonce', 'security', false)) {
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_NONCE_FAILED);
+        }
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_ACCESS_DENIED);
         }
 
+        $current_user = wp_get_current_user();
         PuzzlingCRM_Logger::add('افزودن خدمات از محصول', [
             'content' => 'درخواست افزودن خدمات از محصول توسط کاربر ' . $current_user->display_name . ' آغاز شد.',
             'type' => 'log'
         ]);
 
         if (!function_exists('wc_get_product')) {
-            $error_msg = 'قابلیت افزودن خدمات از محصول به دلیل فعال نبودن ووکامرس شکست خورد.';
-            PuzzlingCRM_Logger::add('خطا: ووکامرس غیرفعال', ['content' => $error_msg, 'type' => 'error']);
-            wp_send_json_error(['message' => 'برای استفاده از این قابلیت، افزونه ووکامرس باید نصب و فعال باشد.']);
-            return;
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_PRODUCT_WOC_INACTIVE);
         }
 
         $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
         $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
         
         if (empty($contract_id) || empty($product_id)) {
-            $error_msg = 'اطلاعات قرارداد (ID: ' . $contract_id . ') یا محصول (ID: ' . $product_id . ') ناقص است.';
-            PuzzlingCRM_Logger::add('خطا: اطلاعات ناقص', ['content' => $error_msg, 'type' => 'error']);
-            wp_send_json_error(['message' => 'اطلاعات قرارداد یا محصول ناقص است.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_MISSING_PRODUCT_DATA, ['contract_id' => $contract_id, 'product_id' => $product_id]);
         }
 
         $contract = get_post($contract_id);
         $product = wc_get_product($product_id);
 
         if (!$contract || !$product) {
-            $error_msg = 'قرارداد (ID: ' . $contract_id . ') یا محصول (ID: ' . $product_id . ') یافت نشد.';
-            PuzzlingCRM_Logger::add('خطا: منبع یافت نشد', ['content' => $error_msg, 'type' => 'error']);
-            wp_send_json_error(['message' => 'قرارداد یا محصول یافت نشد.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_PRODUCT_NOT_FOUND, ['contract_found' => (bool)$contract, 'product_found' => (bool)$product]);
         }
 
         $created_projects_count = 0;
@@ -368,18 +436,20 @@ class PuzzlingCRM_Project_Ajax_Handler {
         if($created_projects_count > 0) {
             $success_msg = $created_projects_count . ' پروژه از محصول "' . $product->get_name() . '" برای قرارداد شماره ' . $contract_id . ' ایجاد شد.';
             PuzzlingCRM_Logger::add('موفقیت در افزودن خدمات', ['content' => $success_msg, 'type' => 'log']);
+            ob_end_clean();
             wp_send_json_success(['message' => $created_projects_count . ' پروژه با موفقیت از محصول ایجاد و به این قرارداد متصل شد.', 'reload' => true]);
         } else {
-            $error_msg = 'هیچ پروژه‌ای از محصول "' . $product->get_name() . '" برای قرارداد شماره ' . $contract_id . ' ایجاد نشد.';
-            PuzzlingCRM_Logger::add('خطا: پروژه‌ای ایجاد نشد', ['content' => $error_msg, 'type' => 'warning']);
-            wp_send_json_error(['message' => 'هیچ پروژه‌ای از محصول انتخاب شده ایجاد نشد. ممکن است محصول فاقد خدمات قابل تبدیل به پروژه باشد.']);
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_PRODUCT_PROJECT_FAILED, ['product_id' => $product_id, 'contract_id' => $contract_id]);
         }
     }
 
     public function ajax_get_projects_for_customer() {
-        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        ob_start();
+        if (!check_ajax_referer('puzzlingcrm-ajax-nonce', 'security', false)) {
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_NONCE_FAILED);
+        }
         if (!current_user_can('manage_options') || !isset($_POST['customer_id'])) {
-            wp_send_json_error();
+            $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_ACCESS_DENIED);
         }
 
         $customer_id = intval($_POST['customer_id']);
@@ -395,6 +465,7 @@ class PuzzlingCRM_Project_Ajax_Handler {
             }
         }
         
+        ob_end_clean();
         wp_send_json_success($projects_data);
     }
 }
