@@ -1,6 +1,6 @@
 <?php
 /**
- * PuzzlingCRM Lead AJAX Handler (Final Patched Version - Hotfix for Fatal Error)
+ * PuzzlingCRM Lead AJAX Handler (Final Patched Version - Hotfix for Edit Status & JS Error)
  * @package PuzzlingCRM
  */
 
@@ -104,13 +104,16 @@ class PuzzlingCRM_Lead_Ajax_Handler {
         update_post_meta($lead_id, '_first_name', $first_name);
         update_post_meta($lead_id, '_last_name', $last_name);
         update_post_meta($lead_id, '_mobile', $mobile);
-        // **CRITICAL FIX:** Added the missing '$' sign before business_name
         update_post_meta($lead_id, '_business_name', $business_name);
 
+        // **CRITICAL FIX**: Added error checking for term setting.
         if (isset($_POST['lead_status'])) {
             $status_slug = sanitize_text_field($_POST['lead_status']);
             if (!empty($status_slug)) {
-                wp_set_object_terms($lead_id, $status_slug, 'lead_status');
+                $term_result = wp_set_object_terms($lead_id, $status_slug, 'lead_status');
+                if (is_wp_error($term_result)) {
+                    wp_send_json_error(['message' => 'خطایی در هنگام به‌روزرسانی وضعیت رخ داد: ' . $term_result->get_error_message()]);
+                }
             }
         }
 

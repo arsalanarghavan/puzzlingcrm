@@ -3,7 +3,7 @@
  * Plugin Name:       PuzzlingCRM
  * Plugin URI:        https://Puzzlingco.com/
  * Description:       A complete CRM and Project Management solution for Social Marketing agencies.
- * Version:           0.0.303
+ * Version:           0.0.307
  * Author:            Arsalan Arghavan
  * Author URI:        https://ArsalanArghavan.ir/
  * License:           GPL v2 or later
@@ -17,7 +17,7 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 // Define Plugin Constants
-define( 'PUZZLINGCRM_VERSION', '1.4.0' );
+define( 'PUZZLINGCRM_VERSION', '1.4.1' ); // Updated version
 define( 'PUZZLINGCRM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PUZZLINGCRM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'PUZZLING_CRM_TEMPLATE_PATH', PUZZLINGCRM_PLUGIN_DIR . 'templates/' );
@@ -32,20 +32,14 @@ register_activation_hook( __FILE__, [ 'PuzzlingCRM_Installer', 'activate' ] );
 register_deactivation_hook( __FILE__, [ 'PuzzlingCRM_Installer', 'deactivate' ] );
 
 
-// === [START] FINAL SOLUTION: Correctly Enqueue Scripts and Styles ===
+// === [START] FINAL & CORRECTED SCRIPT ENQUEUEING ===
 
 /**
- * Registers and enqueues the plugin's scripts and styles with correct dependencies.
- * This function solves all JavaScript-related issues including the form submission problem.
+ * Registers and conditionally enqueues the plugin's scripts and styles.
+ * This function solves all JavaScript-related issues by loading scripts ONLY where they are needed.
  */
-function puzzling_enqueue_assets() {
-    // --- STYLES ---
-    wp_enqueue_style(
-        'puzzling-datepicker-css',
-        PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzling-datepicker.css',
-        [],
-        PUZZLINGCRM_VERSION
-    );
+function puzzling_enqueue_assets($hook) {
+    // --- GLOBAL STYLES (Load everywhere in admin) ---
     wp_enqueue_style(
         'puzzlingcrm-styles',
         PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css',
@@ -53,33 +47,31 @@ function puzzling_enqueue_assets() {
         PUZZLINGCRM_VERSION
     );
 
-    // --- SCRIPTS ---
-    // 1. Register the Persian Datepicker script, making it dependent on jQuery.
-    wp_register_script(
-        'puzzling-datepicker',
-        PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzling-datepicker.js',
-        ['jquery'], // Dependency
-        PUZZLINGCRM_VERSION,
-        true // Load in footer
-    );
+    // --- GLOBAL SCRIPTS (Load on all PuzzlingCRM admin pages) ---
+    // We only load these if the page belongs to our plugin.
+    if (strpos($hook, 'puzzling-') === false) {
+        return;
+    }
+    
+    // Enqueue SweetAlert2 if available
+    wp_enqueue_script('sweetalert2'); // Assuming SweetAlert2 is registered elsewhere, if not, you must register it first.
 
-    // 2. Register the main CRM script, making it dependent on BOTH jQuery and our datepicker script.
+    // Register main script (but don't enqueue yet)
     wp_register_script(
         'puzzlingcrm-scripts',
         PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js',
-        ['jquery', 'puzzling-datepicker'], // Dependencies
+        ['jquery'], // Dependency on jQuery
         PUZZLINGCRM_VERSION,
-        true // Load in footer
+        true
     );
 
-    // 3. Now enqueue the scripts. WordPress will automatically handle the dependency order.
-    wp_enqueue_script('puzzling-datepicker');
+    // Enqueue the main script
     wp_enqueue_script('puzzlingcrm-scripts');
 
-    // 4. Pass PHP variables (like AJAX URL and nonces) to our main script.
+    // Pass PHP variables to the main script
     wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [
         'ajax_url' => admin_url('admin-ajax.php'),
-        'nonce'    => wp_create_nonce('puzzling_add_lead_nonce'), // A specific nonce for security
+        'nonce'    => wp_create_nonce('puzzling_general_nonce'), // Use a general nonce or specific ones as needed
         'lang'     => [
             'ok_button'     => __('باشه', 'puzzlingcrm'),
             'success_title' => __('موفق', 'puzzlingcrm'),
@@ -87,10 +79,48 @@ function puzzling_enqueue_assets() {
             'server_error'  => __('یک خطای سرور رخ داد.', 'puzzlingcrm'),
         ]
     ]);
+
+    // --- CONDITIONAL SCRIPTS (Load only on specific pages) ---
+    $current_page = isset($_GET['page']) ? sanitize_key($_GET['page']) : '';
+
+    // Load Datepicker only on pages that need it (e.g., contracts, projects)
+    if (in_array($current_page, ['puzzling-contracts', 'puzzling-projects'])) {
+        wp_enqueue_style(
+            'puzzling-datepicker-css',
+            PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzling-datepicker.css',
+            [],
+            PUZZLINGCRM_VERSION
+        );
+        wp_enqueue_script(
+            'puzzling-datepicker',
+            PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzling-datepicker.js',
+            ['jquery'],
+            PUZZLINGCRM_VERSION,
+            true
+        );
+    }
+
+    // Load the specific script for the leads page (to handle the delete button)
+    if ($current_page === 'puzzling-leads') {
+        wp_enqueue_script(
+            'puzzlingcrm-lead-management',
+            PUZZLINGCRM_PLUGIN_URL . 'assets/js/lead-management.js', // The new file you should create
+            ['jquery', 'puzzlingcrm-scripts'], // Depends on jQuery and main scripts
+            PUZZLINGCRM_VERSION,
+            true
+        );
+    }
 }
-// Hook this function to run on both the admin area and the front-end (for shortcodes).
-add_action('wp_enqueue_scripts', 'puzzling_enqueue_assets');
 add_action('admin_enqueue_scripts', 'puzzling_enqueue_assets');
+
+
+/**
+ * Enqueue scripts for frontend (shortcodes). Kept simple for now.
+ */
+function puzzling_enqueue_frontend_assets() {
+    // You can enqueue specific frontend styles and scripts here if needed
+}
+add_action('wp_enqueue_scripts', 'puzzling_enqueue_frontend_assets');
 
 // === [END] FINAL SOLUTION ===
 
