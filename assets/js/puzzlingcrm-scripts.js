@@ -1,37 +1,36 @@
 /**
- * PuzzlingCRM Main Scripts - V4.4 (Final, Fully Functional Version)
- * This version fixes the "processing..." bug by correcting the logic in the 'complete' callback,
- * which in turn allows the delete and edit functions to work correctly.
- * It preserves all original functionalities for other parts of the plugin.
+ * PuzzlingCRM Main Scripts - V4.5 (Patched for Redirect Logic)
+ * This version fixes the redirect issue on the lead edit form by unifying
+ * the redirection and reload logic within the showPuzzlingAlert function.
  */
 
-// Global function for showing alerts using SweetAlert2
-function showPuzzlingAlert(title, text, icon, reloadPage = false) {
+// Global function for showing alerts using SweetAlert2 (Patched Version)
+function showPuzzlingAlert(title, text, icon, options = {}) {
+    const { reloadPage = false, redirectUrl = null } = options;
     const lang = (window.puzzlingcrm_ajax_obj && window.puzzlingcrm_ajax_obj.lang) ? window.puzzlingcrm_ajax_obj.lang : {};
+
     if (typeof Swal === 'undefined') {
         alert(title + "\n" + text);
-        if (reloadPage) {
+        if (redirectUrl) {
+            window.location.href = redirectUrl;
+        } else if (reloadPage) {
             window.location.reload();
         }
         return;
     }
+
     Swal.fire({
         title: title,
         text: text,
         icon: icon,
         confirmButtonText: lang.ok_button || 'باشه',
-        timer: reloadPage ? 2000 : 3500,
+        timer: (reloadPage || redirectUrl) ? 2000 : 3500,
         timerProgressBar: true,
         willClose: () => {
-            if (reloadPage) {
-                // If a redirect URL is present in the data response of a successful edit, use it.
-                // Otherwise, just reload the current page.
-                const redirectUrl = new URLSearchParams(window.location.search).get('redirect_url');
-                if (redirectUrl) {
-                    window.location.href = redirectUrl;
-                } else {
-                    window.location.reload();
-                }
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            } else if (reloadPage) {
+                window.location.reload();
             }
         }
     });
@@ -61,7 +60,7 @@ jQuery(document).ready(function($) {
     }
 
     /**
-     * Generic AJAX Form Submission Handler
+     * Generic AJAX Form Submission Handler (Patched Version)
      */
     function handleAjaxFormSubmit(form) {
         var submitButton = form.find('button[type="submit"]');
@@ -103,17 +102,12 @@ jQuery(document).ready(function($) {
                         window.closeLeadModal();
                     }
 
-                    // For edit actions, we handle redirection directly, not with the generic reload flag.
-                    if (action === 'puzzling_edit_lead' && data.redirect_url) {
-                        showPuzzlingAlert('موفق', data.message, 'success');
-                        setTimeout(() => {
-                            window.location.href = data.redirect_url;
-                        }, 1500);
-                        return; // Stop further execution
-                    }
-
+                    // UNIFIED LOGIC: Pass reload and redirect data to the alert function
                     setTimeout(() => {
-                        showPuzzlingAlert('موفق', data.message, 'success', data.reload);
+                        showPuzzlingAlert('موفق', data.message, 'success', {
+                            reloadPage: data.reload,
+                            redirectUrl: data.redirect_url
+                        });
                     }, 250);
 
                 } else {
@@ -175,7 +169,7 @@ jQuery(document).ready(function($) {
                     },
                     success: function(response) {
                         if (response.success) {
-                            showPuzzlingAlert('موفق', response.data.message, 'success', response.data.reload);
+                            showPuzzlingAlert('موفق', response.data.message, 'success', { reloadPage: response.data.reload });
                         } else {
                             showPuzzlingAlert('خطا', response.data.message, 'error');
                             leadRow.css('opacity', '1');
@@ -245,7 +239,7 @@ jQuery(document).ready(function($) {
                     reason: result.value || 'دلیلی ذکر نشده است.'
                 }).done(function(response) {
                     if (response.success) {
-                        showPuzzlingAlert('موفق', response.data.message, 'success', true);
+                        showPuzzlingAlert('موفق', response.data.message, 'success', { reloadPage: true });
                     } else {
                         showPuzzlingAlert('خطا', response.data.message, 'error');
                     }
@@ -276,14 +270,11 @@ jQuery(document).ready(function($) {
                     security: nonce,
                 }).done(function(response) {
                     if (response.success) {
-                        showPuzzlingAlert('موفقیت', response.data.message, 'success');
-                        setTimeout(function() {
-                            let contractsUrl = new URL(window.location.href);
-                            contractsUrl.searchParams.set('view', 'contracts');
-                            contractsUrl.searchParams.delete('action');
-                            contractsUrl.searchParams.delete('contract_id');
-                            window.location.href = contractsUrl.toString();
-                        }, 1500);
+                        let contractsUrl = new URL(window.location.href);
+                        contractsUrl.searchParams.set('view', 'contracts');
+                        contractsUrl.searchParams.delete('action');
+                        contractsUrl.searchParams.delete('contract_id');
+                        showPuzzlingAlert('موفقیت', response.data.message, 'success', { redirectUrl: contractsUrl.toString() });
                     } else {
                         showPuzzlingAlert('خطا', response.data.message, 'error');
                     }
@@ -319,7 +310,7 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    showPuzzlingAlert('موفق', response.data.message, 'success', true);
+                    showPuzzlingAlert('موفق', response.data.message, 'success', { reloadPage: true });
                 } else {
                     showPuzzlingAlert('خطا', response.data.message, 'error');
                 }

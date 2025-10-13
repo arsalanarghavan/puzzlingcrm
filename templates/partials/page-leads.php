@@ -26,11 +26,15 @@ if ($action === 'edit' && $lead_id > 0) {
     $mobile = get_post_meta($lead_id, '_mobile', true);
     $business_name = get_post_meta($lead_id, '_business_name', true);
     $notes = $lead->post_content;
+    
+    // **PATCHED**: Get the correct return URL, keeping all filters and pagination.
+    $return_url = remove_query_arg(['action', 'lead_id']);
+
     ?>
     <div class="puzzling-dashboard-wrapper">
         <div class="pzl-card-header">
             <h3><i class="fas fa-edit"></i> ویرایش سرنخ: <?php echo esc_html($first_name . ' ' . $last_name); ?></h3>
-            <a href="<?php echo esc_url(remove_query_arg(['action', 'lead_id'])); ?>" class="pzl-button pzl-button-secondary">
+            <a href="<?php echo esc_url($return_url); ?>" class="pzl-button pzl-button-secondary">
                 <i class="fas fa-arrow-left"></i> بازگشت به لیست سرنخ‌ها
             </a>
         </div>
@@ -39,6 +43,8 @@ if ($action === 'edit' && $lead_id > 0) {
                 <?php wp_nonce_field('puzzling_edit_lead_nonce', 'security'); ?>
                 <input type="hidden" name="action" value="puzzling_edit_lead">
                 <input type="hidden" name="lead_id" value="<?php echo esc_attr($lead_id); ?>">
+                
+                <input type="hidden" name="_wp_http_referer" value="<?php echo esc_attr(wp_unslash($return_url)); ?>">
 
                 <div class="pzl-form-row">
                     <div class="form-group half-width">
