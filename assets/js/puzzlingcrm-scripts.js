@@ -1,7 +1,7 @@
 /**
- * PuzzlingCRM Main Scripts - V4.3 (Final, Fully Functional Version)
- * This version includes robust AJAX form handling for adding/deleting leads,
- * correct modal and popup behavior, and automatic page reloads on success.
+ * PuzzlingCRM Main Scripts - V4.4 (Final, Fully Functional Version)
+ * This version fixes the "processing..." bug by correcting the logic in the 'complete' callback,
+ * which in turn allows the delete and edit functions to work correctly.
  * It preserves all original functionalities for other parts of the plugin.
  */
 
@@ -24,7 +24,14 @@ function showPuzzlingAlert(title, text, icon, reloadPage = false) {
         timerProgressBar: true,
         willClose: () => {
             if (reloadPage) {
-                window.location.reload();
+                // If a redirect URL is present in the data response of a successful edit, use it.
+                // Otherwise, just reload the current page.
+                const redirectUrl = new URLSearchParams(window.location.search).get('redirect_url');
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                } else {
+                    window.location.reload();
+                }
             }
         }
     });
@@ -63,6 +70,7 @@ jQuery(document).ready(function($) {
         var action = form.data('action') || form.find('input[name="action"]').val();
         formData.set('action', action);
 
+        // Prepare data before sending
         form.find('.item-price, .item-discount, #total_amount').each(function() {
             var inputName = $(this).attr('name');
             if (inputName) {
@@ -94,14 +102,20 @@ jQuery(document).ready(function($) {
                     if (action === 'puzzling_add_lead' && typeof window.closeLeadModal === 'function') {
                         window.closeLeadModal();
                     }
-                    setTimeout(function() {
-                        showPuzzlingAlert('موفق', data.message, 'success', data.reload);
-                    }, 250);
-                    if (data && data.redirect_url) {
-                        setTimeout(function() {
+
+                    // For edit actions, we handle redirection directly, not with the generic reload flag.
+                    if (action === 'puzzling_edit_lead' && data.redirect_url) {
+                        showPuzzlingAlert('موفق', data.message, 'success');
+                        setTimeout(() => {
                             window.location.href = data.redirect_url;
                         }, 1500);
+                        return; // Stop further execution
                     }
+
+                    setTimeout(() => {
+                        showPuzzlingAlert('موفق', data.message, 'success', data.reload);
+                    }, 250);
+
                 } else {
                     let errorMessage = (response && response.data && response.data.message) ? response.data.message : (puzzlingcrm_ajax_obj.lang.server_error || 'خطای سرور');
                     showPuzzlingAlert(puzzlingcrm_ajax_obj.lang.error_title || 'خطا', errorMessage, 'error');
@@ -115,7 +129,7 @@ jQuery(document).ready(function($) {
                 var response;
                 try {
                     response = JSON.parse(xhr.responseText);
-                    if (!response.success || (response.success && !response.data.reload)) {
+                    if (!response.success || (response.success && !response.data.reload && !response.data.redirect_url)) {
                         submitButton.html(originalButtonHtml).prop('disabled', false);
                     }
                 } catch (e) {
@@ -177,9 +191,9 @@ jQuery(document).ready(function($) {
     });
 
 
-    // --- Contract Form Logic ---
+    // --- All other original functions below ---
+
     if ($('#manage-contract-form').length) {
-        // Apply number formatting on keyup
         $('body').on('keyup', '.item-price, #total_amount', function() {
             var cursorPosition = this.selectionStart;
             var originalLength = this.value.length;
@@ -190,7 +204,6 @@ jQuery(document).ready(function($) {
             this.setSelectionRange(cursorPosition + (newLength - originalLength), cursorPosition + (newLength - originalLength));
         });
 
-        // Auto-generate contract number
         function updateContractNumber() {
             const contractIdField = $('input[name="contract_id"]');
             if (contractIdField.val() === '0' || $('#contract_number').val() === 'با انتخاب مشتری و تاریخ تولید می‌شود') {
@@ -210,7 +223,6 @@ jQuery(document).ready(function($) {
         $('#customer_id, #_project_start_date').on('change', updateContractNumber);
     }
 
-    // --- Contract Actions (Cancel & Delete) ---
     $('#cancel-contract-btn').on('click', function() {
         const contractId = $('input[name="contract_id"]').val();
         const nonce = $('#security').val();
@@ -282,7 +294,6 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // --- Add services from product ---
     $('body').on('click', '#add-services-from-product', function() {
         var button = $(this);
         var contractId = $('input[name="contract_id"]').val();
@@ -322,8 +333,6 @@ jQuery(document).ready(function($) {
         });
     });
 
-
-    // --- Intelligent Installment Calculation ---
     $('#calculate-installments').on('click', function() {
         var totalAmount = unformatNumber($('#total_amount').val());
         var totalInstallments = parseInt($('#total_installments').val(), 10);
@@ -388,7 +397,6 @@ jQuery(document).ready(function($) {
         $(this).closest('.payment-row').remove();
     });
 
-    // --- Kanban Board: Drag and Drop ---
     if ($('#pzl-task-board, .pzl-swimlane-board').length) {
         $('.pzl-task-list').sortable({
             connectWith: '.pzl-task-list',
@@ -430,7 +438,6 @@ jQuery(document).ready(function($) {
         }).disableSelection();
     }
 
-    // --- Task Modal ---
     function openTaskModal(taskId) {
         if (!taskId) return;
         currentTaskId = taskId;
@@ -478,7 +485,6 @@ jQuery(document).ready(function($) {
         openTaskModal(openTaskIdFromUrl);
     }
 
-    // --- Notifications ---
     function fetchNotifications() {
         $.post(puzzlingcrm_ajax_obj.ajax_url, {
             action: 'puzzling_get_notifications',
@@ -528,7 +534,6 @@ jQuery(document).ready(function($) {
         setInterval(fetchNotifications, 120000); // Fetch every 2 minutes
     }
 
-    // --- Canned Response Selector ---
     $('body').on('change', '#canned_response_selector', function() {
         var responseId = $(this).val();
         if (!responseId) return;
@@ -550,7 +555,6 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // --- Initial datepicker setup ---
     if ($.fn.persianDatepicker && $('.pzl-jalali-date-picker').length) {
         $('.pzl-jalali-date-picker').persianDatepicker({
             format: 'YYYY/MM/DD',

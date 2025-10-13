@@ -1,6 +1,6 @@
 <?php
 /**
- * PuzzlingCRM Leads Management Page (Final, Fully Functional Version)
+ * PuzzlingCRM Leads Management Page (Final, Fully Functional Version with Edit Screen)
  *
  * @package PuzzlingCRM
  */
@@ -10,44 +10,94 @@ if (!current_user_can('manage_options') && !current_user_can('system_manager')) 
     wp_die(__('شما اجازه دسترسی به این صفحه را ندارید.', 'puzzlingcrm'));
 }
 
-// Get all lead statuses for filtering and stats
-$lead_statuses = get_terms(['taxonomy' => 'lead_status', 'hide_empty' => false]);
-$total_leads = wp_count_posts('pzl_lead')->publish;
+// --- LOGIC TO DISPLAY EITHER THE LIST OR THE EDIT FORM ---
+$action = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
+$lead_id = isset($_GET['lead_id']) ? intval($_GET['lead_id']) : 0;
 
-// ======== Query and Filtering Logic ========
+if ($action === 'edit' && $lead_id > 0) {
+    // ======== DISPLAY EDIT FORM ========
+    $lead = get_post($lead_id);
+    if (!$lead || $lead->post_type !== 'pzl_lead') {
+        echo '<div class="puzzling-dashboard-wrapper"><div class="notice notice-error"><p>سرنخ مورد نظر یافت نشد. <a href="' . esc_url(remove_query_arg(['action', 'lead_id'])) . '">بازگشت به لیست</a></p></div></div>';
+        return;
+    }
+    $first_name = get_post_meta($lead_id, '_first_name', true);
+    $last_name = get_post_meta($lead_id, '_last_name', true);
+    $mobile = get_post_meta($lead_id, '_mobile', true);
+    $business_name = get_post_meta($lead_id, '_business_name', true);
+    $notes = $lead->post_content;
+    ?>
+    <div class="puzzling-dashboard-wrapper">
+        <div class="pzl-card-header">
+            <h3><i class="fas fa-edit"></i> ویرایش سرنخ: <?php echo esc_html($first_name . ' ' . $last_name); ?></h3>
+            <a href="<?php echo esc_url(remove_query_arg(['action', 'lead_id'])); ?>" class="pzl-button pzl-button-secondary">
+                <i class="fas fa-arrow-left"></i> بازگشت به لیست سرنخ‌ها
+            </a>
+        </div>
+        <div class="pzl-card">
+            <form id="pzl-edit-lead-form" class="pzl-form pzl-ajax-form">
+                <?php wp_nonce_field('puzzling_edit_lead_nonce', 'security'); ?>
+                <input type="hidden" name="action" value="puzzling_edit_lead">
+                <input type="hidden" name="lead_id" value="<?php echo esc_attr($lead_id); ?>">
+
+                <div class="pzl-form-row">
+                    <div class="form-group half-width">
+                        <label for="pzl-first-name-edit">نام<span class="pzl-required">*</span></label>
+                        <input type="text" id="pzl-first-name-edit" name="first_name" value="<?php echo esc_attr($first_name); ?>" required>
+                    </div>
+                    <div class="form-group half-width">
+                        <label for="pzl-last-name-edit">نام خانوادگی<span class="pzl-required">*</span></label>
+                        <input type="text" id="pzl-last-name-edit" name="last_name" value="<?php echo esc_attr($last_name); ?>" required>
+                    </div>
+                </div>
+                <div class="pzl-form-row">
+                    <div class="form-group half-width">
+                        <label for="pzl-mobile-edit">شماره موبایل<span class="pzl-required">*</span></label>
+                        <input type="tel" id="pzl-mobile-edit" name="mobile" class="ltr-input" value="<?php echo esc_attr($mobile); ?>" required>
+                    </div>
+                    <div class="form-group half-width">
+                        <label for="pzl-business-name-edit">نام کسب‌وکار</label>
+                        <input type="text" id="pzl-business-name-edit" name="business_name" value="<?php echo esc_attr($business_name); ?>">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="pzl-notes-edit">یادداشت</label>
+                    <textarea id="pzl-notes-edit" name="notes" rows="4"><?php echo esc_textarea($notes); ?></textarea>
+                </div>
+                <div class="pzl-modal-footer" style="background: transparent; border-top: none; padding: 15px 0 0 0;">
+                    <button type="submit" class="pzl-button">ذخیره تغییرات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php
+    return; // Stop execution here to only show the edit form
+}
+
+// ======== DISPLAY LEADS LIST (DEFAULT VIEW) ========
+$lead_statuses = get_terms(['taxonomy' => 'lead_status', 'hide_empty' => false]);
 $paged = isset($_GET['paged']) ? intval($_GET['paged']) : 1;
 $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
 $status_filter = isset($_GET['status_filter']) ? sanitize_text_field($_GET['status_filter']) : '';
-
 $args = [
     'post_type' => 'pzl_lead',
     'post_status' => 'publish',
     'posts_per_page' => 20,
     'paged' => $paged,
-    's' => $search_query, // Use default WordPress search parameter
+    's' => $search_query
 ];
-
 if (!empty($status_filter)) {
     $args['tax_query'] = [['taxonomy' => 'lead_status', 'field' => 'slug', 'terms' => $status_filter]];
 }
-
 $leads_query = new WP_Query($args);
-
-// Create nonces for security
 $delete_nonce = wp_create_nonce('puzzling_delete_lead_nonce');
-
-// Get the current URL without any query parameters for clean link building.
-// This ensures that links for actions like 'edit' don't carry over old parameters.
-$current_page_url = remove_query_arg(array('action', 'lead_id', '_wpnonce', 'deleted', 'updated'));
-
+$current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted', 'updated']);
 ?>
 
 <div class="puzzling-dashboard-wrapper">
     <div class="pzl-card-header">
         <h3><i class="fas fa-users"></i> مدیریت سرنخ‌ها</h3>
-        <a href="#" id="pzl-add-new-lead-btn" class="pzl-button">
-            <i class="fas fa-plus"></i> افزودن سرنخ جدید
-        </a>
+        <a href="#" id="pzl-add-new-lead-btn" class="pzl-button"><i class="fas fa-plus"></i> افزودن سرنخ جدید</a>
     </div>
 
     <div class="pzl-dashboard-stats-grid">
@@ -62,14 +112,12 @@ $current_page_url = remove_query_arg(array('action', 'lead_id', '_wpnonce', 'del
                     <select name="status_filter" id="status_filter">
                         <option value="">همه وضعیت‌ها</option>
                         <?php foreach ($lead_statuses as $status) : ?>
-                            <option value="<?php echo esc_attr($status->slug); ?>" <?php selected($status_filter, $status->slug); ?>>
-                                <?php echo esc_html($status->name); ?>
-                            </option>
+                            <option value="<?php echo esc_attr($status->slug); ?>" <?php selected($status_filter, $status->slug); ?>><?php echo esc_html($status->name); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="form-group half-width">
-                     <label for="search_query">جستجو</label>
+                    <label for="search_query">جستجو</label>
                     <input type="search" id="search_query" name="s" value="<?php echo esc_attr($search_query); ?>" placeholder="نام، موبایل یا کسب‌وکار..." />
                 </div>
             </div>
@@ -93,13 +141,11 @@ $current_page_url = remove_query_arg(array('action', 'lead_id', '_wpnonce', 'del
                 <?php if ($leads_query->have_posts()) : ?>
                     <?php while ($leads_query->have_posts()) : $leads_query->the_post(); ?>
                         <?php
-                            $lead_id = get_the_ID();
-                            $status_terms = get_the_terms($lead_id, 'lead_status');
-                            $status_name = !empty($status_terms) ? esc_html($status_terms[0]->name) : '---';
-                            $status_slug = !empty($status_terms) ? esc_html($status_terms[0]->slug) : '';
-                            
-                            // Build the edit link based on the current page's clean URL
-                            $edit_link = add_query_arg(['action' => 'edit', 'lead_id' => $lead_id], $current_page_url);
+                        $lead_id = get_the_ID();
+                        $status_terms = get_the_terms($lead_id, 'lead_status');
+                        $status_name = !empty($status_terms) ? esc_html($status_terms[0]->name) : '---';
+                        $status_slug = !empty($status_terms) ? esc_html($status_terms[0]->slug) : '';
+                        $edit_link = add_query_arg(['action' => 'edit', 'lead_id' => $lead_id], $current_page_url);
                         ?>
                         <tr data-lead-id="<?php echo esc_attr($lead_id); ?>">
                             <td><strong><?php echo esc_html(get_the_title()); ?></strong></td>
@@ -108,7 +154,7 @@ $current_page_url = remove_query_arg(array('action', 'lead_id', '_wpnonce', 'del
                             <td><span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span></td>
                             <td><?php echo get_the_date('Y/m/d'); ?></td>
                             <td class="pzl-table-actions">
-                                <a href="<?php echo esc_url($edit_link); ?>" class="pzl-button-icon pzl-edit-lead-btn" title="ویرایش"><i class="fas fa-edit"></i></a>
+                                <a href="<?php echo esc_url($edit_link); ?>" class="pzl-button-icon" title="ویرایش"><i class="fas fa-edit"></i></a>
                                 <a href="#" class="pzl-button-icon pzl-delete-lead-btn" data-nonce="<?php echo esc_attr($delete_nonce); ?>" title="حذف" style="color: #F0192A;"><i class="fas fa-trash"></i></a>
                             </td>
                         </tr>
@@ -130,14 +176,14 @@ $current_page_url = remove_query_arg(array('action', 'lead_id', '_wpnonce', 'del
         <?php if ($leads_query->max_num_pages > 1) : ?>
         <div class="pzl-pagination">
             <?php
-                echo paginate_links([
-                    'base' => add_query_arg('paged', '%#%', $current_page_url),
-                    'format' => '?paged=%#%',
-                    'current' => $paged,
-                    'total' => $leads_query->max_num_pages,
-                    'prev_text' => ' قبلی',
-                    'next_text' => 'بعدی ',
-                ]);
+            echo paginate_links([
+                'base' => add_query_arg('paged', '%#%', $current_page_url),
+                'format' => '?paged=%#%',
+                'current' => $paged,
+                'total' => $leads_query->max_num_pages,
+                'prev_text' => ' قبلی',
+                'next_text' => 'بعدی ',
+            ]);
             ?>
         </div>
         <?php endif; ?>
@@ -191,29 +237,24 @@ jQuery(document).ready(function($) {
     const modal = $('#pzl-add-lead-modal');
     const form = $('#pzl-add-lead-form');
 
-    // This function is made global to be accessible from the main scripts file (puzzlingcrm-scripts.js)
     window.closeLeadModal = function() {
         modal.removeClass('pzl-is-visible');
-        // Reset form fields after the animation finishes to prevent visual glitches
         setTimeout(() => form[0].reset(), 200);
-    }
+    };
 
-    // Event to open the modal
     $('#pzl-add-new-lead-btn').on('click', function(e) {
         e.preventDefault();
         modal.addClass('pzl-is-visible');
     });
 
-    // Events to close the modal
     $('#pzl-close-modal-btn, #pzl-cancel-modal-btn, .pzl-modal-backdrop').on('click', function(e) {
-        // Ensure we only close if the click is on the backdrop itself or the close/cancel buttons
         if ($(e.target).is('.pzl-modal-backdrop, #pzl-close-modal-btn, #pzl-cancel-modal-btn')) {
             e.preventDefault();
             window.closeLeadModal();
         }
     });
+
     $(document).on('keydown', function(e) {
-        // Close modal on 'Escape' key press
         if (e.key === "Escape" && modal.hasClass('pzl-is-visible')) {
             window.closeLeadModal();
         }
@@ -263,7 +304,7 @@ jQuery(document).ready(function($) {
     padding: 5px; transition: color 0.2s;
 }
 .pzl-modal-close:hover { color: #F0192A; }
-.pzl-table-actions { text-align: left; }
+.pzl-table-actions { text-align: left; white-space: nowrap; }
 .pzl-button-icon {
     display: inline-block; padding: 5px 8px;
     text-decoration: none; color: #0073aa;
