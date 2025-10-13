@@ -1,6 +1,6 @@
 <?php
 /**
- * PuzzlingCRM Lead AJAX Handler
+ * PuzzlingCRM Lead AJAX Handler (Production Ready)
  *
  * @package PuzzlingCRM
  */
@@ -82,29 +82,34 @@ class PuzzlingCRM_Lead_Ajax_Handler {
         $sms_sent = true;
         $sms_error_message = '';
         
-        // Send automatic SMS if enabled and the necessary classes exist
-        if (class_exists('PuzzlingCRM_SMS_Handler') && isset($settings['lead_auto_sms_enabled']) && $settings['lead_auto_sms_enabled'] == '1' && !empty($settings['lead_auto_sms_template'])) {
-            $sms_message = str_replace(
-                ['{first_name}', '{last_name}', '{business_name}'],
-                [$first_name, $last_name, $business_name],
-                $settings['lead_auto_sms_template']
-            );
-            
-            $sms_service = PuzzlingCRM_SMS_Handler::get_sms_service();
-            if ($sms_service) {
-                try {
-                    $result = $sms_service->send($mobile, $sms_message);
-                    if (!$result) {
+        // Robust SMS Sending Logic
+        if (isset($settings['lead_auto_sms_enabled']) && $settings['lead_auto_sms_enabled'] == '1' && !empty($settings['lead_auto_sms_template'])) {
+            if (class_exists('PuzzlingCRM_SMS_Handler')) {
+                $sms_message = str_replace(
+                    ['{first_name}', '{last_name}', '{business_name}'],
+                    [$first_name, $last_name, $business_name],
+                    $settings['lead_auto_sms_template']
+                );
+                
+                $sms_service = PuzzlingCRM_SMS_Handler::get_sms_service();
+                if ($sms_service) {
+                    try {
+                        $result = $sms_service->send($mobile, $sms_message);
+                        if (!$result) {
+                            $sms_sent = false;
+                            $sms_error_message = __('ارسال پیامک با خطا مواجه شد.', 'puzzlingcrm');
+                        }
+                    } catch (Exception $e) {
                         $sms_sent = false;
-                        $sms_error_message = __('ارسال پیامک با خطا مواجه شد.', 'puzzlingcrm');
+                        $sms_error_message = __('خطایی در سرویس پیامک رخ داد.', 'puzzlingcrm');
                     }
-                } catch (Exception $e) {
+                } else {
                     $sms_sent = false;
-                    $sms_error_message = __('خطایی در سرویس پیامک رخ داد.', 'puzzlingcrm');
+                    $sms_error_message = __('سرویس پیامک فعال نیست.', 'puzzlingcrm');
                 }
             } else {
-                $sms_sent = false;
-                $sms_error_message = __('سرویس پیامک فعال نیست.', 'puzzlingcrm');
+                 $sms_sent = false;
+                 $sms_error_message = __('کلاس مدیریت پیامک یافت نشد.', 'puzzlingcrm');
             }
         }
         
@@ -113,6 +118,6 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             $success_message .= ' ' . $sms_error_message;
         }
 
-        wp_send_json_success(['message' => $success_message]);
+        wp_send_json_success(['message' => $success_message, 'reload' => true]); // Added reload flag
     }
 }

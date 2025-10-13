@@ -3,7 +3,7 @@
  * Plugin Name:       PuzzlingCRM
  * Plugin URI:        https://Puzzlingco.com/
  * Description:       A complete CRM and Project Management solution for Social Marketing agencies.
- * Version:           0.0.278
+ * Version:           0.0.286
  * Author:            Arsalan Arghavan
  * Author URI:        https://ArsalanArghavan.ir/
  * License:           GPL v2 or later
@@ -20,11 +20,7 @@ if ( ! defined( 'WPINC' ) ) {
 define( 'PUZZLINGCRM_VERSION', '1.4.0' );
 define( 'PUZZLINGCRM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PUZZLINGCRM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-
-// --- START: FIX ---
-// Add the missing constant for the templates path
 define( 'PUZZLING_CRM_TEMPLATE_PATH', PUZZLINGCRM_PLUGIN_DIR . 'templates/' );
-// --- END: FIX ---
 
 // Include core files
 require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-installer.php';
@@ -34,6 +30,70 @@ require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-puzzlingcrm.php';
 // --- Activation / Deactivation Hooks ---
 register_activation_hook( __FILE__, [ 'PuzzlingCRM_Installer', 'activate' ] );
 register_deactivation_hook( __FILE__, [ 'PuzzlingCRM_Installer', 'deactivate' ] );
+
+
+// === [START] FINAL SOLUTION: Correctly Enqueue Scripts and Styles ===
+
+/**
+ * Registers and enqueues the plugin's scripts and styles with correct dependencies.
+ * This function solves all JavaScript-related issues including the form submission problem.
+ */
+function puzzling_enqueue_assets() {
+    // --- STYLES ---
+    wp_enqueue_style(
+        'puzzling-datepicker-css',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzling-datepicker.css',
+        [],
+        PUZZLINGCRM_VERSION
+    );
+    wp_enqueue_style(
+        'puzzlingcrm-styles',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css',
+        [],
+        PUZZLINGCRM_VERSION
+    );
+
+    // --- SCRIPTS ---
+    // 1. Register the Persian Datepicker script, making it dependent on jQuery.
+    wp_register_script(
+        'puzzling-datepicker',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzling-datepicker.js',
+        ['jquery'], // Dependency
+        PUZZLINGCRM_VERSION,
+        true // Load in footer
+    );
+
+    // 2. Register the main CRM script, making it dependent on BOTH jQuery and our datepicker script.
+    wp_register_script(
+        'puzzlingcrm-scripts',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js',
+        ['jquery', 'puzzling-datepicker'], // Dependencies
+        PUZZLINGCRM_VERSION,
+        true // Load in footer
+    );
+
+    // 3. Now enqueue the scripts. WordPress will automatically handle the dependency order.
+    wp_enqueue_script('puzzling-datepicker');
+    wp_enqueue_script('puzzlingcrm-scripts');
+
+    // 4. Pass PHP variables (like AJAX URL and nonces) to our main script.
+    wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce'    => wp_create_nonce('puzzling_add_lead_nonce'), // A specific nonce for security
+        'lang'     => [
+            'ok_button'     => __('باشه', 'puzzlingcrm'),
+            'success_title' => __('موفق', 'puzzlingcrm'),
+            'error_title'   => __('خطا', 'puzzlingcrm'),
+            'server_error'  => __('یک خطای سرور رخ داد.', 'puzzlingcrm'),
+        ]
+    ]);
+}
+// Hook this function to run on both the admin area and the front-end (for shortcodes).
+add_action('wp_enqueue_scripts', 'puzzling_enqueue_assets');
+add_action('admin_enqueue_scripts', 'puzzling_enqueue_assets');
+
+// === [END] FINAL SOLUTION ===
+
 
 /**
  * Checks for required plugin dependencies.
@@ -68,39 +128,6 @@ function puzzling_load_textdomain() {
     load_plugin_textdomain( 'puzzlingcrm', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 }
 add_action( 'plugins_loaded', 'puzzling_load_textdomain' );
-
-
-// --- [شروع راهکار نهایی: Output Buffering سراسری برای AJAX] ---
-
-/**
- * شروع بافر خروجی به صورت سراسری در هر درخواست AJAX.
- */
-function puzzling_start_ajax_output_buffer() {
-    // فقط در صورتی که درخواست AJAX باشد، بافر را شروع کن.
-    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-        // شروع بافرینگ در سریع‌ترین حالت ممکن (اولویت ۱)
-        ob_start();
-    }
-}
-add_action( 'plugins_loaded', 'puzzling_start_ajax_output_buffer', 1 );
-
-
-/**
- * پاکسازی بافر خروجی در هنگام خاتمه درخواست AJAX.
- */
-function puzzling_clean_ajax_output_buffer() {
-    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-        // مطمئن شوید که بافر در حال حاضر فعال است و محتوایی در آن جمع شده است.
-        if ( ob_get_level() > 0 && ob_get_length() > 0 ) {
-            // محتویات بافر را دور می‌ریزیم تا فقط JSON خالص ارسال شود.
-            ob_end_clean();
-        }
-    }
-}
-// این اکشن باید با اولویت کم اجرا شود (بعد از اجرای همه توابع دیگر)
-add_action( 'shutdown', 'puzzling_clean_ajax_output_buffer', 0 ); 
-
-// --- [پایان راهکار نهایی: Output Buffering سراسری برای AJAX] ---
 
 
 /**
