@@ -35,13 +35,16 @@ class PuzzlingCRM_Frontend_Dashboard {
 
     /**
      * Helper function to render a partial template.
+     * MODIFIED: Corrected the path to use the defined constant.
      */
     private static function render_partial($template_name) {
         ob_start();
-        $template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . $template_name . '.php';
+        // The constant PUZZLING_CRM_TEMPLATE_PATH is safer to use.
+        $template_path = PUZZLING_CRM_TEMPLATE_PATH . 'partials/' . $template_name . '.php'; 
         if ( file_exists( $template_path ) ) {
             include $template_path;
         } else {
+            // Using your project's styling for alerts.
             echo '<div class="pzl-alert pzl-alert-error">خطای سیستمی: فایل قالب یافت نشد: ' . esc_html($template_name) . '</div>';
         }
         return ob_get_clean();
@@ -203,4 +206,19 @@ class PuzzlingCRM_Frontend_Dashboard {
     public static function render_page_logs() { return self::get_user_role() === 'system_manager' ? self::render_partial('page-logs') : '<p>' . __('You do not have permission to view this page.', 'puzzlingcrm') . '</p>'; }
     public static function render_page_consultations() { return self::get_user_role() === 'system_manager' ? self::render_partial('page-consultations') : '<p>' . __('You do not have permission to view this page.', 'puzzlingcrm') . '</p>'; }
 
+    /**
+     * NEW: Renders the lead management page.
+     * Shortcode: [puzzling_leads]
+     * This is a manager-only page.
+     */
+    public static function render_page_leads() {
+        // Use your existing role check helper
+        if ( self::get_user_role() === 'system_manager' ) {
+            // Use your existing template rendering helper
+            return self::render_partial('shortcode-leads');
+        } else {
+            // Return standard permission error
+            return '<p>' . __('You do not have permission to view this page.', 'puzzlingcrm') . '</p>';
+        }
+    }
 }
