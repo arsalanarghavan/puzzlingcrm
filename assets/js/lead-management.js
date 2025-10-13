@@ -13,9 +13,48 @@ jQuery(document).ready(function($) {
         const leadId = leadRow.data('lead-id');
         const nonce = button.data('nonce');
 
+        const performDelete = () => {
+            leadRow.css('opacity', '0.5');
+            $.ajax({
+                url: puzzlingcrm_ajax_obj.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'puzzling_delete_lead',
+                    security: nonce,
+                    lead_id: leadId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Using the global alert function if it exists
+                        if (typeof showPuzzlingAlert === 'function') {
+                            showPuzzlingAlert('موفق', response.data.message, 'success', response.data);
+                        } else {
+                            alert(response.data.message);
+                            window.location.reload();
+                        }
+                    } else {
+                        if (typeof showPuzzlingAlert === 'function') {
+                            showPuzzlingAlert('خطا', response.data.message, 'error');
+                        } else {
+                            alert(response.data.message);
+                        }
+                        leadRow.css('opacity', '1');
+                    }
+                },
+                error: function() {
+                    if (typeof showPuzzlingAlert === 'function') {
+                        showPuzzlingAlert('خطا', 'یک خطای ناشناخته در ارتباط با سرور رخ داد.', 'error');
+                    } else {
+                        alert('یک خطای ناشناخته در ارتباط با سرور رخ داد.');
+                    }
+                    leadRow.css('opacity', '1');
+                }
+            });
+        };
+
         if (typeof Swal === 'undefined') {
-            if (!confirm('آیا از حذف این سرنخ مطمئن هستید؟')) {
-                return;
+            if (confirm('آیا از حذف این سرنخ مطمئن هستید؟')) {
+                performDelete();
             }
         } else {
             Swal.fire({
@@ -28,47 +67,10 @@ jQuery(document).ready(function($) {
                 confirmButtonText: 'بله، حذف کن!',
                 cancelButtonText: 'انصراف'
             }).then((result) => {
-                if (!result.isConfirmed) {
-                    return;
+                if (result.isConfirmed) {
+                    performDelete();
                 }
             });
         }
-        
-        leadRow.css('opacity', '0.5');
-        $.ajax({
-            url: puzzlingcrm_ajax_obj.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'puzzling_delete_lead',
-                security: nonce,
-                lead_id: leadId
-            },
-            success: function(response) {
-                if (response.success) {
-                    // Using the global alert function if it exists
-                    if (typeof showPuzzlingAlert === 'function') {
-                        showPuzzlingAlert('موفق', response.data.message, 'success', response.data);
-                    } else {
-                        alert(response.data.message);
-                        window.location.reload();
-                    }
-                } else {
-                    if (typeof showPuzzlingAlert === 'function') {
-                        showPuzzlingAlert('خطا', response.data.message, 'error');
-                    } else {
-                        alert(response.data.message);
-                    }
-                    leadRow.css('opacity', '1');
-                }
-            },
-            error: function() {
-                if (typeof showPuzzlingAlert === 'function') {
-                    showPuzzlingAlert('خطا', 'یک خطای ناشناخته در ارتباط با سرور رخ داد.', 'error');
-                } else {
-                    alert('یک خطای ناشناخته در ارتباط با سرور رخ داد.');
-                }
-                leadRow.css('opacity', '1');
-            }
-        });
     });
 });
