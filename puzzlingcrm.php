@@ -3,7 +3,7 @@
  * Plugin Name:       PuzzlingCRM
  * Plugin URI:        https://Puzzlingco.com/
  * Description:       A complete CRM and Project Management solution for Social Marketing agencies.
- * Version:           0.0.269
+ * Version:           0.0.271
  * Author:            Arsalan Arghavan
  * Author URI:        https://ArsalanArghavan.ir/
  * License:           GPL v2 or later
@@ -20,6 +20,11 @@ if ( ! defined( 'WPINC' ) ) {
 define( 'PUZZLINGCRM_VERSION', '1.4.0' );
 define( 'PUZZLINGCRM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PUZZLINGCRM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+
+// --- START: FIX ---
+// Add the missing constant for the templates path
+define( 'PUZZLING_CRM_TEMPLATE_PATH', PUZZLINGCRM_PLUGIN_DIR . 'templates/' );
+// --- END: FIX ---
 
 // Include core files
 require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-installer.php';

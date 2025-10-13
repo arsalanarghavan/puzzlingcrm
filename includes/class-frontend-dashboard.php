@@ -214,8 +214,8 @@ class PuzzlingCRM_Frontend_Dashboard {
     public static function render_page_leads() {
         // Use your existing role check helper
         if ( self::get_user_role() === 'system_manager' ) {
-            // Use your existing template rendering helper
-            return self::render_partial('shortcode-leads');
+            // Use your existing template rendering helper - CORRECTED TEMPLATE NAME
+            return self::render_partial('page-leads');
         } else {
             // Return standard permission error
             return '<p>' . __('You do not have permission to view this page.', 'puzzlingcrm') . '</p>';
