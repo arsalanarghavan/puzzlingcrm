@@ -21,25 +21,70 @@ class PuzzlingCRM_Admin_Menu {
 
     /**
      * Registers all the admin menu and submenu pages for the plugin.
-     * The main purpose of this menu is now to provide a clear entry point
-     * to the frontend dashboard for administrators.
+     * This now includes a dedicated backend page for managing leads.
      */
     public function register_admin_menus() {
-        // Main Menu Page that links to the frontend dashboard
+        // Main Menu Page
         add_menu_page(
             __( 'PuzzlingCRM', 'puzzlingcrm' ),
             __( 'PuzzlingCRM', 'puzzlingcrm' ),
             'manage_options',
-            'puzzling-crm-info', // Slug changed to avoid conflict
-            [ $this, 'render_info_page' ], // Callback function changed
+            'puzzling-crm', // Main slug for the menu
+            [ $this, 'render_leads_page' ], // Make Leads the default page
             'dashicons-businesswoman',
             25
+        );
+
+        // Submenu Page for Leads
+        add_submenu_page(
+            'puzzling-crm', // Parent slug
+            __( 'مدیریت سرنخ‌ها', 'puzzlingcrm' ), // Page title
+            __( 'مدیریت سرنخ‌ها', 'puzzlingcrm' ), // Menu title
+            'manage_options', // Capability
+            'puzzling-crm', // Slug (same as parent to be the default)
+            [ $this, 'render_leads_page' ] // Callback function
+        );
+
+        // Submenu Page for Info/Shortcodes
+        add_submenu_page(
+            'puzzling-crm', // Parent slug
+            __( 'راهنمای شورت‌کدها', 'puzzlingcrm' ), // Page title
+            __( 'راهنمای شورت‌کدها', 'puzzlingcrm' ), // Menu title
+            'manage_options', // Capability
+            'puzzling-crm-info', // Unique slug for this page
+            [ $this, 'render_info_page' ] // Callback function
         );
     }
 
     /**
-     * HIGHLIGHT: Renders a simple info page instead of redirecting.
-     * This ensures even admins use the intended interface.
+     * Renders the Leads management page with a file existence check for debugging.
+     */
+    public function render_leads_page() {
+        // Define the full path to the template file
+        $file_path = PUZZLING_CRM_PATH . 'templates/partials/page-leads.php';
+
+        // Check if the file actually exists at that path
+        if ( file_exists( $file_path ) ) {
+            // If it exists, load it.
+            require_once $file_path;
+        } else {
+            // If it doesn't exist, show a clear error message.
+            ?>
+            <div class="wrap">
+                <h1>خطای بارگذاری فایل</h1>
+                <div class="notice notice-error">
+                    <p><strong>خطا:</strong> فایل مورد نیاز برای نمایش صفحه سرنخ‌ها پیدا نشد.</p>
+                    <p>لطفاً مطمئن شوید که یک فایل با نام <strong>page-leads.php</strong> دقیقاً در مسیر زیر وجود دارد:</p>
+                    <code><?php echo esc_html( $file_path ); ?></code>
+                </div>
+            </div>
+            <?php
+        }
+    }
+
+    /**
+     * Renders the info page with a list of available shortcodes.
+     * This function is preserved from your original file.
      */
     public function render_info_page() {
         ?>
@@ -47,7 +92,7 @@ class PuzzlingCRM_Admin_Menu {
             <h1><?php esc_html_e( 'به PuzzlingCRM خوش آمدید', 'puzzlingcrm' ); ?></h1>
             <p><?php esc_html_e( 'تمام بخش‌های مدیریتی PuzzlingCRM از طریق شورت‌کدها در صفحات سایت شما قابل استفاده است.', 'puzzlingcrm' ); ?></p>
             <p><?php esc_html_e( 'می‌توانید با قرار دادن شورت‌کدهای زیر در هر برگه‌ای، داشبورد اختصاصی خود را بسازید.', 'puzzlingcrm' ); ?></p>
-            
+
             <h2><?php esc_html_e( 'شورت‌کدهای موجود', 'puzzlingcrm' ); ?></h2>
             <ul style="list-style-type: disc; padding-right: 20px;">
                 <li><code>[puzzling_projects]</code> - <?php esc_html_e('نمایش پروژه‌ها برای مدیران یا مشتریان.', 'puzzlingcrm'); ?></li>
@@ -68,14 +113,14 @@ class PuzzlingCRM_Admin_Menu {
         </div>
         <?php
     }
-    
+
     /**
      * Displays admin notices, e.g., for configuration errors or missing extensions.
+     * This function remains unchanged.
      */
     public function show_admin_notices() {
-        // This function remains unchanged and will show important server/config notices to the admin.
         if ( get_transient( 'puzzling_sms_not_configured' ) ) {
-            $settings_url = add_query_arg(['page' => 'puzzling-crm-info']); // Point to our new info page
+            $settings_url = add_query_arg(['page' => 'puzzling-crm-info']);
             ?>
             <div class="notice notice-error is-dismissible">
                 <p>
