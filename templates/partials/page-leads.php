@@ -161,7 +161,7 @@ $leads_query = new WP_Query($args);
         <div class="pzl-modal-header">
             <h3 class="pzl-modal-title">افزودن سرنخ جدید</h3>
         </div>
-        <form id="pzl-add-lead-form" class="pzl-form pzl-modal-body">
+        <form id="pzl-add-lead-form" class="pzl-form pzl-modal-body pzl-ajax-form">
             <?php wp_nonce_field('puzzling_add_lead_nonce', 'security'); ?>
             <input type="hidden" name="action" value="puzzling_add_lead">
             

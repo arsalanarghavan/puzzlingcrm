@@ -118,6 +118,6 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             $success_message .= ' ' . $sms_error_message;
         }
 
-        wp_send_json_success(['message' => $success_message, 'reload' => true]); // Added reload flag
+        wp_send_json_success(['message' => $success_message, 'reload' => false]);
     }
 }
