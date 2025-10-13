@@ -5,7 +5,7 @@ if ( ! current_user_can('manage_options') ) return;
 $contract_to_edit = isset($puzzling_contract) ? $puzzling_contract : null;
 $is_cancelled = $contract_to_edit ? get_post_meta($contract_to_edit->ID, '_contract_status', true) === 'cancelled' : false;
 
-// اطلاعات جدید برای مبلغ کل و تعداد اقساط
+$start_date_jalali_value = $contract_to_edit ? esc_attr(puzzling_gregorian_to_jalali(get_post_meta($contract_to_edit->ID, '_project_start_date', true))) : '';
 $total_amount_value = $contract_to_edit ? esc_attr(get_post_meta($contract_to_edit->ID, '_total_amount', true)) : '';
 $total_installments_value = $contract_to_edit ? esc_attr(get_post_meta($contract_to_edit->ID, '_total_installments', true)) : '1';
 ?>
@@ -49,7 +49,7 @@ $total_installments_value = $contract_to_edit ? esc_attr(get_post_meta($contract
             </div>
             <div class="form-group half-width">
                 <label for="_project_start_date">تاریخ شروع قرارداد</label>
-                <input type="text" id="_project_start_date" name="_project_start_date" value="<?php echo $contract_to_edit ? esc_attr(puzzling_gregorian_to_jalali(get_post_meta($contract_to_edit->ID, '_project_start_date', true))) : ''; ?>" class="pzl-jalali-date-picker" required>
+                <input type="text" id="_project_start_date" name="_project_start_date" value="<?php echo $start_date_jalali_value; ?>" class="pzl-jalali-date-picker" required>
             </div>
         </div>
 
@@ -115,9 +115,11 @@ $total_installments_value = $contract_to_edit ? esc_attr(get_post_meta($contract
                     <select id="product_id_for_automation">
                         <option value="">-- انتخاب کنید --</option>
                         <?php
-                        $products = wc_get_products(['type' => ['subscription', 'grouped', 'bundle'], 'limit' => -1, 'status' => 'publish']);
-                        foreach ($products as $product) {
-                            echo '<option value="' . esc_attr($product->get_id()) . '">' . esc_html($product->get_name()) . '</option>';
+                        if (function_exists('wc_get_products')) {
+                            $products = wc_get_products(['type' => ['subscription', 'grouped', 'bundle'], 'limit' => -1, 'status' => 'publish']);
+                            foreach ($products as $product) {
+                                echo '<option value="' . esc_attr($product->get_id()) . '">' . esc_html($product->get_name()) . '</option>';
+                            }
                         }
                         ?>
                     </select>
@@ -134,10 +136,10 @@ $total_installments_value = $contract_to_edit ? esc_attr(get_post_meta($contract
         <h4><i class="fas fa-calculator"></i> محاسبه‌گر و لیست اقساط</h4>
         <div class="pzl-card" style="background: #f8f9fa;">
             <div class="pzl-form-row" style="align-items: flex-end; gap: 15px;">
-                <div class="form-group"><label for="total_amount">مبلغ کل (تومان)</label><input type="text" id="total_amount" name="total_amount" value="<?php echo esc_attr($total_amount_value); ?>" placeholder="مثال: 30000000"></div>
+                <div class="form-group"><label for="total_amount">مبلغ کل (تومان)</label><input type="text" id="total_amount" name="total_amount" value="<?php echo esc_attr($total_amount_value); ?>" placeholder="مثال: 30,000,000" class="item-price"></div>
                 <div class="form-group"><label for="total_installments">تعداد اقساط</label><input type="number" id="total_installments" name="total_installments" placeholder="مثال: 6" value="<?php echo esc_attr($total_installments_value); ?>"></div>
                 <div class="form-group"><label for="installment_interval">فاصله (روز)</label><input type="number" id="installment_interval" placeholder="مثال: 30" value="30"></div>
-                <div class="form-group"><label for="start_date">تاریخ اولین قسط</label><input type="text" id="start_date" class="pzl-jalali-date-picker"></div>
+                <div class="form-group"><label for="start_date">تاریخ اولین قسط</label><input type="text" id="start_date" class="pzl-jalali-date-picker" value="<?php echo $start_date_jalali_value; // **FIX**: Set initial value correctly ?>"></div>
                 <div class="form-group"><button type="button" id="calculate-installments" class="pzl-button">محاسبه</button></div>
             </div>
         </div>

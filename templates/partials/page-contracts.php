@@ -92,32 +92,42 @@ $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']
                         <?php while($contracts_query->have_posts()): $contracts_query->the_post(); 
                             $contract_id = get_the_ID();
                             $customer = get_userdata(get_the_author_meta('ID'));
+                            $customer_name = ($customer) ? $customer->display_name : 'مشتری حذف شده'; // FIX: Check if customer exists
+
                             $installments = get_post_meta($contract_id, '_installments', true);
                             
-                            $total_amount = 0;
+                            $total_amount = get_post_meta($contract_id, '_total_amount', true);
                             $paid_amount = 0;
                             $has_pending = false;
 
                             if (is_array($installments)) {
                                 foreach($installments as $inst) {
-                                    $total_amount += (int)($inst['amount'] ?? 0);
-                                    if (($inst['status'] ?? 'pending') === 'paid') {
-                                        $paid_amount += (int)($inst['amount'] ?? 0);
+                                    if (isset($inst['status']) && $inst['status'] === 'paid' && isset($inst['amount'])) {
+                                        $paid_amount += (int) preg_replace('/[^\d]/', '', $inst['amount']);
                                     } else {
                                         $has_pending = true;
                                     }
                                 }
                             }
-                            $status_text = (!$has_pending && $total_amount > 0) ? 'تکمیل پرداخت' : 'در حال پرداخت';
-                            $status_class = (!$has_pending && $total_amount > 0) ? 'status-paid' : 'status-pending';
+
+                            if (empty($total_amount) && is_array($installments)) {
+                                $calculated_total = 0;
+                                foreach ($installments as $inst) {
+                                    $calculated_total += (int)preg_replace('/[^\d]/', '', ($inst['amount'] ?? 0));
+                                }
+                                $total_amount = $calculated_total;
+                            }
+
+                            $status_text = (!$has_pending && (int)$total_amount > 0 && $paid_amount >= (int)$total_amount) ? 'تکمیل پرداخت' : 'در حال پرداخت';
+                            $status_class = (!$has_pending && (int)$total_amount > 0 && $paid_amount >= (int)$total_amount) ? 'status-paid' : 'status-pending';
 
                             $edit_url = add_query_arg(['view' => 'contracts', 'action' => 'edit', 'contract_id' => $contract_id]);
                         ?>
                         <tr>
-                            <td><strong>#<?php echo esc_html($contract_id); ?></strong></td>
-                            <td><?php echo esc_html($customer->display_name); ?></td>
-                            <td><?php echo esc_html(number_format($total_amount)); ?> تومان</td>
-                            <td><?php echo esc_html(number_format($paid_amount)); ?> تومان</td>
+                            <td><strong>#<?php echo esc_html(get_post_meta($contract_id, '_contract_number', true) ?: $contract_id); ?></strong></td>
+                            <td><?php echo esc_html($customer_name); ?></td>
+                            <td><?php echo esc_html(number_format((int)$total_amount)); ?> تومان</td>
+                            <td><?php echo esc_html(number_format((int)$paid_amount)); ?> تومان</td>
                             <td><span class="pzl-status <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_text); ?></span></td>
                             <td><a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-sm">ویرایش / مشاهده جزئیات</a></td>
                         </tr>
