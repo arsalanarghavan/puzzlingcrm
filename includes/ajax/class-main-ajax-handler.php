@@ -24,6 +24,7 @@ class PuzzlingCRM_Main_Ajax_Handler {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-ticket-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-notification-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-workflow-ajax-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-lead-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-form-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-agile-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-consultation-ajax-handler.php';
@@ -37,6 +38,7 @@ class PuzzlingCRM_Main_Ajax_Handler {
         new PuzzlingCRM_Ticket_Ajax_Handler();
         new PuzzlingCRM_Notification_Ajax_Handler();
         new PuzzlingCRM_Workflow_Ajax_Handler();
+        new PuzzlingCRM_Lead_Ajax_Handler();
         new PuzzlingCRM_Form_Ajax_Handler();
         new PuzzlingCRM_Agile_Ajax_Handler();
         new PuzzlingCRM_Consultation_Ajax_Handler();

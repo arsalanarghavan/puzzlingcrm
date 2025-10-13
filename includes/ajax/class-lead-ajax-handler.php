@@ -7,6 +7,9 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+// Ensure the Settings Handler class is available, as it's crucial for the logic below.
+require_once dirname( __FILE__ ) . '/../class-settings-handler.php';
+
 class PuzzlingCRM_Lead_Ajax_Handler {
 
     public function __construct() {
@@ -58,17 +61,29 @@ class PuzzlingCRM_Lead_Ajax_Handler {
         
         // Set default status
         $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
-        $lead_statuses = get_option('puzzling_lead_statuses', [['name' => 'جدید', 'color' => '#0073aa']]);
-        $default_status = !empty($settings['lead_default_status']) ? $settings['lead_default_status'] : $lead_statuses[0]['name'];
+        $default_status_from_settings = !empty($settings['lead_default_status']) ? $settings['lead_default_status'] : null;
 
-        if ( ! empty( $lead_statuses ) ) {
-            wp_set_object_terms($lead_id, $default_status, 'lead_status');
+        if ($default_status_from_settings) {
+            wp_set_object_terms($lead_id, $default_status_from_settings, 'lead_status');
+        } else {
+            $all_statuses = get_terms([
+                'taxonomy' => 'lead_status',
+                'hide_empty' => false,
+                'number' => 1,
+                'orderby' => 'term_id',
+                'order' => 'ASC',
+            ]);
+
+            if (!empty($all_statuses) && !is_wp_error($all_statuses)) {
+                wp_set_object_terms($lead_id, $all_statuses[0]->slug, 'lead_status');
+            }
         }
         
         $sms_sent = true;
         $sms_error_message = '';
-        // Send automatic SMS if enabled
-        if (isset($settings['lead_auto_sms_enabled']) && $settings['lead_auto_sms_enabled'] == '1' && !empty($settings['lead_auto_sms_template'])) {
+        
+        // Send automatic SMS if enabled and the necessary classes exist
+        if (class_exists('PuzzlingCRM_SMS_Handler') && isset($settings['lead_auto_sms_enabled']) && $settings['lead_auto_sms_enabled'] == '1' && !empty($settings['lead_auto_sms_template'])) {
             $sms_message = str_replace(
                 ['{first_name}', '{last_name}', '{business_name}'],
                 [$first_name, $last_name, $business_name],
@@ -82,32 +97,14 @@ class PuzzlingCRM_Lead_Ajax_Handler {
                     if (!$result) {
                         $sms_sent = false;
                         $sms_error_message = __('ارسال پیامک با خطا مواجه شد.', 'puzzlingcrm');
-                        // Log the error using your logger
-                        PuzzlingCRM_Logger::add('خطای ارسال پیامک خودکار', [
-                            'content'   => 'ارسال پیامک به سرنخ با شماره ' . $mobile . ' ناموفق بود.',
-                            'type'      => 'system_error',
-                            'object_id' => $lead_id
-                        ]);
                     }
                 } catch (Exception $e) {
                     $sms_sent = false;
                     $sms_error_message = __('خطایی در سرویس پیامک رخ داد.', 'puzzlingcrm');
-                    // Log the exception using your logger
-                    PuzzlingCRM_Logger::add('استثناء در سرویس پیامک', [
-                        'content'   => 'هنگام ارسال پیامک به سرنخ ' . $mobile . ' خطای سیستمی رخ داد: ' . $e->getMessage(),
-                        'type'      => 'system_error',
-                        'object_id' => $lead_id
-                    ]);
                 }
             } else {
                 $sms_sent = false;
                 $sms_error_message = __('سرویس پیامک فعال نیست.', 'puzzlingcrm');
-                // Log the issue using your logger
-                PuzzlingCRM_Logger::add('سرویس پیامک غیرفعال', [
-                    'content'   => 'تلاش برای ارسال پیامک به سرنخ ' . $mobile . ' در حالی که سرویس پیامک پیکربندی نشده است.',
-                    'type'      => 'system_error',
-                    'object_id' => $lead_id
-                ]);
             }
         }
         

@@ -3,7 +3,7 @@
  * Plugin Name:       PuzzlingCRM
  * Plugin URI:        https://Puzzlingco.com/
  * Description:       A complete CRM and Project Management solution for Social Marketing agencies.
- * Version:           0.0.271
+ * Version:           0.0.277
  * Author:            Arsalan Arghavan
  * Author URI:        https://ArsalanArghavan.ir/
  * License:           GPL v2 or later
