@@ -18,6 +18,7 @@ $base_url = remove_query_arg('puzzling_notice');
         <a href="<?php echo add_query_arg('tab', 'notifications', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'notifications' ? 'active' : ''; ?>"><i class="fas fa-bell"></i> اطلاع‌رسانی‌ها</a>
         <a href="<?php echo add_query_arg('tab', 'forms', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'forms' ? 'active' : ''; ?>"><i class="fas fa-clipboard-list"></i> فرم‌ها</a>
         <a href="<?php echo add_query_arg('tab', 'canned_responses', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'canned_responses' ? 'active' : ''; ?>"><i class="fas fa-comment-dots"></i> پاسخ‌های آماده</a>
+        <a href="<?php echo add_query_arg('tab', 'leads', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'leads' ? 'active' : ''; ?>"><i class="fas fa-users"></i> وضعیت‌های لید</a>
     </div>
 
     <div class="pzl-dashboard-tab-content">
@@ -54,6 +55,14 @@ $base_url = remove_query_arg('puzzling_notice');
                 include $canned_responses_path;
             } else {
                 echo '<p>فایل تنظیمات پاسخ‌های آماده یافت نشد.</p>';
+            }
+        } elseif ($active_tab == 'leads') {
+            // Include the new template for lead statuses management
+            $lead_settings_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-leads.php';
+            if (file_exists($lead_settings_path)) {
+                include $lead_settings_path;
+            } else {
+                echo '<p>فایل تنظیمات وضعیت‌های لید یافت نشد.</p>';
             }
         } else { // Default to 'payment'
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-payment.php';

@@ -20,7 +20,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
     public function add_lead() {
         check_ajax_referer('puzzling_add_lead_nonce', 'security');
 
-        if (!current_user_can('manage_options')) {
+        if ( ! ( current_user_can( 'manage_options' ) || current_user_can( 'system_manager' ) ) ) {
             wp_send_json_error(['message' => __('شما دسترسی لازم برای انجام این کار را ندارید.', 'puzzlingcrm')]);
         }
 
@@ -53,7 +53,9 @@ class PuzzlingCRM_Lead_Ajax_Handler {
         
         // Set default status
         $lead_statuses = get_option('puzzling_lead_statuses', [['name' => 'جدید', 'color' => '#0073aa']]);
-        wp_set_object_terms($lead_id, $lead_statuses[0]['name'], 'lead_status');
+        if ( ! empty( $lead_statuses ) ) {
+            wp_set_object_terms($lead_id, $lead_statuses[0]['name'], 'lead_status');
+        }
         
         // Send automatic SMS if enabled
         $settings = PuzzlingCRM_Settings_Handler::get_all_settings();

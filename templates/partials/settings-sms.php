@@ -14,7 +14,7 @@ $active_service = $settings['sms_service'] ?? 'melipayamak';
 
 <div class="pzl-form-container">
     <h4><i class="fas fa-cogs"></i> تنظیمات سامانه پیامک</h4>
-    <form id="puzzling-sms-settings-form" method="post" class="pzl-form" style="margin-top: 20px;">
+    <form id="puzzling-sms-settings-form" method="post" class="pzl-form pzl-ajax-form" data-action="puzzling_save_settings" style="margin-top: 20px;">
         <input type="hidden" name="puzzling_action" value="save_puzzling_settings">
         <?php wp_nonce_field('puzzling_save_settings_nonce', 'security'); ?>
 
@@ -26,9 +26,24 @@ $active_service = $settings['sms_service'] ?? 'melipayamak';
             </select>
             <p class="description">سرویس پیامکی که برای ارسال‌های خودکار استفاده خواهد شد را انتخاب کنید.</p>
         </div>
-
+        
         <hr>
 
+        <h5>تنظیمات پیامک سرنخ (لید)</h5>
+        <div class="form-group">
+            <label for="lead_auto_sms_enabled">
+                <input type="checkbox" id="lead_auto_sms_enabled" name="puzzling_settings[lead_auto_sms_enabled]" value="1" <?php checked($settings['lead_auto_sms_enabled'] ?? '0', '1'); ?>>
+                ارسال پیامک خودکار هنگام ثبت لید جدید فعال باشد
+            </label>
+        </div>
+        <div class="form-group">
+            <label for="lead_auto_sms_template">متن پیامک برای لید جدید:</label>
+            <textarea id="lead_auto_sms_template" name="puzzling_settings[lead_auto_sms_template]" rows="4" placeholder="مثال: {first_name} عزیز، از ثبت اطلاعات شما سپاسگزاریم. به زودی با شما تماس خواهیم گرفت."><?php echo esc_textarea($settings['lead_auto_sms_template'] ?? ''); ?></textarea>
+            <p class="description">می‌توانید از متغیرهای <code>{first_name}</code>, <code>{last_name}</code> و <code>{business_name}</code> استفاده کنید.</p>
+        </div>
+        
+        <hr>
+        
         <div id="melipayamak-settings" class="sms-provider-settings" style="display: <?php echo $active_service === 'melipayamak' ? 'block' : 'none'; ?>;">
             <h5>تنظیمات پنل ملی‌پیامک</h5>
             <div class="form-group">

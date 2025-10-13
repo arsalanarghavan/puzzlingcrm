@@ -63,6 +63,7 @@ class PuzzlingCRM_Admin_Menu {
                 <li><code>[puzzling_reports]</code> - (<?php esc_html_e('فقط مدیر', 'puzzlingcrm'); ?>) <?php esc_html_e('صفحه گزارش‌ها.', 'puzzlingcrm'); ?></li>
                 <li><code>[puzzling_settings]</code> - (<?php esc_html_e('فقط مدیر', 'puzzlingcrm'); ?>) <?php esc_html_e('صفحه تنظیمات.', 'puzzlingcrm'); ?></li>
                 <li><code>[puzzling_logs]</code> - (<?php esc_html_e('فقط مدیر', 'puzzlingcrm'); ?>) <?php esc_html_e('لاگ رویدادهای سیستم.', 'puzzlingcrm'); ?></li>
+                <li><code>[puzzling_leads]</code> - (<?php esc_html_e('فقط مدیر', 'puzzlingcrm'); ?>) <?php esc_html_e('صفحه مدیریت لیدها.', 'puzzlingcrm'); ?></li>
             </ul>
         </div>
         <?php

@@ -1,6 +1,6 @@
 /**
- * PuzzlingCRM Main Scripts - V3.4 (FINAL FIX)
- * This version corrects AJAX nonce handling for all contract actions (Create, Delete, Cancel).
+ * PuzzlingCRM Main Scripts - V3.5 (Optimized)
+ * This version standardizes AJAX nonce handling and improves code readability.
  */
 
 // Define this function in the global scope so other scripts can access it.
@@ -21,6 +21,7 @@ function showPuzzlingAlert(title, text, icon, reloadPage = false) {
         if (reloadPage) {
             let currentUrl = new URL(window.location.href);
             let params = currentUrl.searchParams;
+            // Clean up URL from notices and temporary parameters before reloading
             ['puzzling_notice', '_wpnonce', 'deleted', 'updated', 'open_task_id'].forEach(param => params.delete(param));
             currentUrl.search = params.toString();
             window.location.href = currentUrl.toString();
@@ -37,7 +38,7 @@ jQuery(document).ready(function($) {
 
     // --- Helper Functions ---
     function formatNumber(n) {
-        if (!n) return '';
+        if (!n) return '0';
         return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
 
@@ -57,6 +58,7 @@ jQuery(document).ready(function($) {
         
         formData.set('action', action);
 
+        // Unformat numeric fields before sending
         form.find('.item-price, .item-discount, #total_amount').each(function() {
             var inputName = $(this).attr('name');
             if(inputName){
@@ -64,6 +66,7 @@ jQuery(document).ready(function($) {
             }
         });
         
+        // Get content from TinyMCE editors
         form.find('.wp-editor-area').each(function() {
             var editorId = $(this).attr('id');
             if (typeof tinymce !== 'undefined' && tinymce.get(editorId)) {
@@ -71,6 +74,7 @@ jQuery(document).ready(function($) {
             }
         });
         
+        // Include disabled select fields in the form data
         form.find('select:disabled').each(function() {
             formData.set($(this).attr('name'), $(this).val());
         });
@@ -101,6 +105,7 @@ jQuery(document).ready(function($) {
             },
             complete: function(xhr) {
                 var response = xhr.responseJSON;
+                // Re-enable the button unless a reload or redirect is happening
                 if (!(response && response.success && (response.data.reload || response.data.redirect_url))) {
                     submitButton.html(originalButtonHtml).prop('disabled', false);
                 }
@@ -108,6 +113,7 @@ jQuery(document).ready(function($) {
         });
     }
 
+    // Attach the handler to all forms with the .pzl-ajax-form class
     $('body').on('submit', 'form.pzl-ajax-form', function(e) {
         e.preventDefault();
         handleAjaxFormSubmit($(this));
@@ -117,7 +123,7 @@ jQuery(document).ready(function($) {
     if ($('#manage-contract-form').length) {
         // Apply number formatting on keyup
         $('body').on('keyup', '.item-price, #total_amount', function() {
-             var cursorPosition = this.selectionStart;
+            var cursorPosition = this.selectionStart;
             var originalLength = this.value.length;
             var unformatted = unformatNumber($(this).val());
             var formatted = formatNumber(unformatted);
@@ -126,6 +132,7 @@ jQuery(document).ready(function($) {
             this.setSelectionRange(cursorPosition + (newLength - originalLength), cursorPosition + (newLength - originalLength));
         });
 
+        // Auto-generate contract number
         function updateContractNumber() {
             const contractIdField = $('input[name="contract_id"]');
             if (contractIdField.val() === '0' || $('#contract_number').val() === 'با انتخاب مشتری و تاریخ تولید می‌شود') {
@@ -145,10 +152,10 @@ jQuery(document).ready(function($) {
         $('#customer_id, #_project_start_date').on('change', updateContractNumber);
     }
 
-    // --- Contract Actions (Cancel & Delete) - CORRECTED ---
+    // --- Contract Actions (Cancel & Delete) ---
     $('#cancel-contract-btn').on('click', function() {
         const contractId = $('input[name="contract_id"]').val();
-        const nonce = $('#security').val(); // **FIX**: Get the correct nonce from the form field
+        const nonce = $('#security').val(); // Get nonce from the form field
 
         Swal.fire({
             title: 'لغو قرارداد',
@@ -163,7 +170,7 @@ jQuery(document).ready(function($) {
             if (result.isConfirmed) {
                 $.post(puzzlingcrm_ajax_obj.ajax_url, {
                     action: 'puzzling_cancel_contract',
-                    security: nonce, // **FIX**: Send the correct nonce
+                    security: nonce,
                     contract_id: contractId,
                     reason: result.value || 'دلیلی ذکر نشده است.'
                 }).done(function(response) {
@@ -178,8 +185,7 @@ jQuery(document).ready(function($) {
 
     $('#delete-contract-btn').on('click', function() {
         const contractId = $(this).data('contract-id');
-        const specificNonce = $(this).data('nonce'); // Action-specific nonce
-        const generalNonce = $('#security').val(); // General form nonce
+        const nonce = $(this).data('nonce'); // Use the action-specific nonce from data attribute
 
         Swal.fire({
             title: 'آیا از حذف کامل مطمئن هستید؟',
@@ -194,8 +200,7 @@ jQuery(document).ready(function($) {
                  $.post(puzzlingcrm_ajax_obj.ajax_url, {
                     action: 'puzzling_delete_contract',
                     contract_id: contractId,
-                    nonce: specificNonce,     // **FIX**: For wp_verify_nonce
-                    security: generalNonce      // **FIX**: For check_ajax_referer
+                    security: nonce, // Use 'security' to match check_ajax_referer
                 }).done(function(response) {
                      if (response.success) {
                         showPuzzlingAlert('موفقیت', response.data.message, 'success');
@@ -308,6 +313,7 @@ jQuery(document).ready(function($) {
         </div>`;
         $('#payment-rows-container').append(newRow);
         
+        // Re-initialize datepicker for the new row
         $('.pzl-jalali-date-picker:not(.pwt-datepicker-input-element)').persianDatepicker({
             format: 'YYYY/MM/DD',
             autoClose: true
@@ -372,6 +378,7 @@ jQuery(document).ready(function($) {
     }
 
     $('body').on('click', '.pzl-task-card, .open-task-modal', function(e) {
+        // Prevent modal from opening if a link or button inside the card is clicked
         if ( !$(e.target).hasClass('open-task-modal') && ($(e.target).is('a, button, select') || $(e.target).closest('a, button, select').length) ) {
             return;
         }
@@ -384,6 +391,7 @@ jQuery(document).ready(function($) {
         if ($(e.target).is('#pzl-close-modal-btn') || $(e.target).is('#pzl-task-modal-backdrop')) { closeTaskModal(); }
     });
     
+    // Open task modal if task ID is in the URL
     const urlParamsInstance = new URLSearchParams(window.location.search);
     const openTaskIdFromUrl = urlParamsInstance.get('open_task_id');
     if (openTaskIdFromUrl) {
@@ -423,7 +431,7 @@ jQuery(document).ready(function($) {
     });
     if($('.pzl-notification-bell').length) {
         fetchNotifications();
-        setInterval(fetchNotifications, 120000);
+        setInterval(fetchNotifications, 120000); // Fetch every 2 minutes
     }
 
     // --- Canned Response Selector ---
