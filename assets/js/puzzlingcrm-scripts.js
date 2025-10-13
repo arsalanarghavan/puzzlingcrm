@@ -1,14 +1,27 @@
 /**
- * PuzzlingCRM Main Scripts - V4.5 (Patched for Redirect Logic)
- * This version fixes the redirect issue on the lead edit form by unifying
- * the redirection and reload logic within the showPuzzlingAlert function.
+ * PuzzlingCRM Main Scripts - V4.6 (Final Patched Version)
+ * This version provides a comprehensive fix for all AJAX form submission issues.
+ * - Fixes the "processing..." bug for all forms (add, edit, delete).
+ * - Ensures correct reload or redirect behavior after successful operations.
+ * - Simplifies and unifies the AJAX response handling logic.
  */
 
-// Global function for showing alerts using SweetAlert2 (Patched Version)
+// Global function for showing alerts using SweetAlert2 (Backward Compatible & Patched)
 function showPuzzlingAlert(title, text, icon, options = {}) {
-    const { reloadPage = false, redirectUrl = null } = options;
-    const lang = (window.puzzlingcrm_ajax_obj && window.puzzlingcrm_ajax_obj.lang) ? window.puzzlingcrm_ajax_obj.lang : {};
+    let reloadPage = false;
+    let redirectUrl = null;
 
+    // Handle both boolean (old way) and object (new way) for the options parameter
+    if (typeof options === 'boolean') {
+        reloadPage = options;
+    } else if (typeof options === 'object' && options !== null) {
+        // Check for both 'reload' and 'reloadPage' for full compatibility
+        reloadPage = options.reload || options.reloadPage || false;
+        // Check for both 'redirect_url' and 'redirectUrl'
+        redirectUrl = options.redirect_url || options.redirectUrl || null;
+    }
+
+    const lang = (window.puzzlingcrm_ajax_obj && window.puzzlingcrm_ajax_obj.lang) ? window.puzzlingcrm_ajax_obj.lang : {};
     if (typeof Swal === 'undefined') {
         alert(title + "\n" + text);
         if (redirectUrl) {
@@ -60,7 +73,7 @@ jQuery(document).ready(function($) {
     }
 
     /**
-     * Generic AJAX Form Submission Handler (Patched Version)
+     * Generic AJAX Form Submission Handler (Final Patched Version)
      */
     function handleAjaxFormSubmit(form) {
         var submitButton = form.find('button[type="submit"]');
@@ -102,12 +115,10 @@ jQuery(document).ready(function($) {
                         window.closeLeadModal();
                     }
 
-                    // UNIFIED LOGIC: Pass reload and redirect data to the alert function
+                    // UNIFIED LOGIC: Pass the entire data object to the alert function.
+                    // It will intelligently handle either reload or redirect.
                     setTimeout(() => {
-                        showPuzzlingAlert('موفق', data.message, 'success', {
-                            reloadPage: data.reload,
-                            redirectUrl: data.redirect_url
-                        });
+                        showPuzzlingAlert('موفق', data.message, 'success', data);
                     }, 250);
 
                 } else {
@@ -120,13 +131,16 @@ jQuery(document).ready(function($) {
                 showPuzzlingAlert(puzzlingcrm_ajax_obj.lang.error_title || 'خطا', 'یک خطای ناشناخته در ارتباط با سرور رخ داد.', 'error');
             },
             complete: function(xhr) {
+                // SIMPLIFIED LOGIC: Only re-enable the button if the request FAILED.
+                // If it was successful, a page change is expected, so we don't touch the button.
                 var response;
                 try {
                     response = JSON.parse(xhr.responseText);
-                    if (!response.success || (response.success && !response.data.reload && !response.data.redirect_url)) {
+                    if (!response.success) {
                         submitButton.html(originalButtonHtml).prop('disabled', false);
                     }
                 } catch (e) {
+                    // Also re-enable on server/network error
                     submitButton.html(originalButtonHtml).prop('disabled', false);
                 }
             }
@@ -169,7 +183,8 @@ jQuery(document).ready(function($) {
                     },
                     success: function(response) {
                         if (response.success) {
-                            showPuzzlingAlert('موفق', response.data.message, 'success', { reloadPage: response.data.reload });
+                            // Pass the whole data object here too for consistency
+                            showPuzzlingAlert('موفق', response.data.message, 'success', response.data);
                         } else {
                             showPuzzlingAlert('خطا', response.data.message, 'error');
                             leadRow.css('opacity', '1');
@@ -239,7 +254,7 @@ jQuery(document).ready(function($) {
                     reason: result.value || 'دلیلی ذکر نشده است.'
                 }).done(function(response) {
                     if (response.success) {
-                        showPuzzlingAlert('موفق', response.data.message, 'success', { reloadPage: true });
+                        showPuzzlingAlert('موفق', response.data.message, 'success', true);
                     } else {
                         showPuzzlingAlert('خطا', response.data.message, 'error');
                     }
@@ -270,11 +285,14 @@ jQuery(document).ready(function($) {
                     security: nonce,
                 }).done(function(response) {
                     if (response.success) {
-                        let contractsUrl = new URL(window.location.href);
-                        contractsUrl.searchParams.set('view', 'contracts');
-                        contractsUrl.searchParams.delete('action');
-                        contractsUrl.searchParams.delete('contract_id');
-                        showPuzzlingAlert('موفقیت', response.data.message, 'success', { redirectUrl: contractsUrl.toString() });
+                        showPuzzlingAlert('موفقیت', response.data.message, 'success');
+                        setTimeout(function() {
+                            let contractsUrl = new URL(window.location.href);
+                            contractsUrl.searchParams.set('view', 'contracts');
+                            contractsUrl.searchParams.delete('action');
+                            contractsUrl.searchParams.delete('contract_id');
+                            window.location.href = contractsUrl.toString();
+                        }, 1500);
                     } else {
                         showPuzzlingAlert('خطا', response.data.message, 'error');
                     }
@@ -310,7 +328,7 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    showPuzzlingAlert('موفق', response.data.message, 'success', { reloadPage: true });
+                    showPuzzlingAlert('موفق', response.data.message, 'success', true);
                 } else {
                     showPuzzlingAlert('خطا', response.data.message, 'error');
                 }
