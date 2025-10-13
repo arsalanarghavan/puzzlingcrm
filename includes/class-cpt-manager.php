@@ -20,12 +20,34 @@ class PuzzlingCRM_CPT_Manager {
         // Add meta box for linking templates to products
         add_action( 'add_meta_boxes', [ $this, 'add_project_template_meta_box' ] );
         add_action( 'save_post_product', [ $this, 'save_project_template_meta_box' ] );
-		// NEW: Add meta box for task templates
+        // NEW: Add meta box for task templates
         add_action( 'add_meta_boxes', [ $this, 'add_task_template_meta_box' ] );
         add_action( 'save_post_pzl_task_template', [ $this, 'save_task_template_meta_box' ] );
     }
 
     public function register_post_types() {
+        // === START: LEAD CPT (NEW) ===
+        register_post_type( 'pzl_lead', [
+            'labels'        => [
+                'name'                  => _x('سرنخ‌ها', 'Post Type General Name', 'puzzlingcrm'),
+                'singular_name'         => _x('سرنخ', 'Post Type Singular Name', 'puzzlingcrm'),
+                'menu_name'             => __('سرنخ‌ها', 'puzzlingcrm'),
+                'all_items'             => __('همه سرنخ‌ها', 'puzzlingcrm'),
+                'add_new_item'          => __('افزودن سرنخ جدید', 'puzzlingcrm'),
+                'add_new'               => __('افزودن جدید', 'puzzlingcrm'),
+                'edit_item'             => __('ویرایش سرنخ', 'puzzlingcrm'),
+                'search_items'          => __('جستجوی سرنخ', 'puzzlingcrm'),
+            ],
+            'public'        => false, // Not public on the frontend website
+            'show_ui'       => true,  // Show in the admin panel
+            'show_in_menu'  => 'puzzling-crm', // Main menu page slug
+            'supports'      => ['title', 'editor', 'author', 'custom-fields'], // 'editor' for notes
+            'hierarchical'  => false,
+            'taxonomies'    => ['lead_status'], // Connect to lead status taxonomy
+            'menu_icon'     => 'dashicons-businessperson',
+        ]);
+        // === END: LEAD CPT (NEW) ===
+
         // Canned Response CPT - NEW
         register_post_type( 'pzl_canned_response', [
             'labels'        => [
@@ -116,7 +138,7 @@ class PuzzlingCRM_CPT_Manager {
             'labels'        => [
                 'name'          => __( 'قالب‌های تسک', 'puzzlingcrm' ),
                 'singular_name' => __( 'قالب تسک', 'puzzlingcrm' ),
-				'add_new_item'  => __( 'افزودن قالب تسک جدید', 'puzzlingcrm' ),
+                'add_new_item'  => __( 'افزودن قالب تسک جدید', 'puzzlingcrm' ),
             ],
             'public'        => false,
             'show_ui'       => true,
@@ -213,6 +235,23 @@ class PuzzlingCRM_CPT_Manager {
     }
 
     public function register_taxonomies() {
+        // === START: LEAD STATUS TAXONOMY (NEW) ===
+        register_taxonomy('lead_status', 'pzl_lead', [
+            'label' => __( 'وضعیت سرنخ', 'puzzlingcrm' ),
+            'hierarchical' => true,
+            'public' => false,
+            'show_ui' => true,
+            'show_admin_column' => true,
+            'show_in_rest' => true,
+            'labels' => [
+                'name' => __( 'وضعیت‌های سرنخ', 'puzzlingcrm' ),
+                'singular_name' => __( 'وضعیت سرنخ', 'puzzlingcrm' ),
+                'add_new_item'  => __( 'افزودن وضعیت جدید', 'puzzlingcrm' ),
+                'edit_item'     => __( 'ویرایش وضعیت', 'puzzlingcrm' ),
+            ]
+        ]);
+        // === END: LEAD STATUS TAXONOMY (NEW) ===
+
         // Consultation Status Taxonomy
         register_taxonomy('consultation_status', 'pzl_consultation', [
             'label' => __( 'نتیجه مشاوره', 'puzzlingcrm' ),
@@ -270,8 +309,8 @@ class PuzzlingCRM_CPT_Manager {
             ]
         ]);
 
-		// Task Category Taxonomy
-		register_taxonomy('task_category', ['task', 'pzl_task_template'], [
+        // Task Category Taxonomy
+        register_taxonomy('task_category', ['task', 'pzl_task_template'], [
             'label' => __( 'Task Category', 'puzzlingcrm' ),
             'hierarchical' => true,
             'public' => false,
@@ -328,19 +367,28 @@ class PuzzlingCRM_CPT_Manager {
 
         // Ticket Status Taxonomy
         register_taxonomy('ticket_status', 'ticket', ['label' => __( 'Ticket Status', 'puzzlingcrm' ), 'hierarchical' => true]);
-		
-		// Ticket Priority Taxonomy - NEW
-		register_taxonomy('ticket_priority', 'ticket', [
-			'label' => __( 'اولویت تیکت', 'puzzlingcrm' ),
-			'hierarchical' => true,
-			'public' => false,
-			'show_ui' => true,
-			'show_admin_column' => true,
-			'show_in_rest' => true,
-		]);
+        
+        // Ticket Priority Taxonomy - NEW
+        register_taxonomy('ticket_priority', 'ticket', [
+            'label' => __( 'اولویت تیکت', 'puzzlingcrm' ),
+            'hierarchical' => true,
+            'public' => false,
+            'show_ui' => true,
+            'show_admin_column' => true,
+            'show_in_rest' => true,
+        ]);
     }
     
     public static function create_default_terms() {
+        // === START: LEAD STATUSES (NEW) ===
+        $lead_statuses = ['جدید' => 'new', 'در حال پیگیری' => 'in-progress', 'مشتری شده' => 'converted', 'لغو شده' => 'cancelled'];
+        foreach ($lead_statuses as $name => $slug) {
+            if ( ! term_exists( $slug, 'lead_status' ) ) {
+                wp_insert_term( $name, 'lead_status', ['slug' => $slug] );
+            }
+        }
+        // === END: LEAD STATUSES (NEW) ===
+
         // Consultation Statuses
         $consultation_statuses = ['در حال پیگیری' => 'in-progress', 'تبدیل به پروژه' => 'converted', 'بسته شده' => 'closed'];
         foreach ($consultation_statuses as $name => $slug) {
@@ -365,7 +413,7 @@ class PuzzlingCRM_CPT_Manager {
             if ( ! term_exists( $slug, 'contract_status' ) ) wp_insert_term( $name, 'contract_status', ['slug' => $slug] );
         }
 
-		// Task Categories
+        // Task Categories
         $task_categories = ['روزانه' => 'daily', 'هفتگی' => 'weekly', 'پروژه‌ای' => 'project-based'];
         foreach ($task_categories as $name => $slug) {
             if ( ! term_exists( $slug, 'task_category' ) ) wp_insert_term( $name, 'task_category', ['slug' => $slug] );
@@ -401,14 +449,14 @@ class PuzzlingCRM_CPT_Manager {
         foreach ($ticket_statuses as $name => $slug) {
             if ( ! term_exists( $slug, 'ticket_status' ) ) wp_insert_term( $name, 'ticket_status', ['slug' => $slug] );
         }
-		
-		// Ticket Priorities - NEW
-		$ticket_priorities = ['کم' => 'low', 'متوسط' => 'medium', 'زیاد' => 'high', 'فوری' => 'urgent'];
-		foreach ($ticket_priorities as $name => $slug) {
-			if ( ! term_exists( $slug, 'ticket_priority' ) ) {
-				wp_insert_term( $name, 'ticket_priority', ['slug' => $slug] );
-			}
-		}
+        
+        // Ticket Priorities - NEW
+        $ticket_priorities = ['کم' => 'low', 'متوسط' => 'medium', 'زیاد' => 'high', 'فوری' => 'urgent'];
+        foreach ($ticket_priorities as $name => $slug) {
+            if ( ! term_exists( $slug, 'ticket_priority' ) ) {
+                wp_insert_term( $name, 'ticket_priority', ['slug' => $slug] );
+            }
+        }
     }
     
     public function add_task_template_meta_box() {
@@ -420,7 +468,7 @@ class PuzzlingCRM_CPT_Manager {
         );
     }
 
-	public function render_task_template_meta_box( $post ) {
+    public function render_task_template_meta_box( $post ) {
         wp_nonce_field('puzzling_save_task_template_options', 'puzzling_task_template_nonce');
 
         $assigned_role_id = get_post_meta($post->ID, '_assigned_role', true);

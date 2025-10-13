@@ -1470,3 +1470,79 @@ li.internal-note { background-color: #fffbe6; border-color: #ffe58f; }
 .puzzling-dashboard-wrapper .quicktags-toolbar input[type="button"]:hover {
     background: var(--pzl-primary-color) !important;
 }
+
+/* ==========================================================================
+   Styles for Lead Management Shortcode
+   ========================================================================== */
+
+/* --- Messages (Success/Error Notices) --- */
+.pzl-message {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.pzl-message.success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.pzl-message.error {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+/* --- Filters Form --- */
+.pzl-filters {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.pzl-filters input[type="text"],
+.pzl-filters select {
+    padding: 8px 10px;
+}
+
+/* --- Danger Button (for Delete) --- */
+.pzl-button.pzl-button-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+}
+
+.pzl-button.pzl-button-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+/* --- Pagination --- */
+.pzl-pagination {
+    margin-top: 20px;
+    text-align: left;
+}
+
+.pzl-pagination .page-numbers {
+    display: inline-block;
+    padding: 8px 12px;
+    margin: 0 2px;
+    border: 1px solid #ddd;
+    text-decoration: none;
+    color: #0073aa;
+    border-radius: 4px;
+}
+
+.pzl-pagination .page-numbers:hover {
+    background-color: #f0f0f0;
+}
+
+.pzl-pagination .page-numbers.current {
+    background-color: #0073aa;
+    color: #fff;
+    border-color: #0073aa;
+}
