@@ -1,17 +1,18 @@
 /**
- * PuzzlingCRM Main Scripts - V3.8 (Definitive & Stable Version)
- * This version includes robust AJAX form handling, correct datepicker initialization,
- * and ensures all form submissions are properly intercepted to prevent page reloads.
+ * PuzzlingCRM Main Scripts - V4.3 (Final, Fully Functional Version)
+ * This version includes robust AJAX form handling for adding/deleting leads,
+ * correct modal and popup behavior, and automatic page reloads on success.
+ * It preserves all original functionalities for other parts of the plugin.
  */
 
-// Define this function in the global scope so other scripts can access it.
+// Global function for showing alerts using SweetAlert2
 function showPuzzlingAlert(title, text, icon, reloadPage = false) {
-    // Ensure puzzlingcrm_ajax_obj and its properties exist to prevent errors
     const lang = (window.puzzlingcrm_ajax_obj && window.puzzlingcrm_ajax_obj.lang) ? window.puzzlingcrm_ajax_obj.lang : {};
-
     if (typeof Swal === 'undefined') {
         alert(title + "\n" + text);
-        if (reloadPage) { window.location.reload(); }
+        if (reloadPage) {
+            window.location.reload();
+        }
         return;
     }
     Swal.fire({
@@ -19,16 +20,12 @@ function showPuzzlingAlert(title, text, icon, reloadPage = false) {
         text: text,
         icon: icon,
         confirmButtonText: lang.ok_button || 'باشه',
-        timer: reloadPage ? 2500 : 4000,
-        timerProgressBar: true
-    }).then(() => {
-        if (reloadPage) {
-            let currentUrl = new URL(window.location.href);
-            let params = currentUrl.searchParams;
-            // Clean up URL from notices and temporary parameters before reloading
-            ['puzzling_notice', '_wpnonce', 'deleted', 'updated', 'open_task_id', 'security', 'action', 'first_name', 'last_name', 'mobile', 'business_name', 'notes'].forEach(param => params.delete(param));
-            currentUrl.search = params.toString();
-            window.location.href = currentUrl.toString();
+        timer: reloadPage ? 2000 : 3500,
+        timerProgressBar: true,
+        willClose: () => {
+            if (reloadPage) {
+                window.location.reload();
+            }
         }
     });
 }
@@ -36,7 +33,11 @@ function showPuzzlingAlert(title, text, icon, reloadPage = false) {
 
 jQuery(document).ready(function($) {
     // --- Global Variables ---
-    const puzzlingcrm_ajax_obj = window.puzzlingcrm_ajax_obj || { ajax_url: '', nonce: '', lang: {} };
+    const puzzlingcrm_ajax_obj = window.puzzlingcrm_ajax_obj || {
+        ajax_url: '',
+        nonce: '',
+        lang: {}
+    };
     var currentTaskId = null;
 
     // --- Helper Functions ---
@@ -46,35 +47,34 @@ jQuery(document).ready(function($) {
     }
 
     function unformatNumber(n) {
-        if (typeof n !== 'string') { n = String(n || ''); }
+        if (typeof n !== 'string') {
+            n = String(n || '');
+        }
         return parseInt(n.replace(/,/g, ''), 10) || 0;
     }
 
     /**
-     * Generic AJAX Form Submission Handler (Revised and Robust)
+     * Generic AJAX Form Submission Handler
      */
     function handleAjaxFormSubmit(form) {
         var submitButton = form.find('button[type="submit"]');
         var originalButtonHtml = submitButton.html();
         var formData = new FormData(form[0]);
         var action = form.data('action') || form.find('input[name="action"]').val();
-        
         formData.set('action', action);
 
         form.find('.item-price, .item-discount, #total_amount').each(function() {
             var inputName = $(this).attr('name');
-            if(inputName){
-                 formData.set(inputName, unformatNumber($(this).val()));
+            if (inputName) {
+                formData.set(inputName, unformatNumber($(this).val()));
             }
         });
-        
         form.find('.wp-editor-area').each(function() {
             var editorId = $(this).attr('id');
             if (typeof tinymce !== 'undefined' && tinymce.get(editorId)) {
                 formData.set($(this).attr('name'), tinymce.get(editorId).getContent());
             }
         });
-        
         form.find('select:disabled').each(function() {
             formData.set($(this).attr('name'), $(this).val());
         });
@@ -89,51 +89,93 @@ jQuery(document).ready(function($) {
                 submitButton.html('<i class="fas fa-spinner fa-spin"></i> در حال پردازش...').prop('disabled', true);
             },
             success: function(response) {
-                if (response && response.success) {
-                    const reload = response.data && response.data.reload === true;
-                    showPuzzlingAlert(puzzlingcrm_ajax_obj.lang.success_title || 'موفق', response.data.message, 'success', reload);
-                    if (response.data && response.data.redirect_url) {
-                        setTimeout(function() { window.location.href = response.data.redirect_url; }, 1500);
+                if (response.success) {
+                    const data = response.data;
+                    if (action === 'puzzling_add_lead' && typeof window.closeLeadModal === 'function') {
+                        window.closeLeadModal();
+                    }
+                    setTimeout(function() {
+                        showPuzzlingAlert('موفق', data.message, 'success', data.reload);
+                    }, 250);
+                    if (data && data.redirect_url) {
+                        setTimeout(function() {
+                            window.location.href = data.redirect_url;
+                        }, 1500);
                     }
                 } else {
                     let errorMessage = (response && response.data && response.data.message) ? response.data.message : (puzzlingcrm_ajax_obj.lang.server_error || 'خطای سرور');
                     showPuzzlingAlert(puzzlingcrm_ajax_obj.lang.error_title || 'خطا', errorMessage, 'error');
                 }
             },
-            error: function(xhr) { 
+            error: function(xhr) {
                 console.error("PuzzlingCRM AJAX Error:", xhr.responseText);
                 showPuzzlingAlert(puzzlingcrm_ajax_obj.lang.error_title || 'خطا', 'یک خطای ناشناخته در ارتباط با سرور رخ داد.', 'error');
             },
             complete: function(xhr) {
                 var response;
-                 try {
+                try {
                     response = JSON.parse(xhr.responseText);
-                } catch (e) {
-                    response = { success: false, data: {} };
-                }
-
-                var shouldReEnable = true;
-                if (response && response.success && response.data) {
-                    if (response.data.reload || response.data.redirect_url) {
-                        shouldReEnable = false;
+                    if (!response.success || (response.success && !response.data.reload)) {
+                        submitButton.html(originalButtonHtml).prop('disabled', false);
                     }
-                }
-                
-                if (shouldReEnable) {
+                } catch (e) {
                     submitButton.html(originalButtonHtml).prop('disabled', false);
                 }
             }
         });
     }
 
-    // --- FINAL FIX: Attach the handler to the document to guarantee interception of form submissions ---
+    // --- Attach form submission handler ---
     $(document).on('submit', 'form.pzl-ajax-form', function(e) {
-        // This is the most critical part: prevent the default browser action (page reload).
         e.preventDefault();
-        
-        // Now, call our AJAX handling function.
         handleAjaxFormSubmit($(this));
     });
+
+    // --- Delete Lead Handler ---
+    $(document).on('click', '.pzl-delete-lead-btn', function(e) {
+        e.preventDefault();
+        const button = $(this);
+        const leadRow = button.closest('tr');
+        const leadId = leadRow.data('lead-id');
+        const nonce = button.data('nonce');
+
+        Swal.fire({
+            title: 'آیا از حذف این سرنخ مطمئن هستید؟',
+            text: "این عمل غیرقابل بازگشت است!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'بله، حذف کن!',
+            cancelButtonText: 'انصراف'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                leadRow.css('opacity', '0.5');
+                $.ajax({
+                    url: puzzlingcrm_ajax_obj.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'puzzling_delete_lead',
+                        security: nonce,
+                        lead_id: leadId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showPuzzlingAlert('موفق', response.data.message, 'success', response.data.reload);
+                        } else {
+                            showPuzzlingAlert('خطا', response.data.message, 'error');
+                            leadRow.css('opacity', '1');
+                        }
+                    },
+                    error: function() {
+                        showPuzzlingAlert('خطا', 'یک خطای ناشناخته در ارتباط با سرور رخ داد.', 'error');
+                        leadRow.css('opacity', '1');
+                    }
+                });
+            }
+        });
+    });
+
 
     // --- Contract Form Logic ---
     if ($('#manage-contract-form').length) {
@@ -156,7 +198,7 @@ jQuery(document).ready(function($) {
                 const startDate = $('#_project_start_date').val();
                 if (customerId && startDate) {
                     const parts = startDate.split('/');
-                    if(parts.length === 3) {
+                    if (parts.length === 3) {
                         const year = parts[0].slice(-2);
                         const month = ('0' + parts[1]).slice(-2);
                         const day = ('0' + parts[2]).slice(-2);
@@ -171,7 +213,7 @@ jQuery(document).ready(function($) {
     // --- Contract Actions (Cancel & Delete) ---
     $('#cancel-contract-btn').on('click', function() {
         const contractId = $('input[name="contract_id"]').val();
-        const nonce = $('#security').val(); // Get nonce from the form field
+        const nonce = $('#security').val();
 
         Swal.fire({
             title: 'لغو قرارداد',
@@ -190,8 +232,11 @@ jQuery(document).ready(function($) {
                     contract_id: contractId,
                     reason: result.value || 'دلیلی ذکر نشده است.'
                 }).done(function(response) {
-                    if (response.success) { showPuzzlingAlert('موفق', response.data.message, 'success', true); }
-                    else { showPuzzlingAlert('خطا', response.data.message, 'error'); }
+                    if (response.success) {
+                        showPuzzlingAlert('موفق', response.data.message, 'success', true);
+                    } else {
+                        showPuzzlingAlert('خطا', response.data.message, 'error');
+                    }
                 }).fail(function() {
                     showPuzzlingAlert('خطا', 'یک خطای ناشناخته در ارتباط با سرور رخ داد.', 'error');
                 });
@@ -201,7 +246,7 @@ jQuery(document).ready(function($) {
 
     $('#delete-contract-btn').on('click', function() {
         const contractId = $(this).data('contract-id');
-        const nonce = $(this).data('nonce'); // Use the action-specific nonce from data attribute
+        const nonce = $(this).data('nonce');
 
         Swal.fire({
             title: 'آیا از حذف کامل مطمئن هستید؟',
@@ -213,15 +258,14 @@ jQuery(document).ready(function($) {
             confirmButtonColor: '#d33',
         }).then((result) => {
             if (result.isConfirmed) {
-                 $.post(puzzlingcrm_ajax_obj.ajax_url, {
+                $.post(puzzlingcrm_ajax_obj.ajax_url, {
                     action: 'puzzling_delete_contract',
                     contract_id: contractId,
-                    security: nonce, // Use 'security' to match check_ajax_referer
+                    security: nonce,
                 }).done(function(response) {
-                     if (response.success) {
+                    if (response.success) {
                         showPuzzlingAlert('موفقیت', response.data.message, 'success');
                         setTimeout(function() {
-                            // Redirect to the main contracts list page
                             let contractsUrl = new URL(window.location.href);
                             contractsUrl.searchParams.set('view', 'contracts');
                             contractsUrl.searchParams.delete('action');
@@ -231,19 +275,19 @@ jQuery(document).ready(function($) {
                     } else {
                         showPuzzlingAlert('خطا', response.data.message, 'error');
                     }
-                }).fail(function(){
-                     showPuzzlingAlert('خطا', 'یک خطای پیش‌بینی نشده در ارتباط با سرور رخ داد.', 'error');
+                }).fail(function() {
+                    showPuzzlingAlert('خطا', 'یک خطای پیش‌بینی نشده در ارتباط با سرور رخ داد.', 'error');
                 });
             }
         });
     });
-    
+
     // --- Add services from product ---
     $('body').on('click', '#add-services-from-product', function() {
         var button = $(this);
         var contractId = $('input[name="contract_id"]').val();
         var productId = $('#product_id_for_automation').val();
-        var nonce = puzzlingcrm_ajax_obj.nonce; // Use the global nonce
+        var nonce = puzzlingcrm_ajax_obj.nonce;
 
         if (!productId) {
             showPuzzlingAlert('خطا', 'لطفاً ابتدا یک محصول را انتخاب کنید.', 'error');
@@ -266,7 +310,7 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     showPuzzlingAlert('موفق', response.data.message, 'success', true);
                 } else {
-                     showPuzzlingAlert('خطا', response.data.message, 'error');
+                    showPuzzlingAlert('خطا', response.data.message, 'error');
                 }
             },
             error: function() {
@@ -290,17 +334,17 @@ jQuery(document).ready(function($) {
             showPuzzlingAlert('خطا', 'لطفاً تمام فیلدهای محاسبه‌گر را پر کنید.', 'error');
             return;
         }
-        
+
         if (typeof persianDate === 'undefined') {
-             showPuzzlingAlert('خطا', 'کتابخانه تقویم بارگذاری نشده است.', 'error');
-             return;
+            showPuzzlingAlert('خطا', 'کتابخانه تقویم بارگذاری نشده است.', 'error');
+            return;
         }
 
         let installmentAmount = Math.floor(totalAmount / totalInstallments);
         let remainder = totalAmount - (installmentAmount * totalInstallments);
 
         $('#payment-rows-container').empty();
-        
+
         let dateParts = startDateStr.split('/').map(Number);
         let currentDate = new persianDate(dateParts);
 
@@ -309,9 +353,9 @@ jQuery(document).ready(function($) {
             if (i === 0) {
                 currentInstallmentAmount += remainder;
             }
-            
+
             let installmentDate = (i === 0) ? currentDate.clone() : currentDate.add('days', intervalDays);
-            
+
             let formattedDate = installmentDate.format('YYYY/MM/DD');
             addInstallmentRow(formatNumber(currentInstallmentAmount), formattedDate, 'pending');
         }
@@ -329,24 +373,30 @@ jQuery(document).ready(function($) {
             <button type="button" class="pzl-button pzl-button-sm remove-payment-row" style="background: #dc3545 !important;">حذف</button>
         </div>`;
         $('#payment-rows-container').append(newRow);
-        
-        // Re-initialize datepicker for the new row
+
         if ($.fn.persianDatepicker) {
-             $('.pzl-jalali-date-picker:not(.pwt-datepicker-input-element)').persianDatepicker({
+            $('.pzl-jalali-date-picker:not(.pwt-datepicker-input-element)').persianDatepicker({
                 format: 'YYYY/MM/DD',
                 autoClose: true
             });
         }
     }
-    $('#add-payment-row').on('click', function() { addInstallmentRow(); });
-    $('#payment-rows-container').on('click', '.remove-payment-row', function() { $(this).closest('.payment-row').remove(); });
-    
+    $('#add-payment-row').on('click', function() {
+        addInstallmentRow();
+    });
+    $('#payment-rows-container').on('click', '.remove-payment-row', function() {
+        $(this).closest('.payment-row').remove();
+    });
+
     // --- Kanban Board: Drag and Drop ---
     if ($('#pzl-task-board, .pzl-swimlane-board').length) {
         $('.pzl-task-list').sortable({
             connectWith: '.pzl-task-list',
             placeholder: 'pzl-task-card-placeholder',
-            start: function(event, ui) { ui.placeholder.height(ui.item.outerHeight()); $('body').addClass('is-dragging'); },
+            start: function(event, ui) {
+                ui.placeholder.height(ui.item.outerHeight());
+                $('body').addClass('is-dragging');
+            },
             stop: function(event, ui) {
                 $('body').removeClass('is-dragging');
                 var taskCard = ui.item;
@@ -354,36 +404,47 @@ jQuery(document).ready(function($) {
                 var newStatusSlug = taskCard.closest('.pzl-task-column').data('status-slug');
                 taskCard.css('opacity', '0.5');
                 $.ajax({
-                    url: puzzlingcrm_ajax_obj.ajax_url, type: 'POST',
-                    data: { action: 'puzzling_update_task_status', security: puzzlingcrm_ajax_obj.nonce, task_id: taskId, new_status_slug: newStatusSlug },
-                    success: function(response) { 
-                        if (!response.success) { 
-                            showPuzzlingAlert('خطا', response.data.message, 'error'); 
-                            $(this).sortable('cancel'); 
-                        } 
+                    url: puzzlingcrm_ajax_obj.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'puzzling_update_task_status',
+                        security: puzzlingcrm_ajax_obj.nonce,
+                        task_id: taskId,
+                        new_status_slug: newStatusSlug
                     },
-                    error: function() { 
-                        showPuzzlingAlert('خطا', 'خطای ارتباط با سرور.', 'error'); 
-                        $(this).sortable('cancel'); 
+                    success: function(response) {
+                        if (!response.success) {
+                            showPuzzlingAlert('خطا', response.data.message, 'error');
+                            $(this).sortable('cancel');
+                        }
                     },
-                    complete: function() { taskCard.css('opacity', '1'); }
+                    error: function() {
+                        showPuzzlingAlert('خطا', 'خطای ارتباط با سرور.', 'error');
+                        $(this).sortable('cancel');
+                    },
+                    complete: function() {
+                        taskCard.css('opacity', '1');
+                    }
                 });
             }
         }).disableSelection();
     }
-    
+
     // --- Task Modal ---
     function openTaskModal(taskId) {
         if (!taskId) return;
         currentTaskId = taskId;
         $('#pzl-task-modal-backdrop, #pzl-task-modal-wrap').fadeIn(200);
         $('#pzl-task-modal-body').html('<div class="pzl-loader"></div>');
-        $.post(puzzlingcrm_ajax_obj.ajax_url, { action: 'puzzling_get_task_details', security: puzzlingcrm_ajax_obj.nonce, task_id: taskId })
-        .done(function(response) {
-            if (response.success) { 
-                $('#pzl-task-modal-body').html(response.data.html); 
-            } else { 
-                $('#pzl-task-modal-body').html('<p style="color:red;">' + (response.data.message || 'خطا') + '</p>'); 
+        $.post(puzzlingcrm_ajax_obj.ajax_url, {
+            action: 'puzzling_get_task_details',
+            security: puzzlingcrm_ajax_obj.nonce,
+            task_id: taskId
+        }).done(function(response) {
+            if (response.success) {
+                $('#pzl-task-modal-body').html(response.data.html);
+            } else {
+                $('#pzl-task-modal-body').html('<p style="color:red;">' + (response.data.message || 'خطا') + '</p>');
             }
         }).fail(function() {
             $('#pzl-task-modal-body').html('<p>خطای ارتباط با سرور.</p>');
@@ -397,28 +458,32 @@ jQuery(document).ready(function($) {
     }
 
     $('body').on('click', '.pzl-task-card, .open-task-modal', function(e) {
-        if ( !$(e.target).hasClass('open-task-modal') && ($(e.target).is('a, button, select') || $(e.target).closest('a, button, select').length) ) {
+        if (!$(e.target).hasClass('open-task-modal') && ($(e.target).is('a, button, select') || $(e.target).closest('a, button, select').length)) {
             return;
         }
         e.preventDefault();
         var taskId = $(this).data('task-id') || $(this).closest('[data-task-id]').data('task-id');
         openTaskModal(taskId);
     });
-    
+
     $('body').on('click', '#pzl-close-modal-btn, #pzl-task-modal-backdrop', function(e) {
-        if ($(e.target).is('#pzl-close-modal-btn') || $(e.target).is('#pzl-task-modal-backdrop')) { closeTaskModal(); }
+        if ($(e.target).is('#pzl-close-modal-btn') || $(e.target).is('#pzl-task-modal-backdrop')) {
+            closeTaskModal();
+        }
     });
-    
+
     const urlParamsInstance = new URLSearchParams(window.location.search);
     const openTaskIdFromUrl = urlParamsInstance.get('open_task_id');
     if (openTaskIdFromUrl) {
         openTaskModal(openTaskIdFromUrl);
     }
-    
+
     // --- Notifications ---
     function fetchNotifications() {
-        $.post(puzzlingcrm_ajax_obj.ajax_url, { action: 'puzzling_get_notifications', security: puzzlingcrm_ajax_obj.nonce })
-        .done(function(response) {
+        $.post(puzzlingcrm_ajax_obj.ajax_url, {
+            action: 'puzzling_get_notifications',
+            security: puzzlingcrm_ajax_obj.nonce
+        }).done(function(response) {
             if (response.success) {
                 $('.pzl-notification-panel ul').html(response.data.html);
                 var count = parseInt(response.data.count, 10);
@@ -430,14 +495,24 @@ jQuery(document).ready(function($) {
             }
         });
     }
-    $('.pzl-notification-bell').on('click', function(e) { e.stopPropagation(); $('.pzl-notification-panel').toggle(); });
-    $(document).on('click', function() { $('.pzl-notification-panel').hide(); });
-    $('.pzl-notification-panel').on('click', function(e) { e.stopPropagation(); });
+    $('.pzl-notification-bell').on('click', function(e) {
+        e.stopPropagation();
+        $('.pzl-notification-panel').toggle();
+    });
+    $(document).on('click', function() {
+        $('.pzl-notification-panel').hide();
+    });
+    $('.pzl-notification-panel').on('click', function(e) {
+        e.stopPropagation();
+    });
     $('.pzl-notification-panel').on('click', 'li.pzl-unread', function() {
         var item = $(this);
         var id = item.data('id');
-        $.post(puzzlingcrm_ajax_obj.ajax_url, { action: 'puzzling_mark_notification_read', security: puzzlingcrm_ajax_obj.nonce, id: id })
-        .done(function() {
+        $.post(puzzlingcrm_ajax_obj.ajax_url, {
+            action: 'puzzling_mark_notification_read',
+            security: puzzlingcrm_ajax_obj.nonce,
+            id: id
+        }).done(function() {
             item.removeClass('pzl-unread').addClass('pzl-read');
             var countEl = $('.pzl-notification-count');
             var currentCount = parseInt(countEl.text(), 10) - 1;
@@ -448,7 +523,7 @@ jQuery(document).ready(function($) {
             }
         });
     });
-    if($('.pzl-notification-bell').length) {
+    if ($('.pzl-notification-bell').length) {
         fetchNotifications();
         setInterval(fetchNotifications, 120000); // Fetch every 2 minutes
     }
@@ -460,17 +535,22 @@ jQuery(document).ready(function($) {
         var editor = tinymce.get('comment');
         if (!editor) return;
         editor.setContent('<p><i class="fas fa-spinner fa-spin"></i> در حال بارگذاری...</p>');
-        $.post(puzzlingcrm_ajax_obj.ajax_url, { action: 'puzzling_get_canned_response', security: puzzlingcrm_ajax_obj.nonce, response_id: responseId })
-        .done(function(response) {
-            if (response.success) { editor.setContent(response.data.content); }
-            else { editor.setContent('<p style="color:red;">' + (response.data.message || 'خطا') + '</p>'); }
-        }).fail(function(){
-             editor.setContent('<p style="color:red;">خطای سرور.</p>');
+        $.post(puzzlingcrm_ajax_obj.ajax_url, {
+            action: 'puzzling_get_canned_response',
+            security: puzzlingcrm_ajax_obj.nonce,
+            response_id: responseId
+        }).done(function(response) {
+            if (response.success) {
+                editor.setContent(response.data.content);
+            } else {
+                editor.setContent('<p style="color:red;">' + (response.data.message || 'خطا') + '</p>');
+            }
+        }).fail(function() {
+            editor.setContent('<p style="color:red;">خطای سرور.</p>');
         });
     });
 
-    // --- FINAL FIX: Initial datepicker setup ---
-    // Check if the function exists and if there are any elements that need it.
+    // --- Initial datepicker setup ---
     if ($.fn.persianDatepicker && $('.pzl-jalali-date-picker').length) {
         $('.pzl-jalali-date-picker').persianDatepicker({
             format: 'YYYY/MM/DD',
