@@ -1,6 +1,6 @@
 <?php
 /**
- * PuzzlingCRM Leads Management Page (Final, Fully Functional Version with Edit Screen)
+ * PuzzlingCRM Leads Management Page (Final, Fully Functional Version with Edit Screen & Inline Status Change)
  *
  * @package PuzzlingCRM
  */
@@ -27,7 +27,6 @@ if ($action === 'edit' && $lead_id > 0) {
     $business_name = get_post_meta($lead_id, '_business_name', true);
     $notes = $lead->post_content;
     
-    // Get the correct return URL, keeping all filters and pagination.
     $return_url = remove_query_arg(['action', 'lead_id']);
 
     ?>
@@ -43,7 +42,6 @@ if ($action === 'edit' && $lead_id > 0) {
                 <?php wp_nonce_field('puzzling_edit_lead_nonce', 'security'); ?>
                 <input type="hidden" name="action" value="puzzling_edit_lead">
                 <input type="hidden" name="lead_id" value="<?php echo esc_attr($lead_id); ?>">
-                
                 <input type="hidden" name="_wp_http_referer" value="<?php echo esc_attr(wp_unslash($return_url)); ?>">
 
                 <div class="pzl-form-row">
@@ -75,17 +73,22 @@ if ($action === 'edit' && $lead_id > 0) {
                         $current_status = !empty($current_status_terms) ? $current_status_terms[0] : '';
                         $all_statuses = get_terms(['taxonomy' => 'lead_status', 'hide_empty' => false]);
 
-                        foreach ($all_statuses as $status) {
-                            printf(
-                                '<option value="%s" %s>%s</option>',
-                                esc_attr($status->slug),
-                                selected($current_status, $status->slug, false),
-                                esc_html($status->name)
-                            );
+                        if (empty($all_statuses)) {
+                            echo '<option value="">هیچ وضعیتی تعریف نشده است</option>';
+                        } else {
+                            foreach ($all_statuses as $status) {
+                                printf(
+                                    '<option value="%s" %s>%s</option>',
+                                    esc_attr($status->slug),
+                                    selected($current_status, $status->slug, false),
+                                    esc_html($status->name)
+                                );
+                            }
                         }
                         ?>
                     </select>
                 </div>
+
                 <div class="form-group">
                     <label for="pzl-notes-edit">یادداشت</label>
                     <textarea id="pzl-notes-edit" name="notes" rows="4"><?php echo esc_textarea($notes); ?></textarea>
@@ -97,7 +100,7 @@ if ($action === 'edit' && $lead_id > 0) {
         </div>
     </div>
     <?php
-    return; // Stop execution here to only show the edit form
+    return;
 }
 
 // ======== DISPLAY LEADS LIST (DEFAULT VIEW) ========
@@ -117,6 +120,7 @@ if (!empty($status_filter)) {
 }
 $leads_query = new WP_Query($args);
 $delete_nonce = wp_create_nonce('puzzling_delete_lead_nonce');
+$change_status_nonce = wp_create_nonce('puzzling_change_lead_status_nonce');
 $current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted', 'updated']);
 ?>
 
@@ -125,9 +129,6 @@ $current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted'
         <h3><i class="fas fa-users"></i> مدیریت سرنخ‌ها</h3>
         <a href="#" id="pzl-add-new-lead-btn" class="pzl-button"><i class="fas fa-plus"></i> افزودن سرنخ جدید</a>
     </div>
-
-    <div class="pzl-dashboard-stats-grid">
-        </div>
     
     <div class="pzl-card">
         <form method="get" class="pzl-form">
@@ -137,9 +138,11 @@ $current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted'
                     <label for="status_filter">فیلتر بر اساس وضعیت</label>
                     <select name="status_filter" id="status_filter">
                         <option value="">همه وضعیت‌ها</option>
-                        <?php foreach ($lead_statuses as $status) : ?>
-                            <option value="<?php echo esc_attr($status->slug); ?>" <?php selected($status_filter, $status->slug); ?>><?php echo esc_html($status->name); ?></option>
-                        <?php endforeach; ?>
+                        <?php if (!empty($lead_statuses)) : ?>
+                            <?php foreach ($lead_statuses as $status) : ?>
+                                <option value="<?php echo esc_attr($status->slug); ?>" <?php selected($status_filter, $status->slug); ?>><?php echo esc_html($status->name); ?></option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </select>
                 </div>
                 <div class="form-group half-width">
@@ -169,15 +172,31 @@ $current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted'
                         <?php
                         $lead_id = get_the_ID();
                         $status_terms = get_the_terms($lead_id, 'lead_status');
-                        $status_name = !empty($status_terms) ? esc_html($status_terms[0]->name) : '---';
-                        $status_slug = !empty($status_terms) ? esc_html($status_terms[0]->slug) : '';
+                        $status_slug = !empty($status_terms) && isset($status_terms[0]) ? $status_terms[0]->slug : '';
                         $edit_link = add_query_arg(['action' => 'edit', 'lead_id' => $lead_id], $current_page_url);
                         ?>
                         <tr data-lead-id="<?php echo esc_attr($lead_id); ?>">
                             <td><strong><?php echo esc_html(get_the_title()); ?></strong></td>
                             <td><a href="tel:<?php echo esc_attr(get_post_meta($lead_id, '_mobile', true)); ?>"><?php echo esc_html(get_post_meta($lead_id, '_mobile', true)); ?></a></td>
                             <td><?php echo esc_html(get_post_meta($lead_id, '_business_name', true)); ?></td>
-                            <td><span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span></td>
+                            <td>
+                                <?php if (!empty($lead_statuses)) : ?>
+                                <select class="pzl-lead-status-changer" data-lead-id="<?php echo esc_attr($lead_id); ?>" data-nonce="<?php echo esc_attr($change_status_nonce); ?>">
+                                    <?php
+                                    foreach ($lead_statuses as $status) {
+                                        printf(
+                                            '<option value="%s" %s>%s</option>',
+                                            esc_attr($status->slug),
+                                            selected($status_slug, $status->slug, false),
+                                            esc_html($status->name)
+                                        );
+                                    }
+                                    ?>
+                                </select>
+                                <?php else: ?>
+                                    ---
+                                <?php endif; ?>
+                            </td>
                             <td><?php echo get_the_date('Y/m/d'); ?></td>
                             <td class="pzl-table-actions">
                                 <a href="<?php echo esc_url($edit_link); ?>" class="pzl-button-icon" title="ویرایش"><i class="fas fa-edit"></i></a>
@@ -191,7 +210,7 @@ $current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted'
                             <div class="pzl-empty-state">
                                 <i class="fas fa-search"></i>
                                 <h4>نتیجه‌ای یافت نشد</h4>
-                                <p>هیچ سرنخی با مشخصات وارد شده یافت نشد.</p>
+                                <p>هیچ سرنخی با مشخصات وارد شده یافت نشد. <br><?php if (empty($lead_statuses)) echo '<b>توجه:</b> هیچ وضعیتی برای سرنخ‌ها تعریف نشده است. لطفاً از بخش تنظیمات وضعیت‌ها را مدیریت کنید.'; ?></p>
                             </div>
                         </td>
                     </tr>
@@ -259,6 +278,7 @@ $current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted'
 </div>
 
 <script>
+// Keep the modal script separate for clarity, as it's page-specific
 jQuery(document).ready(function($) {
     const modal = $('#pzl-add-lead-modal');
     const form = $('#pzl-add-lead-form');
@@ -289,6 +309,7 @@ jQuery(document).ready(function($) {
 </script>
 
 <style>
+/* Styles can remain the same */
 .pzl-modal-backdrop {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(29, 30, 41, 0.7);
@@ -298,10 +319,7 @@ jQuery(document).ready(function($) {
     opacity: 0;
     transition: opacity 0.2s ease-in-out;
 }
-.pzl-modal-backdrop.pzl-is-visible {
-    display: flex;
-    opacity: 1;
-}
+.pzl-modal-backdrop.pzl-is-visible { display: flex; opacity: 1; }
 .pzl-modal-content {
     background: #fff; border-radius: 8px;
     width: 95%; max-width: 600px;
@@ -310,10 +328,7 @@ jQuery(document).ready(function($) {
     transition: transform 0.2s ease-in-out, opacity 0.2s;
     opacity: 0;
 }
-.pzl-modal-backdrop.pzl-is-visible .pzl-modal-content {
-    transform: translateY(0);
-    opacity: 1;
-}
+.pzl-modal-backdrop.pzl-is-visible .pzl-modal-content { transform: translateY(0); opacity: 1; }
 .pzl-modal-header { padding: 20px 25px; border-bottom: 1px solid #ddd; }
 .pzl-modal-title { margin: 0; font-size: 20px; font-weight: 700; }
 .pzl-modal-body { padding: 25px; }
@@ -338,4 +353,11 @@ jQuery(document).ready(function($) {
 }
 .pzl-button-icon:hover { color: #005a87; }
 .pzl-required { color: red; margin-right: 3px; }
+select.pzl-lead-status-changer {
+    min-width: 150px;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    transition: background-color 0.3s ease;
+}
 </style>

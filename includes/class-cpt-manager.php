@@ -379,15 +379,24 @@ class PuzzlingCRM_CPT_Manager {
         ]);
     }
     
+    /**
+     * Creates default terms for taxonomies only if they don't exist.
+     * This now correctly checks terms in the 'lead_status' taxonomy.
+     */
     public static function create_default_terms() {
-        // === START: LEAD STATUSES (NEW) ===
-        $lead_statuses = ['جدید' => 'new', 'در حال پیگیری' => 'in-progress', 'مشتری شده' => 'converted', 'لغو شده' => 'cancelled'];
-        foreach ($lead_statuses as $name => $slug) {
-            if ( ! term_exists( $slug, 'lead_status' ) ) {
-                wp_insert_term( $name, 'lead_status', ['slug' => $slug] );
+        // === START: LEAD STATUSES (CORRECTED) ===
+        // This function now only runs if there are NO statuses, to prevent overwriting user changes.
+        $existing_terms = get_terms(['taxonomy' => 'lead_status', 'hide_empty' => false]);
+        if (empty($existing_terms)) {
+            $lead_statuses = ['جدید' => 'new', 'در حال پیگیری' => 'in-progress', 'مشتری شده' => 'converted', 'لغو شده' => 'cancelled'];
+            foreach ($lead_statuses as $name => $slug) {
+                // The check is redundant now but good practice
+                if ( ! term_exists( $slug, 'lead_status' ) ) {
+                    wp_insert_term( $name, 'lead_status', ['slug' => $slug] );
+                }
             }
         }
-        // === END: LEAD STATUSES (NEW) ===
+        // === END: LEAD STATUSES (CORRECTED) ===
 
         // Consultation Statuses
         $consultation_statuses = ['در حال پیگیری' => 'in-progress', 'تبدیل به پروژه' => 'converted', 'بسته شده' => 'closed'];

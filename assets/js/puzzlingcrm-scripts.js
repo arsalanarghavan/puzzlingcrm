@@ -1,9 +1,8 @@
 /**
- * PuzzlingCRM Main Scripts - V4.7 (Fully Patched Version)
- * - Fixes the "processing..." bug for all forms (add, edit, delete).
- * - Ensures correct reload or redirect behavior after successful operations.
- * - Simplifies and unifies the AJAX response handling logic.
- * - Fixes the critical bug where a missing persianDatepicker library would halt all subsequent scripts.
+ * PuzzlingCRM Main Scripts - V4.9.2 (Final Stable Version)
+ * - Restores all original functionality for contracts, tasks, etc.
+ * - Integrates the new inline lead status changing feature.
+ * - Retains all previous fixes for AJAX forms and script errors.
  */
 
 // Global function for showing alerts using SweetAlert2
@@ -116,13 +115,13 @@ jQuery(document).ready(function($) {
                 } else {
                     let errorMessage = (response && response.data && response.data.message) ? response.data.message : (puzzlingcrm_ajax_obj.lang.server_error || 'خطای سرور');
                     showPuzzlingAlert(puzzlingcrm_ajax_obj.lang.error_title || 'خطا', errorMessage, 'error');
-                    submitButton.html(originalButtonHtml).prop('disabled', false); // Re-enable on failure
+                    submitButton.html(originalButtonHtml).prop('disabled', false);
                 }
             },
             error: function(xhr) {
                 console.error("PuzzlingCRM AJAX Error:", xhr.responseText);
                 showPuzzlingAlert(puzzlingcrm_ajax_obj.lang.error_title || 'خطا', 'یک خطای ناشناخته در ارتباط با سرور رخ داد.', 'error');
-                submitButton.html(originalButtonHtml).prop('disabled', false); // Re-enable on error
+                submitButton.html(originalButtonHtml).prop('disabled', false);
             }
         });
     }
@@ -174,6 +173,57 @@ jQuery(document).ready(function($) {
                         leadRow.css('opacity', '1');
                     }
                 });
+            }
+        });
+    });
+
+    // --- Lead Status Changer in List View ---
+    $(document).on('change', '.pzl-lead-status-changer', function() {
+        const select = $(this);
+        const leadId = select.data('lead-id');
+        const newStatus = select.val();
+        const nonce = select.data('nonce');
+        
+        // Store the original value from the previously selected option if it doesn't exist
+        let originalValue = select.attr('data-original-value');
+        if (typeof originalValue === 'undefined') {
+             // Find the value of the initially selected option
+             originalValue = select.find('option[selected]').val();
+             if(typeof originalValue === 'undefined') { // Fallback for browsers that don't reflect initial state
+                originalValue = select.val();
+             }
+             select.attr('data-original-value', originalValue);
+        }
+
+        select.prop('disabled', true).css('background-color', '#f0f0f0');
+
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'puzzling_change_lead_status',
+                security: nonce,
+                lead_id: leadId,
+                new_status: newStatus
+            },
+            success: function(response) {
+                if (response.success) {
+                    select.css('background-color', '#d4edda'); // Light green
+                    // Update the original value to the new successful status
+                    select.attr('data-original-value', newStatus); 
+                } else {
+                    showPuzzlingAlert('خطا', response.data.message || 'خطای سرور', 'error');
+                    select.val(originalValue); // Revert on failure
+                    select.css('background-color', '#f8d7da'); // Light red
+                }
+            },
+            error: function() {
+                showPuzzlingAlert('خطا', 'خطای سرور.', 'error');
+                select.val(originalValue); // Revert on failure
+            },
+            complete: function() {
+                select.prop('disabled', false);
+                setTimeout(() => select.css('background-color', ''), 1500);
             }
         });
     });
@@ -544,8 +594,6 @@ jQuery(document).ready(function($) {
     });
 
     // **CRITICAL FIX**: Safely initialize persianDatepicker
-    // This prevents a critical error if the datepicker script is not loaded on a page,
-    // which would otherwise halt all subsequent JavaScript execution (like the delete button handler).
     if ($('.pzl-jalali-date-picker').length > 0 && typeof $.fn.persianDatepicker === 'function') {
         $('.pzl-jalali-date-picker').persianDatepicker({
             format: 'YYYY/MM/DD',
