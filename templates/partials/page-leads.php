@@ -27,7 +27,7 @@ if ($action === 'edit' && $lead_id > 0) {
     $business_name = get_post_meta($lead_id, '_business_name', true);
     $notes = $lead->post_content;
     
-    // **PATCHED**: Get the correct return URL, keeping all filters and pagination.
+    // Get the correct return URL, keeping all filters and pagination.
     $return_url = remove_query_arg(['action', 'lead_id']);
 
     ?>
@@ -65,6 +65,26 @@ if ($action === 'edit' && $lead_id > 0) {
                         <label for="pzl-business-name-edit">نام کسب‌وکار</label>
                         <input type="text" id="pzl-business-name-edit" name="business_name" value="<?php echo esc_attr($business_name); ?>">
                     </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="pzl-lead-status-edit">وضعیت سرنخ</label>
+                    <select id="pzl-lead-status-edit" name="lead_status">
+                        <?php
+                        $current_status_terms = wp_get_object_terms($lead_id, 'lead_status', ['fields' => 'slugs']);
+                        $current_status = !empty($current_status_terms) ? $current_status_terms[0] : '';
+                        $all_statuses = get_terms(['taxonomy' => 'lead_status', 'hide_empty' => false]);
+
+                        foreach ($all_statuses as $status) {
+                            printf(
+                                '<option value="%s" %s>%s</option>',
+                                esc_attr($status->slug),
+                                selected($current_status, $status->slug, false),
+                                esc_html($status->name)
+                            );
+                        }
+                        ?>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="pzl-notes-edit">یادداشت</label>

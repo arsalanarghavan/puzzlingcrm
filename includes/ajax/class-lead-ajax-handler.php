@@ -1,6 +1,6 @@
 <?php
 /**
- * PuzzlingCRM Lead AJAX Handler (Final Patched Version for Redirect)
+ * PuzzlingCRM Lead AJAX Handler (Final Patched Version for Redirect & Status Update)
  *
  * @package PuzzlingCRM
  */
@@ -58,12 +58,14 @@ class PuzzlingCRM_Lead_Ajax_Handler {
         update_post_meta($lead_id, '_mobile', $mobile);
         update_post_meta($lead_id, '_business_name', $business_name);
         
+        // This part correctly reads the default status from settings
         $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
         $default_status_from_settings = !empty($settings['lead_default_status']) ? $settings['lead_default_status'] : null;
 
         if ($default_status_from_settings) {
             wp_set_object_terms($lead_id, $default_status_from_settings, 'lead_status');
         } else {
+            // Fallback to the first available status if no default is set
             $all_statuses = get_terms(['taxonomy' => 'lead_status', 'hide_empty' => false, 'number' => 1, 'orderby' => 'term_id', 'order' => 'ASC']);
             if (!empty($all_statuses) && !is_wp_error($all_statuses)) {
                 wp_set_object_terms($lead_id, $all_statuses[0]->slug, 'lead_status');
@@ -121,10 +123,19 @@ class PuzzlingCRM_Lead_Ajax_Handler {
         update_post_meta($lead_id, '_mobile', $mobile);
         update_post_meta($lead_id, '_business_name', $business_name);
 
-        // **PATCHED**: Use the referer URL sent from the form for a correct redirect.
+        // === START: ADDED STATUS HANDLING ===
+        // This is the new code that saves the status from the edit form's dropdown.
+        if (isset($_POST['lead_status'])) {
+            $status_slug = sanitize_text_field($_POST['lead_status']);
+            if (!empty($status_slug)) {
+                wp_set_object_terms($lead_id, $status_slug, 'lead_status');
+            }
+        }
+        // === END: ADDED STATUS HANDLING ===
+
+        // Use the referer URL sent from the form for a correct redirect.
         $redirect_url = admin_url('admin.php?page=puzzling-leads'); // Default fallback
         if ( ! empty( $_POST['_wp_http_referer'] ) ) {
-            // The unslash is important for nested query args.
             $redirect_url = esc_url_raw( wp_unslash( $_POST['_wp_http_referer'] ) );
         }
         

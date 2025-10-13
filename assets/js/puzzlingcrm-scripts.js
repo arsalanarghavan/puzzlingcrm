@@ -1,23 +1,20 @@
 /**
- * PuzzlingCRM Main Scripts - V4.6 (Final Patched Version)
- * This version provides a comprehensive fix for all AJAX form submission issues.
+ * PuzzlingCRM Main Scripts - V4.7 (Fully Patched Version)
  * - Fixes the "processing..." bug for all forms (add, edit, delete).
  * - Ensures correct reload or redirect behavior after successful operations.
  * - Simplifies and unifies the AJAX response handling logic.
+ * - Fixes the critical bug where a missing persianDatepicker library would halt all subsequent scripts.
  */
 
-// Global function for showing alerts using SweetAlert2 (Backward Compatible & Patched)
+// Global function for showing alerts using SweetAlert2
 function showPuzzlingAlert(title, text, icon, options = {}) {
     let reloadPage = false;
     let redirectUrl = null;
 
-    // Handle both boolean (old way) and object (new way) for the options parameter
     if (typeof options === 'boolean') {
         reloadPage = options;
     } else if (typeof options === 'object' && options !== null) {
-        // Check for both 'reload' and 'reloadPage' for full compatibility
         reloadPage = options.reload || options.reloadPage || false;
-        // Check for both 'redirect_url' and 'redirectUrl'
         redirectUrl = options.redirect_url || options.redirectUrl || null;
     }
 
@@ -73,7 +70,7 @@ jQuery(document).ready(function($) {
     }
 
     /**
-     * Generic AJAX Form Submission Handler (Final Patched Version)
+     * Generic AJAX Form Submission Handler
      */
     function handleAjaxFormSubmit(form) {
         var submitButton = form.find('button[type="submit"]');
@@ -82,7 +79,6 @@ jQuery(document).ready(function($) {
         var action = form.data('action') || form.find('input[name="action"]').val();
         formData.set('action', action);
 
-        // Prepare data before sending
         form.find('.item-price, .item-discount, #total_amount').each(function() {
             var inputName = $(this).attr('name');
             if (inputName) {
@@ -114,35 +110,19 @@ jQuery(document).ready(function($) {
                     if (action === 'puzzling_add_lead' && typeof window.closeLeadModal === 'function') {
                         window.closeLeadModal();
                     }
-
-                    // UNIFIED LOGIC: Pass the entire data object to the alert function.
-                    // It will intelligently handle either reload or redirect.
                     setTimeout(() => {
                         showPuzzlingAlert('موفق', data.message, 'success', data);
                     }, 250);
-
                 } else {
                     let errorMessage = (response && response.data && response.data.message) ? response.data.message : (puzzlingcrm_ajax_obj.lang.server_error || 'خطای سرور');
                     showPuzzlingAlert(puzzlingcrm_ajax_obj.lang.error_title || 'خطا', errorMessage, 'error');
+                    submitButton.html(originalButtonHtml).prop('disabled', false); // Re-enable on failure
                 }
             },
             error: function(xhr) {
                 console.error("PuzzlingCRM AJAX Error:", xhr.responseText);
                 showPuzzlingAlert(puzzlingcrm_ajax_obj.lang.error_title || 'خطا', 'یک خطای ناشناخته در ارتباط با سرور رخ داد.', 'error');
-            },
-            complete: function(xhr) {
-                // SIMPLIFIED LOGIC: Only re-enable the button if the request FAILED.
-                // If it was successful, a page change is expected, so we don't touch the button.
-                var response;
-                try {
-                    response = JSON.parse(xhr.responseText);
-                    if (!response.success) {
-                        submitButton.html(originalButtonHtml).prop('disabled', false);
-                    }
-                } catch (e) {
-                    // Also re-enable on server/network error
-                    submitButton.html(originalButtonHtml).prop('disabled', false);
-                }
+                submitButton.html(originalButtonHtml).prop('disabled', false); // Re-enable on error
             }
         });
     }
@@ -183,7 +163,6 @@ jQuery(document).ready(function($) {
                     },
                     success: function(response) {
                         if (response.success) {
-                            // Pass the whole data object here too for consistency
                             showPuzzlingAlert('موفق', response.data.message, 'success', response.data);
                         } else {
                             showPuzzlingAlert('خطا', response.data.message, 'error');
@@ -564,7 +543,10 @@ jQuery(document).ready(function($) {
         });
     });
 
-    if ($.fn.persianDatepicker && $('.pzl-jalali-date-picker').length) {
+    // **CRITICAL FIX**: Safely initialize persianDatepicker
+    // This prevents a critical error if the datepicker script is not loaded on a page,
+    // which would otherwise halt all subsequent JavaScript execution (like the delete button handler).
+    if ($('.pzl-jalali-date-picker').length > 0 && typeof $.fn.persianDatepicker === 'function') {
         $('.pzl-jalali-date-picker').persianDatepicker({
             format: 'YYYY/MM/DD',
             autoClose: true
