@@ -72,10 +72,16 @@ jQuery(document).ready(function($) {
      * Generic AJAX Form Submission Handler
      */
     function handleAjaxFormSubmit(form) {
+        console.log('PuzzlingCRM: Starting form submission');
+        
         var submitButton = form.find('button[type="submit"]');
         var originalButtonHtml = submitButton.html();
         var formData = new FormData(form[0]);
         var action = form.data('action') || form.find('input[name="action"]').val();
+        
+        console.log('PuzzlingCRM: Form action:', action);
+        console.log('PuzzlingCRM: Form data:', Object.fromEntries(formData));
+        
         formData.set('action', action);
 
         form.find('.item-price, .item-discount, #total_amount').each(function() {
@@ -118,9 +124,40 @@ jQuery(document).ready(function($) {
                     submitButton.html(originalButtonHtml).prop('disabled', false);
                 }
             },
-            error: function(xhr) {
-                console.error("PuzzlingCRM AJAX Error:", xhr.responseText);
-                showPuzzlingAlert(puzzlingcrm_ajax_obj.lang.error_title || 'خطا', 'یک خطای ناشناخته در ارتباط با سرور رخ داد.', 'error');
+            error: function(xhr, status, error) {
+                console.error("PuzzlingCRM AJAX Error:", {
+                    status: status,
+                    error: error,
+                    responseText: xhr.responseText,
+                    statusCode: xhr.status
+                });
+                
+                let errorMessage = 'یک خطای ناشناخته در ارتباط با سرور رخ داد.';
+                
+                // Try to parse error response
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.data && response.data.message) {
+                        errorMessage = response.data.message;
+                    } else if (response.message) {
+                        errorMessage = response.message;
+                    }
+                } catch (e) {
+                    // If JSON parsing fails, use status-based messages
+                    if (xhr.status === 0) {
+                        errorMessage = 'خطا در اتصال به سرور. لطفاً اتصال اینترنت خود را بررسی کنید.';
+                    } else if (xhr.status === 403) {
+                        errorMessage = 'دسترسی غیرمجاز. لطفاً صفحه را رفرش کنید.';
+                    } else if (xhr.status === 404) {
+                        errorMessage = 'صفحه مورد نظر یافت نشد. لطفاً صفحه را رفرش کنید.';
+                    } else if (xhr.status === 500) {
+                        errorMessage = 'خطای داخلی سرور. لطفاً دوباره تلاش کنید.';
+                    } else {
+                        errorMessage = `خطای سرور (کد: ${xhr.status}). لطفاً دوباره تلاش کنید.`;
+                    }
+                }
+                
+                showPuzzlingAlert(puzzlingcrm_ajax_obj.lang.error_title || 'خطا', errorMessage, 'error');
                 submitButton.html(originalButtonHtml).prop('disabled', false);
             }
         });
