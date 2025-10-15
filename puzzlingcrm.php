@@ -3,7 +3,7 @@
  * Plugin Name:       PuzzlingCRM
  * Plugin URI:        https://Puzzlingco.com/
  * Description:       A complete CRM and Project Management solution for Social Marketing agencies.
- * Version:           0.0.308
+ * Version:           0.0.309
  * Author:            Arsalan Arghavan
  * Author URI:        https://ArsalanArghavan.ir/
  * License:           GPL v2 or later
@@ -71,7 +71,7 @@ function puzzling_enqueue_assets($hook) {
     // Pass PHP variables to the main script
     wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [
         'ajax_url' => admin_url('admin-ajax.php'),
-        'nonce'    => wp_create_nonce('puzzling_general_nonce'), // Use a general nonce or specific ones as needed
+        'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce'), // Use consistent nonce
         'lang'     => [
             'ok_button'     => __('باشه', 'puzzlingcrm'),
             'success_title' => __('موفق', 'puzzlingcrm'),

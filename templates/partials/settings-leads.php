@@ -6,12 +6,10 @@
 if (!defined('ABSPATH')) exit;
 if (!current_user_can('manage_options')) return;
 
-// Handle saving general lead settings (SMS, default status)
+// Handle saving general lead settings (default status only)
 if (isset($_POST['puzzling_action']) && $_POST['puzzling_action'] === 'save_lead_settings' && check_admin_referer('puzzling_save_lead_settings_nonce', 'security')) {
     $settings = get_option('puzzling_settings', []);
     
-    $settings['lead_auto_sms_enabled'] = isset($_POST['lead_auto_sms_enabled']) ? 1 : 0;
-    $settings['lead_auto_sms_template'] = sanitize_textarea_field($_POST['lead_auto_sms_template']);
     // Save the term SLUG, not the name.
     $settings['lead_default_status'] = sanitize_text_field($_POST['lead_default_status']);
 
@@ -22,8 +20,8 @@ if (isset($_POST['puzzling_action']) && $_POST['puzzling_action'] === 'save_lead
 // Fetch statuses directly from the taxonomy
 $lead_statuses = get_terms(['taxonomy' => 'lead_status', 'hide_empty' => false]);
 $settings = get_option('puzzling_settings', []);
-$add_nonce = wp_create_nonce('puzzling_add_lead_status_nonce');
-$delete_nonce = wp_create_nonce('puzzling_delete_lead_status_nonce');
+$add_nonce = wp_create_nonce('puzzlingcrm-ajax-nonce');
+$delete_nonce = wp_create_nonce('puzzlingcrm-ajax-nonce');
 ?>
 
 <div class="pzl-form-container">
@@ -46,25 +44,6 @@ $delete_nonce = wp_create_nonce('puzzling_delete_lead_status_nonce');
                         <?php endif; ?>
                     </select>
                     <p class="description"><?php _e('وضعیت پیش‌فرض برای سرنخ‌های جدید را انتخاب کنید.', 'puzzlingcrm'); ?></p>
-                </td>
-            </tr>
-            <tr valign="top">
-                <th scope="row"><?php _e('فعال‌سازی پیامک خودکار', 'puzzlingcrm'); ?></th>
-                <td>
-                    <label>
-                        <input type="checkbox" name="lead_auto_sms_enabled" value="1" <?php checked(isset($settings['lead_auto_sms_enabled']) ? $settings['lead_auto_sms_enabled'] : 0, 1); ?> />
-                        <?php _e('هنگام ثبت سرنخ جدید، پیامک خودکار ارسال شود.', 'puzzlingcrm'); ?>
-                    </label>
-                </td>
-            </tr>
-            <tr valign="top">
-                <th scope="row"><?php _e('قالب پیامک خودکار', 'puzzlingcrm'); ?></th>
-                <td>
-                    <textarea name="lead_auto_sms_template" rows="5" cols="50" class="large-text"><?php echo isset($settings['lead_auto_sms_template']) ? esc_textarea($settings['lead_auto_sms_template']) : ''; ?></textarea>
-                    <p class="description">
-                        <?php _e('می‌توانید از متغیرهای زیر استفاده کنید:', 'puzzlingcrm'); ?>
-                        <code>{first_name}</code>, <code>{last_name}</code>, <code>{business_name}</code>
-                    </p>
                 </td>
             </tr>
         </table>

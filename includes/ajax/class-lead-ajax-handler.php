@@ -24,7 +24,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
      * Handles adding a new lead.
      */
     public function add_lead() {
-        check_ajax_referer('puzzling_add_lead_nonce', 'security');
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if ( ! ( current_user_can( 'manage_options' ) || current_user_can( 'system_manager' ) ) ) {
             wp_send_json_error(['message' => __('شما دسترسی لازم برای انجام این کار را ندارید.', 'puzzlingcrm')]);
         }
@@ -33,6 +33,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
         $last_name = sanitize_text_field($_POST['last_name']);
         $mobile = sanitize_text_field($_POST['mobile']);
         $business_name = sanitize_text_field($_POST['business_name']);
+        $gender = sanitize_text_field($_POST['gender']);
         $notes = sanitize_textarea_field($_POST['notes']);
 
         if (empty($first_name) || empty($last_name) || empty($mobile)) {
@@ -54,6 +55,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
         update_post_meta($lead_id, '_last_name', $last_name);
         update_post_meta($lead_id, '_mobile', $mobile);
         update_post_meta($lead_id, '_business_name', $business_name);
+        update_post_meta($lead_id, '_gender', $gender);
         
         $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
         $default_status = !empty($settings['lead_default_status']) ? $settings['lead_default_status'] : null;
@@ -67,6 +69,11 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             }
         }
         
+        // Send SMS if enabled
+        if (!empty($settings['lead_auto_sms_enabled']) && $settings['lead_auto_sms_enabled'] == '1') {
+            $this->send_lead_welcome_sms($lead_id, $first_name, $last_name, $mobile, $business_name, $gender, $settings);
+        }
+        
         wp_send_json_success(['message' => __('سرنخ با موفقیت ثبت شد.', 'puzzlingcrm'), 'reload' => true]);
     }
 
@@ -74,7 +81,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
      * Handles editing an existing lead.
      */
     public function edit_lead() {
-        check_ajax_referer('puzzling_edit_lead_nonce', 'security');
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if ( ! ( current_user_can( 'manage_options' ) || current_user_can( 'system_manager' ) ) ) {
             wp_send_json_error(['message' => __('شما دسترسی لازم برای انجام این کار را ندارید.', 'puzzlingcrm')]);
         }
@@ -88,6 +95,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
         $last_name = sanitize_text_field($_POST['last_name']);
         $mobile = sanitize_text_field($_POST['mobile']);
         $business_name = sanitize_text_field($_POST['business_name']);
+        $gender = sanitize_text_field($_POST['gender']);
         $notes = sanitize_textarea_field($_POST['notes']);
 
         if (empty($first_name) || empty($last_name) || empty($mobile)) {
@@ -105,6 +113,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
         update_post_meta($lead_id, '_last_name', $last_name);
         update_post_meta($lead_id, '_mobile', $mobile);
         update_post_meta($lead_id, '_business_name', $business_name);
+        update_post_meta($lead_id, '_gender', $gender);
 
         // **CRITICAL FIX**: Added error checking for term setting.
         if (isset($_POST['lead_status'])) {
@@ -116,6 +125,10 @@ class PuzzlingCRM_Lead_Ajax_Handler {
                 }
             }
         }
+
+        // Clear any caches that might affect the display
+        wp_cache_delete($lead_id, 'post_meta');
+        clean_post_cache($lead_id);
 
         $redirect_url = admin_url('admin.php?page=puzzling-leads');
         if ( ! empty( $_POST['_wp_http_referer'] ) ) {
@@ -129,7 +142,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
      * Handles changing a lead's status from the list view.
      */
     public function change_lead_status() {
-        check_ajax_referer('puzzling_change_lead_status_nonce', 'security');
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if ( ! ( current_user_can( 'manage_options' ) || current_user_can( 'system_manager' ) ) ) {
             wp_send_json_error(['message' => __('شما دسترسی لازم برای انجام این کار را ندارید.', 'puzzlingcrm')]);
         }
@@ -146,6 +159,10 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             wp_send_json_error(['message' => __('خطایی در تغییر وضعیت رخ داد.', 'puzzlingcrm')]);
         }
 
+        // Clear any caches that might affect the display
+        wp_cache_delete($lead_id, 'post_meta');
+        clean_post_cache($lead_id);
+
         wp_send_json_success(['message' => __('وضعیت با موفقیت به‌روزرسانی شد.', 'puzzlingcrm')]);
     }
 
@@ -153,7 +170,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
      * Handles deleting a lead.
      */
     public function delete_lead() {
-        check_ajax_referer('puzzling_delete_lead_nonce', 'security');
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if ( ! ( current_user_can( 'manage_options' ) || current_user_can( 'system_manager' ) ) ) {
             wp_send_json_error(['message' => __('شما دسترسی لازم برای انجام این کار را ندارید.', 'puzzlingcrm')]);
         }
@@ -175,7 +192,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
      * AJAX handler to add a new lead status term from the settings page.
      */
     public function add_lead_status() {
-        check_ajax_referer('puzzling_add_lead_status_nonce', 'security');
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
         }
@@ -202,7 +219,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
      * AJAX handler to delete a lead status term from the settings page.
      */
     public function delete_lead_status() {
-        check_ajax_referer('puzzling_delete_lead_status_nonce', 'security');
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
         }
@@ -223,5 +240,71 @@ class PuzzlingCRM_Lead_Ajax_Handler {
         }
 
         wp_send_json_success(['message' => 'وضعیت با موفقیت حذف شد.', 'slug' => $term->slug]);
+    }
+
+    /**
+     * Sends welcome SMS to new lead based on gender and SMS service
+     */
+    private function send_lead_welcome_sms($lead_id, $first_name, $last_name, $mobile, $business_name, $gender, $settings) {
+        // Get SMS handler
+        if (!function_exists('puzzling_get_sms_handler')) {
+            require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/puzzling-functions.php';
+        }
+        
+        $sms_handler = puzzling_get_sms_handler($settings);
+        if (!$sms_handler) {
+            error_log('PuzzlingCRM: SMS handler not configured for lead welcome SMS');
+            return;
+        }
+
+        // Determine message template based on gender and service
+        $message = '';
+        $params = [];
+        
+        if ($settings['sms_service'] === 'melipayamak') {
+            // Use pattern-based SMS for Melipayamak
+            if ($gender === 'male' && !empty($settings['lead_pattern_male'])) {
+                $message = $settings['lead_pattern_male'];
+                $params = ['first_name' => $first_name, 'last_name' => $last_name, 'business_name' => $business_name];
+            } elseif ($gender === 'female' && !empty($settings['lead_pattern_female'])) {
+                $message = $settings['lead_pattern_female'];
+                $params = ['first_name' => $first_name, 'last_name' => $last_name, 'business_name' => $business_name];
+            }
+        } else {
+            // Use text-based SMS for ParsGreen
+            if ($gender === 'male' && !empty($settings['parsgreen_lead_msg_male'])) {
+                $message = $settings['parsgreen_lead_msg_male'];
+            } elseif ($gender === 'female' && !empty($settings['parsgreen_lead_msg_female'])) {
+                $message = $settings['parsgreen_lead_msg_female'];
+            }
+        }
+
+        // Fallback to general templates if gender-specific not found
+        if (empty($message)) {
+            if ($gender === 'male' && !empty($settings['lead_auto_sms_template_male'])) {
+                $message = $settings['lead_auto_sms_template_male'];
+            } elseif ($gender === 'female' && !empty($settings['lead_auto_sms_template_female'])) {
+                $message = $settings['lead_auto_sms_template_female'];
+            }
+        }
+
+        if (empty($message)) {
+            error_log('PuzzlingCRM: No SMS template found for lead gender: ' . $gender);
+            return;
+        }
+
+        // Replace placeholders in message
+        $message = str_replace('{first_name}', $first_name, $message);
+        $message = str_replace('{last_name}', $last_name, $message);
+        $message = str_replace('{business_name}', $business_name, $message);
+
+        // Send SMS
+        $result = $sms_handler->send_sms($mobile, $message, $params);
+        
+        if ($result) {
+            error_log('PuzzlingCRM: Welcome SMS sent successfully to lead ID: ' . $lead_id);
+        } else {
+            error_log('PuzzlingCRM: Failed to send welcome SMS to lead ID: ' . $lead_id);
+        }
     }
 }

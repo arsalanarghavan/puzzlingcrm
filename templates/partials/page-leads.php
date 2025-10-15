@@ -25,6 +25,7 @@ if ($action === 'edit' && $lead_id > 0) {
     $last_name = get_post_meta($lead_id, '_last_name', true);
     $mobile = get_post_meta($lead_id, '_mobile', true);
     $business_name = get_post_meta($lead_id, '_business_name', true);
+    $gender = get_post_meta($lead_id, '_gender', true);
     $notes = $lead->post_content;
     
     $return_url = remove_query_arg(['action', 'lead_id']);
@@ -39,7 +40,7 @@ if ($action === 'edit' && $lead_id > 0) {
         </div>
         <div class="pzl-card">
             <form id="pzl-edit-lead-form" class="pzl-form pzl-ajax-form">
-                <?php wp_nonce_field('puzzling_edit_lead_nonce', 'security'); ?>
+                <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
                 <input type="hidden" name="action" value="puzzling_edit_lead">
                 <input type="hidden" name="lead_id" value="<?php echo esc_attr($lead_id); ?>">
                 <input type="hidden" name="_wp_http_referer" value="<?php echo esc_attr(wp_unslash($return_url)); ?>">
@@ -62,6 +63,19 @@ if ($action === 'edit' && $lead_id > 0) {
                     <div class="form-group half-width">
                         <label for="pzl-business-name-edit">نام کسب‌وکار</label>
                         <input type="text" id="pzl-business-name-edit" name="business_name" value="<?php echo esc_attr($business_name); ?>">
+                    </div>
+                </div>
+                <div class="pzl-form-row">
+                    <div class="form-group half-width">
+                        <label for="pzl-gender-edit">جنسیت</label>
+                        <select id="pzl-gender-edit" name="gender">
+                            <option value="">انتخاب کنید</option>
+                            <option value="male" <?php selected($gender, 'male'); ?>>آقا</option>
+                            <option value="female" <?php selected($gender, 'female'); ?>>خانم</option>
+                        </select>
+                    </div>
+                    <div class="form-group half-width">
+                        <!-- Empty space for layout balance -->
                     </div>
                 </div>
                 
@@ -119,8 +133,8 @@ if (!empty($status_filter)) {
     $args['tax_query'] = [['taxonomy' => 'lead_status', 'field' => 'slug', 'terms' => $status_filter]];
 }
 $leads_query = new WP_Query($args);
-$delete_nonce = wp_create_nonce('puzzling_delete_lead_nonce');
-$change_status_nonce = wp_create_nonce('puzzling_change_lead_status_nonce');
+$delete_nonce = wp_create_nonce('puzzlingcrm-ajax-nonce');
+$change_status_nonce = wp_create_nonce('puzzlingcrm-ajax-nonce');
 $current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted', 'updated']);
 ?>
 
@@ -160,6 +174,7 @@ $current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted'
                 <tr>
                     <th>نام کامل</th>
                     <th>موبایل</th>
+                    <th>جنسیت</th>
                     <th>کسب‌وکار</th>
                     <th>وضعیت</th>
                     <th>تاریخ ثبت</th>
@@ -174,10 +189,14 @@ $current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted'
                         $status_terms = get_the_terms($lead_id, 'lead_status');
                         $status_slug = !empty($status_terms) && isset($status_terms[0]) ? $status_terms[0]->slug : '';
                         $edit_link = add_query_arg(['action' => 'edit', 'lead_id' => $lead_id], $current_page_url);
+                        $gender = get_post_meta($lead_id, '_gender', true);
+                        $gender_display = ($gender === 'male') ? 'آقا' : (($gender === 'female') ? 'خانم' : '---');
+                        
                         ?>
                         <tr data-lead-id="<?php echo esc_attr($lead_id); ?>">
                             <td><strong><?php echo esc_html(get_the_title()); ?></strong></td>
                             <td><a href="tel:<?php echo esc_attr(get_post_meta($lead_id, '_mobile', true)); ?>"><?php echo esc_html(get_post_meta($lead_id, '_mobile', true)); ?></a></td>
+                            <td><?php echo esc_html($gender_display); ?></td>
                             <td><?php echo esc_html(get_post_meta($lead_id, '_business_name', true)); ?></td>
                             <td>
                                 <?php if (!empty($lead_statuses)) : ?>
@@ -206,7 +225,7 @@ $current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted'
                     <?php endwhile; ?>
                 <?php else : ?>
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="pzl-empty-state">
                                 <i class="fas fa-search"></i>
                                 <h4>نتیجه‌ای یافت نشد</h4>
@@ -243,7 +262,7 @@ $current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted'
             <h3 class="pzl-modal-title">افزودن سرنخ جدید</h3>
         </div>
         <form id="pzl-add-lead-form" class="pzl-form pzl-modal-body pzl-ajax-form">
-            <?php wp_nonce_field('puzzling_add_lead_nonce', 'security'); ?>
+            <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
             <input type="hidden" name="action" value="puzzling_add_lead">
             <div class="pzl-form-row">
                 <div class="form-group half-width">
@@ -263,6 +282,19 @@ $current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted'
                 <div class="form-group half-width">
                     <label for="pzl-business-name">نام کسب‌وکار</label>
                     <input type="text" id="pzl-business-name" name="business_name">
+                </div>
+            </div>
+            <div class="pzl-form-row">
+                <div class="form-group half-width">
+                    <label for="pzl-gender">جنسیت</label>
+                    <select id="pzl-gender" name="gender">
+                        <option value="">انتخاب کنید</option>
+                        <option value="male">آقا</option>
+                        <option value="female">خانم</option>
+                    </select>
+                </div>
+                <div class="form-group half-width">
+                    <!-- Empty space for layout balance -->
                 </div>
             </div>
             <div class="form-group">
