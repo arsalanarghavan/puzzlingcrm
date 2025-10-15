@@ -67,6 +67,18 @@ class PuzzlingCRM_SMS_Ajax_Handler {
         // Log the start of settings save operation
         error_log('PuzzlingCRM: Starting SMS settings save operation');
         
+        // Test logging
+        if (class_exists('PuzzlingCRM_Logger')) {
+            PuzzlingCRM_Logger::add('تست لاگ پیامک', [
+                'content' => 'تست لاگ‌گذاری برای تنظیمات پیامک',
+                'type' => 'log',
+                'details' => [
+                    'user_id' => get_current_user_id(),
+                    'timestamp' => current_time('mysql')
+                ]
+            ]);
+        }
+        
         try {
             // Check nonce
             if (!check_ajax_referer('puzzlingcrm-ajax-nonce', 'security')) {

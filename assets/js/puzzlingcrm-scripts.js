@@ -110,8 +110,12 @@ jQuery(document).ready(function($) {
                 submitButton.html('<i class="fas fa-spinner fa-spin"></i> در حال پردازش...').prop('disabled', true);
             },
             success: function(response) {
+                console.log('PuzzlingCRM: AJAX Success Response:', response);
+                
                 if (response.success) {
                     const data = response.data;
+                    console.log('PuzzlingCRM: Success data:', data);
+                    
                     if (action === 'puzzling_add_lead' && typeof window.closeLeadModal === 'function') {
                         window.closeLeadModal();
                     }
@@ -120,6 +124,7 @@ jQuery(document).ready(function($) {
                     }, 250);
                 } else {
                     let errorMessage = (response && response.data && response.data.message) ? response.data.message : (puzzlingcrm_ajax_obj.lang.server_error || 'خطای سرور');
+                    console.log('PuzzlingCRM: Server error message:', errorMessage);
                     showPuzzlingAlert(puzzlingcrm_ajax_obj.lang.error_title || 'خطا', errorMessage, 'error');
                     submitButton.html(originalButtonHtml).prop('disabled', false);
                 }
