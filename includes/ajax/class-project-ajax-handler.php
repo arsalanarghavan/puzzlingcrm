@@ -223,11 +223,24 @@ class PuzzlingCRM_Project_Ajax_Handler {
 
         $installments = [];
         if (isset($_POST['payment_amount']) && is_array($_POST['payment_amount'])) {
+            // Debug: Log the received data
+            error_log('PuzzlingCRM Debug - Payment data received:');
+            error_log('payment_amount: ' . print_r($_POST['payment_amount'], true));
+            error_log('payment_due_date: ' . print_r($_POST['payment_due_date'], true));
+            error_log('payment_status: ' . print_r($_POST['payment_status'], true));
+            
             for ($i = 0; $i < count($_POST['payment_amount']); $i++) {
                 if (!empty($_POST['payment_amount'][$i]) && isset($_POST['payment_due_date'][$i], $_POST['payment_status'][$i])) {
                     $jalali_date = sanitize_text_field($_POST['payment_due_date'][$i]);
                     $due_date_gregorian = puzzling_jalali_to_gregorian($jalali_date);
-                    if (empty($due_date_gregorian) || strtotime($due_date_gregorian) === false) continue;
+                    
+                    error_log("PuzzlingCRM Debug - Installment $i: jalali_date=$jalali_date, gregorian=$due_date_gregorian");
+                    
+                    if (empty($due_date_gregorian) || strtotime($due_date_gregorian) === false) {
+                        error_log("PuzzlingCRM Debug - Skipping installment $i due to invalid date conversion");
+                        continue;
+                    }
+                    
                     $installments[] = [
                         'amount' => preg_replace('/[^\d]/', '', sanitize_text_field($_POST['payment_amount'][$i])),
                         'due_date' => $due_date_gregorian,
@@ -236,6 +249,8 @@ class PuzzlingCRM_Project_Ajax_Handler {
                 }
             }
         }
+        
+        error_log('PuzzlingCRM Debug - Final installments: ' . print_r($installments, true));
         update_post_meta($the_contract_id, '_installments', $installments);
         
         PuzzlingCRM_Logger::add('قرارداد مدیریت شد', ['action' => $contract_id > 0 ? 'به‌روزرسانی' : 'ایجاد', 'contract_id' => $the_contract_id], 'success');

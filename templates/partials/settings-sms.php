@@ -59,7 +59,7 @@ $active_service = $settings['sms_service'] ?? 'melipayamak';
             <div class="form-group"><label for="pattern_due_today">الگوی یادآوری روز سررسید:</label><input type="text" id="pattern_due_today" name="puzzling_settings[pattern_due_today]" value="<?php echo esc_attr($settings['pattern_due_today'] ?? ''); ?>" class="ltr-input"></div>
             
             <h6>پترن‌های پیامک سرنخ (لید)</h6>
-            <p class="description">کد الگوهای مخصوص سرنخ‌ها را وارد کنید. متغیرهای مورد استفاده: <code>{first_name}</code>, <code>{last_name}</code>, <code>{business_name}</code></p>
+            <p class="description">کد الگوهای مخصوص سرنخ‌ها را وارد کنید. متغیرهای مورد استفاده: <code>{first_name}</code> (نام), <code>{last_name}</code> (نام خانوادگی), <code>{full_name}</code> (نام کامل), <code>{business_name}</code> (نام کسب‌وکار)</p>
             <div class="form-group"><label for="lead_pattern_male">پترن پیامک برای آقایان:</label><input type="text" id="lead_pattern_male" name="puzzling_settings[lead_pattern_male]" value="<?php echo esc_attr($settings['lead_pattern_male'] ?? ''); ?>" class="ltr-input" placeholder="مثال: 54321"></div>
             <div class="form-group"><label for="lead_pattern_female">پترن پیامک برای خانم‌ها:</label><input type="text" id="lead_pattern_female" name="puzzling_settings[lead_pattern_female]" value="<?php echo esc_attr($settings['lead_pattern_female'] ?? ''); ?>" class="ltr-input" placeholder="مثال: 54322"></div>
         </div>
@@ -75,9 +75,9 @@ $active_service = $settings['sms_service'] ?? 'melipayamak';
             <div class="form-group"><label for="parsgreen_msg_due_today">متن پیامک روز سررسید:</label><textarea id="parsgreen_msg_due_today" name="puzzling_settings[parsgreen_msg_due_today]" rows="3"><?php echo esc_textarea($settings['parsgreen_msg_due_today'] ?? ''); ?></textarea></div>
             
             <h6>پیامک‌های سرنخ (لید)</h6>
-            <p class="description">متن کامل پیامک برای سرنخ‌ها را وارد کنید. متغیرهای مورد استفاده: <code>{first_name}</code>, <code>{last_name}</code>, <code>{business_name}</code></p>
-            <div class="form-group"><label for="parsgreen_lead_msg_male">متن پیامک برای آقایان:</label><textarea id="parsgreen_lead_msg_male" name="puzzling_settings[parsgreen_lead_msg_male]" rows="3" placeholder="مثال: آقای {first_name} عزیز، از ثبت اطلاعات شما سپاسگزاریم. به زودی با شما تماس خواهیم گرفت."><?php echo esc_textarea($settings['parsgreen_lead_msg_male'] ?? ''); ?></textarea></div>
-            <div class="form-group"><label for="parsgreen_lead_msg_female">متن پیامک برای خانم‌ها:</label><textarea id="parsgreen_lead_msg_female" name="puzzling_settings[parsgreen_lead_msg_female]" rows="3" placeholder="مثال: خانم {first_name} عزیز، از ثبت اطلاعات شما سپاسگزاریم. به زودی با شما تماس خواهیم گرفت."><?php echo esc_textarea($settings['parsgreen_lead_msg_female'] ?? ''); ?></textarea></div>
+            <p class="description">متن کامل پیامک برای سرنخ‌ها را وارد کنید. متغیرهای مورد استفاده: <code>{first_name}</code> (نام), <code>{last_name}</code> (نام خانوادگی), <code>{full_name}</code> (نام کامل), <code>{business_name}</code> (نام کسب‌وکار)</p>
+            <div class="form-group"><label for="parsgreen_lead_msg_male">متن پیامک برای آقایان:</label><textarea id="parsgreen_lead_msg_male" name="puzzling_settings[parsgreen_lead_msg_male]" rows="3" placeholder="مثال: آقای {full_name} عزیز، از ثبت اطلاعات شما سپاسگزاریم. به زودی با شما تماس خواهیم گرفت."><?php echo esc_textarea($settings['parsgreen_lead_msg_male'] ?? ''); ?></textarea></div>
+            <div class="form-group"><label for="parsgreen_lead_msg_female">متن پیامک برای خانم‌ها:</label><textarea id="parsgreen_lead_msg_female" name="puzzling_settings[parsgreen_lead_msg_female]" rows="3" placeholder="مثال: خانم {full_name} عزیز، از ثبت اطلاعات شما سپاسگزاریم. به زودی با شما تماس خواهیم گرفت."><?php echo esc_textarea($settings['parsgreen_lead_msg_female'] ?? ''); ?></textarea></div>
         </div>
         
         <div class="form-submit">

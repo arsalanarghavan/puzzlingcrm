@@ -135,7 +135,37 @@ if (!empty($status_filter)) {
 $leads_query = new WP_Query($args);
 $delete_nonce = wp_create_nonce('puzzlingcrm-ajax-nonce');
 $change_status_nonce = wp_create_nonce('puzzlingcrm-ajax-nonce');
-$current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted', 'updated']);
+// Build clean URL - use current page URL for frontend, admin URL for backend
+if (is_admin()) {
+    $current_page_url = admin_url('admin.php?page=puzzling-leads');
+} else {
+    // For frontend shortcode, use current page URL without query parameters
+    $current_page_url = get_permalink();
+    
+    // If permalink is not available, use current URL and remove query parameters
+    if (!$current_page_url) {
+        $current_url = home_url($_SERVER['REQUEST_URI']);
+        $parsed_url = parse_url($current_url);
+        $current_page_url = $parsed_url['scheme'] . '://' . $parsed_url['host'] . $parsed_url['path'];
+    }
+}
+
+// Preserve only our specific parameters
+$allowed_params = [];
+if (!empty($search_query)) {
+    $allowed_params['s'] = $search_query;
+}
+if (!empty($status_filter)) {
+    $allowed_params['status_filter'] = $status_filter;
+}
+
+// Add only allowed parameters
+if (!empty($allowed_params)) {
+    $current_page_url = add_query_arg($allowed_params, $current_page_url);
+}
+
+// Clean URL from unwanted parameters
+$current_page_url = remove_query_arg(['endp', 'inf_menu_16', '_wpnonce', 'deleted', 'updated'], $current_page_url);
 ?>
 
 <div class="puzzling-dashboard-wrapper">
@@ -240,14 +270,27 @@ $current_page_url = remove_query_arg(['action', 'lead_id', '_wpnonce', 'deleted'
         <?php if ($leads_query->max_num_pages > 1) : ?>
         <div class="pzl-pagination">
             <?php
-            echo paginate_links([
-                'base' => add_query_arg('paged', '%#%', $current_page_url),
-                'format' => '?paged=%#%',
+            // Create pagination base URL
+            $pagination_base = $current_page_url;
+            if (strpos($pagination_base, '?') !== false) {
+                $pagination_base .= '&paged=%#%';
+            } else {
+                $pagination_base .= '?paged=%#%';
+            }
+            
+            $pagination_args = [
+                'base' => $pagination_base,
+                'format' => '',
                 'current' => $paged,
                 'total' => $leads_query->max_num_pages,
-                'prev_text' => ' قبلی',
-                'next_text' => 'بعدی ',
-            ]);
+                'prev_text' => '&laquo; قبلی',
+                'next_text' => 'بعدی &raquo;',
+                'type' => 'list',
+                'end_size' => 2,
+                'mid_size' => 1,
+                'add_args' => false, // Don't add current query args
+            ];
+            echo paginate_links($pagination_args);
             ?>
         </div>
         <?php endif; ?>
@@ -392,4 +435,164 @@ select.pzl-lead-status-changer {
     border: 1px solid #ddd;
     transition: background-color 0.3s ease;
 }
+
+/* Pagination Styles */
+.pzl-pagination {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.pzl-pagination .page-numbers {
+    display: inline-block;
+    padding: 8px 12px;
+    margin: 0 2px;
+    text-decoration: none;
+    color: #0073aa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.pzl-pagination .page-numbers:hover {
+    background-color: #0073aa;
+    color: white;
+    border-color: #0073aa;
+}
+
+.pzl-pagination .page-numbers.current {
+    background-color: #0073aa;
+    color: white;
+    border-color: #0073aa;
+}
+
+.pzl-pagination .page-numbers.dots {
+    border: none;
+    color: #666;
+}
+
+.pzl-pagination .page-numbers.dots:hover {
+    background-color: transparent;
+    color: #666;
+}
 </style>
+
+<script>
+// Lead Management JavaScript
+jQuery(document).ready(function($) {
+    const puzzlingcrm_ajax_obj = window.puzzlingcrm_ajax_obj || {
+        ajax_url: '',
+        nonce: '',
+        lang: {}
+    };
+
+    // --- Delete Lead Handler ---
+    $(document).on('click', '.pzl-delete-lead-btn', function(e) {
+        e.preventDefault();
+        console.log('PuzzlingCRM: Delete lead button clicked');
+        
+        const button = $(this);
+        const leadRow = button.closest('tr');
+        const leadId = leadRow.data('lead-id');
+        const nonce = button.data('nonce');
+
+        console.log('PuzzlingCRM: Lead ID:', leadId, 'Nonce:', nonce);
+
+        const performDelete = () => {
+            console.log('PuzzlingCRM: Performing delete for lead ID:', leadId);
+            leadRow.css('opacity', '0.5');
+            
+            $.ajax({
+                url: puzzlingcrm_ajax_obj.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'puzzling_delete_lead',
+                    security: nonce,
+                    lead_id: leadId
+                },
+                success: function(response) {
+                    console.log('PuzzlingCRM: Delete response:', response);
+                    
+                    if (response.success) {
+                        // Using the global alert function if it exists
+                        if (typeof showPuzzlingAlert === 'function') {
+                            showPuzzlingAlert('موفق', response.data.message, 'success', response.data);
+                        } else {
+                            alert(response.data.message);
+                            window.location.reload();
+                        }
+                    } else {
+                        console.log('PuzzlingCRM: Delete failed:', response.data.message);
+                        if (typeof showPuzzlingAlert === 'function') {
+                            showPuzzlingAlert('خطا', response.data.message, 'error');
+                        } else {
+                            alert(response.data.message);
+                        }
+                        leadRow.css('opacity', '1');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('PuzzlingCRM: Delete error:', {
+                        status: status,
+                        error: error,
+                        responseText: xhr.responseText,
+                        statusCode: xhr.status
+                    });
+                    
+                    let errorMessage = 'یک خطای ناشناخته در ارتباط با سرور رخ داد.';
+                    
+                    // Try to parse error response
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.data && response.data.message) {
+                            errorMessage = response.data.message;
+                        } else if (response.message) {
+                            errorMessage = response.message;
+                        }
+                    } catch (e) {
+                        // If JSON parsing fails, use status-based messages
+                        if (xhr.status === 0) {
+                            errorMessage = 'خطا در اتصال به سرور. لطفاً اتصال اینترنت خود را بررسی کنید.';
+                        } else if (xhr.status === 403) {
+                            errorMessage = 'دسترسی غیرمجاز. لطفاً صفحه را رفرش کنید.';
+                        } else if (xhr.status === 404) {
+                            errorMessage = 'صفحه مورد نظر یافت نشد. لطفاً صفحه را رفرش کنید.';
+                        } else if (xhr.status === 500) {
+                            errorMessage = 'خطای داخلی سرور. لطفاً دوباره تلاش کنید.';
+                        } else {
+                            errorMessage = `خطای سرور (کد: ${xhr.status}). لطفاً دوباره تلاش کنید.`;
+                        }
+                    }
+                    
+                    if (typeof showPuzzlingAlert === 'function') {
+                        showPuzzlingAlert('خطا', errorMessage, 'error');
+                    } else {
+                        alert(errorMessage);
+                    }
+                    leadRow.css('opacity', '1');
+                }
+            });
+        };
+
+        if (typeof Swal === 'undefined') {
+            if (confirm('آیا از حذف این سرنخ مطمئن هستید؟')) {
+                performDelete();
+            }
+        } else {
+            Swal.fire({
+                title: 'آیا از حذف این سرنخ مطمئن هستید؟',
+                text: "این عمل غیرقابل بازگشت است!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'بله، حذف کن!',
+                cancelButtonText: 'انصراف'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performDelete();
+                }
+            });
+        }
+    });
+});
+</script>

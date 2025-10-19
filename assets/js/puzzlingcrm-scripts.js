@@ -82,6 +82,12 @@ jQuery(document).ready(function($) {
         console.log('PuzzlingCRM: Form action:', action);
         console.log('PuzzlingCRM: Form data:', Object.fromEntries(formData));
         
+        // Debug: Check payment data specifically
+        var paymentAmounts = form.find('input[name="payment_amount[]"]').map(function() { return $(this).val(); }).get();
+        var paymentDates = form.find('input[name="payment_due_date[]"]').map(function() { return $(this).val(); }).get();
+        var paymentStatuses = form.find('select[name="payment_status[]"]').map(function() { return $(this).val(); }).get();
+        console.log('PuzzlingCRM: Payment data - Amounts:', paymentAmounts, 'Dates:', paymentDates, 'Statuses:', paymentStatuses);
+        
         formData.set('action', action);
 
         form.find('.item-price, .item-discount, #total_amount').each(function() {
@@ -305,7 +311,8 @@ jQuery(document).ready(function($) {
                 $.post(puzzlingcrm_ajax_obj.ajax_url, {
                     action: 'puzzling_delete_contract',
                     contract_id: contractId,
-                    security: nonce,
+                    security: puzzlingcrm_ajax_obj.nonce,
+                    nonce: nonce,
                 }).done(function(response) {
                     if (response.success) {
                         showPuzzlingAlert('موفقیت', response.data.message, 'success');
@@ -376,10 +383,18 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        if (typeof persianDate === 'undefined') {
-            showPuzzlingAlert('خطا', 'کتابخانه تقویم بارگذاری نشده است.', 'error');
-            return;
-        }
+        // Try to use Persian date library, fallback to simple calculation
+        let DateConstructor = persianDate || PersianDate || window.persianDate || window.PersianDate || window.persianDatepicker;
+        
+        // Always use fallback for now to ensure it works
+        performCalculationWithFallback();
+    });
+
+    function performCalculation() {
+        var totalAmount = unformatNumber($('#total_amount').val());
+        var totalInstallments = parseInt($('#total_installments').val(), 10);
+        var intervalDays = parseInt($('#installment_interval').val(), 10);
+        var startDateStr = $('#start_date').val();
 
         let installmentAmount = Math.floor(totalAmount / totalInstallments);
         let remainder = totalAmount - (installmentAmount * totalInstallments);
@@ -387,7 +402,33 @@ jQuery(document).ready(function($) {
         $('#payment-rows-container').empty();
 
         let dateParts = startDateStr.split('/').map(Number);
-        let currentDate = new persianDate(dateParts);
+        let DateConstructor = persianDate || PersianDate || window.persianDate || window.PersianDate;
+        
+        // Create Persian date object with proper constructor
+        let currentDate;
+        try {
+            // Try different constructor patterns
+            if (typeof DateConstructor === 'function') {
+                try {
+                    // Try array constructor first
+                    currentDate = new DateConstructor(dateParts);
+                } catch (e1) {
+                    try {
+                        // Try individual parameters constructor
+                        currentDate = new DateConstructor(dateParts[0], dateParts[1] - 1, dateParts[2]);
+                    } catch (e2) {
+                        // Try with month not adjusted
+                        currentDate = new DateConstructor(dateParts[0], dateParts[1], dateParts[2]);
+                    }
+                }
+            } else {
+                throw new Error('DateConstructor is not a function');
+            }
+        } catch (e) {
+            console.error('Error creating Persian date:', e);
+            performCalculationWithFallback();
+            return;
+        }
 
         for (let i = 0; i < totalInstallments; i++) {
             let currentInstallmentAmount = installmentAmount;
@@ -400,7 +441,97 @@ jQuery(document).ready(function($) {
             let formattedDate = installmentDate.format('YYYY/MM/DD');
             addInstallmentRow(formatNumber(currentInstallmentAmount), formattedDate, 'pending');
         }
-    });
+    }
+
+    function performCalculationWithFallback() {
+        var totalAmount = unformatNumber($('#total_amount').val());
+        var totalInstallments = parseInt($('#total_installments').val(), 10);
+        var intervalDays = parseInt($('#installment_interval').val(), 10);
+        var startDateStr = $('#start_date').val();
+
+        let installmentAmount = Math.floor(totalAmount / totalInstallments);
+        let remainder = totalAmount - (installmentAmount * totalInstallments);
+
+        $('#payment-rows-container').empty();
+        $('#installments-preview-container').hide();
+
+        // Use the original Persian date and just add days
+        let startDate = startDateStr || '1404/01/01';
+        let parts = startDate.split('/');
+        
+        // Clean the parts and ensure they are valid numbers
+        let year = parseInt(parts[0].replace(/[^\d]/g, '')) || 1404;
+        let month = parseInt(parts[1].replace(/[^\d]/g, '')) || 1;
+        let day = parseInt(parts[2].replace(/[^\d]/g, '')) || 1;
+        
+        // Ensure valid ranges
+        if (year < 1300) year = 1404;
+        if (month < 1 || month > 12) month = 1;
+        if (day < 1 || day > 31) day = 1;
+        
+
+        for (let i = 0; i < totalInstallments; i++) {
+            let currentInstallmentAmount = installmentAmount;
+            if (i === 0) {
+                currentInstallmentAmount += remainder;
+            }
+
+            // Calculate the installment date by adding days
+            let installmentYear = year;
+            let installmentMonth = month;
+            let installmentDay = day + (i * intervalDays);
+
+            // Better month/day overflow handling for Persian calendar
+            const persianMonthDays = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29]; // Persian months
+            
+            // Add days to the current date
+            let totalDaysToAdd = i * intervalDays;
+            let currentDay = day;
+            let currentMonth = month;
+            let currentYear = year;
+            
+            while (totalDaysToAdd > 0) {
+                let daysInCurrentMonth = persianMonthDays[currentMonth - 1];
+                let daysCanAdd = daysInCurrentMonth - currentDay + 1;
+                
+                if (totalDaysToAdd >= daysCanAdd) {
+                    totalDaysToAdd -= daysCanAdd;
+                    currentDay = 1;
+                    currentMonth++;
+                    if (currentMonth > 12) {
+                        currentMonth = 1;
+                        currentYear++;
+                    }
+                } else {
+                    currentDay += totalDaysToAdd;
+                    totalDaysToAdd = 0;
+                }
+            }
+            
+            installmentYear = currentYear;
+            installmentMonth = currentMonth;
+            installmentDay = currentDay;
+
+            let formattedDate = installmentYear + '/' + 
+                               String(installmentMonth).padStart(2, '0') + '/' + 
+                               String(installmentDay).padStart(2, '0');
+            
+            addInstallmentRow(formatNumber(currentInstallmentAmount), formattedDate, 'pending');
+        }
+        
+        // Show the payment rows container after adding installments
+        $('#payment-rows-container').show();
+        
+        // Debug: Log the generated installments
+        console.log('Generated installments:', totalInstallments);
+        console.log('Payment rows container children:', $('#payment-rows-container').children().length);
+        
+        // Debug: Check the actual form inputs
+        var actualAmounts = $('#payment-rows-container input[name="payment_amount[]"]').map(function() { return $(this).val(); }).get();
+        var actualDates = $('#payment-rows-container input[name="payment_due_date[]"]').map(function() { return $(this).val(); }).get();
+        var actualStatuses = $('#payment-rows-container select[name="payment_status[]"]').map(function() { return $(this).val(); }).get();
+        console.log('Actual form inputs - Amounts:', actualAmounts, 'Dates:', actualDates, 'Statuses:', actualStatuses);
+    }
 
     function addInstallmentRow(amount = '', date = '', status = 'pending') {
         var newRow = `<div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">

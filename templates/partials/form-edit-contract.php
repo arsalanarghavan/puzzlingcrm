@@ -52,7 +52,7 @@ if ( ! current_user_can('manage_options') ) return;
             <p class="description">پس از وارد کردن اطلاعات بالا و کلیک بر روی دکمه محاسبه، لیست اقساط در این قسمت نمایش داده می‌شود.</p>
         </div>
         
-        <div id="payment-rows-container" style="display: none;">
+        <div id="payment-rows-container">
             </div>
 
         <hr style="margin: 20px 0;">

@@ -703,8 +703,10 @@ class PuzzlingCRM_Lead_Ajax_Handler {
 
             // Replace placeholders in message
             $original_message = $message;
+            $full_name = trim($first_name . ' ' . $last_name);
             $message = str_replace('{first_name}', $first_name, $message);
             $message = str_replace('{last_name}', $last_name, $message);
+            $message = str_replace('{full_name}', $full_name, $message);
             $message = str_replace('{business_name}', $business_name, $message);
             
             error_log("PuzzlingCRM: Final message after replacement: {$message}");

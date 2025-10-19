@@ -3,7 +3,7 @@
  * Plugin Name:       PuzzlingCRM
  * Plugin URI:        https://Puzzlingco.com/
  * Description:       A complete CRM and Project Management solution for Social Marketing agencies.
- * Version:           0.0.313
+ * Version:           0.0.318
  * Author:            Arsalan Arghavan
  * Author URI:        https://ArsalanArghavan.ir/
  * License:           GPL v2 or later
@@ -83,6 +83,15 @@ function puzzling_enqueue_assets($hook) {
     // --- CONDITIONAL SCRIPTS (Load only on specific pages) ---
     $current_page = isset($_GET['page']) ? sanitize_key($_GET['page']) : '';
 
+    // Load Persian Date library globally for all PuzzlingCRM pages
+    wp_enqueue_script(
+        'persian-date',
+        'https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js',
+        [],
+        '1.1.0',
+        true
+    );
+
     // Load Datepicker only on pages that need it (e.g., contracts, projects)
     if (in_array($current_page, ['puzzling-contracts', 'puzzling-projects'])) {
         wp_enqueue_style(
@@ -94,7 +103,7 @@ function puzzling_enqueue_assets($hook) {
         wp_enqueue_script(
             'puzzling-datepicker',
             PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzling-datepicker.js',
-            ['jquery'],
+            ['jquery', 'persian-date'],
             PUZZLINGCRM_VERSION,
             true
         );

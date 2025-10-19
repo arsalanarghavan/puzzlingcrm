@@ -107,6 +107,9 @@ class PuzzlingCRM {
         wp_enqueue_script('jquery-ui-sortable');
         wp_enqueue_script('jquery-ui-datepicker');
 
+        // Persian Date library
+        wp_enqueue_script('persian-date', 'https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js', [], '1.1.0', true);
+
         // SweetAlert
         wp_enqueue_script('sweetalert2', 'https://cdn.jsdelivr.net/npm/sweetalert2@11', [], '11', true);
 
@@ -121,7 +124,7 @@ class PuzzlingCRM {
         wp_enqueue_script( 'puzzling-datepicker-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzling-datepicker.js', ['jquery'], PUZZLINGCRM_VERSION, true );
 
         // Main scripts file
-        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable', 'sweetalert2', 'fullcalendar', 'dhtmlx-gantt', 'puzzling-datepicker-scripts'], PUZZLINGCRM_VERSION, true );
+        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'jquery-ui-sortable', 'sweetalert2', 'fullcalendar', 'dhtmlx-gantt', 'puzzling-datepicker-scripts', 'persian-date'], PUZZLINGCRM_VERSION, true );
         
         // Separated script files
         wp_enqueue_script( 'puzzling-user-management', PUZZLINGCRM_PLUGIN_URL . 'assets/js/user-management.js', ['jquery', 'sweetalert2', 'puzzlingcrm-scripts'], PUZZLINGCRM_VERSION, true );
