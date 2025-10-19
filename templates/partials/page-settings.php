@@ -9,22 +9,25 @@ $base_url = remove_query_arg('puzzling_notice');
     <h3><i class="fas fa-cog"></i> تنظیمات</h3>
     
     <div class="pzl-dashboard-tabs">
-        <a href="<?php echo add_query_arg('tab', 'payment', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'payment' ? 'active' : ''; ?>"><i class="fas fa-credit-card"></i> درگاه پرداخت</a>
-        <a href="<?php echo add_query_arg('tab', 'sms', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'sms' ? 'active' : ''; ?>"><i class="fas fa-sms"></i> سامانه پیامک</a>
-        <a href="<?php echo add_query_arg('tab', 'workflow', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'workflow' ? 'active' : ''; ?>"><i class="fas fa-project-diagram"></i> گردش کار</a>
-        <a href="<?php echo add_query_arg('tab', 'positions', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'positions' ? 'active' : ''; ?>"><i class="fas fa-sitemap"></i> جایگاه‌های شغلی</a>
-        <a href="<?php echo add_query_arg('tab', 'task_categories', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'task_categories' ? 'active' : ''; ?>"><i class="fas fa-tags"></i> دسته‌بندی وظایف</a>
-        <a href="<?php echo add_query_arg('tab', 'automations', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'automations' ? 'active' : ''; ?>"><i class="fas fa-robot"></i> اتوماسیون</a>
-        <a href="<?php echo add_query_arg('tab', 'notifications', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'notifications' ? 'active' : ''; ?>"><i class="fas fa-bell"></i> اطلاع‌رسانی‌ها</a>
-        <a href="<?php echo add_query_arg('tab', 'forms', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'forms' ? 'active' : ''; ?>"><i class="fas fa-clipboard-list"></i> فرم‌ها</a>
-        <a href="<?php echo add_query_arg('tab', 'canned_responses', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'canned_responses' ? 'active' : ''; ?>"><i class="fas fa-comment-dots"></i> پاسخ‌های آماده</a>
-        <a href="<?php echo add_query_arg('tab', 'leads', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'leads' ? 'active' : ''; ?>"><i class="fas fa-users"></i> وضعیت‌های لید</a>
+        <a href="<?php echo add_query_arg('tab', 'style', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'style' ? 'active' : ''; ?>"><i class="ri-palette-line"></i> ظاهر و استایل</a>
+        <a href="<?php echo add_query_arg('tab', 'payment', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'payment' ? 'active' : ''; ?>"><i class="ri-bank-card-line"></i> درگاه پرداخت</a>
+        <a href="<?php echo add_query_arg('tab', 'sms', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'sms' ? 'active' : ''; ?>"><i class="ri-message-3-line"></i> سامانه پیامک</a>
+        <a href="<?php echo add_query_arg('tab', 'workflow', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'workflow' ? 'active' : ''; ?>"><i class="ri-git-branch-line"></i> گردش کار</a>
+        <a href="<?php echo add_query_arg('tab', 'positions', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'positions' ? 'active' : ''; ?>"><i class="ri-organization-chart"></i> جایگاه‌های شغلی</a>
+        <a href="<?php echo add_query_arg('tab', 'task_categories', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'task_categories' ? 'active' : ''; ?>"><i class="ri-price-tag-3-line"></i> دسته‌بندی وظایف</a>
+        <a href="<?php echo add_query_arg('tab', 'automations', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'automations' ? 'active' : ''; ?>"><i class="ri-robot-line"></i> اتوماسیون</a>
+        <a href="<?php echo add_query_arg('tab', 'notifications', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'notifications' ? 'active' : ''; ?>"><i class="ri-notification-3-line"></i> اطلاع‌رسانی‌ها</a>
+        <a href="<?php echo add_query_arg('tab', 'forms', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'forms' ? 'active' : ''; ?>"><i class="ri-file-list-3-line"></i> فرم‌ها</a>
+        <a href="<?php echo add_query_arg('tab', 'canned_responses', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'canned_responses' ? 'active' : ''; ?>"><i class="ri-chat-quote-line"></i> پاسخ‌های آماده</a>
+        <a href="<?php echo add_query_arg('tab', 'leads', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'leads' ? 'active' : ''; ?>"><i class="ri-user-add-line"></i> وضعیت‌های لید</a>
     </div>
 
     <div class="pzl-dashboard-tab-content">
         <div class="pzl-card">
         <?php
-        if ( $active_tab == 'sms' ) {
+        if ( $active_tab == 'style' ) {
+            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-style.php';
+        } elseif ( $active_tab == 'sms' ) {
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-sms.php';
         } elseif ( $active_tab == 'workflow' ) {
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-workflow.php';

@@ -19,6 +19,7 @@ class PuzzlingCRM_Task_Ajax_Handler {
 
         // --- Kanban Board & Modal Actions ---
         add_action('wp_ajax_puzzling_get_task_details', [$this, 'get_task_details']);
+        add_action('wp_ajax_puzzling_add_task_comment', [$this, 'add_task_comment_new']);
         add_action('wp_ajax_puzzling_save_task_content', [$this, 'save_task_content']);
         add_action('wp_ajax_puzzling_add_task_comment', [$this, 'add_task_comment']);
 
@@ -38,6 +39,11 @@ class PuzzlingCRM_Task_Ajax_Handler {
         // --- Other Task Actions ---
         add_action('wp_ajax_puzzling_bulk_edit_tasks', [$this, 'bulk_edit_tasks']);
         add_action('wp_ajax_puzzling_save_task_as_template', [$this, 'save_task_as_template']);
+        
+        // --- Calendar & Timeline Actions ---
+        add_action('wp_ajax_puzzling_get_tasks_calendar', [$this, 'get_tasks_calendar']);
+        add_action('wp_ajax_puzzling_get_tasks_gantt', [$this, 'get_tasks_gantt']);
+        add_action('wp_ajax_puzzling_create_task', [$this, 'add_task']); // Alias برای add_task
     }
 
     private function _log_task_activity($task_id, $activity_text) {
@@ -261,13 +267,21 @@ class PuzzlingCRM_Task_Ajax_Handler {
 
     public function update_task_status() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
-        if (!current_user_can('edit_tasks') || !isset($_POST['task_id']) || !isset($_POST['new_status_slug'])) {
-            wp_send_json_error(['message' => 'دسترسی غیرمجاز یا اطلاعات ناقص.']);
+        
+        // Allow administrators and managers
+        if (!current_user_can('edit_tasks') && !current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+        
+        // Check for both 'status' (from new drag&drop) and 'new_status_slug' (from old system)
+        $new_status_slug = isset($_POST['status']) ? sanitize_key($_POST['status']) : (isset($_POST['new_status_slug']) ? sanitize_key($_POST['new_status_slug']) : '');
+        $task_id = isset($_POST['task_id']) ? intval($_POST['task_id']) : 0;
+        
+        if (!$task_id || !$new_status_slug) {
+            wp_send_json_error(['message' => 'اطلاعات ناقص.']);
         }
 
         $rules = PuzzlingCRM_Settings_Handler::get_setting('workflow_rules', []);
-        $task_id = intval($_POST['task_id']);
-        $new_status_slug = sanitize_key($_POST['new_status_slug']);
         $user = wp_get_current_user();
 
         if (isset($rules[$new_status_slug]) && !empty($rules[$new_status_slug])) {
@@ -618,5 +632,113 @@ class PuzzlingCRM_Task_Ajax_Handler {
         $this->_log_task_activity($task_id, $log_message);
         
         wp_send_json_success(['message' => 'مسئول وظیفه با موفقیت به‌روزرسانی شد.']);
+    }
+    
+    /**
+     * Get tasks for calendar view
+     */
+    public function get_tasks_calendar() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        
+        $start = isset($_POST['start']) ? sanitize_text_field($_POST['start']) : '';
+        $end = isset($_POST['end']) ? sanitize_text_field($_POST['end']) : '';
+        
+        $args = [
+            'post_type' => 'task',
+            'posts_per_page' => -1,
+            'meta_query' => []
+        ];
+        
+        if ($start && $end) {
+            $args['meta_query'][] = [
+                'key' => '_due_date',
+                'value' => [$start, $end],
+                'compare' => 'BETWEEN',
+                'type' => 'DATE'
+            ];
+        }
+        
+        $tasks = get_posts($args);
+        $events = [];
+        
+        foreach ($tasks as $task) {
+            $due_date = get_post_meta($task->ID, '_due_date', true);
+            if ($due_date) {
+                $status_terms = get_the_terms($task->ID, 'task_status');
+                $color = '#845adf';
+                
+                if ($status_terms && !is_wp_error($status_terms)) {
+                    $slug = $status_terms[0]->slug;
+                    if ($slug === 'done') $color = '#28a745';
+                    elseif ($slug === 'in-progress') $color = '#4ebedb';
+                    elseif ($slug === 'review') $color = '#ffc107';
+                }
+                
+                $events[] = [
+                    'id' => $task->ID,
+                    'title' => $task->post_title,
+                    'start' => $due_date,
+                    'color' => $color,
+                    'allDay' => true
+                ];
+            }
+        }
+        
+        wp_send_json_success(['events' => $events]);
+    }
+    
+    /**
+     * Get tasks for Gantt timeline
+     */
+    public function get_tasks_gantt() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        
+        $tasks = get_posts([
+            'post_type' => 'task',
+            'posts_per_page' => -1,
+            'orderby' => 'date',
+            'order' => 'ASC'
+        ]);
+        
+        $gantt_tasks = [];
+        
+        foreach ($tasks as $task) {
+            $start_date = get_post_meta($task->ID, '_start_date', true);
+            $due_date = get_post_meta($task->ID, '_due_date', true);
+            
+            if (!$start_date) $start_date = $task->post_date;
+            if (!$due_date) $due_date = date('Y-m-d', strtotime($start_date . ' +7 days'));
+            
+            $status_terms = get_the_terms($task->ID, 'task_status');
+            $progress = 0;
+            
+            if ($status_terms && !is_wp_error($status_terms)) {
+                $slug = $status_terms[0]->slug;
+                if ($slug === 'done') $progress = 1;
+                elseif ($slug === 'in-progress') $progress = 0.5;
+                elseif ($slug === 'review') $progress = 0.8;
+            }
+            
+            $gantt_tasks[] = [
+                'id' => $task->ID,
+                'text' => $task->post_title,
+                'start_date' => date('d-m-Y', strtotime($start_date)),
+                'duration' => $this->calculate_duration($start_date, $due_date),
+                'progress' => $progress,
+                'open' => true
+            ];
+        }
+        
+        wp_send_json_success(['tasks' => $gantt_tasks]);
+    }
+    
+    /**
+     * Calculate duration between two dates
+     */
+    private function calculate_duration($start, $end) {
+        $start_ts = strtotime($start);
+        $end_ts = strtotime($end);
+        $diff = $end_ts - $start_ts;
+        return max(1, round($diff / (60 * 60 * 24)));
     }
 }

@@ -1,242 +1,399 @@
 <?php
 /**
- * Template for the Task Details Modal Content - V2.4 (Editable Assignee)
- * Loaded via AJAX. Includes new Agile fields and actions.
+ * Task Details Modal Template (Xintra Style)
  * @package PuzzlingCRM
  */
+
 if (!defined('ABSPATH')) exit;
 
-global $post;
-if (isset($task)) {
-    $post = $task;
-    setup_postdata($post);
+$task_id = isset($task_id) ? $task_id : get_the_ID();
+$task = get_post($task_id);
+
+if (!$task) {
+    echo '<div class="alert alert-danger">وظیفه یافت نشد</div>';
+    return;
 }
 
-// --- Task Data ---
+// Get task metadata
 $project_id = get_post_meta($task_id, '_project_id', true);
-$project_title = $project_id ? get_the_title($project_id) : '---';
-$assigned_user_id = get_post_meta($task_id, '_assigned_to', true);
-$assignee = get_userdata($assigned_user_id);
+$assigned_to = get_post_meta($task_id, '_assigned_to', true);
 $due_date = get_post_meta($task_id, '_due_date', true);
-$time_estimate = get_post_meta($task_id, '_time_estimate', true);
+$start_date = get_post_meta($task_id, '_start_date', true);
 $story_points = get_post_meta($task_id, '_story_points', true);
-$checklist = get_post_meta($task_id, '_task_checklist', true) ?: [];
-$attachments = get_post_meta($task_id, '_task_attachments', true) ?: [];
-$time_logs = get_post_meta($task_id, '_task_time_logs', true) ?: [];
-$total_logged = array_sum(wp_list_pluck($time_logs, 'hours'));
-$activity_log = get_post_meta($task_id, '_task_activity_log', true) ?: [];
-$current_status_terms = wp_get_post_terms($task_id, 'task_status');
-$current_status_slug = !empty($current_status_terms) ? $current_status_terms[0]->slug : '';
-$all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order']);
-$all_staff = get_users(['role__in' => ['system_manager', 'finance_manager', 'team_member', 'administrator'], 'orderby' => 'display_name']);
+
+// Get taxonomies
+$status_terms = get_the_terms($task_id, 'task_status');
+$priority_terms = get_the_terms($task_id, 'task_priority');
+$label_terms = get_the_terms($task_id, 'task_label');
+
+$status_name = $status_terms && !is_wp_error($status_terms) ? $status_terms[0]->name : 'نامشخص';
+$status_slug = $status_terms && !is_wp_error($status_terms) ? $status_terms[0]->slug : '';
+$priority_name = $priority_terms && !is_wp_error($priority_terms) ? $priority_terms[0]->name : 'متوسط';
+
+// Get comments
+$comments = get_comments(['post_id' => $task_id, 'status' => 'approve', 'order' => 'ASC']);
+
+// Get checklist
+$checklist = get_post_meta($task_id, '_task_checklist', true);
+if (!is_array($checklist)) $checklist = [];
+
+// Get activity log
+$activity_log = get_post_meta($task_id, '_task_activity_log', true);
+if (!is_array($activity_log)) $activity_log = [];
+
+// Get linked tasks
+$linked_tasks = get_post_meta($task_id, '_linked_tasks', true);
+if (!is_array($linked_tasks)) $linked_tasks = [];
 ?>
-<div id="pzl-task-modal-body">
-    <div class="pzl-modal-main-content">
-        <div class="pzl-modal-tabs">
-            <a href="#" class="pzl-modal-tab-link active" data-tab="tab-details"><i class="fas fa-info-circle"></i> جزئیات</a>
-            <a href="#" class="pzl-modal-tab-link" data-tab="tab-links"><i class="fas fa-link"></i> وظایف پیوند شده</a>
-            <a href="#" class="pzl-modal-tab-link" data-tab="tab-checklist"><i class="fas fa-check-square"></i> چک‌لیست</a>
-            <a href="#" class="pzl-modal-tab-link" data-tab="tab-time"><i class="fas fa-clock"></i> زمان</a>
-            <a href="#" class="pzl-modal-tab-link" data-tab="tab-attachments"><i class="fas fa-paperclip"></i> پیوست‌ها</a>
-            <a href="#" class="pzl-modal-tab-link" data-tab="tab-activity"><i class="fas fa-history"></i> تاریخچه</a>
-        </div>
 
-        <div id="tab-details" class="pzl-modal-tab-content">
-            <h4><i class="fas fa-align-left"></i> توضیحات</h4>
-            <div id="pzl-task-description-viewer">
-                <?php echo $task->post_content ? wpautop(wp_kses_post($task->post_content)) : '<p class="pzl-no-content">توضیحاتی برای این وظیفه ثبت نشده است. برای افزودن کلیک کنید.</p>'; ?>
-            </div>
-            <div id="pzl-task-description-editor" style="display: none;">
-                <textarea id="pzl-task-content-input" class="pzl-textarea" rows="6"><?php echo esc_textarea($task->post_content); ?></textarea>
-                <button id="pzl-save-task-content" class="pzl-button">ذخیره</button>
-                <button type="button" id="pzl-cancel-edit-content" class="pzl-button-secondary">انصراف</button>
-            </div>
-            <hr>
-            <h4><i class="fas fa-comments"></i> فعالیت و نظرات</h4>
-            <div class="pzl-task-comments">
-                <ul class="pzl-comment-list">
-                    <?php
-                    $comments = get_comments(['post_id' => $task_id, 'status' => 'approve', 'order' => 'ASC']);
-                    if ($comments) {
-                        foreach($comments as $comment) {
-                            echo '<li class="pzl-comment-item"><div class="pzl-comment-avatar">' . get_avatar($comment->user_id, 32) . '</div><div class="pzl-comment-content"><p><strong>' . esc_html($comment->comment_author) . '</strong>: ' . wp_kses_post(wpautop($comment->comment_content)) . '</p><span class="pzl-comment-date">' . human_time_diff(strtotime($comment->comment_date), current_time('timestamp')) . ' پیش</span></div></li>';
-                        }
-                    } else { echo '<p>هنوز نظری ثبت نشده است.</p>'; }
-                    ?>
-                </ul>
-            </div>
-            <div class="pzl-add-comment-form">
-                <textarea id="pzl-new-comment-text" placeholder="نظر خود را بنویسید... (@ برای منشن کردن)" rows="3"></textarea>
-                <button id="pzl-submit-comment" class="pzl-button">ارسال نظر</button>
-            </div>
-        </div>
+<div class="modal-header">
+    <h6 class="modal-title"><?php echo esc_html($task->post_title); ?></h6>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
 
-        <div id="tab-links" class="pzl-modal-tab-content" style="display:none;">
-            <h4><i class="fas fa-link"></i> وظایف پیوند شده</h4>
-            <div id="task-links-container">
-                <?php 
-                $linked_tasks = get_post_meta($task_id, '_task_links', true) ?: [];
-                if (empty($linked_tasks)) {
-                    echo '<p>هیچ وظیفه پیوند شده‌ای وجود ندارد.</p>';
-                } else {
-                    echo '<ul class="pzl-linked-task-list">';
-                    foreach ($linked_tasks as $link) {
-                        $linked_post = get_post($link['task_id']);
-                        if ($linked_post) {
-                            echo '<li>';
-                            echo '<strong>' . esc_html($link['type']) . '</strong> ';
-                            echo '<a href="#" class="open-task-modal" data-task-id="'.esc_attr($link['task_id']).'">#' . esc_html($link['task_id']) . ': ' . esc_html($linked_post->post_title) . '</a>';
-                            echo '</li>';
-                        }
-                    }
-                    echo '</ul>';
-                }
-                ?>
-            </div>
-            <hr>
-            <h5>افزودن پیوند جدید</h5>
-            <div class="pzl-form-row">
-                <div class="form-group">
-                    <label>نوع پیوند</label>
-                    <select id="new-link-type">
-                        <option value="relates_to">مرتبط است با</option>
-                        <option value="blocks">جلوی انجام این را گرفته</option>
-                        <option value="is_blocked_by">انجامش توسط این مسدود شده</option>
-                    </select>
+<div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-3" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#task-details">
+                        <i class="ri-file-list-line me-1"></i>جزئیات وظایف
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#task-linked">
+                        <i class="ri-links-line me-1"></i>پیوند شده
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#task-checklist">
+                        <i class="ri-checkbox-line me-1"></i>چک‌لیست
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#task-time">
+                        <i class="ri-time-line me-1"></i>زمان
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#task-attachments">
+                        <i class="ri-attachment-2 me-1"></i>پیوست‌ها
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#task-history">
+                        <i class="ri-history-line me-1"></i>تاریخچه
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- Details Tab -->
+                <div class="tab-pane fade show active" id="task-details">
+                    <div class="card custom-card mb-3">
+                        <div class="card-header">
+                            <div class="card-title">توضیحات</div>
+                        </div>
+                        <div class="card-body">
+                            <?php if ($task->post_content): ?>
+                                <div class="task-description"><?php echo wp_kses_post($task->post_content); ?></div>
+                            <?php else: ?>
+                                <p class="text-muted">
+                                    <i class="ri-information-line me-2"></i>
+                                    توضیحاتی برای این وظیفه ثبت نشده است. برای افزودن کلیک کنید.
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <!-- Comments -->
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <div class="card-title">فعالیت و نظرات</div>
+                        </div>
+                        <div class="card-body">
+                            <?php if (!empty($comments)): ?>
+                                <?php foreach ($comments as $comment): ?>
+                                <div class="d-flex mb-3">
+                                    <div class="me-3">
+                                        <?php echo get_avatar($comment->user_id, 40, '', '', ['class' => 'rounded-circle']); ?>
+                                    </div>
+                                    <div class="flex-fill">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <strong><?php echo esc_html($comment->comment_author); ?></strong>
+                                            <small class="text-muted"><?php echo human_time_diff(strtotime($comment->comment_date), current_time('timestamp')) . ' پیش'; ?></small>
+                                        </div>
+                                        <p class="mb-0"><?php echo wp_kses_post($comment->comment_content); ?></p>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="text-muted mb-3">
+                                    <i class="ri-chat-3-line me-2"></i>
+                                    هنوز نظری ثبت نشده است.
+                                </p>
+                            <?php endif; ?>
+                            
+                            <!-- Add Comment Form -->
+                            <div class="mt-3">
+                                <textarea class="form-control" id="new-comment-<?php echo $task_id; ?>" rows="3" placeholder="نظر خود را بنویسید... (@ برای منشن کردن)"></textarea>
+                                <button class="btn btn-primary btn-sm mt-2 btn-add-comment" data-task-id="<?php echo $task_id; ?>">
+                                    <i class="ri-send-plane-line me-1"></i>ارسال نظر
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group" style="flex: 2;">
-                    <label>جستجوی وظیفه</label>
-                    <select id="task-search-for-linking" style="width: 100%;"></select>
+
+                <!-- Linked Tasks Tab -->
+                <div class="tab-pane fade" id="task-linked">
+                    <div class="card custom-card">
+                        <div class="card-body">
+                            <?php if (!empty($linked_tasks)): ?>
+                                <div class="list-group">
+                                    <?php foreach ($linked_tasks as $linked_id): 
+                                        $linked_task = get_post($linked_id);
+                                        if ($linked_task):
+                                    ?>
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span><i class="ri-link me-2"></i><?php echo esc_html($linked_task->post_title); ?></span>
+                                            <button class="btn btn-sm btn-icon btn-danger-light">
+                                                <i class="ri-close-line"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <?php 
+                                        endif;
+                                    endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <p class="text-muted text-center py-3">
+                                    <i class="ri-link-unlink-m fs-3 d-block mb-2 opacity-3"></i>
+                                    هیچ وظیفه پیوند شده‌ای وجود ندارد.
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Checklist Tab -->
+                <div class="tab-pane fade" id="task-checklist">
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <div class="card-title">چک‌لیست</div>
+                        </div>
+                        <div class="card-body">
+                            <?php if (!empty($checklist)): ?>
+                                <div class="checklist-items">
+                                    <?php foreach ($checklist as $index => $item): ?>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="check-<?php echo $index; ?>" <?php checked($item['checked'], true); ?>>
+                                        <label class="form-check-label" for="check-<?php echo $index; ?>">
+                                            <?php echo esc_html($item['text']); ?>
+                                        </label>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <p class="text-muted">
+                                    <i class="ri-checkbox-blank-line me-2"></i>
+                                    هیچ آیتمی در چک‌لیست وجود ندارد.
+                                </p>
+                            <?php endif; ?>
+                            
+                            <!-- Add Checklist Item -->
+                            <div class="input-group mt-3">
+                                <input type="text" class="form-control" id="new-checklist-item-<?php echo $task_id; ?>" placeholder="افزودن آیتم جدید...">
+                                <button class="btn btn-primary btn-add-checklist" data-task-id="<?php echo $task_id; ?>">
+                                    <i class="ri-add-line"></i>افزودن
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Tab -->
+                <div class="tab-pane fade" id="task-time">
+                    <div class="card custom-card">
+                        <div class="card-body">
+                            <p class="text-muted text-center py-3">
+                                <i class="ri-time-line fs-3 d-block mb-2 opacity-3"></i>
+                                قابلیت ثبت زمان به زودی...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attachments Tab -->
+                <div class="tab-pane fade" id="task-attachments">
+                    <div class="card custom-card">
+                        <div class="card-body">
+                            <p class="text-muted text-center py-3">
+                                <i class="ri-attachment-2 fs-3 d-block mb-2 opacity-3"></i>
+                                هیچ پیوستی وجود ندارد.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Tab -->
+                <div class="tab-pane fade" id="task-history">
+                    <div class="card custom-card">
+                        <div class="card-body">
+                            <?php if (!empty($activity_log)): ?>
+                                <div class="timeline">
+                                    <?php foreach (array_slice($activity_log, 0, 10) as $log): ?>
+                                    <div class="timeline-item mb-3">
+                                        <div class="d-flex">
+                                            <div class="me-3">
+                                                <span class="avatar avatar-sm avatar-rounded bg-primary-transparent">
+                                                    <i class="ri-user-line"></i>
+                                                </span>
+                                            </div>
+                                            <div class="flex-fill">
+                                                <p class="mb-1">
+                                                    <strong><?php echo esc_html($log['user_name'] ?? 'کاربر'); ?></strong>
+                                                    <?php echo esc_html($log['text']); ?>
+                                                </p>
+                                                <small class="text-muted">
+                                                    <i class="ri-time-line me-1"></i>
+                                                    <?php echo jdate('Y/m/d H:i', strtotime($log['time'])); ?>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <p class="text-muted text-center py-3">
+                                    <i class="ri-history-line fs-3 d-block mb-2 opacity-3"></i>
+                                    هیچ فعالیتی ثبت نشده است.
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <button id="pzl-add-task-link-btn" class="pzl-button">افزودن پیوند</button>
         </div>
 
-        <div id="tab-checklist" class="pzl-modal-tab-content" style="display:none; display: flex; flex-direction: column; height: 100%;">
-            <h4><i class="fas fa-check-square"></i> چک‌لیست</h4>
-            <div class="pzl-checklist-container">
-                <ul class="pzl-checklist">
-                    <?php if (empty($checklist)): ?>
-                        <p class="pzl-no-content" style="margin: 20px;">هیچ آیتمی در چک‌لیست وجود ندارد.</p>
-                    <?php else: ?>
-                        <?php foreach($checklist as $id => $item): ?>
-                            <li class="pzl-checklist-item" data-item-id="<?php echo esc_attr($id); ?>">
-                                <input type="checkbox" id="<?php echo esc_attr($id); ?>" <?php checked($item['checked']); ?>>
-                                <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($item['text']); ?></label>
-                                <span class="pzl-delete-checklist-item">&times;</span>
-                            </li>
-                        <?php endforeach; ?>
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card custom-card mb-3">
+                <div class="card-header">
+                    <div class="card-title"><?php echo esc_html($task->post_title); ?></div>
+                </div>
+                <div class="card-body">
+                    <?php if ($project_id): ?>
+                        <p class="mb-2">
+                            <i class="ri-folder-line me-2 text-primary"></i>
+                            در پروژه: <strong><?php echo esc_html(get_the_title($project_id)); ?></strong>
+                        </p>
                     <?php endif; ?>
-                </ul>
-            </div>
-            <form id="pzl-add-checklist-item-form" class="pzl-form pzl-form-inline">
-                <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
-                    <input type="text" placeholder="افزودن آیتم جدید..." required>
                 </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <button type="submit" class="pzl-button">افزودن</button>
-                </div>
-            </form>
-        </div>
-
-        <div id="tab-time" class="pzl-modal-tab-content" style="display:none;">
-            <h4><i class="fas fa-clock"></i> ثبت زمان</h4>
-            <div class="pzl-time-summary">
-                <span>زمان تخمینی: <strong><?php echo esc_html($time_estimate ?: '0'); ?> ساعت</strong></span>
-                <span>زمان ثبت شده: <strong><?php echo esc_html($total_logged); ?> ساعت</strong></span>
             </div>
-            <form id="pzl-log-time-form" class="pzl-form">
-                <div class="pzl-form-row">
-                    <div class="form-group"><label>ساعت</label><input type="number" name="hours" step="0.1" required></div>
-                    <div class="form-group" style="flex:2;"><label>توضیحات</label><input type="text" name="description"></div>
+
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div class="card-title">جزئیات</div>
                 </div>
-                <button type="submit" class="pzl-button">ثبت زمان</button>
-            </form>
-            <hr>
-            <h5><i class="fas fa-history"></i> لاگ‌های زمان</h5>
-            <ul class="pzl-time-log-list">
-                 <?php foreach(array_reverse((array)$time_logs) as $log): ?>
-                    <li><strong><?php echo esc_html($log['user_name']); ?></strong> <?php echo esc_html($log['hours']); ?> ساعت ثبت کرد <span class="pzl-time-log-desc">(<?php echo esc_html($log['description']); ?>)</span><span class="pzl-time-log-date"><?php echo jdate('Y/m/d', strtotime($log['date'])); ?></span></li>
-                 <?php endforeach; ?>
-            </ul>
-        </div>
-        
-        <div id="tab-attachments" class="pzl-modal-tab-content" style="display:none;">
-             <h4><i class="fas fa-paperclip"></i> فایل‌های پیوست</h4>
-             <ul class="pzl-attachment-list">
-             <?php if(!empty($attachments) && is_array($attachments)): foreach($attachments as $att_id): 
-                $file_url = wp_get_attachment_url($att_id);
-                $file_name = get_the_title($att_id);
-             ?>
-                <li><a href="<?php echo esc_url($file_url); ?>" target="_blank"><i class="fas fa-file"></i> <?php echo esc_html($file_name); ?></a></li>
-             <?php endforeach; else: ?>
-                <p>فایلی پیوست نشده است.</p>
-             <?php endif; ?>
-             </ul>
-        </div>
+                <div class="card-body">
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">وضعیت:</label>
+                        <select class="form-select form-select-sm task-status-select" data-task-id="<?php echo $task_id; ?>">
+                            <?php
+                            $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false]);
+                            foreach ($all_statuses as $status) {
+                                echo '<option value="' . esc_attr($status->slug) . '" ' . selected($status_slug, $status->slug, false) . '>' . esc_html($status->name) . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
 
-        <div id="tab-activity" class="pzl-modal-tab-content" style="display:none;">
-            <h4><i class="fas fa-history"></i> تاریخچه فعالیت</h4>
-            <ul class="pzl-activity-log">
-            <?php foreach(array_reverse((array)$activity_log) as $log): ?>
-                <li><strong><?php echo esc_html($log['user_name']); ?></strong> <?php echo esc_html($log['text']); ?> <span class="pzl-activity-time"><?php echo human_time_diff(strtotime($log['time']), current_time('timestamp')); ?> پیش</span></li>
-            <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
+                    <!-- Assignee -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">مسئول:</label>
+                        <?php if ($assigned_to): 
+                            $user = get_userdata($assigned_to);
+                        ?>
+                        <div class="d-flex align-items-center">
+                            <?php echo get_avatar($assigned_to, 32, '', '', ['class' => 'rounded-circle me-2']); ?>
+                            <span><?php echo esc_html($user->display_name); ?></span>
+                        </div>
+                        <?php else: ?>
+                        <p class="text-muted mb-0">---</p>
+                        <?php endif; ?>
+                    </div>
 
-    <div class="pzl-modal-sidebar">
-        <div class="pzl-sidebar-header">
-            <h3 id="pzl-modal-title"><?php echo esc_html($task->post_title); ?></h3>
-            <div class="pzl-modal-subtitle">
-                در پروژه: <a href="#"><?php echo esc_html($project_title); ?></a>
+                    <!-- Due Date -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">ددلاین:</label>
+                        <p class="mb-0">
+                            <?php if ($due_date): ?>
+                                <i class="ri-calendar-line me-1 text-danger"></i>
+                                <?php echo jdate('Y/m/d', strtotime($due_date)); ?>
+                            <?php else: ?>
+                                <span class="text-muted">---</span>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+
+                    <!-- Priority -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">اولویت:</label>
+                        <p class="mb-0"><?php echo esc_html($priority_name); ?></p>
+                    </div>
+
+                    <!-- Story Points -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">امتیاز داستان:</label>
+                        <p class="mb-0"><?php echo $story_points ? esc_html($story_points) : '---'; ?></p>
+                    </div>
+
+                    <!-- Labels -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">برچسب‌ها:</label>
+                        <div>
+                            <?php if ($label_terms && !is_wp_error($label_terms)): 
+                                foreach ($label_terms as $label):
+                            ?>
+                                <span class="badge bg-primary-transparent me-1"><?php echo esc_html($label->name); ?></span>
+                            <?php 
+                                endforeach;
+                            else: 
+                            ?>
+                                <span class="text-muted">---</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <h4>جزئیات</h4>
-        <div class="pzl-sidebar-item">
-            <strong>وضعیت:</strong>
-            <select id="pzl-task-status-changer" data-task-id="<?php echo esc_attr($task_id); ?>">
-                <?php foreach($all_statuses as $status): ?>
-                    <option value="<?php echo esc_attr($status->slug); ?>" <?php selected($current_status_slug, $status->slug); ?>>
-                        <?php echo esc_html($status->name); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="pzl-sidebar-item">
-            <strong>مسئول:</strong>
-            <select id="pzl-task-assignee-changer" data-task-id="<?php echo esc_attr($task_id); ?>">
-                <option value="0">---</option>
-                <?php foreach($all_staff as $staff): ?>
-                    <option value="<?php echo esc_attr($staff->ID); ?>" <?php selected($assigned_user_id, $staff->ID); ?>>
-                        <?php echo esc_html($staff->display_name); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="pzl-sidebar-item">
-            <strong>ددلاین:</strong>
-            <span><?php echo $due_date ? jdate('Y/m/d', strtotime($due_date)) : '---'; ?></span>
-        </div>
-        <div class="pzl-sidebar-item">
-            <strong>اولویت:</strong>
-            <span><?php the_terms($task_id, 'task_priority'); ?></span>
-        </div>
-        <div class="pzl-sidebar-item">
-            <strong>امتیاز داستان:</strong>
-            <span><?php echo !empty($story_points) ? esc_html($story_points) : '---'; ?></span>
-        </div>
-         <div class="pzl-sidebar-item">
-            <strong>برچسب‌ها:</strong>
-            <span><?php the_terms($task_id, 'task_label', '', ', '); ?></span>
-        </div>
-        <hr>
-        <div class="pzl-modal-actions">
-            <button id="pzl-save-as-template-btn" class="pzl-button pzl-button-sm">
-                <i class="fas fa-clone"></i> ذخیره به عنوان قالب
-            </button>
+            <!-- Actions -->
+            <div class="card custom-card mt-3">
+                <div class="card-body">
+                    <button class="btn btn-secondary btn-sm w-100 mb-2">
+                        <i class="ri-save-line me-1"></i>ذخیره به عنوان قالب
+                    </button>
+                    <button class="btn btn-danger-light btn-sm w-100">
+                        <i class="ri-delete-bin-line me-1"></i>حذف وظیفه
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-<?php wp_reset_postdata(); ?>
+
+<style>
+.task-description {
+    line-height: 1.8;
+}
+
+.timeline-item:last-child {
+    border-bottom: 0;
+}
+</style>

@@ -27,6 +27,14 @@ class PuzzlingCRM_Installer {
         // Create default terms for taxonomies
         PuzzlingCRM_CPT_Manager::create_default_terms();
 
+        // Add login page rewrite rules
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-login-page.php';
+        PuzzlingCRM_Login_Page::activate();
+
+        // Add dashboard rewrite rules
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-dashboard-router.php';
+        PuzzlingCRM_Dashboard_Router::activate();
+
         // Flush rewrite rules to make CPT URLs work correctly
         flush_rewrite_rules();
 
@@ -43,6 +51,14 @@ class PuzzlingCRM_Installer {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-roles-manager.php';
         $roles_manager = new PuzzlingCRM_Roles_Manager();
         $roles_manager->remove_custom_roles();
+        
+        // Clean up login page rewrite rules
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-login-page.php';
+        PuzzlingCRM_Login_Page::deactivate();
+        
+        // Clean up dashboard rewrite rules
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-dashboard-router.php';
+        PuzzlingCRM_Dashboard_Router::deactivate();
         
         // Flush rewrite rules
         flush_rewrite_rules();

@@ -1,0 +1,475 @@
+/**
+ * RTL Complete Fix - اصلاح کامل راست‌چین
+ * این فایل تضمین می‌کنه که همه چیز راست‌چین باشه
+ * Version: 1.0.0
+ */
+
+/* ========================================
+   HTML & Body راست‌چین
+   ======================================== */
+
+html {
+    direction: rtl !important;
+}
+
+body {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+/* ========================================
+   Container های اصلی
+   ======================================== */
+
+.page,
+.main-content,
+.app-content,
+.container,
+.container-fluid,
+.main-header-container {
+    direction: rtl !important;
+}
+
+/* ========================================
+   Header راست‌چین
+   ======================================== */
+
+.app-header,
+.header-content-left,
+.header-content-right {
+    direction: rtl !important;
+}
+
+/* header-content-left باید سمت راست باشه */
+.header-content-left {
+    order: 1;
+}
+
+.header-content-right {
+    order: 0;
+}
+
+.main-header-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+/* ========================================
+   Sidebar راست‌چین
+   ======================================== */
+
+.app-sidebar {
+    right: 0 !important;
+    left: auto !important;
+    direction: rtl !important;
+}
+
+.main-sidebar,
+.main-menu,
+.side-menu__item {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+.side-menu__icon {
+    margin-left: 0.75rem !important;
+    margin-right: 0 !important;
+}
+
+.side-menu__angle {
+    margin-right: auto !important;
+    margin-left: 0.5rem !important;
+}
+
+/* ========================================
+   Content راست‌چین
+   ======================================== */
+
+.main-content {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+}
+
+/* با sidebar باز */
+@media (min-width: 992px) {
+    .page:not(.sidebar-closed) .main-content {
+        margin-right: 240px !important;
+        margin-left: 0 !important;
+    }
+}
+
+/* ========================================
+   Cards راست‌چین
+   ======================================== */
+
+.card,
+.card-header,
+.card-body,
+.card-title,
+.custom-card {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+.card-header.justify-content-between {
+    flex-direction: row-reverse;
+}
+
+/* ========================================
+   Tables راست‌چین
+   ======================================== */
+
+.table,
+.table thead,
+.table tbody,
+.table th,
+.table td {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+.table th:first-child,
+.table td:first-child {
+    text-align: right !important;
+}
+
+.table th:last-child,
+.table td:last-child {
+    text-align: left !important; /* عملیات معمولا سمت چپ */
+}
+
+/* ========================================
+   Forms راست‌چین
+   ======================================== */
+
+.form-label,
+.form-text,
+.form-check-label {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+.form-control,
+.form-select {
+    direction: rtl !important;
+    text-align: right !important;
+    padding-right: 0.75rem !important;
+    padding-left: 0.75rem !important;
+}
+
+/* فقط این input ها LTR */
+input[type="email"],
+input[type="url"],
+input[type="tel"].ltr-input,
+.ltr-input {
+    direction: ltr !important;
+    text-align: left !important;
+}
+
+.form-select {
+    background-position: left 0.75rem center !important;
+    padding-left: 2.5rem !important;
+}
+
+/* ========================================
+   Buttons راست‌چین
+   ======================================== */
+
+.btn,
+.pzl-button {
+    direction: rtl !important;
+}
+
+.btn i,
+.pzl-button i {
+    margin-left: 0.5rem;
+    margin-right: 0;
+}
+
+/* دکمه‌های close */
+.btn-close {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+/* ========================================
+   Dropdowns راست‌چین
+   ======================================== */
+
+.dropdown-menu {
+    right: 0 !important;
+    left: auto !important;
+    text-align: right !important;
+}
+
+.dropdown-menu-end {
+    right: 0 !important;
+    left: auto !important;
+}
+
+.dropdown-item {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+.dropdown-item i {
+    margin-left: 0.5rem;
+    margin-right: 0;
+}
+
+/* ========================================
+   Breadcrumb راست‌چین
+   ======================================== */
+
+.breadcrumb {
+    direction: rtl !important;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    float: right !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0 !important;
+    content: "/" !important;
+}
+
+/* ========================================
+   List Group راست‌چین
+   ======================================== */
+
+.list-group,
+.list-group-item {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+/* ========================================
+   Avatar & Icons راست‌چین
+   ======================================== */
+
+.avatar + * {
+    margin-right: 0.75rem;
+    margin-left: 0;
+}
+
+/* ========================================
+   Alerts راست‌چین
+   ======================================== */
+
+.alert {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+.alert i {
+    margin-left: 0.5rem;
+    margin-right: 0;
+}
+
+/* ========================================
+   Navigation راست‌چین
+   ======================================== */
+
+.nav {
+    direction: rtl !important;
+}
+
+.nav-link {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+.nav-tabs .nav-link {
+    border-radius: 0.375rem 0.375rem 0 0 !important;
+}
+
+/* ========================================
+   Modal راست‌چین
+   ======================================== */
+
+.modal-header,
+.modal-body,
+.modal-footer {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+.modal-header .btn-close {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+/* ========================================
+   Pagination راست‌چین
+   ======================================== */
+
+.pagination {
+    direction: rtl !important;
+}
+
+/* ========================================
+   Float Fix برای RTL
+   ======================================== */
+
+.float-end {
+    float: left !important;
+}
+
+.float-start {
+    float: right !important;
+}
+
+/* ========================================
+   Flexbox Fix برای RTL
+   ======================================== */
+
+.d-flex {
+    direction: rtl !important;
+}
+
+.ms-auto {
+    margin-right: auto !important;
+    margin-left: 0 !important;
+}
+
+.me-auto {
+    margin-left: auto !important;
+    margin-right: 0 !important;
+}
+
+/* ========================================
+   Grid راست‌چین
+   ======================================== */
+
+.row {
+    direction: rtl !important;
+}
+
+/* ========================================
+   Text Alignment Override
+   ======================================== */
+
+.text-start {
+    text-align: right !important;
+}
+
+.text-end {
+    text-align: left !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+/* ========================================
+   Sidebar Position Fix
+   ======================================== */
+
+.app-sidebar.sticky {
+    right: 0 !important;
+    left: auto !important;
+}
+
+/* ========================================
+   Logo Images راست‌چین
+   ======================================== */
+
+.header-logo,
+.main-sidebar-header {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+/* ========================================
+   User Dropdown راست‌چین
+   ======================================== */
+
+.header-profile-dropdown {
+    right: 0 !important;
+    left: auto !important;
+}
+
+.header-navheading {
+    text-align: right !important;
+}
+
+/* ========================================
+   Form Row راست‌چین
+   ======================================== */
+
+.pzl-form-row,
+.row.gy-3,
+.row.gx-3 {
+    direction: rtl !important;
+}
+
+/* ========================================
+   Authentication راست‌چین
+   ======================================== */
+
+.authentication,
+.authentication-cover-main {
+    direction: rtl !important;
+}
+
+.authentication-cover-logo,
+.aunthentication-cover-content {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+/* ========================================
+   Stats Cards راست‌چین
+   ======================================== */
+
+.d-flex.align-items-top {
+    direction: rtl !important;
+}
+
+.flex-fill {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+/* ========================================
+   Input Groups راست‌چین
+   ======================================== */
+
+.input-group {
+    direction: rtl !important;
+}
+
+.input-group > :not(:last-child) {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-top-right-radius: 0.375rem !important;
+    border-bottom-right-radius: 0.375rem !important;
+}
+
+.input-group > :not(:first-child) {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: 0.375rem !important;
+    border-bottom-left-radius: 0.375rem !important;
+}
+
+/* ========================================
+   Offcanvas راست‌چین
+   ======================================== */
+
+.offcanvas-end {
+    right: auto !important;
+    left: 0 !important;
+}
+
+/* ========================================
+   Kanban راست‌چین
+   ======================================== */
+
+.pzl-kanban-board {
+    direction: rtl !important;
+}
+
+.pzl-kanban-column {
+    direction: rtl !important;
+}
+

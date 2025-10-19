@@ -22,20 +22,24 @@ if ($ticket_id_to_view > 0) {
 }
 ?>
 
-<div class="pzl-dashboard-section">
-    <h3><i class="fas fa-life-ring"></i> پشتیبانی</h3>
+<div class="pzl-dashboard-tabs">
+    <a href="<?php echo esc_url($base_url); ?>" class="pzl-tab <?php echo $active_tab === 'list' ? 'active' : ''; ?>">
+        <i class="ri-list-check"></i> لیست تیکت‌ها
+    </a>
+    <a href="<?php echo esc_url(add_query_arg('action', 'new', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'new' ? 'active' : ''; ?>">
+        <i class="ri-add-circle-line"></i> ارسال تیکت جدید
+    </a>
+</div>
 
-    <div class="pzl-dashboard-tabs">
-        <a href="<?php echo esc_url($base_url); ?>" class="pzl-tab <?php echo $active_tab === 'list' ? 'active' : ''; ?>"><i class="fas fa-list-ul"></i> لیست تیکت‌ها</a>
-        <a href="<?php echo esc_url(add_query_arg('action', 'new', $base_url)); ?>" class="pzl-tab <?php echo $active_tab === 'new' ? 'active' : ''; ?>"><i class="fas fa-plus-circle"></i> ارسال تیکت جدید</a>
-    </div>
-
-    <div class="pzl-dashboard-tab-content">
+<div class="pzl-dashboard-tab-content">
     <?php if ($active_tab === 'new'): ?>
-        <div id="puzzling-new-ticket-form" class="pzl-card">
-            <div class="pzl-card-header">
-                <h3><i class="fas fa-plus-circle"></i> ارسال تیکت جدید</h3>
+        <div id="puzzling-new-ticket-form" class="card custom-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="ri-add-circle-line me-2"></i> ارسال تیکت جدید
+                </div>
             </div>
+            <div class="card-body">
             <form class="pzl-form pzl-ajax-form" data-action="puzzling_new_ticket" enctype="multipart/form-data">
                 <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
                 <div class="pzl-form-row">
@@ -106,12 +110,16 @@ if ($ticket_id_to_view > 0) {
                     <p class="description">حداکثر حجم مجاز: 5 مگابایت. فرمت‌های مجاز: jpg, png, pdf, zip, rar.</p>
                 </div>
                 <div class="form-submit">
-                    <button type="submit" class="pzl-button">ارسال تیکت</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ri-send-plane-line"></i> ارسال تیکت
+                    </button>
                 </div>
             </form>
+            </div>
         </div>
     <?php else: // List view ?>
-        <div class="pzl-card">
+        <div class="card custom-card">
+            <div class="card-body">
             <?php
             // Filtering logic remains the same
             $status_filter = isset($_GET['status_filter']) ? sanitize_key($_GET['status_filter']) : '';
@@ -175,7 +183,11 @@ if ($ticket_id_to_view > 0) {
                             ]); ?>
                     </div>
                     <?php endif; ?>
-                    <div class="form-group"><button type="submit" class="pzl-button">فیلتر</button></div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="ri-filter-3-line"></i> فیلتر
+                        </button>
+                    </div>
                 </div>
             </form>
 
@@ -215,7 +227,11 @@ if ($ticket_id_to_view > 0) {
                                 <td><?php echo esc_html(get_the_modified_date('Y/m/d H:i')); ?></td>
                                 <td><span class="pzl-priority-badge priority-<?php echo $priority_slug; ?>"><?php echo $priority_name; ?></span></td>
                                 <td><span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span></td>
-                                <td><a href="<?php echo esc_url($view_url); ?>" class="pzl-button pzl-button-sm">مشاهده</a></td>
+                                <td>
+                                    <a href="<?php echo esc_url($view_url); ?>" class="btn btn-primary-light btn-sm">
+                                        <i class="ri-eye-line"></i> مشاهده
+                                    </a>
+                                </td>
                             </tr>
                         <?php endwhile; ?>
                     </tbody>

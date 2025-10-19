@@ -1,0 +1,1321 @@
+/**
+ * PuzzlingCRM to Xintra Bridge Styles
+ * این فایل کلاس‌های قدیمی افزونه رو به استایل‌های Xintra تبدیل می‌کنه
+ * Version: 1.0.0
+ */
+
+/* ========================================
+   Cards & Containers
+   ======================================== */
+
+.pzl-dashboard-section {
+    margin-bottom: 1.5rem;
+}
+
+.pzl-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1.5rem;
+}
+
+.pzl-card-header {
+    background: #fff;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.pzl-card-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pzl-card-body {
+    padding: 1.25rem;
+}
+
+.pzl-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+/* ========================================
+   Buttons
+   ======================================== */
+
+.pzl-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    border-radius: 0.375rem;
+    border: 1px solid transparent;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.pzl-button-primary,
+.pzl-button {
+    background-color: #845adf;
+    border-color: #845adf;
+    color: #fff;
+}
+
+.pzl-button-primary:hover,
+.pzl-button:hover {
+    background-color: #7249d4;
+    border-color: #7249d4;
+    color: #fff;
+}
+
+.pzl-button-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #fff;
+}
+
+.pzl-button-secondary:hover {
+    background-color: #5c636a;
+    border-color: #5c636a;
+    color: #fff;
+}
+
+.pzl-button-success {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: #fff;
+}
+
+.pzl-button-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+}
+
+.pzl-button-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #000;
+}
+
+.pzl-button-small {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8125rem;
+}
+
+/* ========================================
+   Forms
+   ======================================== */
+
+.pzl-form {
+    width: 100%;
+}
+
+.pzl-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.pzl-form .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #212529;
+}
+
+.pzl-form .form-group input:not([type="checkbox"]):not([type="radio"]),
+.pzl-form .form-group select,
+.pzl-form .form-group textarea {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #212529;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #dee2e6;
+    appearance: none;
+    border-radius: 0.375rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.pzl-form .form-group input:focus,
+.pzl-form .form-group select:focus,
+.pzl-form .form-group textarea:focus {
+    color: #212529;
+    background-color: #fff;
+    border-color: #a28ee1;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(132, 90, 223, 0.25);
+}
+
+.pzl-form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.pzl-form-row .half-width {
+    flex: 1;
+    min-width: 250px;
+}
+
+.pzl-required {
+    color: #dc3545;
+    margin-right: 0.25rem;
+}
+
+.form-submit {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+/* ========================================
+   Tables
+   ======================================== */
+
+.pzl-table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+    vertical-align: top;
+    border-color: #dee2e6;
+}
+
+.pzl-table thead {
+    background-color: #f8f9fa;
+}
+
+.pzl-table th {
+    padding: 0.75rem;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.pzl-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.pzl-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.pzl-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ========================================
+   Alerts & Notices
+   ======================================== */
+
+.pzl-alert {
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.pzl-alert i {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.pzl-alert-success {
+    color: #0f5132;
+    background-color: #d1e7dd;
+    border-color: #badbcc;
+}
+
+.pzl-alert-error,
+.pzl-alert-danger {
+    color: #842029;
+    background-color: #f8d7da;
+    border-color: #f5c2c7;
+}
+
+.pzl-alert-warning {
+    color: #664d03;
+    background-color: #fff3cd;
+    border-color: #ffecb5;
+}
+
+.pzl-alert-info {
+    color: #055160;
+    background-color: #cff4fc;
+    border-color: #b6effb;
+}
+
+/* ========================================
+   Badges & Status
+   ======================================== */
+
+.pzl-badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 600;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.375rem;
+}
+
+.pzl-status-active,
+.pzl-badge-success {
+    background-color: #28a745;
+}
+
+.pzl-status-pending,
+.pzl-badge-warning {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.pzl-status-closed,
+.pzl-badge-secondary {
+    background-color: #6c757d;
+}
+
+.pzl-badge-primary {
+    background-color: #845adf;
+}
+
+.pzl-badge-danger {
+    background-color: #dc3545;
+}
+
+/* ========================================
+   Grid & Layout
+   ======================================== */
+
+.pzl-dashboard-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-widget-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-widget-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.gradient-1 .stat-widget-icon {
+    background: linear-gradient(135deg, #845adf 0%, #a28ee1 100%);
+}
+
+.gradient-2 .stat-widget-icon {
+    background: linear-gradient(135deg, #4ebedb 0%, #7dd3f0 100%);
+}
+
+.gradient-3 .stat-widget-icon {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+}
+
+.gradient-4 .stat-widget-icon {
+    background: linear-gradient(135deg, #ffd93d 0%, #ffe872 100%);
+}
+
+.stat-widget-content {
+    flex: 1;
+}
+
+.stat-number {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 0.25rem;
+}
+
+.stat-title {
+    display: block;
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* ========================================
+   Navigation & Breadcrumb
+   ======================================== */
+
+.pzl-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    list-style: none;
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+}
+
+/* ========================================
+   RTL Global Fix
+   ======================================== */
+
+body,
+.page,
+.main-content,
+.app-sidebar,
+.app-header,
+.card,
+.card-body,
+.card-header,
+.table,
+.form-control,
+.form-select,
+.btn,
+.alert,
+.badge,
+.breadcrumb,
+.list-group,
+.nav,
+.dropdown-menu,
+p, h1, h2, h3, h4, h5, h6,
+div, span, label {
+    direction: rtl;
+    text-align: right;
+}
+
+/* فقط این المان‌ها LTR باشن */
+.ltr-input,
+input[type="email"],
+input[type="url"],
+input[type="tel"],
+code,
+pre,
+.letter-spacing-1,
+.letter-spacing-2 {
+    direction: ltr !important;
+    text-align: left !important;
+}
+
+/* ========================================
+   Utilities
+   ======================================== */
+
+.text-end-rtl {
+    text-align: left !important;
+}
+
+.text-start-rtl {
+    text-align: right !important;
+}
+
+/* ========================================
+   Ajax Forms
+   ======================================== */
+
+.pzl-ajax-form button[type="submit"] {
+    min-width: 120px;
+}
+
+.pzl-ajax-form.loading button[type="submit"] {
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+/* ========================================
+   Modals (سازگار با Bootstrap)
+   ======================================== */
+
+.pzl-modal {
+    /* Bootstrap modals handle this */
+}
+
+/* ========================================
+   Task Cards
+   ======================================== */
+
+.pzl-task-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+}
+
+.pzl-task-card:hover {
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.pzl-card-priority {
+    width: 4px;
+    height: 100%;
+    border-radius: 0.25rem;
+}
+
+.priority-high {
+    border-right: 4px solid #dc3545;
+}
+
+.priority-medium {
+    border-right: 4px solid #ffc107;
+}
+
+.priority-low {
+    border-right: 4px solid #28a745;
+}
+
+/* ========================================
+   Dashboard Wrapper (Deprecated)
+   ======================================== */
+
+.puzzling-dashboard-wrapper {
+    /* این wrapper دیگه استفاده نمی‌شه - صفحات مستقیم رندر می‌شن */
+}
+
+/* ========================================
+   Loading States
+   ======================================== */
+
+.btn.loading,
+.pzl-button.loading {
+    opacity: 0.65;
+    pointer-events: none;
+    position: relative;
+}
+
+.btn.loading::after,
+.pzl-button.loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    border-right-color: transparent;
+    animation: spinner 0.75s linear infinite;
+}
+
+@keyframes spinner {
+    to { transform: rotate(360deg); }
+}
+
+/* ========================================
+   Form Elements Specific
+   ======================================== */
+
+.pzl-form input[type="text"],
+.pzl-form input[type="email"],
+.pzl-form input[type="tel"],
+.pzl-form input[type="number"],
+.pzl-form input[type="password"],
+.pzl-form input[type="date"],
+.pzl-form select,
+.pzl-form textarea {
+    /* Bootstrap form-control styles applied */
+}
+
+.pzl-form select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: left 0.75rem center;
+    background-size: 16px 12px;
+    padding-left: 2.5rem;
+}
+
+/* ========================================
+   Tab Content
+   ======================================== */
+
+.pzl-tab-content {
+    padding: 1.5rem 0;
+}
+
+.pzl-tab-pane {
+    display: none;
+}
+
+.pzl-tab-pane.active {
+    display: block;
+}
+
+/* ========================================
+   Stats Widgets Colors
+   ======================================== */
+
+.gradient-1 {
+    background: linear-gradient(135deg, #845adf 0%, #a28ee1 100%);
+}
+
+.gradient-2 {
+    background: linear-gradient(135deg, #4ebedb 0%, #7dd3f0 100%);
+}
+
+.gradient-3 {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+}
+
+.gradient-4 {
+    background: linear-gradient(135deg, #ffd93d 0%, #ffe872 100%);
+}
+
+/* Override if used on cards */
+.stat-widget-card.gradient-1,
+.stat-widget-card.gradient-2,
+.stat-widget-card.gradient-3,
+.stat-widget-card.gradient-4 {
+    background: #fff;
+    border: 1px solid #e9ecef;
+}
+
+/* ========================================
+   List Styles
+   ======================================== */
+
+.pzl-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pzl-list-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.pzl-list-item:last-child {
+    border-bottom: none;
+}
+
+.pzl-list-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* ========================================
+   Custom Scrollbar
+   ======================================== */
+
+.pzl-scrollable {
+    overflow-y: auto;
+    max-height: 400px;
+}
+
+.pzl-scrollable::-webkit-scrollbar {
+    width: 6px;
+}
+
+.pzl-scrollable::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.pzl-scrollable::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.pzl-scrollable::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* ========================================
+   Pagination
+   ======================================== */
+
+.pzl-pagination {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.pzl-pagination a,
+.pzl-pagination span {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    color: #845adf;
+    text-decoration: none;
+}
+
+.pzl-pagination .current {
+    background-color: #845adf;
+    color: #fff;
+    border-color: #845adf;
+}
+
+/* ========================================
+   Empty States
+   ======================================== */
+
+.pzl-empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: #6c757d;
+}
+
+.pzl-empty-state i {
+    font-size: 3rem;
+    opacity: 0.3;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+
+@media (max-width: 768px) {
+    .pzl-form-row {
+        flex-direction: column;
+    }
+    
+    .pzl-form-row .half-width {
+        width: 100%;
+    }
+    
+    .pzl-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* ========================================
+   Notifications
+   ======================================== */
+
+.pzl-notification-center {
+    position: relative;
+}
+
+.pzl-notification-bell {
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.pzl-notification-count {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: #dc3545;
+    color: #fff;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.625rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ========================================
+   سایر کلاس‌های خاص
+   ======================================== */
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.user-info a {
+    color: #845adf;
+    text-decoration: none;
+}
+
+.user-info a:hover {
+    text-decoration: underline;
+}
+
+/* ========================================
+   OTP Login Specific
+   ======================================== */
+
+.otp-step {
+    /* Bootstrap handles this */
+}
+
+.letter-spacing-1 {
+    letter-spacing: 0.5em;
+}
+
+.letter-spacing-2 {
+    letter-spacing: 0.3em;
+}
+
+/* ========================================
+   Project Cards
+   ======================================== */
+
+.pzl-projects-grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.pzl-project-card-item {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.pzl-project-card-item:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px);
+}
+
+.pzl-project-card-header-flex {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.pzl-project-card-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pzl-project-card-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pzl-logo-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #845adf 0%, #a28ee1 100%);
+    color: #fff;
+    font-size: 1.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pzl-project-card-title-group {
+    flex: 1;
+}
+
+.pzl-project-card-title {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #212529;
+}
+
+.pzl-project-card-customer {
+    display: block;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.pzl-project-card-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+}
+
+.pzl-project-card-details-grid div {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #495057;
+}
+
+.pzl-project-card-details-grid i {
+    color: #845adf;
+    width: 16px;
+}
+
+.pzl-project-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.pzl-button-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+}
+
+.pzl-status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.25rem;
+    color: #fff;
+}
+
+.pzl-status-badge.status-active,
+.pzl-status-badge.status-in-progress {
+    background-color: #28a745;
+}
+
+.pzl-status-badge.status-pending,
+.pzl-status-badge.status-planning {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.pzl-status-badge.status-completed {
+    background-color: #845adf;
+}
+
+.pzl-status-badge.status-on-hold {
+    background-color: #6c757d;
+}
+
+.pzl-status-badge.status-cancelled {
+    background-color: #dc3545;
+}
+
+/* ========================================
+   Leads Specific
+   ======================================== */
+
+.pzl-leads-table-wrapper {
+    overflow-x: auto;
+    margin-top: 1.5rem;
+}
+
+.pzl-lead-row {
+    transition: background-color 0.15s ease;
+}
+
+.pzl-lead-row:hover {
+    background-color: #f8f9fa;
+}
+
+.pzl-lead-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* ========================================
+   Contracts Specific
+   ======================================== */
+
+.pzl-contracts-list {
+    margin-top: 1.5rem;
+}
+
+.pzl-contract-item {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+}
+
+.pzl-contract-item:hover {
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   Settings Forms
+   ======================================== */
+
+.pzl-settings-wrapper {
+    max-width: 900px;
+}
+
+.pzl-settings-section {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.pzl-settings-section h4,
+.pzl-settings-section h5,
+.pzl-settings-section h6 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pzl-settings-section h4 {
+    font-size: 1.25rem;
+    color: #212529;
+}
+
+.pzl-settings-section h5 {
+    font-size: 1.125rem;
+    color: #495057;
+}
+
+.pzl-settings-section h6 {
+    font-size: 1rem;
+    color: #6c757d;
+}
+
+.description,
+.form-text {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.description code,
+.form-text code {
+    background-color: #f8f9fa;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+    color: #d63384;
+}
+
+/* ========================================
+   Wrapper کلی برای صفحات قدیمی
+   ======================================== */
+
+.pzl-projects-manager-wrapper,
+.pzl-leads-manager-wrapper,
+.pzl-contracts-manager-wrapper,
+.pzl-tickets-manager-wrapper,
+.pzl-tasks-manager-wrapper,
+.pzl-settings-manager-wrapper {
+    /* این wrapper ها دیگه سبک خاصی نمیخوان */
+}
+
+/* ========================================
+   Modal Styles
+   ======================================== */
+
+.pzl-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pzl-modal-content {
+    background: #fff;
+    border-radius: 0.5rem;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.pzl-modal-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pzl-modal-body {
+    padding: 1.5rem;
+}
+
+.pzl-modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* ========================================
+   Tabs (سازگار با Bootstrap)
+   ======================================== */
+
+.pzl-dashboard-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0;
+}
+
+.pzl-tab {
+    padding: 0.75rem 1.25rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #6c757d;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: -2px;
+}
+
+.pzl-tab:hover {
+    color: #845adf;
+    border-bottom-color: #a28ee1;
+}
+
+.pzl-tab.active {
+    color: #845adf;
+    border-bottom-color: #845adf;
+    font-weight: 600;
+}
+
+.pzl-dashboard-tab-content {
+    margin-top: 1.5rem;
+}
+
+.pzl-form-container {
+    padding: 1.5rem;
+}
+
+/* ========================================
+   Task Board & Kanban
+   ======================================== */
+
+.pzl-kanban-board {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}
+
+.pzl-kanban-column {
+    min-width: 320px;
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.pzl-kanban-column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: #fff;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.pzl-kanban-column-header .count {
+    background: #845adf;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+}
+
+.pzl-task-list {
+    min-height: 100px;
+}
+
+.pzl-task-item {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    cursor: move;
+    transition: all 0.2s ease;
+}
+
+.pzl-task-item:hover {
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+.pzl-task-item.ui-sortable-helper {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+    transform: rotate(2deg);
+}
+
+.pzl-task-title {
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.5rem;
+}
+
+.pzl-task-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8125rem;
+    color: #6c757d;
+    flex-wrap: wrap;
+}
+
+.pzl-task-meta i {
+    margin-left: 0.25rem;
+}
+
+.pzl-task-placeholder {
+    background: #e9ecef;
+    border: 2px dashed #845adf;
+    border-radius: 0.375rem;
+    height: 80px;
+    margin-bottom: 0.75rem;
+}
+
+.ui-sortable-helper {
+    opacity: 0.8;
+    cursor: grabbing !important;
+}
+
+/* ========================================
+   Dashboard Header (قدیمی - deprecated)
+   ======================================== */
+
+.puzzling-dashboard-header {
+    display: none; /* این header قدیمیه، Xintra header جایگزینش شده */
+}
+
+.puzzling-dashboard-content {
+    /* محتوا مستقیم در main-content رندر میشه */
+}
+
+.puzzling-dashboard-wrapper {
+    /* این wrapper قدیمیه */
+}
+
+/* ========================================
+   Action Buttons در جداول
+   ======================================== */
+
+.pzl-action-buttons {
+    display: flex;
+    gap: 0.375rem;
+}
+
+.pzl-button-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ========================================
+   Print Styles
+   ======================================== */
+
+@media print {
+    .pzl-card-header .pzl-button,
+    .pzl-project-card-actions,
+    .pzl-lead-actions,
+    .btn {
+        display: none !important;
+    }
+    
+    .pzl-project-card-item,
+    .pzl-contract-item,
+    .pzl-card {
+        box-shadow: none;
+        page-break-inside: avoid;
+    }
+}
+
+/* ========================================
+   Responsive Fixes
+   ======================================== */
+
+@media (max-width: 768px) {
+    .pzl-projects-grid-view {
+        grid-template-columns: 1fr;
+    }
+    
+    .pzl-project-card-details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .pzl-form-row {
+        flex-direction: column;
+    }
+    
+    .pzl-card-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .pzl-card-header h3 {
+        margin-bottom: 0.75rem;
+    }
+}
+
+

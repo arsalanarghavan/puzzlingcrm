@@ -1,115 +1,222 @@
 <?php
 /**
- * Client Dashboard Template (Redesigned without Tabs)
- *
+ * Client Dashboard Template (Xintra Style)
  * @package PuzzlingCRM
  */
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
-}
 
-$current_view = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
-$project_id_to_view = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0;
+if ( ! defined( 'ABSPATH' ) ) exit;
 
-$base_url = get_permalink();
+$current_user = wp_get_current_user();
+$user_id = $current_user->ID;
 
-// Special handling for single project view
-if ($current_view === 'projects' && $project_id_to_view > 0) {
-    global $puzzling_project;
-    $puzzling_project = get_post($project_id_to_view);
+// Get client's projects
+$user_projects = get_posts([
+    'post_type' => 'project',
+    'posts_per_page' => -1,
+    'author' => $user_id,
+    'post_status' => 'publish'
+]);
 
-    // Security check: Make sure the current user is the author of the project.
-    if ($puzzling_project && $puzzling_project->post_author == get_current_user_id()) {
-        include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/single-project-client.php';
-        return; // Stop further execution
-    } else {
-        // If not allowed, just fall back to the main projects list
-        $current_view = 'projects'; 
+// Get client's contracts
+$user_contracts = get_posts([
+    'post_type' => 'contract',
+    'posts_per_page' => -1,
+    'author' => $user_id,
+]);
+
+// Get client's tickets
+$user_tickets = get_posts([
+    'post_type' => 'ticket',
+    'posts_per_page' => -1,
+    'author' => $user_id,
+]);
+
+$open_tickets = 0;
+foreach ($user_tickets as $ticket) {
+    $status = get_the_terms($ticket->ID, 'ticket_status');
+    if ($status && !is_wp_error($status) && $status[0]->slug !== 'closed') {
+        $open_tickets++;
     }
 }
-
-// A map of views to their corresponding template files and titles
-$dashboard_pages = [
-    'overview'      => ['file' => 'client-overview.php', 'title' => 'نمای کلی', 'icon' => 'fa-tachometer-alt'],
-    'projects'      => ['file' => 'list-projects.php', 'title' => 'پروژه‌ها', 'icon' => 'fa-briefcase'],
-    'contracts'     => ['file' => 'page-client-contracts.php', 'title' => 'قراردادها', 'icon' => 'fa-file-signature'],
-    'invoices'      => ['file' => 'list-client-payments.php', 'title' => 'فاکتورها و پرداخت‌ها', 'icon' => 'fa-file-invoice-dollar'],
-    'pro_invoices'  => ['file' => 'page-client-pro-invoices.php', 'title' => 'پیش‌فاکتورها', 'icon' => 'fa-file-invoice'],
-    'appointments'  => ['file' => 'page-client-appointments.php', 'title' => 'قرار ملاقات', 'icon' => 'fa-calendar-check'],
-    'tickets'       => ['file' => 'list-tickets.php', 'title' => 'تیکت‌های پشتیبانی', 'icon' => 'fa-life-ring'],
-];
-
-$template_to_load = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/' . ($dashboard_pages[$current_view]['file'] ?? 'client-overview.php');
-
 ?>
-<div class="pzl-dashboard-content-wrapper">
-    <?php if ($current_view !== 'overview'): ?>
-        <a href="<?php echo esc_url($base_url); ?>" class="pzl-button back-to-dashboard-btn">&larr; بازگشت به داشبورد</a>
-    <?php endif; ?>
 
-    <?php
-    // If a specific view is requested, load its template
-    if (isset($dashboard_pages[$current_view]) && file_exists($template_to_load)) {
-        include $template_to_load;
-    } else {
-        // Otherwise, show the main dashboard grid
-    ?>
-        <h3><i class="fas fa-th-large"></i> داشبورد شما</h3>
-        <p>از طریق بخش‌های زیر می‌توانید به امکانات مختلف پنل خود دسترسی داشته باشید.</p>
-        <div class="pzl-dashboard-grid-nav">
-            <?php foreach ($dashboard_pages as $slug => $page):
-                if ($slug === 'overview') continue; // Don't show overview as a card
-                $page_url = add_query_arg('view', $slug, $base_url);
-            ?>
-                <a href="<?php echo esc_url($page_url); ?>" class="pzl-dashboard-nav-card">
-                    <i class="fas <?php echo esc_attr($page['icon']); ?>"></i>
-                    <span><?php echo esc_html($page['title']); ?></span>
-                </a>
-            <?php endforeach; ?>
+<!-- Stats Cards Row -->
+<div class="row">
+    <div class="col-xxl-4 col-xl-6 col-lg-6 col-md-6">
+        <div class="card custom-card overflow-hidden">
+            <div class="card-body">
+                <div class="d-flex align-items-top justify-content-between">
+                    <div>
+                        <span class="avatar avatar-md avatar-rounded bg-primary">
+                            <i class="ri-folder-2-line fs-18"></i>
+                        </span>
+                    </div>
+                    <div class="flex-fill ms-3">
+                        <div>
+                            <p class="text-muted mb-0">پروژه‌های من</p>
+                            <h4 class="fw-semibold mt-1"><?php echo esc_html(count($user_projects)); ?></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <hr style="margin: 30px 0;">
-        <?php
-        // Also include the overview stats on the main dashboard page
-        include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/client-overview.php';
-    }
-    ?>
+    </div>
+    
+    <div class="col-xxl-4 col-xl-6 col-lg-6 col-md-6">
+        <div class="card custom-card overflow-hidden">
+            <div class="card-body">
+                <div class="d-flex align-items-top justify-content-between">
+                    <div>
+                        <span class="avatar avatar-md avatar-rounded bg-secondary">
+                            <i class="ri-file-text-line fs-18"></i>
+                        </span>
+                    </div>
+                    <div class="flex-fill ms-3">
+                        <div>
+                            <p class="text-muted mb-0">قراردادها</p>
+                            <h4 class="fw-semibold mt-1"><?php echo esc_html(count($user_contracts)); ?></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xxl-4 col-xl-6 col-lg-6 col-md-6">
+        <div class="card custom-card overflow-hidden">
+            <div class="card-body">
+                <div class="d-flex align-items-top justify-content-between">
+                    <div>
+                        <span class="avatar avatar-md avatar-rounded bg-warning">
+                            <i class="ri-customer-service-2-line fs-18"></i>
+                        </span>
+                    </div>
+                    <div class="flex-fill ms-3">
+                        <div>
+                            <p class="text-muted mb-0">تیکت‌های باز</p>
+                            <h4 class="fw-semibold mt-1"><?php echo esc_html($open_tickets); ?></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<style>
-/* Add these styles to your main CSS file (puzzlingcrm-styles.css) */
-.pzl-dashboard-grid-nav {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
-    margin-top: 25px;
-}
-.pzl-dashboard-nav-card {
-    background-color: var(--pzl-card-bg);
-    border: 1px solid var(--pzl-border-color);
-    border-radius: var(--pzl-border-radius);
-    padding: 25px;
-    text-align: center;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    box-shadow: var(--pzl-box-shadow);
-}
-.pzl-dashboard-nav-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    border-color: var(--pzl-primary-color);
-}
-.pzl-dashboard-nav-card i {
-    font-size: 36px;
-    color: var(--pzl-primary-color);
-    margin-bottom: 15px;
-    display: block;
-}
-.pzl-dashboard-nav-card span {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--pzl-secondary-color);
-}
-.back-to-dashboard-btn {
-    margin-bottom: 25px;
-}
-</style>
+<!-- Recent Projects -->
+<div class="row">
+    <div class="col-xl-6">
+        <div class="card custom-card">
+            <div class="card-header justify-content-between">
+                <div class="card-title">
+                    <i class="ri-folder-2-line me-2"></i>
+                    پروژه‌های من
+                </div>
+                <a href="<?php echo esc_url(home_url('/dashboard/projects')); ?>" class="btn btn-sm btn-primary-light">
+                    مشاهده همه <i class="ri-arrow-left-s-line align-middle"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    <?php if (!empty($user_projects)): ?>
+                        <?php foreach (array_slice($user_projects, 0, 5) as $project): ?>
+                            <li class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <span class="avatar avatar-sm bg-primary-transparent">
+                                        <i class="ri-folder-2-line"></i>
+                                    </span>
+                                    <div class="ms-2 flex-fill">
+                                        <p class="fw-semibold mb-0"><?php echo esc_html($project->post_title); ?></p>
+                                        <p class="fs-12 text-muted mb-0">
+                                            <i class="ri-time-line me-1"></i>
+                                            <?php echo esc_html(human_time_diff(strtotime($project->post_date), current_time('timestamp'))); ?> پیش
+                                        </p>
+                                    </div>
+                                    <a href="<?php echo esc_url(home_url('/dashboard/projects/' . $project->ID)); ?>" class="btn btn-sm btn-icon btn-light">
+                                        <i class="ri-arrow-left-s-line"></i>
+                                    </a>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <li class="list-group-item text-center text-muted py-5">
+                            <i class="ri-folder-2-line fs-3 mb-2 d-block opacity-3"></i>
+                            پروژه‌ای وجود ندارد
+                        </li>
+                    <?php endif; ?>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Tickets -->
+    <div class="col-xl-6">
+        <div class="card custom-card">
+            <div class="card-header justify-content-between">
+                <div class="card-title">
+                    <i class="ri-customer-service-2-line me-2"></i>
+                    تیکت‌های من
+                </div>
+                <a href="<?php echo esc_url(home_url('/dashboard/tickets')); ?>" class="btn btn-sm btn-warning-light">
+                    مشاهده همه <i class="ri-arrow-left-s-line align-middle"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    <?php if (!empty($user_tickets)): ?>
+                        <?php foreach (array_slice($user_tickets, 0, 5) as $ticket): ?>
+                            <?php
+                            $status = get_the_terms($ticket->ID, 'ticket_status');
+                            $status_name = $status && !is_wp_error($status) ? $status[0]->name : 'نامشخص';
+                            $status_slug = $status && !is_wp_error($status) ? $status[0]->slug : '';
+                            
+                            $badge_class = 'bg-secondary';
+                            if ($status_slug === 'open') $badge_class = 'bg-success';
+                            elseif ($status_slug === 'in-progress') $badge_class = 'bg-primary';
+                            elseif ($status_slug === 'closed') $badge_class = 'bg-secondary';
+                            ?>
+                            <li class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <span class="avatar avatar-sm bg-warning-transparent">
+                                        <i class="ri-customer-service-2-line"></i>
+                                    </span>
+                                    <div class="ms-2 flex-fill">
+                                        <p class="fw-semibold mb-0"><?php echo esc_html($ticket->post_title); ?></p>
+                                        <p class="fs-12 mb-0">
+                                            <span class="badge <?php echo $badge_class; ?> badge-sm"><?php echo esc_html($status_name); ?></span>
+                                        </p>
+                                    </div>
+                                    <div class="text-muted fs-12">
+                                        <?php echo esc_html(human_time_diff(strtotime($ticket->post_date), current_time('timestamp'))); ?> پیش
+                                    </div>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <li class="list-group-item text-center text-muted py-5">
+                            <i class="ri-customer-service-2-line fs-3 mb-2 d-block opacity-3"></i>
+                            تیکتی وجود ندارد
+                        </li>
+                    <?php endif; ?>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Welcome Message -->
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card custom-card">
+            <div class="card-body">
+                <div class="alert alert-primary d-flex align-items-center" role="alert">
+                    <i class="ri-information-line fs-4 me-3"></i>
+                    <div>
+                        <strong>خوش آمدید <?php echo esc_html($current_user->display_name); ?>!</strong>
+                        <p class="mb-0 mt-1">از منوی سمت راست می‌توانید به پروژه‌ها، قراردادها، تیکت‌ها و سایر بخش‌ها دسترسی داشته باشید.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

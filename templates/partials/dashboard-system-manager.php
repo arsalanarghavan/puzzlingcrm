@@ -1,12 +1,10 @@
 <?php
 /**
- * System Manager Dashboard Template - COMPLETELY REDESIGNED & FUNCTIONAL
+ * System Manager Dashboard Template (Xintra Style)
  * @package PuzzlingCRM
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+if ( ! defined( 'ABSPATH' ) ) exit;
 
 // --- Fetch Dashboard Stats (Cached for 1 hour) ---
 if ( false === ( $stats = get_transient( 'puzzling_system_manager_stats_v2' ) ) ) {
@@ -46,7 +44,6 @@ if ( false === ( $stats = get_transient( 'puzzling_system_manager_stats_v2' ) ) 
         }
     }
 
-
     $stats = [
         'total_projects' => $total_projects,
         'active_tasks_count' => $active_tasks_count,
@@ -58,130 +55,246 @@ if ( false === ( $stats = get_transient( 'puzzling_system_manager_stats_v2' ) ) 
     set_transient( 'puzzling_system_manager_stats_v2', $stats, HOUR_IN_SECONDS );
 }
 
-// --- Fetch Data for Chart ---
-$task_status_terms = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order']);
-$task_status_counts = [];
-foreach ($task_status_terms as $status) {
-    $task_status_counts[$status->name] = $status->count;
-}
-
-// --- Fetch Recent Activities ---
+// Recent activities
 $recent_projects = get_posts(['post_type' => 'project', 'posts_per_page' => 5, 'orderby' => 'date', 'order' => 'DESC']);
 $recent_tasks = get_posts(['post_type' => 'task', 'posts_per_page' => 5, 'orderby' => 'date', 'order' => 'DESC']);
 $recent_tickets = get_posts(['post_type' => 'ticket', 'posts_per_page' => 5, 'orderby' => 'date', 'order' => 'DESC']);
-
 ?>
-<div class="pzl-dashboard-stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
-    <div class="stat-widget-card gradient-1">
-        <div class="stat-widget-icon"><i class="fas fa-briefcase"></i></div>
-        <div class="stat-widget-content">
-            <span class="stat-number"><?php echo esc_html($stats['total_projects']); ?></span>
-            <span class="stat-title">پروژه کل</span>
+
+<!-- Stats Cards Row -->
+<div class="row">
+    <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 col-sm-6">
+        <div class="card custom-card overflow-hidden">
+            <div class="card-body">
+                <div class="d-flex align-items-top justify-content-between">
+                    <div>
+                        <span class="avatar avatar-md avatar-rounded bg-primary">
+                            <i class="ri-folder-2-line fs-18"></i>
+                        </span>
+                    </div>
+                    <div class="flex-fill ms-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap">
+                            <div>
+                                <p class="text-muted mb-0">پروژه‌های کل</p>
+                                <h4 class="fw-semibold mt-1"><?php echo esc_html($stats['total_projects']); ?></h4>
+                            </div>
+                            <div id="crm-total-customers"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="stat-widget-card gradient-2">
-        <div class="stat-widget-icon"><i class="fas fa-tasks"></i></div>
-        <div class="stat-widget-content">
-            <span class="stat-number"><?php echo esc_html($stats['active_tasks_count']); ?></span>
-            <span class="stat-title">وظایف فعال</span>
+    
+    <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 col-sm-6">
+        <div class="card custom-card overflow-hidden">
+            <div class="card-body">
+                <div class="d-flex align-items-top justify-content-between">
+                    <div>
+                        <span class="avatar avatar-md avatar-rounded bg-secondary">
+                            <i class="ri-task-line fs-18"></i>
+                        </span>
+                    </div>
+                    <div class="flex-fill ms-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap">
+                            <div>
+                                <p class="text-muted mb-0">وظایف فعال</p>
+                                <h4 class="fw-semibold mt-1"><?php echo esc_html($stats['active_tasks_count']); ?></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-     <div class="stat-widget-card gradient-3">
-        <div class="stat-widget-icon"><i class="fas fa-user-tie"></i></div>
-        <div class="stat-widget-content">
-            <span class="stat-number"><?php echo esc_html($stats['customer_count']); ?></span>
-            <span class="stat-title">تعداد مشتریان</span>
+    
+    <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 col-sm-6">
+        <div class="card custom-card overflow-hidden">
+            <div class="card-body">
+                <div class="d-flex align-items-top justify-content-between">
+                    <div>
+                        <span class="avatar avatar-md avatar-rounded bg-success">
+                            <i class="ri-group-line fs-18"></i>
+                        </span>
+                    </div>
+                    <div class="flex-fill ms-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap">
+                            <div>
+                                <p class="text-muted mb-0">مشتریان</p>
+                                <h4 class="fw-semibold mt-1"><?php echo esc_html($stats['customer_count']); ?></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="stat-widget-card gradient-4">
-        <div class="stat-widget-icon"><i class="fas fa-money-bill-wave"></i></div>
-        <div class="stat-widget-content">
-            <span class="stat-number"><?php echo esc_html(number_format($stats['income_this_month'])); ?></span>
-            <span class="stat-title">درآمد ماه جاری (تومان)</span>
-        </div>
-    </div>
-    <div class="stat-widget-card" style="background: linear-gradient(45deg, #6c757d, #343a40);">
-        <div class="stat-widget-icon"><i class="fas fa-life-ring"></i></div>
-        <div class="stat-widget-content">
-            <span class="stat-number"><?php echo esc_html($stats['open_tickets']); ?></span>
-            <span class="stat-title">تیکت‌های باز</span>
-        </div>
-    </div>
-    <div class="stat-widget-card" style="background: linear-gradient(45deg, #17a2b8, #007bff);">
-        <div class="stat-widget-icon"><i class="fas fa-sync-alt"></i></div>
-        <div class="stat-widget-content">
-            <span class="stat-number"><?php echo esc_html($stats['active_subscriptions']); ?></span>
-            <span class="stat-title">اشتراک‌های فعال</span>
+    
+    <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 col-sm-6">
+        <div class="card custom-card overflow-hidden">
+            <div class="card-body">
+                <div class="d-flex align-items-top justify-content-between">
+                    <div>
+                        <span class="avatar avatar-md avatar-rounded bg-warning">
+                            <i class="ri-money-dollar-circle-line fs-18"></i>
+                        </span>
+                    </div>
+                    <div class="flex-fill ms-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap">
+                            <div>
+                                <p class="text-muted mb-0">درآمد ماه جاری</p>
+                                <h4 class="fw-semibold mt-1"><?php echo esc_html(number_format($stats['income_this_month'])); ?> <small class="fs-11 text-muted">تومان</small></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="pzl-dashboard-grid pzl-dashboard-grid-2-col">
-    <div class="pzl-card">
-        <div class="pzl-card-header">
-            <h3><i class="fas fa-chart-bar"></i> توزیع وضعیت وظایف</h3>
-        </div>
-        <div class="pzl-chart-container" style="height: 350px;">
-             <?php if (!empty($task_status_counts)): 
-                $max_count = max($task_status_counts) > 0 ? max($task_status_counts) : 1;
-                $colors = ['#dc3545', '#ffc107', '#28a745', '#6c757d', '#17a2b8'];
-                $color_index = 0;
-            ?>
-                <?php foreach($task_status_counts as $status => $count): ?>
-                    <div class="chart-bar-wrapper">
-                        <div class="chart-bar" style="height: <?php echo esc_attr(max(1, ($count / $max_count) * 280)); ?>px; background-color: <?php echo $colors[$color_index % count($colors)]; ?>;" title="<?php echo esc_attr($status) . ': ' . esc_attr(number_format($count)); ?> وظیفه"></div>
-                        <div class="chart-label"><?php echo esc_html($status); ?></div>
-                    </div>
-                <?php $color_index++; endforeach; ?>
-            <?php else: ?>
-                <p>داده‌ای برای نمایش نمودار وظایف وجود ندارد.</p>
-            <?php endif; ?>
+<!-- Recent Activities Row -->
+<div class="row">
+    <!-- Recent Projects -->
+    <div class="col-xl-4">
+        <div class="card custom-card">
+            <div class="card-header justify-content-between">
+                <div class="card-title">
+                    پروژه‌های اخیر
+                </div>
+                <a href="<?php echo esc_url(home_url('/dashboard/projects')); ?>" class="btn btn-sm btn-primary-light">
+                    مشاهده همه <i class="ri-arrow-left-s-line align-middle"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    <?php if (!empty($recent_projects)): ?>
+                        <?php foreach ($recent_projects as $project): ?>
+                            <li class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <span class="avatar avatar-sm bg-primary-transparent">
+                                        <i class="ri-folder-2-line"></i>
+                                    </span>
+                                    <div class="ms-2 flex-fill">
+                                        <p class="fw-semibold mb-0"><?php echo esc_html($project->post_title); ?></p>
+                                        <p class="fs-12 text-muted mb-0">
+                                            <i class="ri-time-line me-1"></i>
+                                            <?php echo esc_html(human_time_diff(strtotime($project->post_date), current_time('timestamp'))); ?> پیش
+                                        </p>
+                                    </div>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <li class="list-group-item text-center text-muted">
+                            <i class="ri-folder-2-line fs-3 mb-2 d-block opacity-3"></i>
+                            پروژه‌ای وجود ندارد
+                        </li>
+                    <?php endif; ?>
+                </ul>
+            </div>
         </div>
     </div>
-
-    <div class="pzl-card">
-        <div class="pzl-card-header">
-            <h3><i class="fas fa-history"></i> آخرین فعالیت‌ها</h3>
+    
+    <!-- Recent Tasks -->
+    <div class="col-xl-4">
+        <div class="card custom-card">
+            <div class="card-header justify-content-between">
+                <div class="card-title">
+                    وظایف اخیر
+                </div>
+                <a href="<?php echo esc_url(home_url('/dashboard/tasks')); ?>" class="btn btn-sm btn-secondary-light">
+                    مشاهده همه <i class="ri-arrow-left-s-line align-middle"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    <?php if (!empty($recent_tasks)): ?>
+                        <?php foreach ($recent_tasks as $task): ?>
+                            <li class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <span class="avatar avatar-sm bg-secondary-transparent">
+                                        <i class="ri-task-line"></i>
+                                    </span>
+                                    <div class="ms-2 flex-fill">
+                                        <p class="fw-semibold mb-0"><?php echo esc_html($task->post_title); ?></p>
+                                        <p class="fs-12 text-muted mb-0">
+                                            <i class="ri-time-line me-1"></i>
+                                            <?php echo esc_html(human_time_diff(strtotime($task->post_date), current_time('timestamp'))); ?> پیش
+                                        </p>
+                                    </div>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <li class="list-group-item text-center text-muted">
+                            <i class="ri-task-line fs-3 mb-2 d-block opacity-3"></i>
+                            وظیفه‌ای وجود ندارد
+                        </li>
+                    <?php endif; ?>
+                </ul>
+            </div>
         </div>
-        <div class="pzl-activity-feed">
-            <h5><i class="fas fa-briefcase"></i> آخرین پروژه‌ها</h5>
-            <ul class="pzl-activity-list">
-                <?php if (!empty($recent_projects)): foreach($recent_projects as $p): 
-                    $project_edit_url = add_query_arg(['view' => 'projects', 'action' => 'edit', 'project_id' => $p->ID]);
-                ?>
-                    <li>
-                        <a href="<?php echo esc_url($project_edit_url); ?>"><?php echo esc_html($p->post_title); ?></a>
-                        <span class="meta"><?php echo get_the_author_meta('display_name', $p->post_author); ?> - <?php echo date_i18n('Y/m/d', strtotime($p->post_date)); ?></span>
-                    </li>
-                <?php endforeach; else: ?>
-                    <li>موردی یافت نشد.</li>
-                <?php endif; ?>
-            </ul>
-             <h5><i class="fas fa-tasks"></i> آخرین وظایف</h5>
-            <ul class="pzl-activity-list">
-                <?php if (!empty($recent_tasks)): foreach($recent_tasks as $t): ?>
-                    <li>
-                        <span><?php echo esc_html($t->post_title); ?></span>
-                        <span class="meta"><?php echo get_the_author_meta('display_name', get_post_meta($t->ID, '_assigned_to', true)); ?> - <?php echo date_i18n('Y/m/d', strtotime($t->post_date)); ?></span>
-                    </li>
-                <?php endforeach; else: ?>
-                    <li>موردی یافت نشد.</li>
-                <?php endif; ?>
-            </ul>
-             <h5><i class="fas fa-life-ring"></i> آخرین تیکت‌ها</h5>
-            <ul class="pzl-activity-list">
-                <?php if (!empty($recent_tickets)): foreach($recent_tickets as $ticket): 
-                    $status_terms = get_the_terms($ticket->ID, 'ticket_status');
-                    $status_name = !empty($status_terms) ? esc_html($status_terms[0]->name) : 'نامشخص';
-                ?>
-                    <li>
-                        <span><?php echo esc_html($ticket->post_title); ?></span>
-                        <span class="meta"><?php echo get_the_author_meta('display_name', $ticket->post_author); ?> - <span class="pzl-status-badge status-<?php echo esc_attr($status_terms[0]->slug); ?>"><?php echo $status_name; ?></span></span>
-                    </li>
-                <?php endforeach; else: ?>
-                    <li>موردی یافت نشد.</li>
-                <?php endif; ?>
-            </ul>
+    </div>
+    
+    <!-- Recent Tickets -->
+    <div class="col-xl-4">
+        <div class="card custom-card">
+            <div class="card-header justify-content-between">
+                <div class="card-title">
+                    تیکت‌های اخیر
+                </div>
+                <a href="<?php echo esc_url(home_url('/dashboard/tickets')); ?>" class="btn btn-sm btn-success-light">
+                    مشاهده همه <i class="ri-arrow-left-s-line align-middle"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    <?php if (!empty($recent_tickets)): ?>
+                        <?php foreach ($recent_tickets as $ticket): ?>
+                            <li class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <span class="avatar avatar-sm bg-success-transparent">
+                                        <i class="ri-customer-service-2-line"></i>
+                                    </span>
+                                    <div class="ms-2 flex-fill">
+                                        <p class="fw-semibold mb-0"><?php echo esc_html($ticket->post_title); ?></p>
+                                        <p class="fs-12 text-muted mb-0">
+                                            <i class="ri-time-line me-1"></i>
+                                            <?php echo esc_html(human_time_diff(strtotime($ticket->post_date), current_time('timestamp'))); ?> پیش
+                                        </p>
+                                    </div>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <li class="list-group-item text-center text-muted">
+                            <i class="ri-customer-service-2-line fs-3 mb-2 d-block opacity-3"></i>
+                            تیکتی وجود ندارد
+                        </li>
+                    <?php endif; ?>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Additional Info Cards -->
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card custom-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="ri-information-line me-2"></i>
+                    خوش آمدید
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-primary mb-0" role="alert">
+                    <strong>به سیستم مدیریت خوش آمدید!</strong>
+                    <p class="mb-0 mt-2">از منوی سمت راست می‌توانید به تمام بخش‌های سیستم دسترسی داشته باشید.</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>

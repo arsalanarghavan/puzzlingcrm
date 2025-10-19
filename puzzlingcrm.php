@@ -3,7 +3,7 @@
  * Plugin Name:       PuzzlingCRM
  * Plugin URI:        https://Puzzlingco.com/
  * Description:       A complete CRM and Project Management solution for Social Marketing agencies.
- * Version:           0.0.318
+ * Version:           0.1.16
  * Author:            Arsalan Arghavan
  * Author URI:        https://ArsalanArghavan.ir/
  * License:           GPL v2 or later
@@ -17,7 +17,7 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 // Define Plugin Constants
-define( 'PUZZLINGCRM_VERSION', '1.4.1' ); // Updated version
+define( 'PUZZLINGCRM_VERSION', '1.4.2' ); // Updated version - Fixed calendar firstDay
 define( 'PUZZLINGCRM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PUZZLINGCRM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'PUZZLING_CRM_TEMPLATE_PATH', PUZZLINGCRM_PLUGIN_DIR . 'templates/' );
@@ -39,14 +39,6 @@ register_deactivation_hook( __FILE__, [ 'PuzzlingCRM_Installer', 'deactivate' ] 
  * This function solves all JavaScript-related issues by loading scripts ONLY where they are needed.
  */
 function puzzling_enqueue_assets($hook) {
-    // --- GLOBAL STYLES (Load everywhere in admin) ---
-    wp_enqueue_style(
-        'puzzlingcrm-styles',
-        PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css',
-        [],
-        PUZZLINGCRM_VERSION
-    );
-
     // --- GLOBAL SCRIPTS (Load on all PuzzlingCRM admin pages) ---
     // We only load these if the page belongs to our plugin.
     if (strpos($hook, 'puzzling-') === false) {

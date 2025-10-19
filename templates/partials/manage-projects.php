@@ -22,11 +22,17 @@ if (empty($project_statuses)) {
 <div class="pzl-projects-manager-wrapper">
 
     <?php if ($action === 'new' || ($action === 'edit' && $project_to_edit)): ?>
-        <div class="pzl-card">
-            <div class="pzl-card-header">
-                <h3><i class="fas fa-edit"></i> <?php echo $project_to_edit ? 'ویرایش پروژه' : 'ایجاد پروژه جدید'; ?></h3>
-                <a href="<?php echo remove_query_arg(['action', 'project_id']); ?>" class="pzl-button">&larr; بازگشت به لیست پروژه‌ها</a>
+        <div class="card custom-card">
+            <div class="card-header justify-content-between">
+                <div class="card-title">
+                    <i class="ri-edit-line me-2"></i>
+                    <?php echo $project_to_edit ? 'ویرایش پروژه' : 'ایجاد پروژه جدید'; ?>
+                </div>
+                <a href="<?php echo esc_url(remove_query_arg(['action', 'project_id'])); ?>" class="btn btn-secondary btn-sm">
+                    <i class="ri-arrow-right-line"></i> بازگشت
+                </a>
             </div>
+            <div class="card-body">
 
             <form method="post" class="pzl-form pzl-ajax-form" id="pzl-project-form" data-action="puzzling_manage_project" enctype="multipart/form-data">
                 <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
@@ -79,17 +85,24 @@ if (empty($project_statuses)) {
                 </div>
 
                  <div class="form-submit">
-                    <button type="submit" class="pzl-button"><?php echo $project_to_edit ? 'ذخیره تغییرات پروژه' : 'ایجاد پروژه'; ?></button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ri-save-line"></i>
+                        <?php echo $project_to_edit ? 'ذخیره تغییرات' : 'ایجاد پروژه'; ?>
+                    </button>
                 </div>
             </form>
+            </div>
         </div>
 
     <?php else: // 'list' view ?>
         <div class="pzl-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                <h3><i class="fas fa-briefcase"></i> لیست پروژه‌ها</h3>
-                <a href="<?php echo add_query_arg(['action' => 'new']); ?>" class="pzl-button"><i class="fas fa-plus"></i> ایجاد پروژه جدید</a>
+            <div class="card-header justify-content-between">
+                <div></div>
+                <a href="<?php echo add_query_arg(['action' => 'new']); ?>" class="btn btn-primary btn-sm">
+                    <i class="ri-add-line"></i> ایجاد پروژه جدید
+                </a>
             </div>
+            <div class="card-body">
             
             <form method="get" class="pzl-form">
                 <input type="hidden" name="view" value="projects">
@@ -97,9 +110,15 @@ if (empty($project_statuses)) {
                     <div class="form-group" style="flex: 2; margin-bottom: 0;"><input type="text" name="s" placeholder="جستجوی عنوان پروژه..." value="<?php echo isset($_GET['s']) ? esc_attr($_GET['s']) : ''; ?>"></div>
                     <div class="form-group" style="flex: 1; margin-bottom: 0;"><select name="customer_filter"><option value="">همه مشتریان</option><?php $all_customers = get_users(['role__in' => ['customer', 'subscriber'], 'orderby' => 'display_name']); $current_customer = isset($_GET['customer_filter']) ? intval($_GET['customer_filter']) : 0; foreach ($all_customers as $customer) { echo '<option value="' . esc_attr($customer->ID) . '" ' . selected($current_customer, $customer->ID, false) . '>' . esc_html($customer->display_name) . '</option>'; } ?></select></div>
                     <div class="form-group" style="flex: 1; margin-bottom: 0;"><select name="status_filter"><option value="">همه وضعیت‌ها</option><?php $current_status = isset($_GET['status_filter']) ? sanitize_key($_GET['status_filter']) : ''; foreach ($project_statuses as $status) { echo '<option value="' . esc_attr($status->slug) . '" ' . selected($current_status, $status->slug, false) . '>' . esc_html($status->name) . '</option>'; } ?></select></div>
-                    <div class="form-group" style="margin-bottom: 0;"><button type="submit" class="pzl-button">فیلتر</button></div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="ri-filter-3-line"></i> فیلتر
+                        </button>
+                    </div>
                 </div>
             </form>
+            </div>
+            <div class="card-body p-0">
 
             <?php
             $base_page_url = get_permalink();
@@ -147,9 +166,17 @@ if (empty($project_statuses)) {
                             <div><i class="fas fa-hourglass-end"></i> پایان: <strong><?php echo $end_date ? jdate('Y/m/d', strtotime($end_date)) : '---'; ?></strong></div>
                         </div>
                         <div class="pzl-project-card-actions">
-                            <a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-sm">ویرایش پروژه</a>
-                            <?php if ($contract_id): ?><a href="<?php echo esc_url($contract_url); ?>" class="pzl-button pzl-button-sm" target="_blank">مشاهده قرارداد</a><?php endif; ?>
-                            <button class="delete-project pzl-button pzl-button-sm" data-project-id="<?php echo esc_attr($project_id); ?>" data-nonce="<?php echo esc_attr(wp_create_nonce('puzzling_delete_project_' . $project_id)); ?>" style="background-color: #dc3545 !important;">حذف</button>
+                            <a href="<?php echo esc_url($edit_url); ?>" class="btn btn-primary-light btn-sm">
+                                <i class="ri-edit-line"></i> ویرایش
+                            </a>
+                            <?php if ($contract_id): ?>
+                            <a href="<?php echo esc_url($contract_url); ?>" class="btn btn-info-light btn-sm" target="_blank">
+                                <i class="ri-file-text-line"></i> قرارداد
+                            </a>
+                            <?php endif; ?>
+                            <button class="delete-project btn btn-danger-light btn-sm" data-project-id="<?php echo esc_attr($project_id); ?>" data-nonce="<?php echo esc_attr(wp_create_nonce('puzzling_delete_project_' . $project_id)); ?>">
+                                <i class="ri-delete-bin-line"></i> حذف
+                            </button>
                         </div>
                     </div>
                     <?php endwhile; ?>

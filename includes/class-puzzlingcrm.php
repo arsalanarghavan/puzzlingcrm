@@ -68,6 +68,14 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-parsgreen-handler.php';
 		// NEW: Telegram Handler
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-telegram-handler.php';
+        
+        // Login Page and AJAX Handler
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-login-page.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-login-ajax-handler.php';
+        
+        // Dashboard Router
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-dashboard-router.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-task-template-manager.php';
     }
 
     /**
@@ -88,6 +96,9 @@ class PuzzlingCRM {
         new PuzzlingCRM_Cron_Handler();
         new PuzzlingCRM_Agile_Handler();
         new PuzzlingCRM_Automation_Handler();
+        new PuzzlingCRM_Login_Page();
+        new PuzzlingCRM_Login_Ajax_Handler();
+        new PuzzlingCRM_Dashboard_Router();
     }
 
     /**
@@ -97,10 +108,7 @@ class PuzzlingCRM {
         // Enqueue Font Awesome from a reliable CDN
         wp_enqueue_style( 'font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css', [], '6.5.1' );
         
-        // Main stylesheet
-        wp_enqueue_style( 'puzzlingcrm-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css', [], PUZZLINGCRM_VERSION );
-        
-        // Custom datepicker style
+        // Custom datepicker style (only for admin pages that need it)
         wp_enqueue_style( 'puzzling-datepicker-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzling-datepicker.css', [], PUZZLINGCRM_VERSION );
         
         // Enqueue jQuery UI Sortable & Datepicker (Gregorian)

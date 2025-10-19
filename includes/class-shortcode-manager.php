@@ -27,5 +27,8 @@ class PuzzlingCRM_Shortcode_Manager {
 
         // NEW: Add the leads shortcode, also for managers
         add_shortcode( 'puzzling_leads', [ 'PuzzlingCRM_Frontend_Dashboard', 'render_page_leads' ] );
+        
+        // Login page shortcode
+        add_shortcode( 'puzzling_login', [ 'PuzzlingCRM_Login_Page', 'render_login_page' ] );
     }
 }
