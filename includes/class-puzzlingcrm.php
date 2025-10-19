@@ -76,6 +76,15 @@ class PuzzlingCRM {
         // Dashboard Router
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-dashboard-router.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-task-template-manager.php';
+        
+        // WebSocket Handler for Real-time Notifications
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-websocket-handler.php';
+        
+        // Elasticsearch Handler for Advanced Search
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-elasticsearch-handler.php';
+        
+        // Activity Timeline Handler
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-activity-timeline.php';
     }
 
     /**
@@ -99,6 +108,9 @@ class PuzzlingCRM {
         new PuzzlingCRM_Login_Page();
         new PuzzlingCRM_Login_Ajax_Handler();
         new PuzzlingCRM_Dashboard_Router();
+        new PuzzlingCRM_WebSocket_Handler();
+        new PuzzlingCRM_Elasticsearch_Handler();
+        new PuzzlingCRM_Activity_Timeline();
     }
 
     /**

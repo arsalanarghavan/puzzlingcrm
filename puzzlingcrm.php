@@ -111,6 +111,54 @@ function puzzling_enqueue_assets($hook) {
             true
         );
     }
+    
+    // Load WebSocket notifications globally for all PuzzlingCRM pages
+    wp_enqueue_style(
+        'puzzling-websocket-notifications-css',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/css/websocket-notifications.css',
+        [],
+        PUZZLINGCRM_VERSION
+    );
+    
+    wp_enqueue_script(
+        'puzzling-websocket-notifications',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/js/websocket-notifications.js',
+        ['jquery', 'puzzlingcrm-scripts'],
+        PUZZLINGCRM_VERSION,
+        true
+    );
+    
+    // Load Advanced Search globally for all PuzzlingCRM pages
+    wp_enqueue_style(
+        'puzzling-advanced-search-css',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/css/advanced-search.css',
+        [],
+        PUZZLINGCRM_VERSION
+    );
+    
+    wp_enqueue_script(
+        'puzzling-advanced-search',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/js/advanced-search.js',
+        ['jquery', 'puzzlingcrm-scripts'],
+        PUZZLINGCRM_VERSION,
+        true
+    );
+    
+    // Load Activity Timeline globally for all PuzzlingCRM pages
+    wp_enqueue_style(
+        'puzzling-activity-timeline-css',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/css/activity-timeline.css',
+        [],
+        PUZZLINGCRM_VERSION
+    );
+    
+    wp_enqueue_script(
+        'puzzling-activity-timeline',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/js/activity-timeline.js',
+        ['jquery', 'puzzlingcrm-scripts'],
+        PUZZLINGCRM_VERSION,
+        true
+    );
 }
 add_action('admin_enqueue_scripts', 'puzzling_enqueue_assets');
 

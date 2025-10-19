@@ -35,6 +35,14 @@ class PuzzlingCRM_Installer {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-dashboard-router.php';
         PuzzlingCRM_Dashboard_Router::activate();
 
+        // Create notifications table for WebSocket notifications
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-websocket-handler.php';
+        PuzzlingCRM_WebSocket_Handler::create_notifications_table();
+        
+        // Create activities table for Activity Timeline
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-activity-timeline.php';
+        PuzzlingCRM_Activity_Timeline::create_activities_table();
+
         // Flush rewrite rules to make CPT URLs work correctly
         flush_rewrite_rules();
 
