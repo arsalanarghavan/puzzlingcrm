@@ -33,12 +33,12 @@ function pzl_display_positions_tree($parent_id = 0, $level = 0) {
 ?>
 
 <div class="pzl-form-container">
-    <h4><i class="fas fa-sitemap"></i> مدیریت جایگاه‌های سازمانی</h4>
+    <h4><i class="ri-organization-chart"></i> مدیریت جایگاه‌های سازمانی</h4>
     <p class="description">در این بخش می‌توانید دپارتمان‌ها (سطح اصلی) و عناوین شغلی (زیرمجموعه‌ها) را مدیریت کنید.</p>
 
     <div class="pzl-positions-manager">
         <div class="pzl-positions-list pzl-card">
-            <h5><i class="fas fa-list-ul"></i> ساختار سازمانی</h5>
+            <h5><i class="ri-list-check"></i> ساختار سازمانی</h5>
             <table class="pzl-table">
                 <thead>
                     <tr>
@@ -54,7 +54,7 @@ function pzl_display_positions_tree($parent_id = 0, $level = 0) {
         </div>
 
         <div class="pzl-positions-form pzl-card">
-            <h5 id="position-form-title"><i class="fas fa-plus-circle"></i> افزودن جایگاه جدید</h5>
+            <h5 id="position-form-title"><i class="ri-add-circle-line"></i> افزودن جایگاه جدید</h5>
             <form id="pzl-position-form" class="pzl-form pzl-ajax-form" data-action="puzzling_manage_position">
                 <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
                 <input type="hidden" name="term_id" id="position-term-id" value="0">
@@ -96,7 +96,7 @@ jQuery(document).ready(function($) {
         var parentId = row.data('parent-id');
         var name = row.find('td[data-label="name"]').text().replace('↳ ', '').trim();
 
-        $('#position-form-title').html('<i class="fas fa-edit"></i> ویرایش جایگاه');
+        $('#position-form-title').html('<i class="ri-edit-line"></i> ویرایش جایگاه');
         $('#position-term-id').val(termId);
         $('#position-name').val(name).focus();
         $('#position-parent').val(parentId);
@@ -105,7 +105,7 @@ jQuery(document).ready(function($) {
 
     // Cancel Edit Button
     $('#cancel-edit-position').on('click', function() {
-        $('#position-form-title').html('<i class="fas fa-plus-circle"></i> افزودن جایگاه جدید');
+        $('#position-form-title').html('<i class="ri-add-circle-line"></i> افزودن جایگاه جدید');
         $('#pzl-position-form').trigger('reset');
         $('#position-term-id').val('0');
         $('#position-parent').val(0);

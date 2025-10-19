@@ -18,7 +18,7 @@ $logs_query = new WP_Query([
 ]);
 ?>
 
-<h3><i class="fas fa-history"></i> لاگ رویدادهای سیستم</h3>
+<h3><i class="ri-history-line"></i> لاگ رویدادهای سیستم</h3>
 
 <?php if ($logs_query->have_posts()): ?>
 <table class="pzl-table">

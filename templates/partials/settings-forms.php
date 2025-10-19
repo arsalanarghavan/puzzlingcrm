@@ -13,7 +13,7 @@ $form_to_edit = ($form_id > 0) ? get_post($form_id) : null;
 <div class="pzl-form-container">
     <?php if ($action === 'edit' || $action === 'new'): ?>
         <div class="pzl-card-header" style="border: none; padding-bottom: 0;">
-            <h3><i class="fas fa-edit"></i> <?php echo $form_id > 0 ? __('ویرایش فرم', 'puzzlingcrm') : __('ایجاد فرم جدید', 'puzzlingcrm'); ?></h3>
+            <h3><i class="ri-edit-line"></i> <?php echo $form_id > 0 ? __('ویرایش فرم', 'puzzlingcrm') : __('ایجاد فرم جدید', 'puzzlingcrm'); ?></h3>
             <a href="<?php echo remove_query_arg(['action', 'form_id']); ?>" class="pzl-button">&larr; <?php _e('بازگشت به لیست فرم‌ها', 'puzzlingcrm'); ?></a>
         </div>
         <form id="manage-form" method="post" class="pzl-form" style="margin-top: 20px;">
@@ -70,7 +70,7 @@ $form_to_edit = ($form_id > 0) ? get_post($form_id) : null;
 
     <?php else: // List view ?>
         <div class="pzl-card-header" style="border: none; padding-bottom: 0;">
-             <h4><i class="fas fa-clipboard-list"></i> <?php _e('مدیریت فرم‌ها', 'puzzlingcrm'); ?></h4>
+             <h4><i class="ri-file-list-3-line"></i> <?php _e('مدیریت فرم‌ها', 'puzzlingcrm'); ?></h4>
              <a href="<?php echo add_query_arg('action', 'new'); ?>" class="pzl-button"><?php _e('ایجاد فرم جدید', 'puzzlingcrm'); ?></a>
         </div>
         <p class="description"><?php _e('فرم‌هایی ایجاد کنید تا پس از خرید محصول به مشتری نمایش داده شوند و پروژه به صورت خودکار ایجاد شود.', 'puzzlingcrm'); ?></p>

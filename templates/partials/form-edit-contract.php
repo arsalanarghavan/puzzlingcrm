@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 if ( ! current_user_can('manage_options') ) return;
 ?>
 <div class="pzl-form-container">
-    <h3><i class="fas fa-plus-circle"></i> ایجاد قرارداد و قسط‌بندی جدید</h3>
+    <h3><i class="ri-add-circle-line"></i> ایجاد قرارداد و قسط‌بندی جدید</h3>
     <form id="create-contract-form" class="pzl-ajax-form" data-action="puzzling_manage_contract" method="post">
         <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
         <input type="hidden" name="item_id" value="0">

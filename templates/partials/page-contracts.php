@@ -6,11 +6,11 @@ $action = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']) : 0;
 ?>
 <div class="pzl-dashboard-section">
-    <h3><i class="fas fa-file-signature"></i> مدیریت قراردادها</h3>
+    <h3><i class="ri-file-text-line"></i> مدیریت قراردادها</h3>
     
     <div class="pzl-dashboard-tabs">
-        <a href="<?php echo remove_query_arg(['action', 'contract_id']); ?>" class="pzl-tab <?php echo $action === 'list' ? 'active' : ''; ?>"> <i class="fas fa-list-ul"></i> لیست قراردادها</a>
-        <a href="<?php echo add_query_arg('action', 'new'); ?>" class="pzl-tab <?php echo $action === 'new' ? 'active' : ''; ?>"> <i class="fas fa-plus"></i> قرارداد جدید</a>
+        <a href="<?php echo remove_query_arg(['action', 'contract_id']); ?>" class="pzl-tab <?php echo $action === 'list' ? 'active' : ''; ?>"> <i class="ri-list-check"></i> لیست قراردادها</a>
+        <a href="<?php echo add_query_arg('action', 'new'); ?>" class="pzl-tab <?php echo $action === 'new' ? 'active' : ''; ?>"> <i class="ri-add-line"></i> قرارداد جدید</a>
     </div>
 
     <div class="pzl-dashboard-tab-content">
@@ -34,7 +34,7 @@ $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']
             ]);
         ?>
         <div class="pzl-card">
-            <h4><i class="fas fa-briefcase"></i> پروژه‌های مرتبط با این قرارداد</h4>
+            <h4><i class="ri-folder-2-line"></i> پروژه‌های مرتبط با این قرارداد</h4>
             <?php if (!empty($related_projects)): ?>
                 <ul class="pzl-activity-list">
                     <?php foreach($related_projects as $project): ?>
@@ -49,7 +49,7 @@ $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']
                 <p>هیچ پروژه‌ای به این قرارداد متصل نیست.</p>
             <?php endif; ?>
             <hr>
-            <h5><i class="fas fa-plus-circle"></i> افزودن پروژه جدید به این قرارداد</h5>
+            <h5><i class="ri-add-circle-line"></i> افزودن پروژه جدید به این قرارداد</h5>
             <form class="pzl-form pzl-ajax-form" data-action="puzzling_add_project_to_contract">
                 <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
                 <input type="hidden" name="contract_id" value="<?php echo esc_attr($contract_id_to_edit); ?>">
@@ -75,7 +75,7 @@ $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']
                 'paged' => get_query_var('paged') ? get_query_var('paged') : 1,
             ]);
             ?>
-            <h4><i class="fas fa-archive"></i> لیست قراردادهای ثبت شده</h4>
+            <h4><i class="ri-archive-line"></i> لیست قراردادهای ثبت شده</h4>
             <?php if ($contracts_query->have_posts()): ?>
                 <table class="pzl-table">
                     <thead>

@@ -160,10 +160,10 @@ if (empty($project_statuses)) {
                             <div class="pzl-project-card-title-group"><h4 class="pzl-project-card-title"><?php the_title(); ?></h4><span class="pzl-project-card-customer"><?php echo esc_html($customer->display_name); ?></span></div>
                         </div>
                         <div class="pzl-project-card-details-grid">
-                            <div><i class="fas fa-toggle-on"></i> وضعیت: <span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span></div>
-                            <div><i class="fas fa-sync-alt"></i> مدل: <strong><?php echo esc_html($model_text); ?></strong></div>
-                            <div><i class="fas fa-calendar-alt"></i> مدت: <strong><?php echo esc_html($duration_text); ?></strong></div>
-                            <div><i class="fas fa-hourglass-end"></i> پایان: <strong><?php echo $end_date ? jdate('Y/m/d', strtotime($end_date)) : '---'; ?></strong></div>
+                            <div><i class="ri-toggle-line"></i> وضعیت: <span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span></div>
+                            <div><i class="ri-refresh-line"></i> مدل: <strong><?php echo esc_html($model_text); ?></strong></div>
+                            <div><i class="ri-calendar-line"></i> مدت: <strong><?php echo esc_html($duration_text); ?></strong></div>
+                            <div><i class="ri-hourglass-line"></i> پایان: <strong><?php echo $end_date ? jdate('Y/m/d', strtotime($end_date)) : '---'; ?></strong></div>
                         </div>
                         <div class="pzl-project-card-actions">
                             <a href="<?php echo esc_url($edit_url); ?>" class="btn btn-primary-light btn-sm">
@@ -184,7 +184,7 @@ if (empty($project_statuses)) {
                 <div class="pagination"><?php echo paginate_links(['total' => $projects_query->max_num_pages, 'current' => $paged, 'format' => '?paged=%#%']); ?></div>
                 <?php wp_reset_postdata(); ?>
             <?php else: ?>
-                 <div class="pzl-empty-state"><i class="fas fa-exclamation-circle"></i><h4>پروژه‌ای یافت نشد</h4><p>هیچ پروژه‌ای با این مشخصات یافت نشد. می‌توانید یک پروژه جدید ایجاد کنید.</p></div>
+                 <div class="pzl-empty-state"><i class="ri-error-warning-line"></i><h4>پروژه‌ای یافت نشد</h4><p>هیچ پروژه‌ای با این مشخصات یافت نشد. می‌توانید یک پروژه جدید ایجاد کنید.</p></div>
             <?php endif; ?>
         </div>
     <?php endif; ?>

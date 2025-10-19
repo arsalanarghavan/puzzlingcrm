@@ -257,6 +257,21 @@ class PuzzlingCRM_Dashboard_Router {
         <!-- RTL Complete Fix (آخرین فایل - بالاترین اولویت) -->
         <link href="<?php echo $assets_url; ?>css/rtl-complete-fix.css" rel="stylesheet">
         
+        <?php
+        // Load page-specific styles
+        $view = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'dashboard';
+        if ($view === 'reports') {
+            echo '<link rel="stylesheet" href="' . esc_url(PUZZLINGCRM_PLUGIN_URL . 'assets/css/reports-styles.css') . '?v=' . PUZZLINGCRM_VERSION . '">';
+        }
+        if ($view === 'dashboard') {
+            echo '<link rel="stylesheet" href="' . esc_url(PUZZLINGCRM_PLUGIN_URL . 'assets/css/dashboard-styles.css') . '?v=' . PUZZLINGCRM_VERSION . '">';
+        }
+        // Load complete styles for all other pages
+        if (!in_array($view, ['reports', 'dashboard'])) {
+            echo '<link rel="stylesheet" href="' . esc_url(PUZZLINGCRM_PLUGIN_URL . 'assets/css/all-pages-complete.css') . '?v=' . PUZZLINGCRM_VERSION . '">';
+        }
+        ?>
+        
         <!-- jQuery (for AJAX) -->
         <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
         
@@ -276,6 +291,15 @@ class PuzzlingCRM_Dashboard_Router {
         <!-- DHTMLX Gantt -->
         <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
         <link rel="stylesheet" href="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css">
+        
+        <!-- Chart.js for Advanced Charts -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        
+        <!-- jsPDF for PDF Export -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        
+        <!-- SheetJS for Excel Export -->
+        <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
         
         <!-- PuzzlingCRM AJAX Config -->
         <script>
@@ -524,6 +548,14 @@ class PuzzlingCRM_Dashboard_Router {
         <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/tasks-management.js"></script>
         <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/user-management.js"></script>
         <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/lead-management.js"></script>
+        
+        <?php
+        // Load reports export script for reports page
+        $view = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'dashboard';
+        if ($view === 'reports') {
+            echo '<script src="' . esc_url(PUZZLINGCRM_PLUGIN_URL . 'assets/js/reports-export.js') . '?v=' . PUZZLINGCRM_VERSION . '"></script>';
+        }
+        ?>
         <!-- End::custom-scripts -->
 
     </body>

@@ -48,7 +48,7 @@ if (!empty($project_ids)) {
 ?>
 
 <div class="puzzling-projects-list">
-    <h3><i class="fas fa-briefcase"></i> لیست پروژه‌های شما</h3>
+    <h3><i class="ri-folder-2-line"></i> لیست پروژه‌های شما</h3>
     
     <?php if ($projects_query && $projects_query->have_posts()) : ?>
         <div class="pzl-projects-grid-view">
@@ -83,10 +83,10 @@ if (!empty($project_ids)) {
                         </div>
                     </div>
                     <div class="pzl-project-card-details-grid">
-                        <div><i class="fas fa-toggle-on"></i> وضعیت: <span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span></div>
-                        <div><i class="fas fa-sync-alt"></i> مدل: <strong><?php echo esc_html($model_text); ?></strong></div>
-                        <div><i class="fas fa-calendar-alt"></i> مدت: <strong><?php echo esc_html($duration_text); ?></strong></div>
-                        <div><i class="fas fa-hourglass-end"></i> پایان: <strong><?php echo $end_date ? jdate('Y/m/d', strtotime($end_date)) : '---'; ?></strong></div>
+                        <div><i class="ri-toggle-line"></i> وضعیت: <span class="pzl-status-badge status-<?php echo $status_slug; ?>"><?php echo $status_name; ?></span></div>
+                        <div><i class="ri-refresh-line"></i> مدل: <strong><?php echo esc_html($model_text); ?></strong></div>
+                        <div><i class="ri-calendar-line"></i> مدت: <strong><?php echo esc_html($duration_text); ?></strong></div>
+                        <div><i class="ri-hourglass-line"></i> پایان: <strong><?php echo $end_date ? jdate('Y/m/d', strtotime($end_date)) : '---'; ?></strong></div>
                     </div>
                     <div class="pzl-project-card-actions">
                         <a href="<?php the_permalink(); ?>" class="pzl-button pzl-button-sm">مشاهده وظایف پروژه</a>
@@ -97,7 +97,7 @@ if (!empty($project_ids)) {
         <?php wp_reset_postdata(); ?>
     <?php else : ?>
         <div class="pzl-empty-state">
-            <i class="fas fa-exclamation-circle"></i>
+            <i class="ri-error-warning-line"></i>
             <h4>پروژه‌ای یافت نشد</h4>
             <p>در حال حاضر شما در هیچ پروژه‌ای وظیفه‌ای ندارید.</p>
         </div>

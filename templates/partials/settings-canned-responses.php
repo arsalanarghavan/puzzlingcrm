@@ -12,12 +12,12 @@ $response_to_edit = ($response_id > 0) ? get_post($response_id) : null;
 ?>
 
 <div class="pzl-form-container">
-    <h4><i class="fas fa-comment-dots"></i> مدیریت پاسخ‌های آماده</h4>
+    <h4><i class="ri-chat-quote-line"></i> مدیریت پاسخ‌های آماده</h4>
     <p class="description">پاسخ‌های پرتکرار برای تیکت‌ها را در این بخش تعریف کنید تا سرعت پاسخ‌دهی تیم پشتیبانی افزایش یابد.</p>
 
     <div class="pzl-positions-manager">
         <div class="pzl-positions-list pzl-card">
-            <h5><i class="fas fa-list-ul"></i> لیست پاسخ‌ها</h5>
+            <h5><i class="ri-list-check"></i> لیست پاسخ‌ها</h5>
             <table class="pzl-table">
                 <thead>
                     <tr>
@@ -48,7 +48,7 @@ $response_to_edit = ($response_id > 0) ? get_post($response_id) : null;
         </div>
 
         <div class="pzl-positions-form pzl-card">
-            <h5 id="response-form-title"><i class="fas fa-plus-circle"></i> <?php echo $response_to_edit ? 'ویرایش پاسخ' : 'افزودن پاسخ جدید'; ?></h5>
+            <h5 id="response-form-title"><i class="ri-add-circle-line"></i> <?php echo $response_to_edit ? 'ویرایش پاسخ' : 'افزودن پاسخ جدید'; ?></h5>
             <form id="pzl-canned-response-form" class="pzl-form pzl-ajax-form" data-action="puzzling_manage_canned_response">
                 <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
                 <input type="hidden" name="response_id" value="<?php echo esc_attr($response_id); ?>">

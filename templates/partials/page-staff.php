@@ -58,7 +58,7 @@ $profile_fields = [
         ?>
     <?php elseif ($action === 'edit' || $action === 'add'): ?>
         <div class="pzl-card-header">
-             <h3><i class="fas fa-user-edit"></i> <?php echo $user_id > 0 ? 'ویرایش کارمند: ' . esc_html($user_to_edit->display_name) : 'افزودن کارمند جدید'; ?></h3>
+             <h3><i class="ri-user-settings-line"></i> <?php echo $user_id > 0 ? 'ویرایش کارمند: ' . esc_html($user_to_edit->display_name) : 'افزودن کارمند جدید'; ?></h3>
              <a href="<?php echo remove_query_arg(['action', 'user_id']); ?>" class="pzl-button">&larr; بازگشت به لیست کارکنان</a>
         </div>
 
@@ -213,7 +213,7 @@ $profile_fields = [
 
     <?php else: // List View ?>
         <div class="pzl-card-header">
-            <h3><i class="fas fa-users-cog"></i> مدیریت کارکنان</h3>
+            <h3><i class="ri-group-line-cog"></i> مدیریت کارکنان</h3>
             <a href="<?php echo add_query_arg(['action' => 'add']); ?>" class="pzl-button">افزودن کارمند جدید</a>
         </div>
         <div class="pzl-card">

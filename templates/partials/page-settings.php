@@ -6,7 +6,7 @@ $active_tab = isset( $_GET[ 'tab' ] ) ? sanitize_key( $_GET[ 'tab' ] ) : 'paymen
 $base_url = remove_query_arg('puzzling_notice');
 ?>
 <div class="pzl-dashboard-section">
-    <h3><i class="fas fa-cog"></i> تنظیمات</h3>
+    <h3><i class="ri-settings-3-line"></i> تنظیمات</h3>
     
     <div class="pzl-dashboard-tabs">
         <a href="<?php echo add_query_arg('tab', 'style', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'style' ? 'active' : ''; ?>"><i class="ri-palette-line"></i> ظاهر و استایل</a>

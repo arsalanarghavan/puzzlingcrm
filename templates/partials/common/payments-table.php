@@ -73,7 +73,7 @@ $paginated_installments = array_slice($all_installments, $offset, $items_per_pag
 ?>
 <div class="pzl-card">
     <div class="pzl-card-header">
-        <h3><i class="fas fa-file-invoice-dollar"></i> لیست تمام اقساط و پرداخت‌ها</h3>
+        <h3><i class="ri-file-line-invoice-dollar"></i> لیست تمام اقساط و پرداخت‌ها</h3>
     </div>
 
     <form method="get" class="pzl-form">

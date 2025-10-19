@@ -14,14 +14,14 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
     <?php if ($action === 'edit' || $action === 'new'): ?>
         <div class="pzl-card">
             <div class="pzl-card-header">
-                <h3><i class="fas fa-file-invoice"></i> <?php echo $invoice_to_edit ? 'ویرایش پیش‌فاکتور' : 'ایجاد پیش‌فاکتور جدید'; ?></h3>
+                <h3><i class="ri-file-line-invoice"></i> <?php echo $invoice_to_edit ? 'ویرایش پیش‌فاکتور' : 'ایجاد پیش‌فاکتور جدید'; ?></h3>
                 <a href="<?php echo remove_query_arg(['action', 'invoice_id']); ?>" class="pzl-button">&larr; بازگشت به لیست</a>
             </div>
             <form method="post" class="pzl-form pzl-ajax-form" id="pzl-pro-invoice-form" data-action="puzzling_manage_pro_invoice">
                 <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
                 <input type="hidden" name="invoice_id" value="<?php echo esc_attr($invoice_id); ?>">
 
-                <h4><i class="fas fa-info-circle"></i> اطلاعات پایه</h4>
+                <h4><i class="ri-information-line"></i> اطلاعات پایه</h4>
                 <div class="pzl-form-row">
                     <div class="form-group half-width">
                         <label for="customer_id">مربوط به مشتری</label>
@@ -64,7 +64,7 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
                 </div>
 
                 <hr>
-                <h4><i class="fas fa-cogs"></i> جزئیات خدمات و قیمت</h4>
+                <h4><i class="ri-settings-3-lines"></i> جزئیات خدمات و قیمت</h4>
                 <div id="invoice-items-container">
                     <div id="invoice-items-body">
                         <?php
@@ -87,7 +87,7 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
                 <button type="button" id="add-invoice-item" class="pzl-button" style="align-self: flex-start;">افزودن ردیف جدید</button>
 
                 <hr>
-                <h4><i class="fas fa-file-invoice-dollar"></i> اطلاعات مالی و توضیحات</h4>
+                <h4><i class="ri-file-line-invoice-dollar"></i> اطلاعات مالی و توضیحات</h4>
                 <div class="pzl-financial-summary">
                     <div class="summary-item">
                         <span>جمع کل:</span>
@@ -117,7 +117,7 @@ $invoice_to_edit = ($invoice_id > 0) ? get_post($invoice_id) : null;
     <?php else: // List View ?>
         <div class="pzl-card">
             <div class="pzl-card-header">
-                <h3><i class="fas fa-list-ul"></i> لیست پیش‌فاکتورها</h3>
+                <h3><i class="ri-list-check"></i> لیست پیش‌فاکتورها</h3>
                 <a href="<?php echo add_query_arg('action', 'new'); ?>" class="pzl-button">ایجاد جدید</a>
             </div>
             <?php

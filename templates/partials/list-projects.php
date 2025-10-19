@@ -26,7 +26,7 @@ $projects_query = new WP_Query($args);
 ?>
 
 <div class="puzzling-projects-list">
-    <h3><i class="fas fa-briefcase"></i> لیست پروژه‌های شما</h3>
+    <h3><i class="ri-folder-2-line"></i> لیست پروژه‌های شما</h3>
     
     <?php if ($projects_query->have_posts()) : ?>
         <div class="pzl-projects-grid-view">
@@ -38,7 +38,7 @@ $projects_query = new WP_Query($args);
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('thumbnail'); ?>
                         <?php else: ?>
-                            <i class="fas fa-folder-open"></i>
+                            <i class="ri-folder-line-open"></i>
                         <?php endif; ?>
                     </div>
                     <div class="pzl-project-card-details">
@@ -56,7 +56,7 @@ $projects_query = new WP_Query($args);
         <?php wp_reset_postdata(); ?>
     <?php else : ?>
         <div class="pzl-empty-state">
-            <i class="fas fa-exclamation-circle"></i>
+            <i class="ri-error-warning-line"></i>
             <h4>پروژه‌ای یافت نشد</h4>
             <p>بعد از تعریف پروژه توسط تیم پازلینگ، در این بخش برای شما نمایش داده خواهد شد.</p>
         </div>

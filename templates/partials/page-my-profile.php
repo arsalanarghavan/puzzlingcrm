@@ -12,7 +12,7 @@ $phone_number = get_user_meta($user_id, 'pzl_mobile_phone', true);
 ?>
 <div class="pzl-dashboard-section">
     <div class="pzl-card-header">
-        <h3><i class="fas fa-user-edit"></i> <?php esc_html_e('ویرایش پروفایل من', 'puzzlingcrm'); ?></h3>
+        <h3><i class="ri-user-settings-line"></i> <?php esc_html_e('ویرایش پروفایل من', 'puzzlingcrm'); ?></h3>
     </div>
     <div class="pzl-card">
         <form method="post" class="pzl-form pzl-ajax-form" id="pzl-my-profile-form" data-action="puzzling_update_my_profile" enctype="multipart/form-data">

@@ -58,7 +58,7 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
     <?php if ($is_manager): ?>
     <div class="pzl-card-actions" style="margin-bottom: 20px;">
         <button id="pzl-convert-ticket-to-task" class="pzl-button pzl-button-sm" data-ticket-id="<?php echo esc_attr($ticket->ID); ?>">
-            <i class="fas fa-tasks"></i> تبدیل به وظیفه
+            <i class="ri-task-line"></i> تبدیل به وظیفه
         </button>
     </div>
     <?php endif; ?>
@@ -135,7 +135,7 @@ $base_url = remove_query_arg(['ticket_id', 'puzzling_notice']);
                     <div class="pzl-file-uploader-container">
                         <input type="file" name="reply_attachments[]" id="reply_attachments" multiple class="pzl-file-input">
                         <label for="reply_attachments" class="pzl-file-label">
-                            <i class="fas fa-cloud-upload-alt"></i>
+                            <i class="ri-upload-cloud-2-line"></i>
                             <span>فایل‌های خود را انتخاب کنید یا اینجا بکشید</span>
                         </label>
                         <div id="reply-attachments-preview" class="pzl-attachments-preview"></div>
@@ -231,7 +231,7 @@ if (!function_exists('puzzling_ticket_comment_template')) {
                 <strong class="author-name"><?php echo get_comment_author(); ?></strong>
                 <span class="comment-date"><?php printf('%1$s در %2$s', jdate('Y/m/d', strtotime(get_comment_date())), get_comment_time()); ?></span>
                 <?php if ($is_internal_note): ?>
-                    <span class="internal-note-badge"><i class="fas fa-user-shield"></i> یادداشت داخلی</span>
+                    <span class="internal-note-badge"><i class="ri-user-star-line"></i> یادداشت داخلی</span>
                 <?php endif; ?>
             </div>
             <div class="comment-content">

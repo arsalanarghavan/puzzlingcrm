@@ -25,7 +25,7 @@ $delete_nonce = wp_create_nonce('puzzlingcrm-ajax-nonce');
 ?>
 
 <div class="pzl-form-container">
-    <h4><i class="fas fa-cogs"></i> تنظیمات کلی سرنخ‌ها</h4>
+    <h4><i class="ri-settings-3-lines"></i> تنظیمات کلی سرنخ‌ها</h4>
     <form method="post" class="pzl-form" style="margin-top: 20px;">
         <input type="hidden" name="puzzling_action" value="save_lead_settings">
         <?php wp_nonce_field('puzzling_save_lead_settings_nonce', 'security'); ?>
@@ -55,7 +55,7 @@ $delete_nonce = wp_create_nonce('puzzlingcrm-ajax-nonce');
 
 
 <div class="pzl-form-container" style="margin-top: 40px;">
-    <h4><i class="fas fa-tags"></i> مدیریت وضعیت‌های سرنخ</h4>
+    <h4><i class="ri-price-tag-lines"></i> مدیریت وضعیت‌های سرنخ</h4>
     <p class="description">در این بخش می‌توانید وضعیت‌های مختلف برای سرنخ‌ها را تعریف کنید.</p>
     
     <div class="pzl-form" style="margin-top: 20px;">

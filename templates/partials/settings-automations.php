@@ -26,7 +26,7 @@ $actions = [
 ?>
 
 <div class="pzl-form-container">
-    <h4><i class="fas fa-robot"></i> اتوماسیون گردش کار</h4>
+    <h4><i class="ri-robot-line"></i> اتوماسیون گردش کار</h4>
     <p class="description">قوانین خودکار برای فرآیندهای تکراری تعریف کنید. برای مثال: "اگر وضعیت به 'نیاز به بازبینی' تغییر کرد، وظیفه را به مدیر سیستم تخصیص بده."</p>
     
     <form id="puzzling-automations-form" method="post" class="pzl-form" style="margin-top: 20px;">

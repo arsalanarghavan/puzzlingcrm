@@ -11,8 +11,8 @@ $active_tab = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
 ?>
 
 <div class="pzl-dashboard-tabs">
-    <a href="?view=overview" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"> <i class="fas fa-tachometer-alt"></i> <?php esc_html_e('نمای کلی', 'puzzlingcrm'); ?></a>
-    <a href="?view=reports" class="pzl-tab <?php echo $active_tab === 'reports' ? 'active' : ''; ?>"> <i class="fas fa-chart-area"></i> <?php esc_html_e('گزارش‌ها', 'puzzlingcrm'); ?></a>
+    <a href="?view=overview" class="pzl-tab <?php echo $active_tab === 'overview' ? 'active' : ''; ?>"> <i class="ri-dashboard-line"></i> <?php esc_html_e('نمای کلی', 'puzzlingcrm'); ?></a>
+    <a href="?view=reports" class="pzl-tab <?php echo $active_tab === 'reports' ? 'active' : ''; ?>"> <i class="ri-bar-chart-box-line"></i> <?php esc_html_e('گزارش‌ها', 'puzzlingcrm'); ?></a>
 </div>
 
 <div class="pzl-dashboard-tab-content">
@@ -71,7 +71,7 @@ $active_tab = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'overview';
         </div>
     </div>
     <div class="pzl-dashboard-section">
-        <h3><i class="fas fa-list-ul" style="vertical-align: middle;"></i> <?php esc_html_e('لیست تمام اقساط', 'puzzlingcrm'); ?></h3>
+        <h3><i class="ri-list-check" style="vertical-align: middle;"></i> <?php esc_html_e('لیست تمام اقساط', 'puzzlingcrm'); ?></h3>
         <?php include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/common/payments-table.php'; ?>
     </div>
 <?php endif; ?>

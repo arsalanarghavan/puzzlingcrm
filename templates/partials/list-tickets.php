@@ -33,88 +33,125 @@ if ($ticket_id_to_view > 0) {
 
 <div class="pzl-dashboard-tab-content">
     <?php if ($active_tab === 'new'): ?>
-        <div id="puzzling-new-ticket-form" class="card custom-card">
-            <div class="card-header">
-                <div class="card-title">
-                    <i class="ri-add-circle-line me-2"></i> ارسال تیکت جدید
+        <div id="puzzling-new-ticket-form" class="card custom-card shadow-sm">
+            <div class="card-header bg-primary-transparent">
+                <div class="card-title text-primary">
+                    <i class="ri-ticket-line me-2"></i>ارسال تیکت جدید
                 </div>
             </div>
             <div class="card-body">
-            <form class="pzl-form pzl-ajax-form" data-action="puzzling_new_ticket" enctype="multipart/form-data">
-                <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
-                <div class="pzl-form-row">
-                    <div class="form-group">
-                        <label for="ticket_title">موضوع:</label>
-                        <input type="text" id="ticket_title" name="ticket_title" required>
+                <form class="pzl-form pzl-ajax-form" data-action="puzzling_new_ticket" enctype="multipart/form-data">
+                    <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
+                    
+                    <!-- Row 1: موضوع و پروژه -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="ticket_title" class="form-label fw-semibold">
+                                <i class="ri-text me-1 text-primary"></i>موضوع <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="ticket_title" name="ticket_title" class="form-control form-control-lg" 
+                                   placeholder="موضوع تیکت خود را وارد کنید..." required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="ticket_project" class="form-label fw-semibold">
+                                <i class="ri-folder-line me-1 text-info"></i>پروژه مرتبط
+                            </label>
+                            <select name="ticket_project" id="ticket_project" class="form-select form-select-lg">
+                                <option value="0">عمومی (بدون پروژه)</option>
+                                <?php
+                                $projects = get_posts([
+                                    'post_type' => 'project',
+                                    'author' => $current_user_id,
+                                    'posts_per_page' => -1,
+                                    'post_status' => 'publish'
+                                ]);
+                                foreach ($projects as $project) {
+                                    echo '<option value="' . esc_attr($project->ID) . '">' . esc_html($project->post_title) . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="ticket_project">پروژه مرتبط:</label>
-                        <select name="ticket_project" id="ticket_project">
-                            <option value="0">-- عمومی (بدون پروژه) --</option>
+
+                    <!-- Row 2: دپارتمان و اولویت -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="department" class="form-label fw-semibold">
+                                <i class="ri-building-line me-1 text-success"></i>دپارتمان <span class="text-danger">*</span>
+                            </label>
                             <?php
-                            $projects = get_posts([
-                                'post_type' => 'project',
-                                'author' => $current_user_id,
-                                'posts_per_page' => -1,
-                                'post_status' => 'publish'
+                            wp_dropdown_categories([
+                                'taxonomy'         => 'organizational_position',
+                                'name'             => 'department',
+                                'id'               => 'department',
+                                'class'            => 'form-select form-select-lg',
+                                'show_option_none' => 'انتخاب دپارتمان',
+                                'hierarchical'     => true,
+                                'hide_empty'       => false,
+                                'parent'           => 0,
+                                'required'         => true,
                             ]);
-                            foreach ($projects as $project) {
-                                echo '<option value="' . esc_attr($project->ID) . '">' . esc_html($project->post_title) . '</option>';
-                            }
                             ?>
-                        </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="ticket_priority" class="form-label fw-semibold">
+                                <i class="ri-flag-line me-1 text-warning"></i>اولویت <span class="text-danger">*</span>
+                            </label>
+                            <select name="ticket_priority" id="ticket_priority" class="form-select form-select-lg" required>
+                                <?php
+                                $priorities = get_terms(['taxonomy' => 'ticket_priority', 'hide_empty' => false]);
+                                foreach ($priorities as $priority) {
+                                    echo '<option value="' . esc_attr($priority->term_id) . '">' . esc_html($priority->name) . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
                     </div>
-                </div>
-                <div class="pzl-form-row">
-                    <div class="form-group half-width">
-                        <label for="department">دپارتمان:</label>
-                        <?php
-                        wp_dropdown_categories([
-                            'taxonomy'         => 'organizational_position',
-                            'name'             => 'department',
-                            'id'               => 'department',
-                            'show_option_none' => __('انتخاب دپارتمان', 'puzzlingcrm'),
-                            'hierarchical'     => true,
-                            'hide_empty'       => false,
-                            'parent'           => 0, 
-                            'required'         => true,
-                        ]);
-                        ?>
-                    </div>
-                     <div class="form-group half-width">
-                        <label for="ticket_priority">اولویت:</label>
-                        <select name="ticket_priority" id="ticket_priority" required>
-                            <?php
-                            $priorities = get_terms(['taxonomy' => 'ticket_priority', 'hide_empty' => false]);
-                            foreach ($priorities as $priority) {
-                                echo '<option value="' . esc_attr($priority->term_id) . '">' . esc_html($priority->name) . '</option>';
-                            }
-                            ?>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="ticket_content">پیام شما:</label>
-                    <?php wp_editor('', 'ticket_content', ['textarea_name' => 'ticket_content', 'media_buttons' => false, 'textarea_rows' => 8]); ?>
-                </div>
-                <div class="form-group">
-                    <label>پیوست فایل (اختیاری):</label>
-                    <div class="pzl-file-uploader-container">
-                        <input type="file" name="ticket_attachments[]" id="ticket_attachments" multiple class="pzl-file-input">
-                        <label for="ticket_attachments" class="pzl-file-label">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <span>فایل‌های خود را انتخاب کنید یا اینجا بکشید</span>
+
+                    <!-- Row 3: پیام -->
+                    <div class="mb-4">
+                        <label for="ticket_content" class="form-label fw-semibold">
+                            <i class="ri-message-3-line me-1 text-primary"></i>پیام شما <span class="text-danger">*</span>
                         </label>
-                        <div id="new-ticket-attachments-preview" class="pzl-attachments-preview"></div>
+                        <div class="border rounded">
+                            <?php wp_editor('', 'ticket_content', [
+                                'textarea_name' => 'ticket_content', 
+                                'media_buttons' => false, 
+                                'textarea_rows' => 10,
+                                'teeny' => false,
+                                'quicktags' => true
+                            ]); ?>
+                        </div>
                     </div>
-                    <p class="description">حداکثر حجم مجاز: 5 مگابایت. فرمت‌های مجاز: jpg, png, pdf, zip, rar.</p>
-                </div>
-                <div class="form-submit">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="ri-send-plane-line"></i> ارسال تیکت
-                    </button>
-                </div>
-            </form>
+
+                    <!-- Row 4: آپلود فایل -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="ri-attachment-2 me-1 text-secondary"></i>پیوست فایل (اختیاری)
+                        </label>
+                        <div class="card border-2 border-dashed border-primary">
+                            <div class="card-body text-center py-5">
+                                <input type="file" name="ticket_attachments[]" id="ticket_attachments" multiple class="d-none pzl-file-input">
+                                <label for="ticket_attachments" class="d-block cursor-pointer">
+                                    <i class="ri-upload-cloud-2-line fs-1 text-primary mb-3 d-block"></i>
+                                    <h6 class="mb-2">انتخاب فایل یا Drag & Drop</h6>
+                                    <p class="text-muted fs-12 mb-0">
+                                        <i class="ri-information-line me-1"></i>
+                                        حداکثر 5 مگابایت | فرمت‌های مجاز: JPG, PNG, PDF, ZIP, RAR
+                                    </p>
+                                </label>
+                                <div id="new-ticket-attachments-preview" class="mt-3"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg btn-wave px-5">
+                            <i class="ri-send-plane-2-fill me-2"></i>ارسال تیکت
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     <?php else: // List view ?>
@@ -148,7 +185,7 @@ if ($ticket_id_to_view > 0) {
             $tickets_query = new WP_Query($args);
             ?>
             <div class="pzl-card-header">
-                 <h3><i class="fas fa-list-ul"></i> لیست تیکت‌ها</h3>
+                 <h3><i class="ri-list-check"></i> لیست تیکت‌ها</h3>
             </div>
 
             <form method="get" class="pzl-form">

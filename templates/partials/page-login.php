@@ -41,11 +41,11 @@ if (is_user_logged_in()) {
 
         <div class="puzzling-login-tabs">
             <button class="puzzling-tab-btn active" data-tab="sms">
-                <i class="fas fa-mobile-alt"></i>
+                <i class="ri-smartphone-line"></i>
                 ورود با پیامک
             </button>
             <button class="puzzling-tab-btn" data-tab="password">
-                <i class="fas fa-lock"></i>
+                <i class="ri-lock-line"></i>
                 ورود با رمز عبور
             </button>
         </div>
@@ -56,7 +56,7 @@ if (is_user_logged_in()) {
                 <div class="puzzling-form-step active" data-step="1">
                     <div class="puzzling-form-group">
                         <label for="phone_number">
-                            <i class="fas fa-phone"></i>
+                            <i class="ri-phone-line"></i>
                             شماره موبایل
                         </label>
                         <input 
@@ -73,7 +73,7 @@ if (is_user_logged_in()) {
                     </div>
 
                     <button type="button" id="puzzling-send-otp-btn" class="puzzling-btn puzzling-btn-primary">
-                        <i class="fas fa-paper-plane"></i>
+                        <i class="ri-send-plane-line"></i>
                         دریافت کد تایید
                     </button>
                 </div>
@@ -81,7 +81,7 @@ if (is_user_logged_in()) {
                 <div class="puzzling-form-step" data-step="2">
                     <div class="puzzling-form-group">
                         <label for="otp_code">
-                            <i class="fas fa-key"></i>
+                            <i class="ri-key-line"></i>
                             کد تایید
                         </label>
                         <input 
@@ -104,17 +104,17 @@ if (is_user_logged_in()) {
                     </div>
 
                     <button type="submit" id="puzzling-verify-otp-btn" class="puzzling-btn puzzling-btn-primary">
-                        <i class="fas fa-sign-in-alt"></i>
+                        <i class="ri-login-box-line"></i>
                         ورود
                     </button>
 
                     <button type="button" id="puzzling-resend-otp-btn" class="puzzling-btn puzzling-btn-link">
-                        <i class="fas fa-redo"></i>
+                        <i class="ri-refresh-line"></i>
                         ارسال مجدد کد
                     </button>
 
                     <button type="button" id="puzzling-change-phone-btn" class="puzzling-btn puzzling-btn-link">
-                        <i class="fas fa-edit"></i>
+                        <i class="ri-edit-line"></i>
                         تغییر شماره موبایل
                     </button>
                 </div>
@@ -126,7 +126,7 @@ if (is_user_logged_in()) {
             <form id="puzzling-password-form" class="puzzling-login-form">
                 <div class="puzzling-form-group">
                     <label for="username">
-                        <i class="fas fa-user"></i>
+                        <i class="ri-user-line"></i>
                         نام کاربری یا ایمیل
                     </label>
                     <input 
@@ -141,7 +141,7 @@ if (is_user_logged_in()) {
 
                 <div class="puzzling-form-group">
                     <label for="password">
-                        <i class="fas fa-lock"></i>
+                        <i class="ri-lock-line"></i>
                         رمز عبور
                     </label>
                     <div class="puzzling-password-wrapper">
@@ -154,7 +154,7 @@ if (is_user_logged_in()) {
                             autocomplete="current-password"
                         >
                         <button type="button" class="puzzling-toggle-password" data-target="password">
-                            <i class="fas fa-eye"></i>
+                            <i class="ri-eye-line"></i>
                         </button>
                     </div>
                 </div>
@@ -167,13 +167,13 @@ if (is_user_logged_in()) {
                 </div>
 
                 <button type="submit" class="puzzling-btn puzzling-btn-primary">
-                    <i class="fas fa-sign-in-alt"></i>
+                    <i class="ri-login-box-line"></i>
                     ورود
                 </button>
 
                 <div class="puzzling-form-links">
                     <a href="<?php echo wp_lostpassword_url(); ?>" class="puzzling-link">
-                        <i class="fas fa-question-circle"></i>
+                        <i class="ri-question-line"></i>
                         رمز عبور خود را فراموش کرده‌اید؟
                     </a>
                 </div>

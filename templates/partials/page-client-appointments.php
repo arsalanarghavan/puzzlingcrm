@@ -6,7 +6,7 @@
 if (!defined('ABSPATH')) exit;
 ?>
 <div class="pzl-dashboard-section">
-    <h3><i class="fas fa-calendar-plus"></i> ثبت قرار ملاقات جدید</h3>
+    <h3><i class="ri-calendar-line-plus"></i> ثبت قرار ملاقات جدید</h3>
     <p>لطفاً برای درخواست قرار ملاقات جدید، فرم زیر را تکمیل کنید. ما درخواست شما را بررسی کرده و زمان‌بندی را با شما هماهنگ خواهیم کرد.</p>
 
     <div class="pzl-form-container pzl-card">

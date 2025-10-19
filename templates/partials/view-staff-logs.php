@@ -25,7 +25,7 @@ $logs_query = new WP_Query([
 ]);
 ?>
 <div class="pzl-card-header">
-    <h3><i class="fas fa-history"></i> تاریخچه عملیات: <?php echo esc_html($staff_user->display_name); ?></h3>
+    <h3><i class="ri-history-line"></i> تاریخچه عملیات: <?php echo esc_html($staff_user->display_name); ?></h3>
     <a href="<?php echo remove_query_arg(['action', 'user_id']); ?>" class="pzl-button">&larr; بازگشت به لیست کارکنان</a>
 </div>
 

@@ -227,7 +227,7 @@ class PuzzlingCRM_User_Ajax_Handler {
                 $output_html .= '<td>' . $registered_date . '</td>';
                 $output_html .= '<td>';
                 $output_html .= '<a href="' . esc_url($edit_url) . '" class="pzl-button pzl-button-sm">ویرایش</a> ';
-                $output_html .= '<button class="pzl-button pzl-button-sm send-sms-btn" data-user-id="' . esc_attr($user->ID) . '" data-user-name="' . esc_attr($user->display_name) . '"><i class="fas fa-sms"></i></button>';
+                $output_html .= '<button class="pzl-button pzl-button-sm send-sms-btn" data-user-id="' . esc_attr($user->ID) . '" data-user-name="' . esc_attr($user->display_name) . '"><i class="ri-message-3-line"></i></button>';
                 if ( get_current_user_id() != $user->ID && $user->ID != 1 ) {
                     $output_html .= ' <button class="pzl-button pzl-button-sm delete-user-btn" data-user-id="'. esc_attr($user->ID) .'" data-nonce="'. wp_create_nonce('puzzling_delete_user_' . $user->ID) .'" style="background-color: #dc3545 !important;">حذف</button>';
                 }

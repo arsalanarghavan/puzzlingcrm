@@ -12,11 +12,11 @@ $invoices = get_posts([
 ]);
 ?>
 <div class="pzl-dashboard-section">
-    <h3><i class="fas fa-file-invoice"></i> پیش‌فاکتورهای شما</h3>
+    <h3><i class="ri-file-line-invoice"></i> پیش‌فاکتورهای شما</h3>
 
     <?php if (empty($invoices)): ?>
         <div class="pzl-empty-state">
-            <i class="fas fa-exclamation-circle"></i>
+            <i class="ri-error-warning-line"></i>
             <h4>موردی یافت نشد</h4>
             <p>در حال حاضر هیچ پیش‌فاکتوری برای شما ثبت نشده است.</p>
         </div>

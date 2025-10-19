@@ -19,7 +19,7 @@ $item_to_edit = ($consultation_id > 0) ? get_post($consultation_id) : null;
     <?php if ($action === 'edit' || $action === 'new'): ?>
         <div class="pzl-card">
             <div class="pzl-card-header">
-                <h3><i class="fas fa-headset"></i> <?php echo $item_to_edit ? 'ویرایش مشاوره' : 'ثبت مشاوره جدید'; ?></h3>
+                <h3><i class="ri-customer-service-line"></i> <?php echo $item_to_edit ? 'ویرایش مشاوره' : 'ثبت مشاوره جدید'; ?></h3>
                 <a href="<?php echo remove_query_arg(['action', 'consultation_id']); ?>" class="pzl-button">&larr; بازگشت به لیست</a>
             </div>
             <form method="post" class="pzl-form pzl-ajax-form" data-action="puzzling_manage_consultation">
@@ -93,7 +93,7 @@ $item_to_edit = ($consultation_id > 0) ? get_post($consultation_id) : null;
     <?php else: // List view ?>
         <div class="pzl-card">
             <div class="pzl-card-header">
-                <h3><i class="fas fa-headset"></i> مدیریت مشاوره‌ها</h3>
+                <h3><i class="ri-customer-service-line"></i> مدیریت مشاوره‌ها</h3>
                 <a href="<?php echo add_query_arg('action', 'new'); ?>" class="pzl-button">افزودن مشاوره جدید</a>
             </div>
 
@@ -173,7 +173,7 @@ jQuery(document).ready(function($) {
                         consultation_id: consultationId
                     },
                     beforeSend: function() {
-                        button.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+                        button.html('<i class="ri-loader-4-line ri-spin"></i>').prop('disabled', true);
                     },
                     success: function(response) {
                         if (response.success) {

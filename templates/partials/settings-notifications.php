@@ -11,7 +11,7 @@ $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
 ?>
 
 <div class="pzl-form-container">
-    <h4><i class="fas fa-bell"></i> تنظیمات اطلاع‌رسانی‌ها</h4>
+    <h4><i class="ri-notification-3-line"></i> تنظیمات اطلاع‌رسانی‌ها</h4>
     <p class="description">کانال‌های اطلاع‌رسانی برای رویدادهای مختلف سیستم را در این بخش مدیریت کنید.</p>
 
     <form id="puzzling-notifications-settings-form" method="post" class="pzl-form" style="margin-top: 20px;">
@@ -31,7 +31,7 @@ $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
         </div>
 
         <div class="pzl-card">
-            <h5><i class="fas fa-tasks"></i> اطلاع‌رسانی‌های مربوط به وظایف</h5>
+            <h5><i class="ri-task-line"></i> اطلاع‌رسانی‌های مربوط به وظایف</h5>
             <table class="pzl-table">
                 <thead>
                     <tr>

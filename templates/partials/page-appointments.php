@@ -21,7 +21,7 @@ $item_to_edit = ($appt_id > 0) ? get_post($appt_id) : null;
     ?>
         <div class="pzl-card">
             <div class="pzl-card-header">
-                <h3><i class="fas fa-calendar-alt"></i> <?php echo $item_to_edit ? 'ویرایش قرار ملاقات' : 'ایجاد قرار ملاقات جدید'; ?></h3>
+                <h3><i class="ri-calendar-line"></i> <?php echo $item_to_edit ? 'ویرایش قرار ملاقات' : 'ایجاد قرار ملاقات جدید'; ?></h3>
                 <a href="<?php echo remove_query_arg(['action', 'appt_id']); ?>" class="pzl-button">&larr; بازگشت به لیست</a>
             </div>
             <form method="post" class="pzl-form pzl-ajax-form" data-action="puzzling_manage_appointment">
@@ -85,7 +85,7 @@ $item_to_edit = ($appt_id > 0) ? get_post($appt_id) : null;
         </div>
     <?php else: // List View ?>
         <div class="pzl-card-header">
-            <h3><i class="fas fa-calendar-alt"></i> لیست قرار ملاقات‌ها</h3>
+            <h3><i class="ri-calendar-line"></i> لیست قرار ملاقات‌ها</h3>
             <a href="<?php echo add_query_arg(['action' => 'new']); ?>" class="pzl-button">ایجاد قرار جدید</a>
         </div>
         <div class="pzl-card">

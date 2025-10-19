@@ -1,7 +1,6 @@
 <?php
 /**
- * PuzzlingCRM Leads Management Page (Final, Fully Functional Version with Edit Screen & Inline Status Change)
- *
+ * Leads Management Page (Xintra Style)
  * @package PuzzlingCRM
  */
 
@@ -10,105 +9,124 @@ if (!current_user_can('manage_options') && !current_user_can('system_manager')) 
     wp_die(__('شما اجازه دسترسی به این صفحه را ندارید.', 'puzzlingcrm'));
 }
 
-// --- LOGIC TO DISPLAY EITHER THE LIST OR THE EDIT FORM ---
+// Determine view
 $action = isset($_GET['action']) ? sanitize_key($_GET['action']) : 'list';
 $lead_id = isset($_GET['lead_id']) ? intval($_GET['lead_id']) : 0;
 
+// ========== EDIT FORM ==========
 if ($action === 'edit' && $lead_id > 0) {
-    // ======== DISPLAY EDIT FORM ========
     $lead = get_post($lead_id);
     if (!$lead || $lead->post_type !== 'pzl_lead') {
-        echo '<div class="puzzling-dashboard-wrapper"><div class="notice notice-error"><p>سرنخ مورد نظر یافت نشد. <a href="' . esc_url(remove_query_arg(['action', 'lead_id'])) . '">بازگشت به لیست</a></p></div></div>';
+        echo '<div class="alert alert-danger"><i class="ri-error-warning-line me-2"></i>سرنخ مورد نظر یافت نشد. <a href="' . esc_url(remove_query_arg(['action', 'lead_id'])) . '">بازگشت به لیست</a></div>';
         return;
     }
+    
     $first_name = get_post_meta($lead_id, '_first_name', true);
     $last_name = get_post_meta($lead_id, '_last_name', true);
     $mobile = get_post_meta($lead_id, '_mobile', true);
     $business_name = get_post_meta($lead_id, '_business_name', true);
     $gender = get_post_meta($lead_id, '_gender', true);
     $notes = $lead->post_content;
-    
     $return_url = remove_query_arg(['action', 'lead_id']);
-
     ?>
-    <div class="puzzling-dashboard-wrapper">
-        <div class="pzl-card-header">
-            <h3><i class="fas fa-edit"></i> ویرایش سرنخ: <?php echo esc_html($first_name . ' ' . $last_name); ?></h3>
-            <a href="<?php echo esc_url($return_url); ?>" class="pzl-button pzl-button-secondary">
-                <i class="fas fa-arrow-left"></i> بازگشت به لیست سرنخ‌ها
-            </a>
-        </div>
-        <div class="pzl-card">
-            <form id="pzl-edit-lead-form" class="pzl-form pzl-ajax-form">
+    
+    <!-- Edit Form -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">
+            <i class="ri-user-edit-line me-2"></i>ویرایش سرنخ: <?php echo esc_html($first_name . ' ' . $last_name); ?>
+        </h4>
+        <a href="<?php echo esc_url($return_url); ?>" class="btn btn-secondary btn-sm">
+            <i class="ri-arrow-right-line me-1"></i>بازگشت
+        </a>
+    </div>
+
+    <div class="card custom-card">
+        <div class="card-body">
+            <form id="pzl-edit-lead-form" class="pzl-ajax-form">
                 <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
                 <input type="hidden" name="action" value="puzzling_edit_lead">
                 <input type="hidden" name="lead_id" value="<?php echo esc_attr($lead_id); ?>">
                 <input type="hidden" name="_wp_http_referer" value="<?php echo esc_attr(wp_unslash($return_url)); ?>">
 
-                <div class="pzl-form-row">
-                    <div class="form-group half-width">
-                        <label for="pzl-first-name-edit">نام<span class="pzl-required">*</span></label>
-                        <input type="text" id="pzl-first-name-edit" name="first_name" value="<?php echo esc_attr($first_name); ?>" required>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="pzl-first-name-edit" class="form-label fw-semibold">
+                            <i class="ri-user-line me-1 text-primary"></i>نام <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" id="pzl-first-name-edit" name="first_name" class="form-control" value="<?php echo esc_attr($first_name); ?>" required>
                     </div>
-                    <div class="form-group half-width">
-                        <label for="pzl-last-name-edit">نام خانوادگی<span class="pzl-required">*</span></label>
-                        <input type="text" id="pzl-last-name-edit" name="last_name" value="<?php echo esc_attr($last_name); ?>" required>
-                    </div>
-                </div>
-                <div class="pzl-form-row">
-                    <div class="form-group half-width">
-                        <label for="pzl-mobile-edit">شماره موبایل<span class="pzl-required">*</span></label>
-                        <input type="tel" id="pzl-mobile-edit" name="mobile" class="ltr-input" value="<?php echo esc_attr($mobile); ?>" required>
-                    </div>
-                    <div class="form-group half-width">
-                        <label for="pzl-business-name-edit">نام کسب‌وکار</label>
-                        <input type="text" id="pzl-business-name-edit" name="business_name" value="<?php echo esc_attr($business_name); ?>">
+                    <div class="col-md-6">
+                        <label for="pzl-last-name-edit" class="form-label fw-semibold">
+                            <i class="ri-user-line me-1 text-primary"></i>نام خانوادگی <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" id="pzl-last-name-edit" name="last_name" class="form-control" value="<?php echo esc_attr($last_name); ?>" required>
                     </div>
                 </div>
-                <div class="pzl-form-row">
-                    <div class="form-group half-width">
-                        <label for="pzl-gender-edit">جنسیت</label>
-                        <select id="pzl-gender-edit" name="gender">
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="pzl-mobile-edit" class="form-label fw-semibold">
+                            <i class="ri-phone-line me-1 text-success"></i>شماره موبایل <span class="text-danger">*</span>
+                        </label>
+                        <input type="tel" id="pzl-mobile-edit" name="mobile" class="form-control ltr-input" value="<?php echo esc_attr($mobile); ?>" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="pzl-business-name-edit" class="form-label fw-semibold">
+                            <i class="ri-building-line me-1 text-info"></i>نام کسب‌وکار
+                        </label>
+                        <input type="text" id="pzl-business-name-edit" name="business_name" class="form-control" value="<?php echo esc_attr($business_name); ?>">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="pzl-gender-edit" class="form-label fw-semibold">
+                            <i class="ri-user-3-line me-1 text-secondary"></i>جنسیت
+                        </label>
+                        <select id="pzl-gender-edit" name="gender" class="form-select">
                             <option value="">انتخاب کنید</option>
                             <option value="male" <?php selected($gender, 'male'); ?>>آقا</option>
                             <option value="female" <?php selected($gender, 'female'); ?>>خانم</option>
                         </select>
                     </div>
-                    <div class="form-group half-width">
-                        <!-- Empty space for layout balance -->
+                    <div class="col-md-6">
+                        <label for="pzl-lead-status-edit" class="form-label fw-semibold">
+                            <i class="ri-flag-line me-1 text-warning"></i>وضعیت سرنخ
+                        </label>
+                        <select id="pzl-lead-status-edit" name="lead_status" class="form-select">
+                            <?php
+                            $current_status_terms = wp_get_object_terms($lead_id, 'lead_status', ['fields' => 'slugs']);
+                            $current_status = !empty($current_status_terms) ? $current_status_terms[0] : '';
+                            $all_statuses = get_terms(['taxonomy' => 'lead_status', 'hide_empty' => false]);
+
+                            if (empty($all_statuses)) {
+                                echo '<option value="">هیچ وضعیتی تعریف نشده است</option>';
+                            } else {
+                                foreach ($all_statuses as $status) {
+                                    printf(
+                                        '<option value="%s" %s>%s</option>',
+                                        esc_attr($status->slug),
+                                        selected($current_status, $status->slug, false),
+                                        esc_html($status->name)
+                                    );
+                                }
+                            }
+                            ?>
+                        </select>
                     </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="pzl-lead-status-edit">وضعیت سرنخ</label>
-                    <select id="pzl-lead-status-edit" name="lead_status">
-                        <?php
-                        $current_status_terms = wp_get_object_terms($lead_id, 'lead_status', ['fields' => 'slugs']);
-                        $current_status = !empty($current_status_terms) ? $current_status_terms[0] : '';
-                        $all_statuses = get_terms(['taxonomy' => 'lead_status', 'hide_empty' => false]);
 
-                        if (empty($all_statuses)) {
-                            echo '<option value="">هیچ وضعیتی تعریف نشده است</option>';
-                        } else {
-                            foreach ($all_statuses as $status) {
-                                printf(
-                                    '<option value="%s" %s>%s</option>',
-                                    esc_attr($status->slug),
-                                    selected($current_status, $status->slug, false),
-                                    esc_html($status->name)
-                                );
-                            }
-                        }
-                        ?>
-                    </select>
+                <div class="mb-3">
+                    <label for="pzl-notes-edit" class="form-label fw-semibold">
+                        <i class="ri-file-text-line me-1 text-secondary"></i>یادداشت
+                    </label>
+                    <textarea id="pzl-notes-edit" name="notes" rows="4" class="form-control"><?php echo esc_textarea($notes); ?></textarea>
                 </div>
 
-                <div class="form-group">
-                    <label for="pzl-notes-edit">یادداشت</label>
-                    <textarea id="pzl-notes-edit" name="notes" rows="4"><?php echo esc_textarea($notes); ?></textarea>
-                </div>
-                <div class="pzl-modal-footer" style="background: transparent; border-top: none; padding: 15px 0 0 0;">
-                    <button type="submit" class="pzl-button">ذخیره تغییرات</button>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-lg px-5">
+                        <i class="ri-save-line me-2"></i>ذخیره تغییرات
+                    </button>
                 </div>
             </form>
         </div>
@@ -117,11 +135,12 @@ if ($action === 'edit' && $lead_id > 0) {
     return;
 }
 
-// ======== DISPLAY LEADS LIST (DEFAULT VIEW) ========
+// ========== LIST VIEW ==========
 $lead_statuses = get_terms(['taxonomy' => 'lead_status', 'hide_empty' => false]);
 $paged = isset($_GET['paged']) ? intval($_GET['paged']) : 1;
 $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
 $status_filter = isset($_GET['status_filter']) ? sanitize_text_field($_GET['status_filter']) : '';
+
 $args = [
     'post_type' => 'pzl_lead',
     'post_status' => 'publish',
@@ -129,470 +148,256 @@ $args = [
     'paged' => $paged,
     's' => $search_query
 ];
+
 if (!empty($status_filter)) {
     $args['tax_query'] = [['taxonomy' => 'lead_status', 'field' => 'slug', 'terms' => $status_filter]];
 }
+
 $leads_query = new WP_Query($args);
-$delete_nonce = wp_create_nonce('puzzlingcrm-ajax-nonce');
-$change_status_nonce = wp_create_nonce('puzzlingcrm-ajax-nonce');
-// Build clean URL - use current page URL for frontend, admin URL for backend
-if (is_admin()) {
-    $current_page_url = admin_url('admin.php?page=puzzling-leads');
-} else {
-    // For frontend shortcode, use current page URL without query parameters
-    $current_page_url = get_permalink();
-    
-    // If permalink is not available, use current URL and remove query parameters
-    if (!$current_page_url) {
-        $current_url = home_url($_SERVER['REQUEST_URI']);
-        $parsed_url = parse_url($current_url);
-        $current_page_url = $parsed_url['scheme'] . '://' . $parsed_url['host'] . $parsed_url['path'];
-    }
-}
-
-// Preserve only our specific parameters
-$allowed_params = [];
-if (!empty($search_query)) {
-    $allowed_params['s'] = $search_query;
-}
-if (!empty($status_filter)) {
-    $allowed_params['status_filter'] = $status_filter;
-}
-
-// Add only allowed parameters
-if (!empty($allowed_params)) {
-    $current_page_url = add_query_arg($allowed_params, $current_page_url);
-}
-
-// Clean URL from unwanted parameters
-$current_page_url = remove_query_arg(['endp', 'inf_menu_16', '_wpnonce', 'deleted', 'updated'], $current_page_url);
 ?>
 
-<div class="puzzling-dashboard-wrapper">
-    <div class="pzl-card-header">
-        <h3><i class="fas fa-users"></i> مدیریت سرنخ‌ها</h3>
-        <a href="#" id="pzl-add-new-lead-btn" class="pzl-button"><i class="fas fa-plus"></i> افزودن سرنخ جدید</a>
-    </div>
-    
-    <div class="pzl-card">
-        <form method="get" class="pzl-form">
-            <input type="hidden" name="page" value="<?php echo esc_attr($_REQUEST['page'] ?? 'puzzling-leads'); ?>">
-             <div class="pzl-form-row">
-                <div class="form-group half-width">
-                    <label for="status_filter">فیلتر بر اساس وضعیت</label>
-                    <select name="status_filter" id="status_filter">
-                        <option value="">همه وضعیت‌ها</option>
-                        <?php if (!empty($lead_statuses)) : ?>
-                            <?php foreach ($lead_statuses as $status) : ?>
-                                <option value="<?php echo esc_attr($status->slug); ?>" <?php selected($status_filter, $status->slug); ?>><?php echo esc_html($status->name); ?></option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
-                </div>
-                <div class="form-group half-width">
-                    <label for="search_query">جستجو</label>
-                    <input type="search" id="search_query" name="s" value="<?php echo esc_attr($search_query); ?>" placeholder="نام، موبایل یا کسب‌وکار..." />
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6">
+        <div class="card custom-card overflow-hidden">
+            <div class="card-body">
+                <div class="d-flex align-items-top justify-content-between">
+                    <div>
+                        <span class="avatar avatar-md avatar-rounded bg-primary">
+                            <i class="ri-user-add-line fs-18"></i>
+                        </span>
+                    </div>
+                    <div class="flex-fill ms-3">
+                        <p class="text-muted mb-0">کل سرنخ‌ها</p>
+                        <h4 class="fw-semibold mt-1"><?php echo wp_count_posts('pzl_lead')->publish; ?></h4>
+                    </div>
                 </div>
             </div>
-            <div class="form-submit" style="margin-top:0; padding-top:0;">
-                <button type="submit" class="pzl-button">اعمال فیلتر</button>
+        </div>
+    </div>
+
+    <?php foreach (array_slice($lead_statuses, 0, 3) as $index => $status):
+        $colors = ['success', 'warning', 'info'];
+        $icons = ['ri-user-follow-line', 'ri-time-line', 'ri-user-star-line'];
+        $color = $colors[$index] ?? 'secondary';
+        $icon = $icons[$index] ?? 'ri-user-line';
+    ?>
+    <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6">
+        <div class="card custom-card overflow-hidden">
+            <div class="card-body">
+                <div class="d-flex align-items-top justify-content-between">
+                    <div>
+                        <span class="avatar avatar-md avatar-rounded bg-<?php echo $color; ?>">
+                            <i class="<?php echo $icon; ?> fs-18"></i>
+                        </span>
+                    </div>
+                    <div class="flex-fill ms-3">
+                        <p class="text-muted mb-0"><?php echo esc_html($status->name); ?></p>
+                        <h4 class="fw-semibold mt-1"><?php echo $status->count; ?></h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endforeach; ?>
+</div>
+
+<!-- Header with Button -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div></div>
+    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addLeadModal">
+        <i class="ri-user-add-line me-1"></i>افزودن سرنخ جدید
+    </button>
+</div>
+
+<!-- Filters Card -->
+<div class="card custom-card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <input type="hidden" name="page" value="puzzling-leads">
+            <div class="col-md-6">
+                <label class="form-label">جستجو</label>
+                <input type="text" name="s" class="form-control" placeholder="نام، موبایل یا نام کسب‌وکار..." value="<?php echo esc_attr($search_query); ?>">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">وضعیت</label>
+                <select name="status_filter" class="form-select">
+                    <option value="">همه وضعیت‌ها</option>
+                    <?php foreach ($lead_statuses as $status): ?>
+                    <option value="<?php echo esc_attr($status->slug); ?>" <?php selected($status_filter, $status->slug); ?>>
+                        <?php echo esc_html($status->name); ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="ri-filter-3-line"></i> فیلتر
+                </button>
             </div>
         </form>
-        
-        <table class="pzl-table">
-            <thead>
-                <tr>
-                    <th>نام کامل</th>
-                    <th>موبایل</th>
-                    <th>جنسیت</th>
-                    <th>کسب‌وکار</th>
-                    <th>وضعیت</th>
-                    <th>تاریخ ثبت</th>
-                    <th>عملیات</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if ($leads_query->have_posts()) : ?>
-                    <?php while ($leads_query->have_posts()) : $leads_query->the_post(); ?>
-                        <?php
-                        $lead_id = get_the_ID();
-                        $status_terms = get_the_terms($lead_id, 'lead_status');
-                        $status_slug = !empty($status_terms) && isset($status_terms[0]) ? $status_terms[0]->slug : '';
-                        $edit_link = add_query_arg(['action' => 'edit', 'lead_id' => $lead_id], $current_page_url);
-                        $gender = get_post_meta($lead_id, '_gender', true);
-                        $gender_display = ($gender === 'male') ? 'آقا' : (($gender === 'female') ? 'خانم' : '---');
-                        
-                        ?>
-                        <tr data-lead-id="<?php echo esc_attr($lead_id); ?>">
-                            <td><strong><?php echo esc_html(get_the_title()); ?></strong></td>
-                            <td><a href="tel:<?php echo esc_attr(get_post_meta($lead_id, '_mobile', true)); ?>"><?php echo esc_html(get_post_meta($lead_id, '_mobile', true)); ?></a></td>
-                            <td><?php echo esc_html($gender_display); ?></td>
-                            <td><?php echo esc_html(get_post_meta($lead_id, '_business_name', true)); ?></td>
-                            <td>
-                                <?php if (!empty($lead_statuses)) : ?>
-                                <select class="pzl-lead-status-changer" data-lead-id="<?php echo esc_attr($lead_id); ?>" data-nonce="<?php echo esc_attr($change_status_nonce); ?>">
-                                    <?php
-                                    foreach ($lead_statuses as $status) {
-                                        printf(
-                                            '<option value="%s" %s>%s</option>',
-                                            esc_attr($status->slug),
-                                            selected($status_slug, $status->slug, false),
-                                            esc_html($status->name)
-                                        );
-                                    }
-                                    ?>
-                                </select>
-                                <?php else: ?>
-                                    ---
-                                <?php endif; ?>
-                            </td>
-                            <td><?php echo get_the_date('Y/m/d'); ?></td>
-                            <td class="pzl-table-actions">
-                                <a href="<?php echo esc_url($edit_link); ?>" class="pzl-button-icon" title="ویرایش"><i class="fas fa-edit"></i></a>
-                                <a href="#" class="pzl-button-icon pzl-delete-lead-btn" data-nonce="<?php echo esc_attr($delete_nonce); ?>" title="حذف" style="color: #F0192A;"><i class="fas fa-trash"></i></a>
-                            </td>
-                        </tr>
-                    <?php endwhile; ?>
-                <?php else : ?>
+    </div>
+</div>
+
+<!-- Leads Table -->
+<div class="card custom-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table text-nowrap">
+                <thead>
                     <tr>
-                        <td colspan="7">
-                            <div class="pzl-empty-state">
-                                <i class="fas fa-search"></i>
-                                <h4>نتیجه‌ای یافت نشد</h4>
-                                <p>هیچ سرنخی با مشخصات وارد شده یافت نشد. <br><?php if (empty($lead_statuses)) echo '<b>توجه:</b> هیچ وضعیتی برای سرنخ‌ها تعریف نشده است. لطفاً از بخش تنظیمات وضعیت‌ها را مدیریت کنید.'; ?></p>
+                        <th>نام</th>
+                        <th>موبایل</th>
+                        <th>کسب‌وکار</th>
+                        <th>وضعیت</th>
+                        <th>تاریخ</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($leads_query->have_posts()): 
+                        while ($leads_query->have_posts()): $leads_query->the_post();
+                            $lead_id = get_the_ID();
+                            $first_name = get_post_meta($lead_id, '_first_name', true);
+                            $last_name = get_post_meta($lead_id, '_last_name', true);
+                            $mobile = get_post_meta($lead_id, '_mobile', true);
+                            $business_name = get_post_meta($lead_id, '_business_name', true);
+                            $status_terms = wp_get_object_terms($lead_id, 'lead_status');
+                            $status_name = !empty($status_terms) && !is_wp_error($status_terms) ? $status_terms[0]->name : 'نامشخص';
+                            $status_slug = !empty($status_terms) && !is_wp_error($status_terms) ? $status_terms[0]->slug : '';
+                            
+                            $badge_class = 'bg-secondary';
+                            if ($status_slug === 'new') $badge_class = 'bg-primary';
+                            elseif ($status_slug === 'contacted') $badge_class = 'bg-info';
+                            elseif ($status_slug === 'qualified') $badge_class = 'bg-success';
+                            elseif ($status_slug === 'converted') $badge_class = 'bg-success';
+                            elseif ($status_slug === 'lost') $badge_class = 'bg-danger';
+                    ?>
+                    <tr>
+                        <td class="fw-semibold"><?php echo esc_html($first_name . ' ' . $last_name); ?></td>
+                        <td class="ltr-input"><?php echo esc_html($mobile); ?></td>
+                        <td><?php echo $business_name ? esc_html($business_name) : '<span class="text-muted">-</span>'; ?></td>
+                        <td><span class="badge <?php echo $badge_class; ?>"><?php echo esc_html($status_name); ?></span></td>
+                        <td><?php echo jdate('Y/m/d', strtotime(get_the_date('Y-m-d'))); ?></td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="<?php echo esc_url(add_query_arg(['action' => 'edit', 'lead_id' => $lead_id])); ?>" class="btn btn-sm btn-icon btn-primary-light" title="ویرایش">
+                                    <i class="ri-edit-line"></i>
+                                </a>
+                                <button class="btn btn-sm btn-icon btn-danger-light pzl-delete-lead" 
+                                        data-lead-id="<?php echo esc_attr($lead_id); ?>" 
+                                        data-nonce="<?php echo wp_create_nonce('puzzlingcrm-ajax-nonce'); ?>" 
+                                        title="حذف">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
-
-        <?php if ($leads_query->max_num_pages > 1) : ?>
-        <div class="pzl-pagination">
+                    <?php 
+                        endwhile;
+                        wp_reset_postdata();
+                    else: 
+                    ?>
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <i class="ri-user-add-line fs-3 mb-3 d-block opacity-3"></i>
+                            <p class="text-muted">هیچ سرنخی یافت نشد</p>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <?php if ($leads_query->max_num_pages > 1): ?>
+    <div class="card-footer">
+        <div class="d-flex justify-content-center">
             <?php
-            // Create pagination base URL
-            $pagination_base = $current_page_url;
-            if (strpos($pagination_base, '?') !== false) {
-                $pagination_base .= '&paged=%#%';
-            } else {
-                $pagination_base .= '?paged=%#%';
-            }
-            
-            $pagination_args = [
-                'base' => $pagination_base,
-                'format' => '',
-                'current' => $paged,
+            echo paginate_links([
                 'total' => $leads_query->max_num_pages,
-                'prev_text' => '&laquo; قبلی',
-                'next_text' => 'بعدی &raquo;',
-                'type' => 'list',
-                'end_size' => 2,
-                'mid_size' => 1,
-                'add_args' => false, // Don't add current query args
-            ];
-            echo paginate_links($pagination_args);
+                'current' => $paged,
+                'format' => '?paged=%#%',
+                'prev_text' => '<i class="ri-arrow-right-s-line"></i>',
+                'next_text' => '<i class="ri-arrow-left-s-line"></i>',
+            ]);
             ?>
         </div>
-        <?php endif; ?>
-        <?php wp_reset_postdata(); ?>
     </div>
+    <?php endif; ?>
 </div>
 
-<div id="pzl-add-lead-modal" class="pzl-modal-backdrop">
-    <div class="pzl-modal-content">
-        <button type="button" class="pzl-modal-close" id="pzl-close-modal-btn">&times;</button>
-        <div class="pzl-modal-header">
-            <h3 class="pzl-modal-title">افزودن سرنخ جدید</h3>
+<!-- Add Lead Modal -->
+<div class="modal fade" id="addLeadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title">
+                    <i class="ri-user-add-line me-2"></i>افزودن سرنخ جدید
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="pzl-add-lead-form" class="pzl-ajax-form">
+                    <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
+                    <input type="hidden" name="action" value="puzzling_add_lead">
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">نام <span class="text-danger">*</span></label>
+                            <input type="text" name="first_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">نام خانوادگی <span class="text-danger">*</span></label>
+                            <input type="text" name="last_name" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">شماره موبایل <span class="text-danger">*</span></label>
+                            <input type="tel" name="mobile" class="form-control ltr-input" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">نام کسب‌وکار</label>
+                            <input type="text" name="business_name" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">جنسیت</label>
+                            <select name="gender" class="form-select">
+                                <option value="">انتخاب کنید</option>
+                                <option value="male">آقا</option>
+                                <option value="female">خانم</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">وضعیت سرنخ</label>
+                            <select name="lead_status" class="form-select">
+                                <?php foreach ($lead_statuses as $status): ?>
+                                <option value="<?php echo esc_attr($status->slug); ?>">
+                                    <?php echo esc_html($status->name); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">یادداشت</label>
+                        <textarea name="notes" rows="3" class="form-control"></textarea>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ri-add-line me-1"></i>افزودن سرنخ
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-        <form id="pzl-add-lead-form" class="pzl-form pzl-modal-body pzl-ajax-form">
-            <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
-            <input type="hidden" name="action" value="puzzling_add_lead">
-            <div class="pzl-form-row">
-                <div class="form-group half-width">
-                    <label for="pzl-first-name">نام<span class="pzl-required">*</span></label>
-                    <input type="text" id="pzl-first-name" name="first_name" required>
-                </div>
-                <div class="form-group half-width">
-                    <label for="pzl-last-name">نام خانوادگی<span class="pzl-required">*</span></label>
-                    <input type="text" id="pzl-last-name" name="last_name" required>
-                </div>
-            </div>
-            <div class="pzl-form-row">
-                <div class="form-group half-width">
-                    <label for="pzl-mobile">شماره موبایل<span class="pzl-required">*</span></label>
-                    <input type="tel" id="pzl-mobile" name="mobile" class="ltr-input" required placeholder="09123456789">
-                </div>
-                <div class="form-group half-width">
-                    <label for="pzl-business-name">نام کسب‌وکار</label>
-                    <input type="text" id="pzl-business-name" name="business_name">
-                </div>
-            </div>
-            <div class="pzl-form-row">
-                <div class="form-group half-width">
-                    <label for="pzl-gender">جنسیت</label>
-                    <select id="pzl-gender" name="gender">
-                        <option value="">انتخاب کنید</option>
-                        <option value="male">آقا</option>
-                        <option value="female">خانم</option>
-                    </select>
-                </div>
-                <div class="form-group half-width">
-                    <!-- Empty space for layout balance -->
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="pzl-notes">یادداشت</label>
-                <textarea id="pzl-notes" name="notes" rows="4"></textarea>
-            </div>
-            <div class="pzl-modal-footer">
-                <button type="button" class="pzl-button pzl-button-secondary" id="pzl-cancel-modal-btn">انصراف</button>
-                <button type="submit" class="pzl-button">ثبت سرنخ</button>
-            </div>
-        </form>
     </div>
 </div>
-
-<script>
-// Keep the modal script separate for clarity, as it's page-specific
-jQuery(document).ready(function($) {
-    const modal = $('#pzl-add-lead-modal');
-    const form = $('#pzl-add-lead-form');
-
-    window.closeLeadModal = function() {
-        modal.removeClass('pzl-is-visible');
-        setTimeout(() => form[0].reset(), 200);
-    };
-
-    $('#pzl-add-new-lead-btn').on('click', function(e) {
-        e.preventDefault();
-        modal.addClass('pzl-is-visible');
-    });
-
-    $('#pzl-close-modal-btn, #pzl-cancel-modal-btn, .pzl-modal-backdrop').on('click', function(e) {
-        if ($(e.target).is('.pzl-modal-backdrop, #pzl-close-modal-btn, #pzl-cancel-modal-btn')) {
-            e.preventDefault();
-            window.closeLeadModal();
-        }
-    });
-
-    $(document).on('keydown', function(e) {
-        if (e.key === "Escape" && modal.hasClass('pzl-is-visible')) {
-            window.closeLeadModal();
-        }
-    });
-});
-</script>
-
-<style>
-/* Styles can remain the same */
-.pzl-modal-backdrop {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(29, 30, 41, 0.7);
-    z-index: 10000;
-    display: none;
-    align-items: center; justify-content: center;
-    opacity: 0;
-    transition: opacity 0.2s ease-in-out;
-}
-.pzl-modal-backdrop.pzl-is-visible { display: flex; opacity: 1; }
-.pzl-modal-content {
-    background: #fff; border-radius: 8px;
-    width: 95%; max-width: 600px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    transform: translateY(-20px);
-    transition: transform 0.2s ease-in-out, opacity 0.2s;
-    opacity: 0;
-}
-.pzl-modal-backdrop.pzl-is-visible .pzl-modal-content { transform: translateY(0); opacity: 1; }
-.pzl-modal-header { padding: 20px 25px; border-bottom: 1px solid #ddd; }
-.pzl-modal-title { margin: 0; font-size: 20px; font-weight: 700; }
-.pzl-modal-body { padding: 25px; }
-.pzl-modal-footer {
-    padding: 15px 25px; border-top: 1px solid #ddd;
-    text-align: left; background: #f7f7f7;
-    border-radius: 0 0 8px 8px; display: flex;
-    justify-content: flex-end; gap: 10px;
-}
-.pzl-modal-close {
-    position: absolute; top: 10px; left: 15px;
-    background: none; border: none; font-size: 28px;
-    cursor: pointer; color: #666; line-height: 1;
-    padding: 5px; transition: color 0.2s;
-}
-.pzl-modal-close:hover { color: #F0192A; }
-.pzl-table-actions { text-align: left; white-space: nowrap; }
-.pzl-button-icon {
-    display: inline-block; padding: 5px 8px;
-    text-decoration: none; color: #0073aa;
-    transition: color 0.2s;
-}
-.pzl-button-icon:hover { color: #005a87; }
-.pzl-required { color: red; margin-right: 3px; }
-select.pzl-lead-status-changer {
-    min-width: 150px;
-    padding: 5px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    transition: background-color 0.3s ease;
-}
-
-/* Pagination Styles */
-.pzl-pagination {
-    margin-top: 20px;
-    text-align: center;
-}
-
-.pzl-pagination .page-numbers {
-    display: inline-block;
-    padding: 8px 12px;
-    margin: 0 2px;
-    text-decoration: none;
-    color: #0073aa;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    transition: all 0.3s ease;
-}
-
-.pzl-pagination .page-numbers:hover {
-    background-color: #0073aa;
-    color: white;
-    border-color: #0073aa;
-}
-
-.pzl-pagination .page-numbers.current {
-    background-color: #0073aa;
-    color: white;
-    border-color: #0073aa;
-}
-
-.pzl-pagination .page-numbers.dots {
-    border: none;
-    color: #666;
-}
-
-.pzl-pagination .page-numbers.dots:hover {
-    background-color: transparent;
-    color: #666;
-}
-</style>
-
-<script>
-// Lead Management JavaScript
-jQuery(document).ready(function($) {
-    const puzzlingcrm_ajax_obj = window.puzzlingcrm_ajax_obj || {
-        ajax_url: '',
-        nonce: '',
-        lang: {}
-    };
-
-    // --- Delete Lead Handler ---
-    $(document).on('click', '.pzl-delete-lead-btn', function(e) {
-        e.preventDefault();
-        console.log('PuzzlingCRM: Delete lead button clicked');
-        
-        const button = $(this);
-        const leadRow = button.closest('tr');
-        const leadId = leadRow.data('lead-id');
-        const nonce = button.data('nonce');
-
-        console.log('PuzzlingCRM: Lead ID:', leadId, 'Nonce:', nonce);
-
-        const performDelete = () => {
-            console.log('PuzzlingCRM: Performing delete for lead ID:', leadId);
-            leadRow.css('opacity', '0.5');
-            
-            $.ajax({
-                url: puzzlingcrm_ajax_obj.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'puzzling_delete_lead',
-                    security: nonce,
-                    lead_id: leadId
-                },
-                success: function(response) {
-                    console.log('PuzzlingCRM: Delete response:', response);
-                    
-                    if (response.success) {
-                        // Using the global alert function if it exists
-                        if (typeof showPuzzlingAlert === 'function') {
-                            showPuzzlingAlert('موفق', response.data.message, 'success', response.data);
-                        } else {
-                            alert(response.data.message);
-                            window.location.reload();
-                        }
-                    } else {
-                        console.log('PuzzlingCRM: Delete failed:', response.data.message);
-                        if (typeof showPuzzlingAlert === 'function') {
-                            showPuzzlingAlert('خطا', response.data.message, 'error');
-                        } else {
-                            alert(response.data.message);
-                        }
-                        leadRow.css('opacity', '1');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('PuzzlingCRM: Delete error:', {
-                        status: status,
-                        error: error,
-                        responseText: xhr.responseText,
-                        statusCode: xhr.status
-                    });
-                    
-                    let errorMessage = 'یک خطای ناشناخته در ارتباط با سرور رخ داد.';
-                    
-                    // Try to parse error response
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-                        if (response.data && response.data.message) {
-                            errorMessage = response.data.message;
-                        } else if (response.message) {
-                            errorMessage = response.message;
-                        }
-                    } catch (e) {
-                        // If JSON parsing fails, use status-based messages
-                        if (xhr.status === 0) {
-                            errorMessage = 'خطا در اتصال به سرور. لطفاً اتصال اینترنت خود را بررسی کنید.';
-                        } else if (xhr.status === 403) {
-                            errorMessage = 'دسترسی غیرمجاز. لطفاً صفحه را رفرش کنید.';
-                        } else if (xhr.status === 404) {
-                            errorMessage = 'صفحه مورد نظر یافت نشد. لطفاً صفحه را رفرش کنید.';
-                        } else if (xhr.status === 500) {
-                            errorMessage = 'خطای داخلی سرور. لطفاً دوباره تلاش کنید.';
-                        } else {
-                            errorMessage = `خطای سرور (کد: ${xhr.status}). لطفاً دوباره تلاش کنید.`;
-                        }
-                    }
-                    
-                    if (typeof showPuzzlingAlert === 'function') {
-                        showPuzzlingAlert('خطا', errorMessage, 'error');
-                    } else {
-                        alert(errorMessage);
-                    }
-                    leadRow.css('opacity', '1');
-                }
-            });
-        };
-
-        if (typeof Swal === 'undefined') {
-            if (confirm('آیا از حذف این سرنخ مطمئن هستید؟')) {
-                performDelete();
-            }
-        } else {
-            Swal.fire({
-                title: 'آیا از حذف این سرنخ مطمئن هستید؟',
-                text: "این عمل غیرقابل بازگشت است!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'بله، حذف کن!',
-                cancelButtonText: 'انصراف'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    performDelete();
-                }
-            });
-        }
-    });
-});
-</script>

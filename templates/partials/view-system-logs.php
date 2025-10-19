@@ -18,7 +18,7 @@ $logs_query = new WP_Query([
 ]);
 ?>
 
-<h3><i class="fas fa-cogs"></i> لاگ خطاهای سیستم</h3>
+<h3><i class="ri-settings-3-lines"></i> لاگ خطاهای سیستم</h3>
 <p class="description">در این بخش خطاهای سیستمی، مشکلات مربوط به API و سایر باگ‌های ثبت شده نمایش داده می‌شود.</p>
 
 <?php if ($logs_query->have_posts()): ?>
@@ -53,7 +53,7 @@ $logs_query = new WP_Query([
 </div>
 <?php wp_reset_postdata(); else: ?>
 <div class="pzl-empty-state" style="margin-top: 20px;">
-    <i class="fas fa-check-circle"></i>
+    <i class="ri-checkbox-circle-line"></i>
     <h4>سیستم در وضعیت پایدار است</h4>
     <p>هیچ خطای سیستمی برای نمایش وجود ندارد.</p>
 </div>

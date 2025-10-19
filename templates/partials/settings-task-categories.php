@@ -10,12 +10,12 @@ $categories = get_terms(['taxonomy' => 'task_category', 'hide_empty' => false, '
 ?>
 
 <div class="pzl-form-container">
-    <h4><i class="fas fa-tags"></i> مدیریت دسته‌بندی وظایف</h4>
+    <h4><i class="ri-price-tag-lines"></i> مدیریت دسته‌بندی وظایف</h4>
     <p class="description">در این بخش می‌توانید دسته‌بندی‌های مختلف را برای وظایف تعریف، ویرایش یا حذف کنید.</p>
 
     <div class="pzl-positions-manager">
         <div class="pzl-positions-list pzl-card">
-            <h5><i class="fas fa-list-ul"></i> لیست دسته‌بندی‌ها</h5>
+            <h5><i class="ri-list-check"></i> لیست دسته‌بندی‌ها</h5>
             <table class="pzl-table">
                 <thead>
                     <tr>
@@ -46,7 +46,7 @@ $categories = get_terms(['taxonomy' => 'task_category', 'hide_empty' => false, '
         </div>
 
         <div class="pzl-positions-form pzl-card">
-            <h5 id="category-form-title"><i class="fas fa-plus-circle"></i> افزودن دسته‌بندی جدید</h5>
+            <h5 id="category-form-title"><i class="ri-add-circle-line"></i> افزودن دسته‌بندی جدید</h5>
             <form id="pzl-category-form" class="pzl-form pzl-ajax-form" data-action="puzzling_manage_task_category">
                 <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
                 <input type="hidden" name="term_id" id="category-term-id" value="0">
@@ -73,7 +73,7 @@ jQuery(document).ready(function($) {
         var termId = row.data('term-id');
         var name = row.find('td[data-label="name"]').text();
 
-        $('#category-form-title').html('<i class="fas fa-edit"></i> ویرایش دسته‌بندی');
+        $('#category-form-title').html('<i class="ri-edit-line"></i> ویرایش دسته‌بندی');
         $('#category-term-id').val(termId);
         $('#category-name').val(name).focus();
         $('#cancel-edit-category').show();
@@ -81,7 +81,7 @@ jQuery(document).ready(function($) {
 
     // Handle Cancel Edit Button
     $('#cancel-edit-category').on('click', function() {
-        $('#category-form-title').html('<i class="fas fa-plus-circle"></i> افزودن دسته‌بندی جدید');
+        $('#category-form-title').html('<i class="ri-add-circle-line"></i> افزودن دسته‌بندی جدید');
         $('#pzl-category-form').trigger('reset');
         $('#category-term-id').val('0');
         $(this).hide();

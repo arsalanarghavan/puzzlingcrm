@@ -35,10 +35,10 @@ if ($contracts) {
 }
 ?>
 <div class="pzl-dashboard-section">
-    <h3><i class="fas fa-money-bill-wave"></i> وضعیت پرداخت‌ها و اقساط</h3>
+    <h3><i class="ri-money-dollar-circle-line-wave"></i> وضعیت پرداخت‌ها و اقساط</h3>
     <?php if (empty($all_installments)) : ?>
         <div class="pzl-empty-state">
-            <i class="fas fa-exclamation-circle"></i>
+            <i class="ri-error-warning-line"></i>
             <h4>برنامه پرداختی یافت نشد</h4>
             <p>در حال حاضر هیچ برنامه پرداخت یا قسطی برای شما ثبت نشده است.</p>
         </div>

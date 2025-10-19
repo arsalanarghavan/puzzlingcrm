@@ -13,7 +13,7 @@ $active_service = $settings['sms_service'] ?? 'melipayamak';
 ?>
 
 <div class="pzl-form-container">
-    <h4><i class="fas fa-cogs"></i> تنظیمات سامانه پیامک</h4>
+    <h4><i class="ri-settings-3-lines"></i> تنظیمات سامانه پیامک</h4>
     <form id="puzzling-sms-settings-form" method="post" class="pzl-form pzl-ajax-form" data-action="puzzling_save_settings" style="margin-top: 20px;">
         <?php wp_nonce_field('puzzlingcrm-ajax-nonce', 'security'); ?>
 

@@ -33,21 +33,21 @@ if ($contracts) {
 ?>
 <div class="pzl-dashboard-stats-grid">
     <div class="stat-widget-card gradient-1">
-        <div class="stat-widget-icon"><i class="fas fa-briefcase"></i></div>
+        <div class="stat-widget-icon"><i class="ri-folder-2-line"></i></div>
         <div class="stat-widget-content">
             <span class="stat-number"><?php echo esc_html($total_projects); ?></span>
             <span class="stat-title">پروژه‌های شما</span>
         </div>
     </div>
     <div class="stat-widget-card gradient-3">
-        <div class="stat-widget-icon"><i class="fas fa-life-ring"></i></div>
+        <div class="stat-widget-icon"><i class="ri-customer-service-2-line"></i></div>
         <div class="stat-widget-content">
             <span class="stat-number"><?php echo esc_html($open_tickets); ?></span>
             <span class="stat-title">تیکت‌های باز</span>
         </div>
     </div>
      <div class="stat-widget-card gradient-2">
-        <div class="stat-widget-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+        <div class="stat-widget-icon"><i class="ri-file-line-invoice-dollar"></i></div>
         <div class="stat-widget-content">
             <span class="stat-number"><?php echo esc_html($pending_installments); ?></span>
             <span class="stat-title">اقساط باقی‌مانده</span>
@@ -57,7 +57,7 @@ if ($contracts) {
 
 <div class="pzl-card">
     <div class="pzl-card-header">
-        <h3><i class="fas fa-history"></i> آخرین فعالیت‌های شما</h3>
+        <h3><i class="ri-history-line"></i> آخرین فعالیت‌های شما</h3>
     </div>
     <p>در این بخش می‌توانید خلاصه‌ای از آخرین پروژه‌ها، تیکت‌ها و قراردادهای خود را مشاهده کنید.</p>
 </div>

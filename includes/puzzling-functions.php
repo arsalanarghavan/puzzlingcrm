@@ -102,7 +102,7 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
 
         $project_id = get_post_meta($task_id, '_project_id', true);
         $project_title = $project_id ? get_the_title($project_id) : '';
-        $project_html = $project_title ? '<span class="pzl-card-project"><i class="far fa-folder"></i> ' . esc_html($project_title) . '</span>' : '';
+        $project_html = $project_title ? '<span class="pzl-card-project"><i class="ri-folder-line"></i> ' . esc_html($project_title) . '</span>' : '';
 
         $assigned_user_id = get_post_meta($task_id, '_assigned_to', true);
         $assignee_avatar = $assigned_user_id ? get_avatar($assigned_user_id, 24) : '';
@@ -119,18 +119,18 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
             } elseif ($due_timestamp < strtotime('+2 days', $today_timestamp)) {
                 $due_date_class = 'pzl-due-near';
             }
-            $due_date_html = '<span class="pzl-card-due-date ' . $due_date_class . '"><i class="far fa-calendar-alt"></i> ' . jdate('Y/m/d', $due_timestamp) . '</span>';
+            $due_date_html = '<span class="pzl-card-due-date ' . $due_date_class . '"><i class="ri-calendar-line"></i> ' . jdate('Y/m/d', $due_timestamp) . '</span>';
         }
 
         $subtask_count = count(get_children(['post_parent' => $task_id, 'post_type' => 'task']));
-        $subtask_html = $subtask_count > 0 ? '<span class="pzl-card-subtasks"><i class="fas fa-tasks"></i> ' . esc_html($subtask_count) . '</span>' : '';
+        $subtask_html = $subtask_count > 0 ? '<span class="pzl-card-subtasks"><i class="ri-task-line"></i> ' . esc_html($subtask_count) . '</span>' : '';
 
         $attachment_ids = get_post_meta($task_id, '_task_attachments', true);
         $attachment_count = is_array($attachment_ids) ? count($attachment_ids) : 0;
-        $attachment_html = $attachment_count > 0 ? '<span class="pzl-card-attachments"><i class="fas fa-paperclip"></i> ' . esc_html($attachment_count) . '</span>' : '';
+        $attachment_html = $attachment_count > 0 ? '<span class="pzl-card-attachments"><i class="ri-attachment-2"></i> ' . esc_html($attachment_count) . '</span>' : '';
         
         $comment_count = get_comments_number();
-        $comment_html = $comment_count > 0 ? '<span class="pzl-card-comments"><i class="far fa-comment"></i> ' . esc_html($comment_count) . '</span>' : '';
+        $comment_html = $comment_count > 0 ? '<span class="pzl-card-comments"><i class="ri-chat-3-line"></i> ' . esc_html($comment_count) . '</span>' : '';
 
         $labels = wp_get_post_terms($task_id, 'task_label');
         $labels_html = '';

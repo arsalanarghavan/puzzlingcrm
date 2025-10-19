@@ -12,11 +12,11 @@ $contracts = get_posts([
 ]);
 ?>
 <div class="pzl-dashboard-section">
-    <h3><i class="fas fa-file-signature"></i> قراردادهای شما</h3>
+    <h3><i class="ri-file-text-line"></i> قراردادهای شما</h3>
 
     <?php if (empty($contracts)): ?>
         <div class="pzl-empty-state">
-            <i class="fas fa-exclamation-circle"></i>
+            <i class="ri-error-warning-line"></i>
             <h4>قراردادی یافت نشد</h4>
             <p>شما در حال حاضر هیچ قرارداد فعالی ندارید.</p>
         </div>
@@ -39,7 +39,7 @@ $contracts = get_posts([
             <div class="pzl-project-card-item">
                 <div class="pzl-project-card-header-flex">
                     <div class="pzl-project-card-logo">
-                         <div class="pzl-logo-placeholder" style="background-color: #6c757d;"><i class="fas fa-file-signature"></i></div>
+                         <div class="pzl-logo-placeholder" style="background-color: #6c757d;"><i class="ri-file-text-line"></i></div>
                     </div>
                     <div class="pzl-project-card-title-group">
                         <h4 class="pzl-project-card-title"><?php echo esc_html($contract->post_title); ?></h4>
@@ -47,8 +47,8 @@ $contracts = get_posts([
                     </div>
                 </div>
                  <div class="pzl-project-card-details-grid" style="align-content: flex-start; flex-grow: 0;">
-                    <div><i class="fas fa-sync-alt"></i> مدل: <strong><?php echo esc_html($model_text); ?></strong></div>
-                    <div><i class="fas fa-hourglass-end"></i> پایان: <strong><?php echo $end_date ? jdate('Y/m/d', strtotime($end_date)) : '---'; ?></strong></div>
+                    <div><i class="ri-refresh-line"></i> مدل: <strong><?php echo esc_html($model_text); ?></strong></div>
+                    <div><i class="ri-hourglass-line"></i> پایان: <strong><?php echo $end_date ? jdate('Y/m/d', strtotime($end_date)) : '---'; ?></strong></div>
                 </div>
                 
                 <div class="pzl-contract-projects-list">

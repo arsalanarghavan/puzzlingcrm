@@ -18,7 +18,7 @@ $subscriptions = wcs_get_subscriptions([
 ?>
 <div class="pzl-dashboard-section">
     <div class="pzl-card">
-        <h3><i class="fas fa-sync-alt"></i> اشتراک‌های مشتریان</h3>
+        <h3><i class="ri-refresh-line"></i> اشتراک‌های مشتریان</h3>
         <p class="description">
             این صفحه تمام اشتراک‌های فعال از افزونه WooCommerce Subscriptions را نمایش می‌دهد. برای مدیریت یا ایجاد اشتراک جدید، لطفاً از منوی ووکامرس اقدام کنید.
         </p>

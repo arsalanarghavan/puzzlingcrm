@@ -12,7 +12,7 @@ $selected_project = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0
 <div class="pzl-scrum-board-wrapper">
     <div class="pzl-card">
         <div class="pzl-scrum-board-header">
-            <h3><i class="fas fa-columns"></i> بک‌لاگ و اسپرینت‌ها</h3>
+            <h3><i class="ri-layout-column-line"></i> بک‌لاگ و اسپرینت‌ها</h3>
             <form method="get" class="pzl-form">
                 <input type="hidden" name="view" value="scrum_board">
                 <div class="form-group">
@@ -30,7 +30,7 @@ $selected_project = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0
 
     <div class="pzl-scrum-board-content">
         <div class="pzl-scrum-column" id="backlog-column">
-            <h4><i class="fas fa-box-open"></i> بک‌لاگ</h4>
+            <h4><i class="ri-inbox-line"></i> بک‌لاگ</h4>
             <div class="pzl-scrum-task-list" data-sprint-id="0">
                 <div class="pzl-loader"></div>
             </div>
@@ -52,7 +52,7 @@ $selected_project = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0
                 $end_date = get_post_meta($sprint->ID, '_sprint_end_date', true);
                 ?>
                 <div class="pzl-scrum-column">
-                    <h4><i class="fas fa-rocket"></i> <?php echo esc_html($sprint->post_title); ?></h4>
+                    <h4><i class="ri-rocket-line"></i> <?php echo esc_html($sprint->post_title); ?></h4>
                     <small><?php echo jdate('Y/m/d', strtotime($start_date)); ?> - <?php echo jdate('Y/m/d', strtotime($end_date)); ?></small>
                     <div class="pzl-scrum-task-list" data-sprint-id="<?php echo esc_attr($sprint->ID); ?>">
                         <?php

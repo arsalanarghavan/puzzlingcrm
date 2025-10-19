@@ -69,36 +69,36 @@ foreach ($team_users as $user) {
 ?>
 
 <div class="pzl-card-header" style="border: none; padding-bottom: 0;">
-    <h4><i class="fas fa-file-export"></i> دریافت خروجی</h4>
+    <h4><i class="ri-file-line-export"></i> دریافت خروجی</h4>
     <div class="pzl-header-actions">
-        <button class="pzl-button pzl-button-sm" disabled><i class="fas fa-file-pdf"></i> دریافت گزارش PDF</button>
-        <button class="pzl-button pzl-button-sm" disabled><i class="fas fa-file-excel"></i> دریافت گزارش اکسل</button>
+        <button class="pzl-button pzl-button-sm" disabled><i class="ri-file-line-pdf"></i> دریافت گزارش PDF</button>
+        <button class="pzl-button pzl-button-sm" disabled><i class="ri-file-line-excel"></i> دریافت گزارش اکسل</button>
         <p class="description" style="margin-top: 10px; font-size: 12px;">قابلیت دریافت خروجی به زودی اضافه خواهد شد.</p>
     </div>
 </div>
 
 <div class="finance-report-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
     <div class="report-card">
-        <h4><i class="fas fa-tasks"></i> کل وظایف</h4>
+        <h4><i class="ri-task-line"></i> کل وظایف</h4>
         <span class="stat-number"><?php echo esc_html($total_tasks); ?></span>
     </div>
     <div class="report-card">
-        <h4><i class="fas fa-spinner"></i> وظایف فعال</h4>
+        <h4><i class="ri-loader-line"></i> وظایف فعال</h4>
         <span class="stat-number"><?php echo esc_html($active_tasks_count); ?></span>
     </div>
 	<div class="report-card">
-        <h4><i class="fas fa-check-double"></i> انجام شده امروز</h4>
+        <h4><i class="ri-check-line-double"></i> انجام شده امروز</h4>
         <span class="stat-number" style="color: var(--pzl-success-color);"><?php echo esc_html($tasks_done_today_count); ?></span>
     </div>
     <div class="report-card">
-        <h4><i class="fas fa-exclamation-triangle"></i> وظایف دارای تاخیر</h4>
+        <h4><i class="ri-alert-line"></i> وظایف دارای تاخیر</h4>
         <span class="stat-number" style="color: var(--pzl-danger-color);"><?php echo esc_html($overdue_tasks_count); ?></span>
     </div>
 </div>
 
 <div class="pzl-reports-grid">
     <div class="pzl-card">
-        <h4><i class="fas fa-chart-pie"></i> وظایف بر اساس وضعیت</h4>
+        <h4><i class="ri-pie-chart-line"></i> وظایف بر اساس وضعیت</h4>
         <div class="pzl-chart-container pzl-pie-chart-container">
             <?php if (!empty($status_counts) && $total_tasks > 0): ?>
                 <div class="pzl-chart-legend">
@@ -122,7 +122,7 @@ foreach ($team_users as $user) {
     </div>
 
     <div class="pzl-card">
-        <h4><i class="fas fa-users"></i> عملکرد اعضای تیم (تسک‌های تکمیل شده)</h4>
+        <h4><i class="ri-group-line"></i> عملکرد اعضای تیم (تسک‌های تکمیل شده)</h4>
         <div class="pzl-team-performance">
             <?php if(!empty($team_members_stats)): ?>
                  <?php
@@ -151,7 +151,7 @@ foreach ($team_users as $user) {
 
 <?php if ($overdue_tasks_query->have_posts()): ?>
 <div class="pzl-card">
-    <h4><i class="fas fa-list-ul"></i> لیست وظایف دارای تاخیر</h4>
+    <h4><i class="ri-list-check"></i> لیست وظایف دارای تاخیر</h4>
     <table class="pzl-table">
         <thead>
             <tr><th>عنوان وظیفه</th><th>پروژه</th><th>تخصیص به</th><th>ددلاین</th></tr>

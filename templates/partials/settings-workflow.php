@@ -23,7 +23,7 @@ $roles = get_editable_roles();
         <form id="puzzling-workflow-settings-form" method="post" class="pzl-form" style="margin-top: 20px;">
             <?php wp_nonce_field('puzzling_save_settings_nonce', 'security'); ?>
 
-            <h5><i class="fas fa-clock"></i> تنظیمات اتوماسیون تسک روزانه</h5>
+            <h5><i class="ri-time-line"></i> تنظیمات اتوماسیون تسک روزانه</h5>
             <div class="form-group">
                 <label for="work_start_hour">ساعت شروع کار (برای ساخت خودکار تسک‌ها)</label>
                 <input type="time" id="work_start_hour" name="puzzling_settings[work_start_hour]" value="<?php echo esc_attr($work_start_hour); ?>" class="ltr-input">
@@ -32,7 +32,7 @@ $roles = get_editable_roles();
 
             <hr style="margin: 30px 0;">
 
-            <h5><i class="fas fa-check-double"></i> قوانین دسترسی به ستون‌های کانبان</h5>
+            <h5><i class="ri-check-line-double"></i> قوانین دسترسی به ستون‌های کانبان</h5>
             <table class="pzl-table">
                 <thead>
                     <tr><th>وضعیت (ستون مقصد)</th><th>نقش‌های کاربری مجاز</th></tr>
@@ -62,7 +62,7 @@ $roles = get_editable_roles();
     </div>
 
     <div class="pzl-card">
-        <h5><i class="fas fa-user-tie"></i> مدیریت جایگاه‌های شغلی</h5>
+        <h5><i class="ri-user-smile-line"></i> مدیریت جایگاه‌های شغلی</h5>
         <p class="description">برای تعریف، ویرایش یا حذف دپارتمان‌ها و عناوین شغلی سازمان، لطفاً به تب **"جایگاه‌های شغلی"** در همین صفحه تنظیمات مراجعه کنید.</p>
     </div>
 </div>
