@@ -42,6 +42,10 @@ class PuzzlingCRM_Installer {
         // Create activities table for Activity Timeline
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-activity-timeline.php';
         PuzzlingCRM_Activity_Timeline::create_activities_table();
+        
+        // Create reminders table for Smart Reminders
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-smart-reminders.php';
+        PuzzlingCRM_Smart_Reminders::create_reminders_table();
 
         // Flush rewrite rules to make CPT URLs work correctly
         flush_rewrite_rules();

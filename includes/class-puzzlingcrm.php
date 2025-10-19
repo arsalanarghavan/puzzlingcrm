@@ -85,6 +85,12 @@ class PuzzlingCRM {
         
         // Activity Timeline Handler
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-activity-timeline.php';
+        
+        // Smart Reminders Handler
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-smart-reminders.php';
+        
+        // PWA Handler
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-pwa-handler.php';
     }
 
     /**
@@ -111,6 +117,8 @@ class PuzzlingCRM {
         new PuzzlingCRM_WebSocket_Handler();
         new PuzzlingCRM_Elasticsearch_Handler();
         new PuzzlingCRM_Activity_Timeline();
+        new PuzzlingCRM_Smart_Reminders();
+        new PuzzlingCRM_PWA_Handler();
     }
 
     /**

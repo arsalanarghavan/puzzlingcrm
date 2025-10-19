@@ -159,6 +159,30 @@ function puzzling_enqueue_assets($hook) {
         PUZZLINGCRM_VERSION,
         true
     );
+    
+    // Load Smart Reminders globally for all PuzzlingCRM pages
+    wp_enqueue_style(
+        'puzzling-smart-reminders-css',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/css/smart-reminders.css',
+        [],
+        PUZZLINGCRM_VERSION
+    );
+    
+    wp_enqueue_script(
+        'puzzling-smart-reminders',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/js/smart-reminders.js',
+        ['jquery', 'puzzlingcrm-scripts'],
+        PUZZLINGCRM_VERSION,
+        true
+    );
+    
+    // Load PWA Mobile styles globally
+    wp_enqueue_style(
+        'puzzling-pwa-mobile-css',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/css/pwa-mobile.css',
+        [],
+        PUZZLINGCRM_VERSION
+    );
 }
 add_action('admin_enqueue_scripts', 'puzzling_enqueue_assets');
 
