@@ -183,6 +183,38 @@ function puzzling_enqueue_assets($hook) {
         [],
         PUZZLINGCRM_VERSION
     );
+    
+    // Load Kanban Board globally for all PuzzlingCRM pages
+    wp_enqueue_style(
+        'puzzling-kanban-board-css',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/css/kanban-board.css',
+        [],
+        PUZZLINGCRM_VERSION
+    );
+    
+    wp_enqueue_script(
+        'puzzling-kanban-board',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/js/kanban-board.js',
+        ['jquery', 'puzzlingcrm-scripts'],
+        PUZZLINGCRM_VERSION,
+        true
+    );
+    
+    // Load Time Tracking globally for all PuzzlingCRM pages
+    wp_enqueue_style(
+        'puzzling-time-tracking-css',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/css/time-tracking.css',
+        [],
+        PUZZLINGCRM_VERSION
+    );
+    
+    wp_enqueue_script(
+        'puzzling-time-tracking',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/js/time-tracking.js',
+        ['jquery', 'puzzlingcrm-scripts'],
+        PUZZLINGCRM_VERSION,
+        true
+    );
 }
 add_action('admin_enqueue_scripts', 'puzzling_enqueue_assets');
 

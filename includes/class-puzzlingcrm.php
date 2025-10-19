@@ -91,6 +91,12 @@ class PuzzlingCRM {
         
         // PWA Handler
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-pwa-handler.php';
+        
+        // Kanban Board Handler
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-kanban-board.php';
+        
+        // Time Tracking Handler
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-time-tracking.php';
     }
 
     /**
@@ -119,6 +125,8 @@ class PuzzlingCRM {
         new PuzzlingCRM_Activity_Timeline();
         new PuzzlingCRM_Smart_Reminders();
         new PuzzlingCRM_PWA_Handler();
+        new PuzzlingCRM_Kanban_Board();
+        new PuzzlingCRM_Time_Tracking();
     }
 
     /**

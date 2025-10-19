@@ -46,6 +46,14 @@ class PuzzlingCRM_Installer {
         // Create reminders table for Smart Reminders
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-smart-reminders.php';
         PuzzlingCRM_Smart_Reminders::create_reminders_table();
+        
+        // Create kanban table for Kanban Board
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-kanban-board.php';
+        PuzzlingCRM_Kanban_Board::create_kanban_table();
+        
+        // Create time tracking tables for Time Tracking
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-time-tracking.php';
+        PuzzlingCRM_Time_Tracking::create_time_tracking_tables();
 
         // Flush rewrite rules to make CPT URLs work correctly
         flush_rewrite_rules();
