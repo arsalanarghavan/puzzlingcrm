@@ -54,6 +54,10 @@ class PuzzlingCRM_Installer {
         // Create time tracking tables for Time Tracking
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-time-tracking.php';
         PuzzlingCRM_Time_Tracking::create_time_tracking_tables();
+        
+        // Create document management tables for Document Management
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-document-management.php';
+        PuzzlingCRM_Document_Management::create_document_tables();
 
         // Flush rewrite rules to make CPT URLs work correctly
         flush_rewrite_rules();

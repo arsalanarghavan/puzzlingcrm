@@ -215,6 +215,22 @@ function puzzling_enqueue_assets($hook) {
         PUZZLINGCRM_VERSION,
         true
     );
+    
+    // Load Document Management globally for all PuzzlingCRM pages
+    wp_enqueue_style(
+        'puzzling-document-management-css',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/css/document-management.css',
+        [],
+        PUZZLINGCRM_VERSION
+    );
+    
+    wp_enqueue_script(
+        'puzzling-document-management',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/js/document-management.js',
+        ['jquery', 'puzzlingcrm-scripts'],
+        PUZZLINGCRM_VERSION,
+        true
+    );
 }
 add_action('admin_enqueue_scripts', 'puzzling_enqueue_assets');
 

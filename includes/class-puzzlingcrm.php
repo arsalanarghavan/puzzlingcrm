@@ -97,6 +97,9 @@ class PuzzlingCRM {
         
         // Time Tracking Handler
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-time-tracking.php';
+        
+        // Document Management Handler
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-document-management.php';
     }
 
     /**
@@ -127,6 +130,7 @@ class PuzzlingCRM {
         new PuzzlingCRM_PWA_Handler();
         new PuzzlingCRM_Kanban_Board();
         new PuzzlingCRM_Time_Tracking();
+        new PuzzlingCRM_Document_Management();
     }
 
     /**
