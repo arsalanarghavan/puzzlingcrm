@@ -124,10 +124,140 @@ add_action('admin_enqueue_scripts', 'puzzling_enqueue_assets');
 
 
 /**
- * Enqueue scripts for frontend (shortcodes). Kept simple for now.
+ * Enqueue scripts for frontend (shortcodes) - Xintra Theme Assets
  */
 function puzzling_enqueue_frontend_assets() {
-    // You can enqueue specific frontend styles and scripts here if needed
+    // فقط در صفحه داشبورد لود شود
+    if (!is_page('dashboard') && !is_singular() && !isset($_GET['view'])) {
+        return;
+    }
+
+    // Bootstrap RTL
+    wp_enqueue_style(
+        'xintra-bootstrap',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/libs/bootstrap/css/bootstrap.rtl.min.css',
+        [],
+        '5.3.0'
+    );
+
+    // Xintra Main Styles
+    wp_enqueue_style(
+        'xintra-styles',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/css/styles.css',
+        ['xintra-bootstrap'],
+        PUZZLINGCRM_VERSION
+    );
+
+    // Xintra Icons
+    wp_enqueue_style(
+        'xintra-icons',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/css/icons.css',
+        [],
+        PUZZLINGCRM_VERSION
+    );
+
+    // Simplebar (for custom scrollbars)
+    wp_enqueue_style(
+        'xintra-simplebar',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/libs/simplebar/simplebar.min.css',
+        [],
+        '6.2.5'
+    );
+
+    // Node Waves (for ripple effects)
+    wp_enqueue_style(
+        'xintra-node-waves',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/libs/node-waves/waves.min.css',
+        [],
+        '0.7.6'
+    );
+
+    // CSS دینامیک (از تنظیمات کاربر)
+    $custom_css_url = get_option('puzzlingcrm_custom_css_url');
+    $custom_css_version = get_option('puzzlingcrm_custom_css_version', time());
+    if ($custom_css_url) {
+        wp_enqueue_style(
+            'puzzlingcrm-custom-style',
+            $custom_css_url,
+            ['xintra-styles'],
+            $custom_css_version
+        );
+    }
+
+    // === JavaScript Files ===
+
+    // Popper.js (dependency for Bootstrap)
+    wp_enqueue_script(
+        'popper-js',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/libs/@popperjs/core/umd/popper.min.js',
+        [],
+        '2.11.6',
+        true
+    );
+
+    // Bootstrap JS
+    wp_enqueue_script(
+        'xintra-bootstrap-js',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/libs/bootstrap/js/bootstrap.bundle.min.js',
+        ['jquery', 'popper-js'],
+        '5.3.0',
+        true
+    );
+
+    // Simplebar JS
+    wp_enqueue_script(
+        'xintra-simplebar-js',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/libs/simplebar/simplebar.min.js',
+        ['jquery'],
+        '6.2.5',
+        true
+    );
+
+    // Node Waves JS
+    wp_enqueue_script(
+        'xintra-node-waves-js',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/libs/node-waves/waves.min.js',
+        ['jquery'],
+        '0.7.6',
+        true
+    );
+
+    // Xintra Main JS (theme functionality)
+    wp_enqueue_script(
+        'xintra-main-js',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/js/main.js',
+        ['jquery', 'xintra-bootstrap-js'],
+        PUZZLINGCRM_VERSION,
+        true
+    );
+
+    // استایل‌های قدیمی پلاگین (برای سازگاری)
+    wp_enqueue_style(
+        'puzzlingcrm-styles',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzlingcrm-styles.css',
+        ['xintra-styles'],
+        PUZZLINGCRM_VERSION
+    );
+
+    // اسکریپت‌های قدیمی پلاگین
+    wp_enqueue_script(
+        'puzzlingcrm-scripts',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js',
+        ['jquery', 'xintra-main-js'],
+        PUZZLINGCRM_VERSION,
+        true
+    );
+
+    // Localize script
+    wp_localize_script('puzzlingcrm-scripts', 'puzzling_ajax', [
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('puzzlingcrm-ajax-nonce'),
+    ]);
+
+    // Media Library (برای آپلود تصاویر در تنظیمات)
+    if (current_user_can('manage_options')) {
+        wp_enqueue_media();
+    }
 }
 add_action('wp_enqueue_scripts', 'puzzling_enqueue_frontend_assets');
 

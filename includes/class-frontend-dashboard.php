@@ -53,30 +53,12 @@ class PuzzlingCRM_Frontend_Dashboard {
     /**
      * Renders the main dashboard based on user role.
      * Shortcode: [puzzling_dashboard]
+     * استفاده از wrapper جدید Xintra
      */
     public static function render_dashboard() {
-        if ( ! is_user_logged_in() ) {
-            return self::render_partial('common/login-prompt');
-        }
-
-        // Handle my_profile view for all users
-        if (isset($_GET['view']) && $_GET['view'] === 'my_profile') {
-            return self::render_partial('page-my-profile');
-        }
-
-        switch ( self::get_user_role() ) {
-            case 'system_manager':
-                return self::render_partial('dashboard-system-manager');
-            case 'finance_manager':
-                return self::render_partial('dashboard-finance');
-            case 'team_member':
-                return self::render_partial('dashboard-team-member');
-            case 'customer':
-                // For customers, the main dashboard shortcode renders the full tabbed client interface.
-                return self::render_partial('dashboard-client');
-            default:
-                return '<p>' . __('You do not have a defined role to view a dashboard.', 'puzzlingcrm') . '</p>';
-        }
+        ob_start();
+        include PUZZLINGCRM_PLUGIN_DIR . 'templates/dashboard-wrapper-xintra.php';
+        return ob_get_clean();
     }
 
     /**
