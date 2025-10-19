@@ -32,6 +32,46 @@ class PuzzlingCRM_Installer {
 
         // HIGHLIGHT: The creation of the dashboard page is now disabled.
         // self::create_dashboard_page();
+
+        // ایجاد تنظیمات پیش‌فرض استایل
+        self::create_default_style_settings();
+    }
+
+    /**
+     * ایجاد تنظیمات پیش‌فرض استایل در زمان نصب
+     */
+    private static function create_default_style_settings() {
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-settings-handler.php';
+        
+        $existing_settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+        
+        // اگر تنظیمات استایل وجود نداشت، ایجاد کن
+        if (!isset($existing_settings['style'])) {
+            $default_style = [
+                'logo_desktop' => PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/images/brand-logos/desktop-logo.png',
+                'logo_mobile' => PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/images/brand-logos/toggle-logo.png',
+                'logo_dark' => PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/images/brand-logos/desktop-dark.png',
+                'logo_favicon' => PUZZLINGCRM_PLUGIN_URL . 'assets/xintra/images/brand-logos/favicon.ico',
+                'primary_color' => '#6366f1',
+                'secondary_color' => '#6c757d',
+                'success_color' => '#10b981',
+                'danger_color' => '#ef4444',
+                'warning_color' => '#f59e0b',
+                'info_color' => '#3b82f6',
+                'menu_bg_color' => '#1e293b',
+                'header_bg_color' => '#ffffff',
+                'body_font' => 'Vazirmatn',
+                'heading_font' => 'Vazirmatn',
+                'font_size_base' => 14,
+                'theme_mode' => 'light',
+                'menu_style' => 'dark',
+                'header_style' => 'light',
+                'sidebar_layout' => 'default',
+            ];
+            
+            $existing_settings['style'] = $default_style;
+            PuzzlingCRM_Settings_Handler::update_settings($existing_settings);
+        }
     }
     
     /**
