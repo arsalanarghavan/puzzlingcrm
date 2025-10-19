@@ -29,6 +29,14 @@ class PuzzlingCRM_Main_Ajax_Handler {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-agile-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-consultation-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-sms-ajax-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-settings-ajax-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-pdf-ajax-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-appointment-ajax-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-attachment-ajax-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-modal-ajax-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-email-ajax-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-payment-ajax-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-import-export-ajax-handler.php';
     }
 
     private function define_hooks() {
@@ -43,5 +51,13 @@ class PuzzlingCRM_Main_Ajax_Handler {
         new PuzzlingCRM_Agile_Ajax_Handler();
         new PuzzlingCRM_Consultation_Ajax_Handler();
         new PuzzlingCRM_SMS_Ajax_Handler();
+        new PuzzlingCRM_Settings_Ajax_Handler();
+        new PuzzlingCRM_PDF_Ajax_Handler();
+        new PuzzlingCRM_Appointment_Ajax_Handler();
+        new PuzzlingCRM_Attachment_Ajax_Handler();
+        new PuzzlingCRM_Modal_Ajax_Handler();
+        new PuzzlingCRM_Email_Ajax_Handler();
+        new PuzzlingCRM_Payment_Ajax_Handler();
+        new PuzzlingCRM_Import_Export_Ajax_Handler();
     }
 }

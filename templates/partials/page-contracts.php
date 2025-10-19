@@ -67,13 +67,72 @@ $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']
         <?php endif; ?>
 
     <?php else: // List View ?>
+        <!-- Search & Filter -->
+        <div class="card custom-card mb-3">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <input type="hidden" name="view" value="contracts">
+                    <div class="col-md-3">
+                        <label class="form-label">جستجو</label>
+                        <input type="text" name="s" class="form-control" placeholder="شماره یا عنوان قرارداد..." 
+                               value="<?php echo isset($_GET['s']) ? esc_attr($_GET['s']) : ''; ?>">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">مشتری</label>
+                        <select name="customer_filter" class="form-select">
+                            <option value="">همه مشتریان</option>
+                            <?php
+                            $all_customers = get_users(['role__in' => ['customer', 'subscriber', 'client']]);
+                            $current_customer = isset($_GET['customer_filter']) ? intval($_GET['customer_filter']) : 0;
+                            foreach ($all_customers as $customer):
+                            ?>
+                            <option value="<?php echo $customer->ID; ?>" <?php selected($current_customer, $customer->ID); ?>>
+                                <?php echo esc_html($customer->display_name); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">وضعیت پرداخت</label>
+                        <select name="payment_status" class="form-select">
+                            <option value="">همه</option>
+                            <option value="paid" <?php selected($_GET['payment_status'] ?? '', 'paid'); ?>>پرداخت شده</option>
+                            <option value="pending" <?php selected($_GET['payment_status'] ?? '', 'pending'); ?>>در انتظار</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="ri-search-line me-1"></i>فیلتر
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <a href="?view=contracts" class="btn btn-secondary w-100">
+                            <i class="ri-refresh-line me-1"></i>پاک کردن
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
         <div class="pzl-card">
             <?php
-            $contracts_query = new WP_Query([
+            $args = [
                 'post_type' => 'contract',
                 'posts_per_page' => 20,
                 'paged' => get_query_var('paged') ? get_query_var('paged') : 1,
-            ]);
+            ];
+            
+            // Apply filters
+            if (!empty($_GET['s'])) {
+                $args['s'] = sanitize_text_field($_GET['s']);
+            }
+            if (!empty($_GET['customer_filter'])) {
+                $args['author'] = intval($_GET['customer_filter']);
+            }
+            
+            $contracts_query = new WP_Query($args);
             ?>
             <h4><i class="ri-archive-line"></i> لیست قراردادهای ثبت شده</h4>
             <?php if ($contracts_query->have_posts()): ?>

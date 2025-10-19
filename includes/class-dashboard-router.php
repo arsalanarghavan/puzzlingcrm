@@ -548,6 +548,12 @@ class PuzzlingCRM_Dashboard_Router {
         <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/tasks-management.js"></script>
         <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/user-management.js"></script>
         <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/lead-management.js"></script>
+        <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/forms-enhancement.js?v=<?php echo PUZZLINGCRM_VERSION; ?>"></script>
+        <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/pdf-generator.js?v=<?php echo PUZZLINGCRM_VERSION; ?>"></script>
+        <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/bulk-actions.js?v=<?php echo PUZZLINGCRM_VERSION; ?>"></script>
+        <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/modals-handler.js?v=<?php echo PUZZLINGCRM_VERSION; ?>"></script>
+        <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/email-sender.js?v=<?php echo PUZZLINGCRM_VERSION; ?>"></script>
+        <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/import-export.js?v=<?php echo PUZZLINGCRM_VERSION; ?>"></script>
         
         <?php
         // Load reports export script for reports page

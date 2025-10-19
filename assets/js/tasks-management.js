@@ -252,6 +252,40 @@
             
             addChecklistItem(taskId, item);
         });
+        
+        // Upload attachment button
+        $(document).on('click', '#upload-attachment-btn', function() {
+            $('#task-attachment-input').click();
+        });
+        
+        // File selected
+        $(document).on('change', '#task-attachment-input', function() {
+            const file = this.files[0];
+            if (!file) return;
+            
+            const taskId = $('input[name="task_id"]').val() || $('.task-status-select').data('task-id');
+            
+            uploadTaskAttachment(taskId, file);
+        });
+        
+        // Delete attachment
+        $(document).on('click', '.delete-attachment', function() {
+            const attachmentId = $(this).data('attachment-id');
+            const taskId = $('.task-status-select').data('task-id');
+            
+            Swal.fire({
+                title: 'حذف فایل؟',
+                text: 'آیا مطمئن هستید؟',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'بله، حذف کن',
+                cancelButtonText: 'انصراف'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    deleteTaskAttachment(taskId, attachmentId);
+                }
+            });
+        });
     }
 
     /**
@@ -651,6 +685,94 @@
             },
             error: function() {
                 showToast('error', 'خطا در ارتباط با سرور');
+            }
+        });
+    }
+
+    /**
+     * Upload Task Attachment
+     */
+    function uploadTaskAttachment(taskId, file) {
+        const formData = new FormData();
+        formData.append('action', 'puzzling_upload_task_attachment');
+        formData.append('security', puzzlingcrm_ajax_obj.nonce);
+        formData.append('task_id', taskId);
+        formData.append('file', file);
+        
+        Swal.fire({
+            title: 'در حال آپلود...',
+            html: '<div class="spinner-border text-primary"></div>',
+            showConfirmButton: false,
+            allowOutsideClick: false
+        });
+        
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'موفق!',
+                        text: 'فایل آپلود شد',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    
+                    // Reload modal
+                    setTimeout(function() {
+                        openTaskModal(taskId);
+                    }, 1500);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'خطا',
+                        text: response.data.message
+                    });
+                }
+            },
+            error: function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطا',
+                    text: 'خطا در آپلود فایل'
+                });
+            }
+        });
+    }
+
+    /**
+     * Delete Task Attachment
+     */
+    function deleteTaskAttachment(taskId, attachmentId) {
+        $.ajax({
+            url: puzzlingcrm_ajax_obj.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'puzzling_delete_task_attachment',
+                security: puzzlingcrm_ajax_obj.nonce,
+                task_id: taskId,
+                attachment_id: attachmentId
+            },
+            success: function(response) {
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'حذف شد',
+                        showConfirmButton: false,
+                        timer: 1000
+                    });
+                    
+                    // Reload modal
+                    setTimeout(function() {
+                        openTaskModal(taskId);
+                    }, 1000);
+                } else {
+                    showToast('error', response.data.message);
+                }
             }
         });
     }

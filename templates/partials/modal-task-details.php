@@ -231,11 +231,75 @@ if (!is_array($linked_tasks)) $linked_tasks = [];
                 <!-- Attachments Tab -->
                 <div class="tab-pane fade" id="task-attachments">
                     <div class="card custom-card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div class="card-title">فایل‌های پیوست شده</div>
+                            <button type="button" class="btn btn-primary btn-sm" id="upload-attachment-btn">
+                                <i class="ri-upload-2-line me-1"></i>آپلود فایل
+                            </button>
+                        </div>
                         <div class="card-body">
-                            <p class="text-muted text-center py-3">
-                                <i class="ri-attachment-2 fs-3 d-block mb-2 opacity-3"></i>
-                                هیچ پیوستی وجود ندارد.
-                            </p>
+                            <input type="file" id="task-attachment-input" class="d-none" 
+                                   accept="image/*,.pdf,.doc,.docx,.zip,.rar">
+                            
+                            <div id="attachments-list" class="row g-3">
+                                <?php
+                                $attachment_ids = get_post_meta($task->ID, '_task_attachments', true) ?: [];
+                                
+                                if (!empty($attachment_ids) && is_array($attachment_ids)):
+                                    foreach ($attachment_ids as $attachment_id):
+                                        if (!$attachment_id) continue;
+                                        $file_url = wp_get_attachment_url($attachment_id);
+                                        if (!$file_url) continue;
+                                        
+                                        $file_path = get_attached_file($attachment_id);
+                                        $file_name = basename($file_path);
+                                        $file_type = wp_check_filetype($file_name);
+                                        $file_size = file_exists($file_path) ? size_format(filesize($file_path)) : '0 B';
+                                        
+                                        $icon_map = [
+                                            'pdf' => 'ri-file-pdf-line text-danger',
+                                            'doc' => 'ri-file-word-line text-primary',
+                                            'docx' => 'ri-file-word-line text-primary',
+                                            'zip' => 'ri-file-zip-line text-warning',
+                                            'rar' => 'ri-file-zip-line text-warning',
+                                            'jpg' => 'ri-image-line text-success',
+                                            'jpeg' => 'ri-image-line text-success',
+                                            'png' => 'ri-image-line text-success',
+                                            'gif' => 'ri-image-line text-success'
+                                        ];
+                                        $icon = $icon_map[$file_type['ext']] ?? 'ri-file-line';
+                                ?>
+                                <div class="col-md-6 attachment-item" data-attachment-id="<?php echo $attachment_id; ?>">
+                                    <div class="border rounded p-3 d-flex align-items-center">
+                                        <div class="me-3">
+                                            <span class="avatar avatar-md bg-light">
+                                                <i class="<?php echo $icon; ?> fs-24"></i>
+                                            </span>
+                                        </div>
+                                        <div class="flex-fill">
+                                            <div class="fw-semibold"><?php echo esc_html($file_name); ?></div>
+                                            <small class="text-muted"><?php echo $file_size; ?></small>
+                                        </div>
+                                        <div>
+                                            <a href="<?php echo esc_url($file_url); ?>" target="_blank" 
+                                               class="btn btn-sm btn-primary me-1" download>
+                                                <i class="ri-download-line"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger delete-attachment" 
+                                                    data-attachment-id="<?php echo $attachment_id; ?>">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endforeach;
+                                else: ?>
+                                <div class="col-12 text-center text-muted py-4" id="no-attachments-msg">
+                                    <i class="ri-attachment-line fs-40 d-block mb-2 opacity-3"></i>
+                                    <p>هیچ فایلی پیوست نشده است</p>
+                                </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -1,76 +1,114 @@
 <?php
-class CSM_Zarinpal_Handler {
+/**
+ * Zarinpal Payment Gateway Handler
+ * @package PuzzlingCRM
+ */
+
+if (!defined('ABSPATH')) exit;
+
+class PuzzlingCRM_Zarinpal_Handler {
+    
     private $merchant_id;
-    private $request_api_url = 'https://api.zarinpal.com/pg/v4/payment/request.json';
-    private $verify_api_url = 'https://api.zarinpal.com/pg/v4/payment/verify.json';
+    private $sandbox;
+    private $request_api_url;
+    private $verify_api_url;
+    private $payment_url;
 
-    public function __construct( $merchant_id ) {
+    public function __construct($merchant_id, $sandbox = false) {
         $this->merchant_id = $merchant_id;
-    }
-
-    public function create_payment_link( $amount, $description, $callback_url ) {
-        $data = [
-            'merchant_id'  => $this->merchant_id,
-            'amount'       => $amount * 10, // Zarinpal uses Rials
-            'description'  => $description,
-            'callback_url' => $callback_url,
-        ];
-
-        $response = wp_remote_post( $this->request_api_url, [
-            'method'      => 'POST',
-            'headers'     => ['Content-Type' => 'application/json'],
-            'body'        => json_encode( $data ),
-            'timeout'     => 45,
-        ] );
-
-        if ( is_wp_error( $response ) ) {
-            return false;
-        }
-
-        $body = json_decode( wp_remote_retrieve_body( $response ), true );
+        $this->sandbox = $sandbox;
         
-        if ( !empty($body['data']['authority']) ) {
-            return 'https://www.zarinpal.com/pg/StartPay/' . $body['data']['authority'];
+        if ($sandbox) {
+            $this->request_api_url = 'https://sandbox.zarinpal.com/pg/v4/payment/request.json';
+            $this->verify_api_url = 'https://sandbox.zarinpal.com/pg/v4/payment/verify.json';
+            $this->payment_url = 'https://sandbox.zarinpal.com/pg/StartPay/';
+        } else {
+            $this->request_api_url = 'https://api.zarinpal.com/pg/v4/payment/request.json';
+            $this->verify_api_url = 'https://api.zarinpal.com/pg/v4/payment/verify.json';
+            $this->payment_url = 'https://www.zarinpal.com/pg/StartPay/';
         }
-
-        return false;
     }
 
     /**
-     * Verifies a payment with Zarinpal.
-     *
-     * @param int $amount The amount of the transaction (in Tomans).
-     * @param string $authority The authority code from Zarinpal.
-     * @return array|false An array with payment details on success, false on failure.
+     * Request Payment
      */
-    public function verify_payment( $amount, $authority ) {
+    public function request_payment($amount, $description, $callback_url, $email = '', $mobile = '') {
         $data = [
             'merchant_id' => $this->merchant_id,
-            'amount'      => $amount * 10, // Zarinpal uses Rials
-            'authority'   => $authority,
+            'amount' => $amount * 10, // Convert Toman to Rial
+            'description' => $description,
+            'callback_url' => $callback_url
         ];
+        
+        if ($email) $data['metadata']['email'] = $email;
+        if ($mobile) $data['metadata']['mobile'] = $mobile;
 
-        $response = wp_remote_post( $this->verify_api_url, [
-            'method'      => 'POST',
-            'headers'     => ['Content-Type' => 'application/json'],
-            'body'        => json_encode($data),
-            'timeout'     => 45,
+        $response = wp_remote_post($this->request_api_url, [
+            'headers' => ['Content-Type' => 'application/json'],
+            'body' => json_encode($data),
+            'timeout' => 45
         ]);
 
-        if ( is_wp_error( $response ) ) {
-            return false;
-        }
-
-        $body = json_decode( wp_remote_retrieve_body( $response ), true );
-
-        // According to Zarinpal docs, code 100 or 101 means success
-        if ( isset($body['data']['code']) && ($body['data']['code'] == 100 || $body['data']['code'] == 101) ) {
+        if (is_wp_error($response)) {
             return [
-                'status' => 'success',
-                'ref_id' => $body['data']['ref_id'],
+                'success' => false,
+                'message' => 'خطا در اتصال به درگاه پرداخت: ' . $response->get_error_message()
             ];
         }
 
-        return false;
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        
+        if (!empty($body['data']['authority']) && !empty($body['data']['code']) && $body['data']['code'] == 100) {
+            return [
+                'success' => true,
+                'authority' => $body['data']['authority'],
+                'payment_url' => $this->payment_url . $body['data']['authority']
+            ];
+        }
+
+        return [
+            'success' => false,
+            'message' => $body['errors']['message'] ?? 'خطا در ایجاد درخواست پرداخت.'
+        ];
+    }
+
+    /**
+     * Verify Payment
+     */
+    public function verify_payment($authority, $amount) {
+        $data = [
+            'merchant_id' => $this->merchant_id,
+            'authority' => $authority,
+            'amount' => $amount * 10 // Convert Toman to Rial
+        ];
+
+        $response = wp_remote_post($this->verify_api_url, [
+            'headers' => ['Content-Type' => 'application/json'],
+            'body' => json_encode($data),
+            'timeout' => 45
+        ]);
+
+        if (is_wp_error($response)) {
+            return [
+                'success' => false,
+                'message' => 'خطا در تایید پرداخت: ' . $response->get_error_message()
+            ];
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        
+        if (!empty($body['data']['code']) && $body['data']['code'] == 100) {
+            return [
+                'success' => true,
+                'ref_id' => $body['data']['ref_id'],
+                'card_pan' => $body['data']['card_pan'] ?? '',
+                'card_hash' => $body['data']['card_hash'] ?? ''
+            ];
+        }
+
+        return [
+            'success' => false,
+            'message' => $body['errors']['message'] ?? 'تایید پرداخت ناموفق بود.'
+        ];
     }
 }

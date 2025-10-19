@@ -23,6 +23,10 @@ $total_installments_value = $contract_to_edit ? esc_attr(get_post_meta($contract
     </h4>
     <?php if ($contract_to_edit): ?>
     <div class="btn-group">
+        <button type="button" class="btn btn-success btn-sm generate-contract-pdf" 
+                data-contract-id="<?php echo esc_attr($contract_to_edit->ID); ?>">
+            <i class="ri-file-pdf-line me-1"></i>دریافت PDF
+        </button>
         <?php if (!$is_cancelled): ?>
         <button type="button" id="cancel-contract-btn" class="btn btn-warning btn-sm">
             <i class="ri-close-circle-line me-1"></i>لغو قرارداد
