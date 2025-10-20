@@ -91,7 +91,8 @@ class PuzzlingCRM_Login_Page {
         <link href="<?php echo $assets_url; ?>css/rtl-complete-fix.css" rel="stylesheet">
         
         <!-- SweetAlert2 -->
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <link rel="stylesheet" href="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/libs/sweetalert2/sweetalert2.min.css">
+        <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/libs/sweetalert2/sweetalert2.min.js"></script>
         
         <!-- jQuery -->
         <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -106,6 +107,7 @@ class PuzzlingCRM_Login_Page {
         
         <!-- PuzzlingCRM Login Scripts -->
         <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/login-page.js"></script>
+        
         <!-- End::custom-styles -->
 
     </head>
@@ -124,7 +126,7 @@ class PuzzlingCRM_Login_Page {
                                 </div>
                                 <?php endif; ?>
                                 
-                                <p class="h5 mb-2 text-center">ورود به سیستم</p>
+                                <p class="h5 mb-2 text-center">ورود / ثبت‌نام</p>
                                 <p class="mb-4 text-muted op-7 fw-normal text-center">به پنل مدیریت خوش آمدید</p>
                                 
                                 <!-- Nav Tabs -->
@@ -153,9 +155,10 @@ class PuzzlingCRM_Login_Page {
                                                 <div class="col-xl-12 mb-3">
                                                     <label for="phone_number" class="form-label text-default">شماره موبایل</label>
                                                     <input type="tel" class="form-control" id="phone_number" name="phone_number" placeholder="09123456789" pattern="09[0-9]{9}" required>
-                                                    <small class="form-text text-muted">شماره موبایل ثبت‌شده در سیستم را وارد کنید</small>
+                                                    <small class="form-text text-muted">شماره موبایل خود را برای ورود یا ثبت‌نام وارد کنید</small>
                                                 </div>
-                                                <div class="d-grid">
+                                                
+                                                <div class="d-grid gap-2">
                                                     <button type="button" id="puzzling-send-otp-btn" class="btn btn-primary">
                                                         <i class="ri-send-plane-line me-1"></i> دریافت کد تایید
                                                     </button>
@@ -164,10 +167,15 @@ class PuzzlingCRM_Login_Page {
                                             
                                             <!-- Step 2: OTP Code -->
                                             <div id="step-otp" class="otp-step" style="display: none;">
+                                                <div class="alert alert-success text-center mb-3" role="alert">
+                                                    <i class="ri-check-line me-1"></i>
+                                                    کد تایید به شماره موبایل شما ارسال شد
+                                                </div>
+                                                
                                                 <div class="col-xl-12 mb-3">
                                                     <label for="otp_code" class="form-label text-default">کد تایید</label>
-                                                    <input type="text" class="form-control text-center fs-4 letter-spacing-2" id="otp_code" name="otp_code" placeholder="- - - - - -" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code">
-                                                    <small class="form-text text-muted">کد 6 رقمی ارسال شده را وارد کنید</small>
+                                                    <input type="text" class="form-control text-center fs-4 letter-spacing-2" id="otp_code" name="otp_code" placeholder="- - - - - -" maxlength="8" pattern="[0-9]{4,8}" autocomplete="one-time-code">
+                                                    <small class="form-text text-muted">کد ارسال شده را وارد کنید (کد به صورت خودکار تایید می‌شود)</small>
                                                 </div>
                                                 
                                                 <div class="alert alert-info text-center mb-3" role="alert">
@@ -177,13 +185,47 @@ class PuzzlingCRM_Login_Page {
                                                 
                                                 <div class="d-grid gap-2">
                                                     <button type="submit" id="puzzling-verify-otp-btn" class="btn btn-primary">
-                                                        <i class="ri-login-box-line me-1"></i> ورود
+                                                        <i class="ri-login-box-line me-1"></i> تایید کد
                                                     </button>
                                                     <button type="button" id="puzzling-resend-otp-btn" class="btn btn-outline-secondary" style="display: none;">
                                                         <i class="ri-refresh-line me-1"></i> ارسال مجدد کد
                                                     </button>
                                                     <button type="button" id="puzzling-change-phone-btn" class="btn btn-link">
                                                         <i class="ri-arrow-right-line me-1"></i> تغییر شماره موبایل
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Step 3: Set Password (for new users) -->
+                                            <div id="step-password" class="otp-step" style="display: none;">
+                                                <div class="alert alert-success text-center mb-3" role="alert">
+                                                    <i class="ri-check-line me-1"></i>
+                                                    کد تایید صحیح است. لطفاً رمز عبور خود را تنظیم کنید.
+                                                </div>
+                                                
+                                                <div class="col-xl-12 mb-3">
+                                                    <label for="new_password" class="form-label text-default">رمز عبور جدید</label>
+                                                    <div class="position-relative">
+                                                        <input type="password" class="form-control" id="new_password" name="new_password" placeholder="رمز عبور">
+                                                        <a href="javascript:void(0);" class="show-password-button text-muted" onclick="createpassword('new_password',this)" id="button-addon3"><i class="ri-eye-off-line align-middle"></i></a>
+                                                    </div>
+                                                    <small class="form-text text-muted">حداقل 6 کاراکتر</small>
+                                                </div>
+                                                
+                                                <div class="col-xl-12 mb-3">
+                                                    <label for="confirm_password" class="form-label text-default">تکرار رمز عبور</label>
+                                                    <div class="position-relative">
+                                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="تکرار رمز عبور">
+                                                        <a href="javascript:void(0);" class="show-password-button text-muted" onclick="createpassword('confirm_password',this)" id="button-addon4"><i class="ri-eye-off-line align-middle"></i></a>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="d-grid gap-2">
+                                                    <button type="button" id="puzzling-set-password-btn" class="btn btn-primary">
+                                                        <i class="ri-save-line me-1"></i> تنظیم رمز عبور و ورود
+                                                    </button>
+                                                    <button type="button" id="puzzling-back-to-otp-btn" class="btn btn-outline-secondary">
+                                                        <i class="ri-arrow-right-line me-1"></i> بازگشت به کد تایید
                                                     </button>
                                                 </div>
                                             </div>
@@ -228,11 +270,7 @@ class PuzzlingCRM_Login_Page {
                                     
                                 </div>
                                 
-                                <?php if (get_option('users_can_register')): ?>
-                                <div class="text-center">
-                                    <p class="text-muted mt-3 mb-0">حساب کاربری ندارید؟ <a href="<?php echo esc_url(wp_registration_url()); ?>" class="text-primary">ثبت نام</a></p>
-                                </div>
-                                <?php endif; ?>
+                                <!-- ورود و ثبت‌نام یکپارچه هستند - نیازی به دکمه جداگانه نیست -->
                                 
                             </div>
                         </div>

@@ -64,12 +64,7 @@ $active_service = $settings['sms_service'] ?? 'melipayamak';
             <div class="form-group"><label for="lead_pattern_female">پترن پیامک برای خانم‌ها:</label><input type="text" id="lead_pattern_female" name="puzzling_settings[lead_pattern_female]" value="<?php echo esc_attr($settings['lead_pattern_female'] ?? ''); ?>" class="ltr-input" placeholder="مثال: 54322"></div>
             
             <hr>
-            <h6>پترن پیامک ورود با کد یکبار مصرف</h6>
-            <p class="description">کد الگوی ورود با پیامک را وارد کنید. متغیر مورد استفاده: <code>%amount%</code> (کد ۶ رقمی OTP)</p>
-            <div class="form-group"><label for="melipayamak_login_pattern">پترن ورود با پیامک:</label><input type="text" id="melipayamak_login_pattern" name="puzzling_settings[melipayamak_login_pattern]" value="<?php echo esc_attr($settings['melipayamak_login_pattern'] ?? ''); ?>" class="ltr-input" placeholder="مثال: 67890"></div>
-            <p class="description"><strong>راهنما:</strong> در پنل ملی‌پیامک یک الگوی جدید با متن زیر بسازید:<br>
-            <code>کد ورود شما: %amount%<br>اعتبار: 5 دقیقه</code><br>
-            سپس کد الگو را در فیلد بالا وارد کنید. در صورت خالی بودن، پیامک ساده ارسال می‌شود.</p>
+            <p class="description"><strong>توجه:</strong> تنظیمات پترن پیامک ورود به تب "احراز هویت" منتقل شده است.</p>
         </div>
 
         <div id="parsgreen-settings" class="sms-provider-settings" style="display: <?php echo $active_service === 'parsgreen' ? 'block' : 'none'; ?>;">
@@ -88,9 +83,7 @@ $active_service = $settings['sms_service'] ?? 'melipayamak';
             <div class="form-group"><label for="parsgreen_lead_msg_female">متن پیامک برای خانم‌ها:</label><textarea id="parsgreen_lead_msg_female" name="puzzling_settings[parsgreen_lead_msg_female]" rows="3" placeholder="مثال: خانم {full_name} عزیز، از ثبت اطلاعات شما سپاسگزاریم. به زودی با شما تماس خواهیم گرفت."><?php echo esc_textarea($settings['parsgreen_lead_msg_female'] ?? ''); ?></textarea></div>
             
             <hr>
-            <h6>متن پیامک ورود با کد یکبار مصرف</h6>
-            <p class="description">متن پیامک ورود را وارد کنید. از <code>%CODE%</code> برای نمایش کد ۶ رقمی استفاده کنید.</p>
-            <div class="form-group"><label for="login_sms_template">متن پیامک ورود:</label><textarea id="login_sms_template" name="puzzling_settings[login_sms_template]" rows="3" placeholder="مثال: کد ورود شما: %CODE%&#10;اعتبار: 5 دقیقه"><?php echo esc_textarea($settings['login_sms_template'] ?? 'کد ورود شما: %CODE%'); ?></textarea></div>
+            <p class="description"><strong>توجه:</strong> تنظیمات پیامک ورود به تب "احراز هویت" منتقل شده است.</p>
         </div>
         
         <div class="form-submit">

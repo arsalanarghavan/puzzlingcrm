@@ -276,6 +276,23 @@ function puzzling_get_default_task_status_slug() {
     return 'to-do'; // Fallback
 }
 
+if ( ! function_exists( 'puzzling_convert_phone_to_english' ) ) {
+    /**
+     * Converts Persian/Arabic digits in phone numbers to English digits
+     * 
+     * @param string $phone The phone number that may contain Persian/Arabic digits
+     * @return string The phone number with English digits
+     */
+    function puzzling_convert_phone_to_english($phone) {
+        if (empty($phone)) {
+            return $phone;
+        }
+        
+        // Use the tr_num function from jdf.php to convert Persian/Arabic digits to English
+        return tr_num($phone, 'en');
+    }
+}
+
 if ( ! function_exists( 'puzzling_get_sms_handler' ) ) {
     /**
      * Retrieves the correct SMS handler instance based on saved settings.

@@ -3,7 +3,7 @@
  * Plugin Name:       PuzzlingCRM
  * Plugin URI:        https://Puzzlingco.com/
  * Description:       A complete CRM and Project Management solution for Social Marketing agencies.
- * Version:           2.0.0
+ * Version:           2.1.13
  * Author:            Arsalan Arghavan
  * Author URI:        https://ArsalanArghavan.ir/
  * License:           GPL v2 or later
@@ -36,7 +36,7 @@ register_deactivation_hook( __FILE__, [ 'PuzzlingCRM_Installer', 'deactivate' ] 
 
 /**
  * Registers and conditionally enqueues the plugin's scripts and styles.
- * This function solves all JavaScript-related issues by loading scripts ONLY where they are needed.
+ * OPTIMIZED: Loading scripts ONLY where they are needed for better performance.
  */
 function puzzling_enqueue_assets($hook) {
     // --- GLOBAL SCRIPTS (Load on all PuzzlingCRM admin pages) ---
@@ -45,8 +45,8 @@ function puzzling_enqueue_assets($hook) {
         return;
     }
     
-    // Enqueue SweetAlert2 if available
-    wp_enqueue_script('sweetalert2'); // Assuming SweetAlert2 is registered elsewhere, if not, you must register it first.
+    // Enqueue SweetAlert2 - Deferred loading
+    wp_enqueue_script('sweetalert2', 'https://cdn.jsdelivr.net/npm/sweetalert2@11', [], '11', true);
 
     // Register main script (but don't enqueue yet)
     wp_register_script(
@@ -63,7 +63,7 @@ function puzzling_enqueue_assets($hook) {
     // Pass PHP variables to the main script
     wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [
         'ajax_url' => admin_url('admin-ajax.php'),
-        'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce'), // Use consistent nonce
+        'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce'),
         'lang'     => [
             'ok_button'     => __('باشه', 'puzzlingcrm'),
             'success_title' => __('موفق', 'puzzlingcrm'),
@@ -75,17 +75,17 @@ function puzzling_enqueue_assets($hook) {
     // --- CONDITIONAL SCRIPTS (Load only on specific pages) ---
     $current_page = isset($_GET['page']) ? sanitize_key($_GET['page']) : '';
 
-    // Load Persian Date library globally for all PuzzlingCRM pages
-    wp_enqueue_script(
-        'persian-date',
-        'https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js',
-        [],
-        '1.1.0',
-        true
-    );
-
-    // Load Datepicker only on pages that need it (e.g., contracts, projects)
-    if (in_array($current_page, ['puzzling-contracts', 'puzzling-projects'])) {
+    // Load Persian Date library ONLY on pages that need it
+    if (in_array($current_page, ['puzzling-contracts', 'puzzling-projects', 'puzzling-appointments'])) {
+        wp_enqueue_script(
+            'persian-date',
+            'https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js',
+            [],
+            '1.1.0',
+            true
+        );
+        
+        // Datepicker
         wp_enqueue_style(
             'puzzling-datepicker-css',
             PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzling-datepicker.css',
@@ -101,16 +101,41 @@ function puzzling_enqueue_assets($hook) {
         );
     }
 
-    // Load the specific script for the leads page (to handle the delete button)
+    // Load the specific script for the leads page
     if ($current_page === 'puzzling-leads') {
         wp_enqueue_script(
             'puzzlingcrm-lead-management',
-            PUZZLINGCRM_PLUGIN_URL . 'assets/js/lead-management.js', // The new file you should create
-            ['jquery', 'puzzlingcrm-scripts'], // Depends on jQuery and main scripts
+            PUZZLINGCRM_PLUGIN_URL . 'assets/js/lead-management.js',
+            ['jquery', 'puzzlingcrm-scripts'],
             PUZZLINGCRM_VERSION,
             true
         );
     }
+    
+    // Load Dark Mode CSS and JS
+    wp_enqueue_style(
+        'puzzlingcrm-dark-mode',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/css/dark-mode.css',
+        [],
+        PUZZLINGCRM_VERSION
+    );
+    
+    wp_enqueue_script(
+        'puzzlingcrm-dark-mode',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/js/dark-mode.js',
+        ['jquery'],
+        PUZZLINGCRM_VERSION,
+        true
+    );
+    
+    // Performance Optimization Script
+    wp_enqueue_script(
+        'puzzlingcrm-performance',
+        PUZZLINGCRM_PLUGIN_URL . 'assets/js/performance-optimization.js',
+        ['jquery'],
+        PUZZLINGCRM_VERSION,
+        true
+    );
 }
 add_action('admin_enqueue_scripts', 'puzzling_enqueue_assets');
 

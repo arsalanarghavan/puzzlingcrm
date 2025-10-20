@@ -9,6 +9,7 @@ $base_url = remove_query_arg('puzzling_notice');
     <h3><i class="ri-settings-3-line"></i> تنظیمات</h3>
     
     <div class="pzl-dashboard-tabs">
+        <a href="<?php echo add_query_arg('tab', 'authentication', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'authentication' ? 'active' : ''; ?>"><i class="ri-shield-keyhole-line"></i> احراز هویت</a>
         <a href="<?php echo add_query_arg('tab', 'style', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'style' ? 'active' : ''; ?>"><i class="ri-palette-line"></i> ظاهر و استایل</a>
         <a href="<?php echo add_query_arg('tab', 'payment', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'payment' ? 'active' : ''; ?>"><i class="ri-bank-card-line"></i> درگاه پرداخت</a>
         <a href="<?php echo add_query_arg('tab', 'sms', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'sms' ? 'active' : ''; ?>"><i class="ri-message-3-line"></i> سامانه پیامک</a>
@@ -25,7 +26,9 @@ $base_url = remove_query_arg('puzzling_notice');
     <div class="pzl-dashboard-tab-content">
         <div class="pzl-card">
         <?php
-        if ( $active_tab == 'style' ) {
+        if ( $active_tab == 'authentication' ) {
+            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-authentication.php';
+        } elseif ( $active_tab == 'style' ) {
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-style.php';
         } elseif ( $active_tab == 'sms' ) {
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-sms.php';

@@ -12,6 +12,7 @@ class PuzzlingCRM_Settings_Ajax_Handler {
     public function __construct() {
         // Save general settings
         add_action('wp_ajax_puzzling_save_settings', [$this, 'save_settings']);
+        add_action('wp_ajax_save_auth_settings', [$this, 'save_auth_settings']);
         
         // Manage canned responses
         add_action('wp_ajax_puzzling_manage_canned_response', [$this, 'manage_canned_response']);
@@ -344,6 +345,51 @@ class PuzzlingCRM_Settings_Ajax_Handler {
             wp_send_json_success(['message' => 'دسته‌بندی حذف شد.']);
         } else {
             wp_send_json_error(['message' => 'خطا در حذف.']);
+        }
+    }
+
+    /**
+     * Save Authentication Settings
+     */
+    public function save_auth_settings() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم برای این عملیات را ندارید.']);
+        }
+
+        $current_settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+        
+        // Authentication settings
+        $auth_settings = [
+            'login_phone_pattern' => sanitize_text_field($_POST['login_phone_pattern'] ?? '^09[0-9]{9}$'),
+            'login_phone_length' => intval($_POST['login_phone_length'] ?? 11),
+            'login_sms_template' => sanitize_textarea_field($_POST['login_sms_template'] ?? 'کد ورود شما: %CODE%'),
+            'otp_expiry_minutes' => intval($_POST['otp_expiry_minutes'] ?? 5),
+            'otp_max_attempts' => intval($_POST['otp_max_attempts'] ?? 3),
+            'otp_length' => intval($_POST['otp_length'] ?? 6),
+            'melipayamak_login_pattern' => sanitize_text_field($_POST['melipayamak_login_pattern'] ?? ''),
+            'parsgreen_login_template' => sanitize_textarea_field($_POST['parsgreen_login_template'] ?? ''),
+            'enable_password_login' => isset($_POST['enable_password_login']) ? 1 : 0,
+            'enable_sms_login' => isset($_POST['enable_sms_login']) ? 1 : 0,
+            'login_redirect_url' => esc_url_raw($_POST['login_redirect_url'] ?? ''),
+            'logout_redirect_url' => esc_url_raw($_POST['logout_redirect_url'] ?? ''),
+            'force_logout_inactive' => isset($_POST['force_logout_inactive']) ? 1 : 0,
+            'inactive_timeout_minutes' => intval($_POST['inactive_timeout_minutes'] ?? 30)
+        ];
+
+        // Validate regex pattern
+        if (@preg_match('/' . $auth_settings['login_phone_pattern'] . '/', '') === false) {
+            wp_send_json_error(['message' => 'پترن Regex نامعتبر است.']);
+        }
+
+        // Merge with existing settings
+        $updated_settings = array_merge($current_settings, $auth_settings);
+        
+        if (PuzzlingCRM_Settings_Handler::update_settings($updated_settings)) {
+            wp_send_json_success(['message' => 'تنظیمات احراز هویت با موفقیت ذخیره شد.']);
+        } else {
+            wp_send_json_error(['message' => 'خطا در ذخیره تنظیمات.']);
         }
     }
 }

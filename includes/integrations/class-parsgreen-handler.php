@@ -44,6 +44,9 @@ class PuzzlingCRM_ParsGreen_Handler implements PuzzlingCRM_SMS_Service_Interface
         // If the SOAP client exists, we can clear any previous notice
         delete_transient('puzzling_soap_not_enabled');
 
+        // Convert phone number to English digits
+        $to = puzzling_convert_phone_to_english($to);
+
         $message_utf8 = mb_convert_encoding($message, "UTF-8");
 
         $parameters = [

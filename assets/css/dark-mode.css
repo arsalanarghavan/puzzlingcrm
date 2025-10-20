@@ -1,0 +1,453 @@
+/**
+ * Dark Mode Theme for PuzzlingCRM
+ * Comprehensive dark theme styling
+ */
+
+[data-theme="dark"] {
+    /* Color Variables */
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-tertiary: #0f3460;
+    --text-primary: #e8e8e8;
+    --text-secondary: #b4b4b4;
+    --text-muted: #808080;
+    --border-color: #2d3748;
+    --primary-color: #4CAF50;
+    --secondary-color: #2196F3;
+    --accent-color: #FF5722;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #17a2b8;
+}
+
+/* Base Elements */
+[data-theme="dark"] body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .puzzlingcrm-container,
+[data-theme="dark"] .card,
+[data-theme="dark"] .postbox {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+/* Typography */
+[data-theme="dark"] h1, 
+[data-theme="dark"] h2, 
+[data-theme="dark"] h3, 
+[data-theme="dark"] h4, 
+[data-theme="dark"] h5, 
+[data-theme="dark"] h6 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] label {
+    color: var(--text-secondary);
+}
+
+/* Forms */
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="tel"],
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] select:focus {
+    background-color: var(--bg-secondary);
+    border-color: var(--primary-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+    color: var(--text-muted);
+}
+
+/* Buttons */
+[data-theme="dark"] .btn {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+[data-theme="dark"] .btn-secondary {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+    background-color: var(--bg-secondary);
+}
+
+/* Tables */
+[data-theme="dark"] table {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] table thead {
+    background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] table tbody tr {
+    background-color: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] table tbody tr:hover {
+    background-color: var(--bg-tertiary);
+}
+
+/* Sidebar */
+[data-theme="dark"] .puzzlingcrm-sidebar {
+    background-color: var(--bg-secondary);
+    border-right-color: var(--border-color);
+}
+
+[data-theme="dark"] .puzzlingcrm-sidebar .menu-item {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .puzzlingcrm-sidebar .menu-item:hover,
+[data-theme="dark"] .puzzlingcrm-sidebar .menu-item.active {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Header */
+[data-theme="dark"] .puzzlingcrm-header {
+    background-color: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+}
+
+/* Cards */
+[data-theme="dark"] .puzzling-card {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .puzzling-card-header {
+    background-color: var(--bg-tertiary);
+    border-bottom-color: var(--border-color);
+}
+
+/* Modal */
+[data-theme="dark"] .modal-content {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .modal-header {
+    background-color: var(--bg-tertiary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .modal-footer {
+    border-top-color: var(--border-color);
+}
+
+/* Dropdown */
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+    background-color: var(--bg-tertiary);
+}
+
+/* Badges */
+[data-theme="dark"] .badge {
+    border: 1px solid var(--border-color);
+}
+
+/* Alerts */
+[data-theme="dark"] .alert {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .alert-success {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: #7fda89;
+}
+
+[data-theme="dark"] .alert-warning {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: #ffd966;
+}
+
+[data-theme="dark"] .alert-danger {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #f08a99;
+}
+
+[data-theme="dark"] .alert-info {
+    background-color: rgba(23, 162, 184, 0.2);
+    color: #6dcde8;
+}
+
+/* Kanban Board */
+[data-theme="dark"] .kanban-column {
+    background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .kanban-card {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+/* Chat */
+[data-theme="dark"] .chat-container {
+    background-color: var(--bg-secondary);
+}
+
+[data-theme="dark"] .chat-message {
+    background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .chat-message.own-message {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Code */
+[data-theme="dark"] code,
+[data-theme="dark"] pre {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+/* Scrollbar */
+[data-theme="dark"] ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--bg-tertiary);
+    border-radius: 5px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--border-color);
+}
+
+/* Loading */
+[data-theme="dark"] .spinner-border {
+    border-color: var(--text-muted);
+    border-right-color: var(--primary-color);
+}
+
+/* Links */
+[data-theme="dark"] a {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] a:hover {
+    color: var(--secondary-color);
+}
+
+/* Toggle Switch */
+.dark-mode-toggle {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 50px;
+    padding: 10px 15px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.dark-mode-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+
+.dark-mode-toggle i {
+    font-size: 20px;
+    transition: transform 0.3s ease;
+}
+
+.dark-mode-toggle:hover i {
+    transform: rotate(20deg);
+}
+
+[data-theme="dark"] .dark-mode-toggle {
+    background: var(--bg-tertiary);
+}
+
+/* Transitions */
+* {
+    transition: background-color 0.3s ease, 
+                color 0.3s ease, 
+                border-color 0.3s ease;
+}
+
+/* Chart Colors */
+[data-theme="dark"] .apexcharts-text {
+    fill: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .apexcharts-gridline {
+    stroke: var(--border-color);
+}
+
+[data-theme="dark"] .apexcharts-tooltip {
+    background: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Dashboard Widgets */
+[data-theme="dark"] .dashboard-widget {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .stat-card {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+/* Timeline */
+[data-theme="dark"] .timeline-item {
+    background-color: var(--bg-secondary);
+    border-left-color: var(--primary-color);
+}
+
+[data-theme="dark"] .timeline-item::before {
+    background-color: var(--primary-color);
+    box-shadow: 0 0 0 4px var(--bg-primary);
+}
+
+/* Empty States */
+[data-theme="dark"] .empty-state {
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+/* File Upload */
+[data-theme="dark"] .file-upload-area {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .file-upload-area.dragover {
+    background-color: var(--bg-secondary);
+    border-color: var(--primary-color);
+}
+
+/* Notification Badge */
+[data-theme="dark"] .notification-badge {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+/* Progress Bar */
+[data-theme="dark"] .progress {
+    background-color: var(--bg-tertiary);
+}
+
+/* Breadcrumbs */
+[data-theme="dark"] .breadcrumb {
+    background-color: var(--bg-secondary);
+}
+
+[data-theme="dark"] .breadcrumb-item {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .breadcrumb-item.active {
+    color: var(--text-primary);
+}
+
+/* Tabs */
+[data-theme="dark"] .nav-tabs {
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .nav-tabs .nav-link {
+    color: var(--text-secondary);
+    border-color: transparent;
+}
+
+[data-theme="dark"] .nav-tabs .nav-link:hover {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .nav-tabs .nav-link.active {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color) var(--border-color) var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* Pagination */
+[data-theme="dark"] .pagination .page-link {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .pagination .page-link:hover {
+    background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .pagination .page-item.active .page-link {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Calendar */
+[data-theme="dark"] .fc {
+    background-color: var(--bg-secondary);
+}
+
+[data-theme="dark"] .fc-toolbar {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .fc-daygrid-day {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .fc-daygrid-day-number {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .fc-event {
+    border-color: var(--border-color);
+}
+
