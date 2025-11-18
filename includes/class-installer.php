@@ -312,6 +312,40 @@ class PuzzlingCRM_Installer {
             KEY user_id (user_id)
         ) $charset_collate;";
         dbDelta($sql);
+
+        // Licenses table
+        self::create_license_table();
+    }
+
+    /**
+     * Create licenses table
+     */
+    private static function create_license_table() {
+        global $wpdb;
+        
+        $charset_collate = $wpdb->get_charset_collate();
+        
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+
+        $table_name = $wpdb->prefix . 'puzzlingcrm_licenses';
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            project_name varchar(255) NOT NULL,
+            domain varchar(255) NOT NULL,
+            license_key varchar(255) NOT NULL,
+            status varchar(20) DEFAULT 'inactive',
+            expiry_date datetime DEFAULT NULL,
+            start_date datetime DEFAULT NULL,
+            logo_url varchar(500) DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            UNIQUE KEY domain (domain),
+            UNIQUE KEY license_key (license_key),
+            KEY status (status),
+            KEY expiry_date (expiry_date)
+        ) $charset_collate;";
+        dbDelta($sql);
     }
     
     /**

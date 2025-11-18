@@ -112,6 +112,7 @@ function puzzling_enqueue_assets($hook) {
         );
     }
     
+    
     // Load Dark Mode CSS and JS
     wp_enqueue_style(
         'puzzlingcrm-dark-mode',

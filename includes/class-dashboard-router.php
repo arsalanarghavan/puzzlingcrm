@@ -78,6 +78,14 @@ class PuzzlingCRM_Dashboard_Router {
             'partial' => 'page-leads',
         ],
         
+        // Licenses (Manager only)
+        'licenses' => [
+            'title' => 'لایسنس‌ها',
+            'icon' => 'ri-key-line',
+            'roles' => ['system_manager'],
+            'partial' => 'page-licenses',
+        ],
+        
         // Customers (Manager only)
         'customers' => [
             'title' => 'مشتریان',
@@ -260,24 +268,43 @@ class PuzzlingCRM_Dashboard_Router {
         <?php
         // Load page-specific styles
         $view = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'dashboard';
+        $current_page = get_query_var('dashboard_page') ?: '';
+        
         if ($view === 'reports') {
             echo '<link rel="stylesheet" href="' . esc_url(PUZZLINGCRM_PLUGIN_URL . 'assets/css/reports-styles.css') . '?v=' . PUZZLINGCRM_VERSION . '">';
         }
         if ($view === 'dashboard') {
             echo '<link rel="stylesheet" href="' . esc_url(PUZZLINGCRM_PLUGIN_URL . 'assets/css/dashboard-styles.css') . '?v=' . PUZZLINGCRM_VERSION . '">';
         }
+        
+        // Load licenses page styles
+        if ($current_page === 'licenses') {
+            echo '<link rel="stylesheet" href="' . esc_url(PUZZLINGCRM_PLUGIN_URL . 'assets/css/licenses-styles.css') . '?v=' . PUZZLINGCRM_VERSION . '">';
+        }
+        
         // Load complete styles for all other pages
-        if (!in_array($view, ['reports', 'dashboard'])) {
+        if (!in_array($view, ['reports', 'dashboard']) && $current_page !== 'licenses') {
             echo '<link rel="stylesheet" href="' . esc_url(PUZZLINGCRM_PLUGIN_URL . 'assets/css/all-pages-complete.css') . '?v=' . PUZZLINGCRM_VERSION . '">';
         }
         ?>
         
-        <!-- jQuery (for AJAX) -->
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <!-- jQuery (for AJAX) - Use WordPress jQuery or fallback CDN -->
+        <?php
+        // Try to use WordPress jQuery first
+        if (!wp_script_is('jquery', 'enqueued') && !wp_script_is('jquery', 'done')) {
+            wp_enqueue_script('jquery');
+        }
+        wp_print_scripts('jquery');
         
-        <!-- jQuery UI (for Sortable/Draggable) -->
-        <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-        <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.min.css">
+        // Fallback to CDN if WordPress jQuery is not available
+        ?>
+        <script>
+        if (typeof jQuery === 'undefined') {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"><\/script>');
+        }
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/jquery-ui@1.13.2/dist/jquery-ui.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-ui@1.13.2/dist/themes/ui-lightness/jquery-ui.min.css">
         
         <!-- SweetAlert2 for AJAX notifications -->
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

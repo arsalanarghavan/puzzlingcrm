@@ -320,7 +320,10 @@
   /* Choices JS */
 
   /* footer year */
-  document.getElementById("year").innerHTML = new Date().getFullYear();
+  var yearElement = document.getElementById("year");
+  if (yearElement) {
+    yearElement.innerHTML = new Date().getFullYear();
+  }
   /* footer year */
 
   /* node waves */

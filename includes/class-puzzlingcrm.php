@@ -84,6 +84,11 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cache-optimizer.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-database-optimizer.php';
         
+        // License Management
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-license-manager.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-license-ajax-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-license-api.php';
+        
         // ENTERPRISE FEATURES (Lazy loaded - only when needed)
         // These will be loaded on-demand through autoloader
     }
@@ -145,6 +150,10 @@ class PuzzlingCRM {
         new PuzzlingCRM_Dashboard_Router();
         new PuzzlingCRM_Cache_Optimizer();
         new PuzzlingCRM_Database_Optimizer();
+        
+        // Initialize License Management
+        new PuzzlingCRM_License_Ajax_Handler();
+        new PuzzlingCRM_License_API();
         
         // Initialize ONLY Essential Enterprise Features
         // Others will be lazy-loaded on-demand
