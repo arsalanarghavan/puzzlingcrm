@@ -80,6 +80,9 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-dashboard-router.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-task-template-manager.php';
         
+        // Component System
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/components/class-component-registry.php';
+        
         // Cache & Performance Optimizer
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cache-optimizer.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-database-optimizer.php';
@@ -134,6 +137,9 @@ class PuzzlingCRM {
     private function define_hooks() {
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_dashboard_assets' ] );
         
+        // Language switching handler - must run early, before plugins_loaded
+        add_action( 'plugins_loaded', [ $this, 'handle_language_switch' ], 1 );
+        
         // Initialize all core classes
         new PuzzlingCRM_Admin_Menu();
         new PuzzlingCRM_CPT_Manager();
@@ -142,6 +148,9 @@ class PuzzlingCRM {
         new PuzzlingCRM_Shortcode_Manager();
         new PuzzlingCRM_Form_Handler();
         new PuzzlingCRM_Main_Ajax_Handler(); // **CORRECTED**
+        
+        // Initialize Component Registry
+        PuzzlingCRM_Component_Registry::instance();
         new PuzzlingCRM_Cron_Handler();
         new PuzzlingCRM_Agile_Handler();
         new PuzzlingCRM_Automation_Handler();
@@ -317,6 +326,31 @@ class PuzzlingCRM {
             'users' => $cached_data['users'],
             'labels' => $cached_data['labels'],
         ]);
+    }
+    
+    /**
+     * Handle language switching from cookie
+     * Must run early (before textdomain is loaded)
+     */
+    public function handle_language_switch() {
+        if ( ! isset( $_COOKIE['pzl_language'] ) ) {
+            return;
+        }
+        
+        $lang = sanitize_text_field( $_COOKIE['pzl_language'] );
+        
+        if ( $lang === 'en' ) {
+            add_filter( 'locale', function() {
+                return 'en_US';
+            }, 1, 0 );
+        } elseif ( $lang === 'fa' ) {
+            add_filter( 'locale', function() {
+                return 'fa_IR';
+            }, 1, 0 );
+        }
+        
+        // Note: textdomain will be loaded by puzzling_load_textdomain() in main plugin file
+        // We just need to set the locale filter, which will be used when textdomain loads
     }
     
     /**

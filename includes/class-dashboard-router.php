@@ -13,7 +13,25 @@ class PuzzlingCRM_Dashboard_Router {
     /**
      * All available dashboard routes
      */
-    private static $routes = [
+    private static $routes = null;
+    
+    /**
+     * Get all routes
+     * 
+     * @return array Routes array
+     */
+    public static function get_routes() {
+        if (self::$routes === null) {
+            self::init_routes();
+        }
+        return self::$routes;
+    }
+    
+    /**
+     * Initialize routes
+     */
+    private static function init_routes() {
+        self::$routes = [
         // Main dashboard
         '' => [
             'title' => 'داشبورد',
@@ -141,7 +159,8 @@ class PuzzlingCRM_Dashboard_Router {
             'roles' => ['system_manager', 'team_member', 'client'],
             'partial' => 'page-my-profile',
         ],
-    ];
+        ];
+    }
 
     /**
      * Constructor
@@ -150,6 +169,7 @@ class PuzzlingCRM_Dashboard_Router {
         add_action('init', [$this, 'add_rewrite_rules']);
         add_filter('query_vars', [$this, 'add_query_vars']);
         add_action('template_redirect', [$this, 'template_redirect']);
+        add_action('puzzlingcrm_dashboard_head', [$this, 'enqueue_dashboard_assets']);
     }
 
     public function add_rewrite_rules() {
@@ -183,14 +203,16 @@ class PuzzlingCRM_Dashboard_Router {
             $page = '';
         }
 
-        if (!isset(self::$routes[$page])) {
+        $routes = self::get_routes();
+        
+        if (!isset($routes[$page])) {
             wp_redirect(home_url('/dashboard'));
             exit;
         }
 
         $user = wp_get_current_user();
         $user_role = $this->get_user_dashboard_role($user);
-        $route = self::$routes[$page];
+        $route = $routes[$page];
 
         if (!in_array($user_role, $route['roles'])) {
             wp_redirect(home_url('/dashboard'));
@@ -200,7 +222,7 @@ class PuzzlingCRM_Dashboard_Router {
         $this->render_dashboard_wrapper($page, $route, $user);
     }
 
-    private function render_dashboard_wrapper($current_page, $route, $user) {
+    private function render_dashboard_wrapper_original($current_page, $route, $user) {
         $assets_url = PUZZLINGCRM_PLUGIN_URL . 'assets/';
         $custom_logo_id = get_theme_mod('custom_logo');
         $logo_url = '';
@@ -596,12 +618,161 @@ class PuzzlingCRM_Dashboard_Router {
 </html>
         <?php
     }
+    
+    /**
+     * Enqueue dashboard assets
+     */
+    public function enqueue_dashboard_assets() {
+        if (!$this->is_dashboard_page()) {
+            return;
+        }
+        
+        $assets_url = PUZZLINGCRM_PLUGIN_URL . 'assets/';
+        
+        // Priority order is important!
+        
+        // 1. Fonts (highest priority)
+        wp_enqueue_style('pzl-fonts', $assets_url . 'css/fonts.css', [], PUZZLINGCRM_VERSION);
+        
+        // 2. Bootstrap CSS
+        wp_enqueue_style('pzl-bootstrap', $assets_url . 'libs/bootstrap/css/bootstrap.rtl.min.css', ['pzl-fonts'], PUZZLINGCRM_VERSION);
+        
+        // 3. Main styles (depends on Bootstrap)
+        wp_enqueue_style('pzl-styles', $assets_url . 'css/styles.css', ['pzl-bootstrap'], PUZZLINGCRM_VERSION);
+        
+        // 4. Icons
+        wp_enqueue_style('pzl-icons', $assets_url . 'css/icons.css', ['pzl-styles'], PUZZLINGCRM_VERSION);
+        
+        // 5. Libraries (after main styles)
+        wp_enqueue_style('pzl-node-waves', $assets_url . 'libs/node-waves/waves.min.css', ['pzl-styles'], PUZZLINGCRM_VERSION);
+        wp_enqueue_style('pzl-simplebar', $assets_url . 'libs/simplebar/simplebar.min.css', ['pzl-styles'], PUZZLINGCRM_VERSION);
+        wp_enqueue_style('pzl-choices', $assets_url . 'libs/choices.js/public/assets/styles/choices.min.css', ['pzl-styles'], PUZZLINGCRM_VERSION);
+        
+        // 6. Custom styles (highest priority - loaded last)
+        wp_enqueue_style('pzl-xintra-bridge', $assets_url . 'css/puzzlingcrm-xintra-bridge.css', ['pzl-styles', 'pzl-icons'], PUZZLINGCRM_VERSION);
+        wp_enqueue_style('pzl-custom', $assets_url . 'css/puzzlingcrm-custom.css', ['pzl-xintra-bridge'], PUZZLINGCRM_VERSION);
+        wp_enqueue_style('pzl-rtl-fix', $assets_url . 'css/rtl-complete-fix.css', ['pzl-custom'], PUZZLINGCRM_VERSION);
+        
+        // Page-specific styles
+        $view = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'dashboard';
+        $current_page = get_query_var('dashboard_page') ?: '';
+        
+        if ($view === 'reports') {
+            wp_enqueue_style('pzl-reports', $assets_url . 'css/reports-styles.css', ['pzl-rtl-fix'], PUZZLINGCRM_VERSION);
+        } elseif ($view === 'dashboard') {
+            wp_enqueue_style('pzl-dashboard', $assets_url . 'css/dashboard-styles.css', ['pzl-rtl-fix'], PUZZLINGCRM_VERSION);
+        } elseif ($current_page === 'licenses') {
+            wp_enqueue_style('pzl-licenses', $assets_url . 'css/licenses-styles.css', ['pzl-rtl-fix'], PUZZLINGCRM_VERSION);
+        } elseif (!in_array($view, ['reports', 'dashboard']) && $current_page !== 'licenses') {
+            wp_enqueue_style('pzl-all-pages', $assets_url . 'css/all-pages-complete.css', ['pzl-rtl-fix'], PUZZLINGCRM_VERSION);
+        }
+        
+        // JavaScript libraries
+        wp_enqueue_script('pzl-choices', $assets_url . 'libs/choices.js/public/assets/scripts/choices.min.js', [], PUZZLINGCRM_VERSION, false);
+        wp_enqueue_script('pzl-main', $assets_url . 'js/main.js', [], PUZZLINGCRM_VERSION, false);
+        
+        // Popper and Bootstrap
+        wp_enqueue_script('pzl-popperjs', $assets_url . 'libs/@popperjs/core/umd/popper.min.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        wp_enqueue_script('pzl-bootstrap-js', $assets_url . 'libs/bootstrap/js/bootstrap.bundle.min.js', ['jquery', 'pzl-popperjs'], PUZZLINGCRM_VERSION, true);
+        
+        // Libraries (defaultmenu needs Bootstrap to be loaded first)
+        wp_enqueue_script('pzl-defaultmenu', $assets_url . 'js/defaultmenu.min.js', ['jquery', 'pzl-bootstrap-js'], PUZZLINGCRM_VERSION, true);
+        wp_enqueue_script('pzl-node-waves', $assets_url . 'libs/node-waves/waves.min.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        wp_enqueue_script('pzl-simplebar', $assets_url . 'libs/simplebar/simplebar.min.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        wp_enqueue_script('pzl-sticky', $assets_url . 'js/sticky.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        
+        // Theme switcher (must load before custom.js)
+        wp_enqueue_script('pzl-theme-switcher', PUZZLINGCRM_PLUGIN_URL . 'assets/js/components/theme-switcher.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        
+        // Custom scripts
+        wp_enqueue_script('pzl-custom-js', $assets_url . 'js/custom.js', ['jquery', 'pzl-theme-switcher'], PUZZLINGCRM_VERSION, true);
+        
+        // Chart.js for dashboard pages
+        if (empty($current_page) || $view === 'dashboard' || $view === 'reports') {
+            wp_enqueue_script('pzl-chartjs', $assets_url . 'libs/chart.js/chart.umd.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        }
+        
+        // ApexCharts for specific pages
+        if ($view === 'reports' || $view === 'dashboard') {
+            wp_enqueue_script('pzl-apexcharts', $assets_url . 'libs/apexcharts/apexcharts.min.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        }
+        
+        // Color Picker
+        wp_enqueue_script('pzl-pickr', $assets_url . 'libs/@simonwep/pickr/pickr.es5.min.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        wp_enqueue_style('pzl-pickr', $assets_url . 'libs/@simonwep/pickr/themes/classic.min.css', [], PUZZLINGCRM_VERSION);
+        
+        // Custom Switcher
+        wp_enqueue_script('pzl-custom-switcher', $assets_url . 'js/custom-switcher.min.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        
+        // PuzzlingCRM specific scripts
+        wp_enqueue_script('pzl-crm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        
+        // Localize script with AJAX settings
+        wp_localize_script('pzl-crm-scripts', 'puzzlingcrm_ajax_obj', [
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce'),
+            'lang'     => [
+                'ok_button'     => __('OK', 'puzzlingcrm'),
+                'success_title' => __('Success', 'puzzlingcrm'),
+                'error_title'   => __('Error', 'puzzlingcrm'),
+                'server_error'  => __('A server error occurred.', 'puzzlingcrm'),
+            ]
+        ]);
+        
+        wp_enqueue_script('pzl-tasks', PUZZLINGCRM_PLUGIN_URL . 'assets/js/tasks-management.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        wp_enqueue_script('pzl-users', PUZZLINGCRM_PLUGIN_URL . 'assets/js/user-management.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        wp_enqueue_script('pzl-leads', PUZZLINGCRM_PLUGIN_URL . 'assets/js/lead-management.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        wp_enqueue_script('pzl-forms', PUZZLINGCRM_PLUGIN_URL . 'assets/js/forms-enhancement.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        wp_enqueue_script('pzl-pdf', PUZZLINGCRM_PLUGIN_URL . 'assets/js/pdf-generator.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        wp_enqueue_script('pzl-bulk', PUZZLINGCRM_PLUGIN_URL . 'assets/js/bulk-actions.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        wp_enqueue_script('pzl-modals', PUZZLINGCRM_PLUGIN_URL . 'assets/js/modals-handler.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        wp_enqueue_script('pzl-email', PUZZLINGCRM_PLUGIN_URL . 'assets/js/email-sender.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        wp_enqueue_script('pzl-import-export', PUZZLINGCRM_PLUGIN_URL . 'assets/js/import-export.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        
+        // Reports export for reports page
+        if ($view === 'reports') {
+            wp_enqueue_script('pzl-reports-export', PUZZLINGCRM_PLUGIN_URL . 'assets/js/reports-export.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        }
+        
+        // Add inline script to suppress PWA errors until service worker is properly implemented
+        $inline_script = "
+        // Suppress PWA service worker errors (to be implemented later)
+        if ('serviceWorker' in navigator) {
+            // Commented out until PWA is properly implemented
+            // navigator.serviceWorker.register('" . PUZZLINGCRM_PLUGIN_URL . "puzzlingcrm-sw.js');
+        }
+        ";
+        wp_add_inline_script('pzl-custom-js', $inline_script);
+    }
+    
+    /**
+     * Check if current page is dashboard
+     */
+    private function is_dashboard_page() {
+        return (bool) get_query_var('puzzling_dashboard', false);
+    }
+    
+    /**
+     * Render dashboard wrapper using new component system
+     */
+    private function render_dashboard_wrapper($current_page, $route, $user) {
+        // Load the new component-based wrapper
+        $wrapper_file = PUZZLINGCRM_PLUGIN_DIR . 'templates/dashboard/dashboard-wrapper.php';
+        
+        if (file_exists($wrapper_file)) {
+            include $wrapper_file;
+        } else {
+            // Fallback to old method if wrapper doesn't exist
+            $this->render_dashboard_wrapper_original($current_page, $route, $user);
+        }
+    }
 
     private function render_navigation_menu($current_page, $user) {
         $user_role = $this->get_user_dashboard_role($user);
         $output = '';
         
-        foreach (self::$routes as $slug => $route) {
+        $routes = self::get_routes();
+        foreach ($routes as $slug => $route) {
             if (!in_array($user_role, $route['roles'])) {
                 continue;
             }
@@ -738,7 +909,8 @@ class PuzzlingCRM_Dashboard_Router {
         }
 
         $available_routes = [];
-        foreach (self::$routes as $slug => $route) {
+        $routes = self::get_routes();
+        foreach ($routes as $slug => $route) {
             if (in_array($user_role, $route['roles'])) {
                 $available_routes[$slug] = $route;
             }
@@ -755,5 +927,91 @@ class PuzzlingCRM_Dashboard_Router {
 
     public static function deactivate() {
         flush_rewrite_rules();
+    }
+    
+    /**
+     * Add Bootstrap initialization script
+     */
+    public function add_bootstrap_init_script() {
+        // Check if we're on a dashboard page - use REQUEST_URI as fallback
+        $is_dashboard = get_query_var('puzzling_dashboard');
+        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+        $is_dashboard_page = (strpos($request_uri, '/dashboard') !== false);
+        
+        if (!$is_dashboard && !$is_dashboard_page) {
+            return;
+        }
+        ?>
+        <script>
+        console.log('PuzzlingCRM: Bootstrap init script tag executed at', new Date().getTime());
+        console.log('PuzzlingCRM: Bootstrap init script added via wp_footer hook');
+        (function() {
+            console.log('PuzzlingCRM: Footer initialization started');
+            
+            var attempts = 0;
+            var maxAttempts = 150;
+            var initialized = false;
+            
+            function initBootstrapDropdowns() {
+                if (initialized) {
+                    return; // Already initialized
+                }
+                
+                attempts++;
+                
+                if (typeof bootstrap === 'undefined' || !bootstrap.Dropdown) {
+                    if (attempts < maxAttempts) {
+                        setTimeout(initBootstrapDropdowns, 200);
+                        return;
+                    }
+                    console.error('PuzzlingCRM: Bootstrap not found after', attempts, 'attempts');
+                    return;
+                }
+                
+                console.log('PuzzlingCRM: Bootstrap found! Initializing dropdowns...');
+                
+                var dropdowns = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+                console.log('PuzzlingCRM: Found', dropdowns.length, 'dropdowns');
+                
+                var dropdownCount = 0;
+                dropdowns.forEach(function(el, index) {
+                    try {
+                        if (!bootstrap.Dropdown.getInstance(el)) {
+                            new bootstrap.Dropdown(el);
+                            dropdownCount++;
+                            console.log('PuzzlingCRM: Dropdown', index + 1, 'initialized');
+                        }
+                    } catch (e) {
+                        console.error('PuzzlingCRM: Dropdown', index + 1, 'error:', e);
+                    }
+                });
+                
+                console.log('PuzzlingCRM: Initialized', dropdownCount, 'new dropdowns');
+                console.log('PuzzlingCRM: Bootstrap initialization completed');
+                initialized = true;
+            }
+            
+            // Try immediately
+            setTimeout(initBootstrapDropdowns, 1000);
+            
+            // Also try after DOM ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    setTimeout(initBootstrapDropdowns, 1500);
+                });
+            } else {
+                setTimeout(initBootstrapDropdowns, 1500);
+            }
+            
+            // Also try after window load
+            window.addEventListener('load', function() {
+                console.log('PuzzlingCRM: Window load event fired');
+                attempts = 0;
+                initialized = false; // Reset to allow re-initialization
+                setTimeout(initBootstrapDropdowns, 2000);
+            });
+        })();
+        </script>
+        <?php
     }
 }

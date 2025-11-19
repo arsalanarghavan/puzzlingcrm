@@ -1,0 +1,225 @@
+/**
+ * Sidebar Component Styles
+ * 
+ * Styles for the dashboard sidebar component
+ *
+ * @package PuzzlingCRM
+ * @since 2.1.0
+ */
+
+/* Sidebar Container */
+.pzl-sidebar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 260px;
+	height: 100vh;
+	background: var(--sidebar-bg, #fff);
+	border-right: 1px solid var(--border-color, #e9ecef);
+	transition: transform 0.3s ease;
+	z-index: 1040;
+	overflow-y: auto;
+}
+
+[dir="rtl"] .pzl-sidebar {
+	left: auto;
+	right: 0;
+	border-right: none;
+	border-left: 1px solid var(--border-color, #e9ecef);
+}
+
+.pzl-sidebar--closed {
+	transform: translateX(-100%);
+}
+
+[dir="rtl"] .pzl-sidebar--closed {
+	transform: translateX(100%);
+}
+
+/* Sidebar Header */
+.pzl-sidebar__header {
+	padding: 1.5rem 1rem;
+	border-bottom: 1px solid var(--border-color, #e9ecef);
+}
+
+.pzl-sidebar__logo {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	text-decoration: none;
+	color: var(--text-color, #212529);
+}
+
+.pzl-sidebar__logo-image {
+	max-height: 36px;
+	width: auto;
+}
+
+.pzl-sidebar__logo-text {
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: var(--primary-color, #5b6ce3);
+}
+
+/* Menu */
+.pzl-sidebar__menu {
+	padding: 1rem 0;
+	list-style: none;
+	margin: 0;
+}
+
+.pzl-sidebar__menu-item {
+	margin-bottom: 0.25rem;
+}
+
+.pzl-sidebar__menu-link {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.75rem 1rem;
+	color: var(--text-muted, #6c757d);
+	text-decoration: none;
+	transition: all 0.2s;
+	border-radius: 0.375rem;
+	margin: 0 0.5rem;
+}
+
+.pzl-sidebar__menu-link:hover {
+	background-color: var(--bg-light, #f8f9fa);
+	color: var(--primary-color, #5b6ce3);
+}
+
+.pzl-sidebar__menu-link--active {
+	background-color: var(--primary-color, #5b6ce3);
+	color: #fff;
+}
+
+.pzl-sidebar__menu-link--active:hover {
+	background-color: var(--primary-color-dark, #4a5dcb);
+	color: #fff;
+}
+
+.pzl-sidebar__menu-icon {
+	font-size: 1.25rem;
+	width: 24px;
+	text-align: center;
+}
+
+.pzl-sidebar__menu-label {
+	flex: 1;
+	font-size: 0.9375rem;
+	font-weight: 500;
+}
+
+.pzl-sidebar__menu-arrow {
+	font-size: 1rem;
+	transition: transform 0.2s;
+}
+
+/* Submenu */
+.pzl-sidebar__submenu {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	max-height: 0;
+	overflow: hidden;
+	transition: max-height 0.3s ease;
+}
+
+.pzl-sidebar__menu-item--open > .pzl-sidebar__submenu {
+	max-height: 1000px;
+}
+
+.pzl-sidebar__menu-item--open > .pzl-sidebar__menu-link .pzl-sidebar__menu-arrow {
+	transform: rotate(180deg);
+}
+
+.pzl-sidebar__submenu .pzl-sidebar__menu-link {
+	padding-left: 3rem;
+	font-size: 0.875rem;
+}
+
+[dir="rtl"] .pzl-sidebar__submenu .pzl-sidebar__menu-link {
+	padding-left: 1rem;
+	padding-right: 3rem;
+}
+
+/* Scrollbar */
+.pzl-sidebar::-webkit-scrollbar {
+	width: 6px;
+}
+
+.pzl-sidebar::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.pzl-sidebar::-webkit-scrollbar-thumb {
+	background: var(--scrollbar-thumb, #cbd5e0);
+	border-radius: 3px;
+}
+
+.pzl-sidebar::-webkit-scrollbar-thumb:hover {
+	background: var(--scrollbar-thumb-hover, #a0aec0);
+}
+
+/* Dark Mode */
+[data-theme-mode="dark"] .pzl-sidebar {
+	background: var(--sidebar-bg-dark, #1a1a1e);
+	border-right-color: rgba(255, 255, 255, 0.1);
+}
+
+[dir="rtl"][data-theme-mode="dark"] .pzl-sidebar {
+	border-left-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme-mode="dark"] .pzl-sidebar__logo {
+	color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme-mode="dark"] .pzl-sidebar__menu-link {
+	color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme-mode="dark"] .pzl-sidebar__menu-link:hover {
+	background-color: rgba(255, 255, 255, 0.05);
+	color: var(--primary-color, #5b6ce3);
+}
+
+[data-theme-mode="dark"] .pzl-sidebar__menu-link--active {
+	background-color: var(--primary-color, #5b6ce3);
+	color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+	.pzl-sidebar {
+		transform: translateX(-100%);
+	}
+	
+	[dir="rtl"] .pzl-sidebar {
+		transform: translateX(100%);
+	}
+	
+	.pzl-sidebar--open {
+		transform: translateX(0);
+	}
+}
+
+/* Overlay for mobile */
+.pzl-sidebar-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 1039;
+	display: none;
+}
+
+@media (max-width: 992px) {
+	.pzl-sidebar-overlay--active {
+		display: block;
+	}
+}
+

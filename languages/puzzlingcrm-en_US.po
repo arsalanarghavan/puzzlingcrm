@@ -1,0 +1,194 @@
+# English Translation for PuzzlingCRM
+# Copyright (C) 2025 PuzzlingCRM
+# This file is distributed under the same license as the PuzzlingCRM plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: PuzzlingCRM 2.1.0\n"
+"Report-Msgid-Bugs-To: https://puzzlingco.com/support\n"
+"PO-Revision-Date: 2025-01-01 00:00+0000\n"
+"Last-Translator: Arsalan Arghavan <contact@arsalanarghavan.ir>\n"
+"Language-Team: English <en@li.org>\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Manual\n"
+"X-Domain: puzzlingcrm\n"
+
+#: Header Component
+msgid "Guest"
+msgstr "Guest"
+
+msgid "System Manager"
+msgstr "System Manager"
+
+msgid "Finance Manager"
+msgstr "Finance Manager"
+
+msgid "Team Member"
+msgstr "Team Member"
+
+msgid "Customer"
+msgstr "Customer"
+
+msgid "User"
+msgstr "User"
+
+msgid "Search..."
+msgstr "Search..."
+
+msgid "Persian"
+msgstr "Persian"
+
+msgid "English"
+msgstr "English"
+
+msgid "Notifications"
+msgstr "Notifications"
+
+msgid "No notifications"
+msgstr "No notifications"
+
+msgid "View All"
+msgstr "View All"
+
+msgid "My Profile"
+msgstr "My Profile"
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "Logout"
+msgstr "Logout"
+
+msgid "Logo"
+msgstr "Logo"
+
+msgid "PuzzlingCRM"
+msgstr "PuzzlingCRM"
+
+msgid "No results found"
+msgstr "No results found"
+
+msgid "Loading..."
+msgstr "Loading..."
+
+#: Sidebar Component
+msgid "Dashboard"
+msgstr "Dashboard"
+
+msgid "Projects"
+msgstr "Projects"
+
+msgid "Contracts"
+msgstr "Contracts"
+
+msgid "Invoices"
+msgstr "Invoices"
+
+msgid "Tickets"
+msgstr "Tickets"
+
+msgid "Tasks"
+msgstr "Tasks"
+
+msgid "Appointments"
+msgstr "Appointments"
+
+msgid "Leads"
+msgstr "Leads"
+
+msgid "Customers"
+msgstr "Customers"
+
+msgid "Staff"
+msgstr "Staff"
+
+msgid "Reports"
+msgstr "Reports"
+
+msgid "My Projects"
+msgstr "My Projects"
+
+msgid "My Tasks"
+msgstr "My Tasks"
+
+msgid "My Contracts"
+msgstr "My Contracts"
+
+msgid "My Invoices"
+msgstr "My Invoices"
+
+msgid "Support Tickets"
+msgstr "Support Tickets"
+
+msgid "Toggle Sidebar"
+msgstr "Toggle Sidebar"
+
+#: Footer Component
+msgid "Puzzling Institute"
+msgstr "Puzzling Institute"
+
+msgid "%1$s © Designed with %2$s by %3$s"
+msgstr "%1$s © Designed with %2$s by %3$s"
+
+msgid "All rights reserved"
+msgstr "All rights reserved"
+
+#: Dashboard Wrapper
+msgid "Page not found."
+msgstr "Page not found."
+
+#: Common
+msgid "Hide Sidebar"
+msgstr "Hide Sidebar"
+
+msgid "Search"
+msgstr "Search"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "Main Menu"
+msgstr "Main Menu"
+
+msgid "Main"
+msgstr "Main"
+
+msgid "All Projects"
+msgstr "All Projects"
+
+msgid "Finance"
+msgstr "Finance"
+
+msgid "Support"
+msgstr "Support"
+
+msgid "People"
+msgstr "People"
+
+msgid "All Reports"
+msgstr "All Reports"
+
+msgid "General Settings"
+msgstr "General Settings"
+
+msgid "View Site"
+msgstr "View Site"
+
+msgid "Unread"
+msgstr "Unread"
+
+msgid "Account"
+msgstr "Account"
+
+msgid "Email"
+msgstr "Email"
+
+msgid "File Manager"
+msgstr "File Manager"
+
+msgid "Switcher"
+msgstr "Switcher"
+
