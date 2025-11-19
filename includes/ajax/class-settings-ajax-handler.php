@@ -14,6 +14,10 @@ class PuzzlingCRM_Settings_Ajax_Handler {
         add_action('wp_ajax_puzzling_save_settings', [$this, 'save_settings']);
         add_action('wp_ajax_save_auth_settings', [$this, 'save_auth_settings']);
         
+        // Save user preferences (language, theme, sidebar, etc.)
+        add_action('wp_ajax_puzzling_save_user_preference', [$this, 'save_user_preference']);
+        add_action('wp_ajax_nopriv_puzzling_save_user_preference', [$this, 'save_user_preference']);
+        
         // Manage canned responses
         add_action('wp_ajax_puzzling_manage_canned_response', [$this, 'manage_canned_response']);
         add_action('wp_ajax_puzzling_delete_canned_response', [$this, 'delete_canned_response']);
@@ -25,6 +29,53 @@ class PuzzlingCRM_Settings_Ajax_Handler {
         // Manage task categories
         add_action('wp_ajax_puzzling_manage_task_category', [$this, 'manage_task_category']);
         add_action('wp_ajax_puzzling_delete_task_category', [$this, 'delete_task_category']);
+    }
+    
+    /**
+     * Save user preference (language, theme, sidebar, etc.)
+     */
+    public function save_user_preference() {
+        // No nonce check needed for user preferences (public action)
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => 'User not logged in']);
+        }
+        
+        $user_id = get_current_user_id();
+        $preference = isset($_POST['preference']) ? sanitize_text_field($_POST['preference']) : '';
+        $value = isset($_POST['value']) ? sanitize_text_field($_POST['value']) : '';
+        
+        if (empty($preference) || empty($value)) {
+            wp_send_json_error(['message' => 'Invalid preference or value']);
+        }
+        
+        // Allowed preferences
+        $allowed_preferences = ['pzl_language', 'pzl_theme_mode', 'pzl_sidebar_state'];
+        
+        if (!in_array($preference, $allowed_preferences)) {
+            wp_send_json_error(['message' => 'Invalid preference name']);
+        }
+        
+        // Validate values
+        if ($preference === 'pzl_language' && !in_array($value, ['fa', 'en'])) {
+            wp_send_json_error(['message' => 'Invalid language value']);
+        }
+        
+        if ($preference === 'pzl_theme_mode' && !in_array($value, ['light', 'dark'])) {
+            wp_send_json_error(['message' => 'Invalid theme mode value']);
+        }
+        
+        if ($preference === 'pzl_sidebar_state' && !in_array($value, ['open', 'closed'])) {
+            wp_send_json_error(['message' => 'Invalid sidebar state value']);
+        }
+        
+        // Save to user meta
+        update_user_meta($user_id, $preference, $value);
+        
+        wp_send_json_success([
+            'message' => 'Preference saved successfully',
+            'preference' => $preference,
+            'value' => $value
+        ]);
     }
 
     /**

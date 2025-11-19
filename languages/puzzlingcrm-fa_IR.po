@@ -204,3 +204,250 @@ msgstr "خطا"
 msgid "A server error occurred."
 msgstr "یک خطای سرور رخ داد."
 
+#: Dashboard System Manager
+msgid "Project Management"
+msgstr "مدیریت پروژه‌ها"
+
+msgid "Manage projects easily with our one-click solution and simplify your workflow."
+msgstr "پروژه‌ها را به‌راحتی با راهکار یک‌کلیکی ما مدیریت کنید و جریان کاری خود را ساده‌تر نمایید."
+
+msgid "Manage Now"
+msgstr "هم‌اکنون مدیریت کن"
+
+msgid "Team"
+msgstr "تیم"
+
+msgid "Name"
+msgstr "نام"
+
+msgid "Status"
+msgstr "وضعیت"
+
+msgid "Progress"
+msgstr "پیشرفت"
+
+msgid "Actions"
+msgstr "عملیات"
+
+msgid "Team Lead"
+msgstr "سرپرست تیم"
+
+msgid "Online"
+msgstr "آنلاین"
+
+msgid "Offline"
+msgstr "آفلاین"
+
+msgid "Assign"
+msgstr "اختصاص"
+
+msgid "View"
+msgstr "مشاهده"
+
+msgid "New Projects"
+msgstr "پروژه های جدید"
+
+msgid "Completed"
+msgstr "تکمیل شده"
+
+msgid "In Progress"
+msgstr "پروژه‌های در حال انجام"
+
+msgid "Pending"
+msgstr "پروژه های معلق"
+
+msgid "Project Statistics"
+msgstr "آمار پروژه"
+
+msgid "Last Week"
+msgstr "هفته گذشته"
+
+msgid "Today"
+msgstr "امروز"
+
+msgid "Last Month"
+msgstr "ماه گذشته"
+
+msgid "Last Year"
+msgstr "سال گذشته"
+
+msgid "Total Revenue"
+msgstr "کل درآمد"
+
+msgid "Increased"
+msgstr "افزایش یافته"
+
+msgid "Total Projects"
+msgstr "کل پروژه ها"
+
+msgid "Running Projects List"
+msgstr "فهرست پروژه‌های در حال اجرا"
+
+msgid "Get Information"
+msgstr "دریافت اطلاعات"
+
+msgid "Monthly Goals"
+msgstr "اهداف ماهانه"
+
+msgid "Daily Tasks"
+msgstr "وظایف روزانه"
+
+msgid "Download"
+msgstr "دانلود"
+
+msgid "Import"
+msgstr "ورود اطلاعات"
+
+msgid "Export"
+msgstr "خروجی"
+
+msgid "No tasks scheduled for today"
+msgstr "هیچ وظیفه‌ای برای امروز برنامه‌ریزی نشده است"
+
+msgid "View Details"
+msgstr "مشاهده جزئیات"
+
+msgid "Projects Summary"
+msgstr "خلاصه پروژه‌ها"
+
+msgid "Search here..."
+msgstr "اینجا جستجو کنید"
+
+msgid "Sort By"
+msgstr "مرتب‌سازی بر اساس"
+
+msgid "New"
+msgstr "جدید"
+
+msgid "Popular"
+msgstr "محبوب"
+
+msgid "Related"
+msgstr "مرتبط"
+
+msgid "#"
+msgstr "ردیف"
+
+msgid "Project Title"
+msgstr "عنوان پروژه"
+
+msgid "Assigned Team"
+msgstr "تیم اختصاص یافته"
+
+msgid "Due Date"
+msgstr "تاریخ انجام"
+
+msgid "Are you sure?"
+msgstr "آیا مطمئن هستید؟"
+
+msgid "Showing %d items"
+msgstr "نمایش %d مورد"
+
+msgid "Page navigation"
+msgstr "ناوبری صفحه"
+
+msgid "Previous"
+msgstr "قبلی"
+
+msgid "Next"
+msgstr "بعدی"
+
+msgid "Tasks Summary"
+msgstr "خلاصه وظایف"
+
+msgid "Task Completion Rate"
+msgstr "نرخ تکمیل وظایف"
+
+msgid "Within scheduled time"
+msgstr "در بازه زمانی مقرر"
+
+msgid "Filter"
+msgstr "فیلتر"
+
+msgid "Share"
+msgstr "اشتراک‌گذاری"
+
+msgid "No running projects"
+msgstr "هیچ پروژه در حال اجرایی وجود ندارد"
+
+msgid "Revenue"
+msgstr "درآمد"
+
+msgid "چند لحظه پیش"
+msgstr "چند لحظه پیش"
+
+msgid "%d minute ago"
+msgstr "%d دقیقه پیش"
+
+msgid "%d minutes ago"
+msgstr "%d دقیقه پیش"
+
+msgid "%d hour ago"
+msgstr "%d ساعت پیش"
+
+msgid "%d hours ago"
+msgstr "%d ساعت پیش"
+
+msgid "%d day ago"
+msgstr "%d روز پیش"
+
+msgid "%d days ago"
+msgstr "%d روز پیش"
+
+msgid "%d week ago"
+msgstr "%d هفته پیش"
+
+msgid "%d weeks ago"
+msgstr "%d هفته پیش"
+
+msgid "%d month ago"
+msgstr "%d ماه پیش"
+
+msgid "%d months ago"
+msgstr "%d ماه پیش"
+
+msgid "%d year ago"
+msgstr "%d سال پیش"
+
+msgid "%d years ago"
+msgstr "%d سال پیش"
+
+msgid "تومان"
+msgstr "تومان"
+
+msgid "میلیارد"
+msgstr "میلیارد"
+
+msgid "میلیون"
+msgstr "میلیون"
+
+msgid "هزار"
+msgstr "هزار"
+
+msgid "بایت"
+msgstr "بایت"
+
+msgid "کیلوبایت"
+msgstr "کیلوبایت"
+
+msgid "مگابایت"
+msgstr "مگابایت"
+
+msgid "گیگابایت"
+msgstr "گیگابایت"
+
+msgid "بعدی"
+msgstr "بعدی"
+
+msgid "قبلی"
+msgstr "قبلی"
+
+msgid "امروز"
+msgstr "امروز"
+
+msgid "تأیید"
+msgstr "تأیید"
+
+msgid "پاک کردن"
+msgstr "پاک کردن"
+

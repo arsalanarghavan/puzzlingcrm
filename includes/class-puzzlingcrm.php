@@ -80,6 +80,11 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-dashboard-router.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-task-template-manager.php';
         
+        // Helper Classes
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/helpers/class-date-formatter.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/helpers/class-number-formatter.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/helpers/class-calendar-helper.php';
+        
         // Component System
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/components/class-component-registry.php';
         

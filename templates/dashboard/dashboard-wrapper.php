@@ -373,7 +373,29 @@ $lang      = substr( $locale, 0, 2 );
 			const currentLang = normalizeLanguage(document.documentElement.lang);
 			const currentDir = (document.documentElement.dir || 'rtl').toLowerCase();
 
+			// Save to localStorage
 			localStorage.setItem('pzl_language', normalized);
+			
+			// Save to user meta via AJAX (if logged in)
+			if (typeof ajaxurl !== 'undefined') {
+				jQuery.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'puzzling_save_user_preference',
+						preference: 'pzl_language',
+						value: normalized
+					},
+					success: function(response) {
+						console.log('PuzzlingCRM: Language preference saved to user meta');
+					},
+					error: function() {
+						console.warn('PuzzlingCRM: Failed to save language preference to user meta');
+					}
+				});
+			}
+			
+			// Also set cookie as fallback
 			setLanguageCookie(normalized);
 
 			// Apply immediately for visual feedback
@@ -390,9 +412,41 @@ $lang      = substr( $locale, 0, 2 );
 		};
 
 		document.addEventListener('DOMContentLoaded', function() {
-			const savedLang = normalizeLanguage(localStorage.getItem('pzl_language'));
+			// Priority: localStorage > cookie > server default
+			let savedLang = normalizeLanguage(localStorage.getItem('pzl_language'));
+			if (!savedLang) {
+				// Try to get from cookie
+				const cookies = document.cookie.split(';');
+				for (let i = 0; i < cookies.length; i++) {
+					const cookie = cookies[i].trim();
+					if (cookie.startsWith(COOKIE_NAME + '=')) {
+						savedLang = normalizeLanguage(cookie.substring(COOKIE_NAME.length + 1));
+						break;
+					}
+				}
+			}
+			
 			const appliedLang = applyLanguage(savedLang);
 			setLanguageCookie(appliedLang);
+			
+			// Save to user meta if logged in and different from saved
+			if (typeof ajaxurl !== 'undefined' && appliedLang) {
+				jQuery.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'puzzling_save_user_preference',
+						preference: 'pzl_language',
+						value: appliedLang
+					},
+					success: function(response) {
+						console.log('PuzzlingCRM: Language preference synced to user meta');
+					},
+					error: function() {
+						// Silent fail - not critical
+					}
+				});
+			}
 
 			if (localStorage.getItem('pzl_language_changing') === 'true') {
 				localStorage.removeItem('pzl_language_changing');

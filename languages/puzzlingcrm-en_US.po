@@ -192,3 +192,250 @@ msgstr "File Manager"
 msgid "Switcher"
 msgstr "Switcher"
 
+#: Dashboard System Manager
+msgid "Project Management"
+msgstr "Project Management"
+
+msgid "Manage projects easily with our one-click solution and simplify your workflow."
+msgstr "Manage projects easily with our one-click solution and simplify your workflow."
+
+msgid "Manage Now"
+msgstr "Manage Now"
+
+msgid "Team"
+msgstr "Team"
+
+msgid "Name"
+msgstr "Name"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Progress"
+msgstr "Progress"
+
+msgid "Actions"
+msgstr "Actions"
+
+msgid "Team Lead"
+msgstr "Team Lead"
+
+msgid "Online"
+msgstr "Online"
+
+msgid "Offline"
+msgstr "Offline"
+
+msgid "Assign"
+msgstr "Assign"
+
+msgid "View"
+msgstr "View"
+
+msgid "New Projects"
+msgstr "New Projects"
+
+msgid "Completed"
+msgstr "Completed"
+
+msgid "In Progress"
+msgstr "In Progress"
+
+msgid "Pending"
+msgstr "Pending"
+
+msgid "Project Statistics"
+msgstr "Project Statistics"
+
+msgid "Last Week"
+msgstr "Last Week"
+
+msgid "Today"
+msgstr "Today"
+
+msgid "Last Month"
+msgstr "Last Month"
+
+msgid "Last Year"
+msgstr "Last Year"
+
+msgid "Total Revenue"
+msgstr "Total Revenue"
+
+msgid "Increased"
+msgstr "Increased"
+
+msgid "Total Projects"
+msgstr "Total Projects"
+
+msgid "Running Projects List"
+msgstr "Running Projects List"
+
+msgid "Get Information"
+msgstr "Get Information"
+
+msgid "Monthly Goals"
+msgstr "Monthly Goals"
+
+msgid "Daily Tasks"
+msgstr "Daily Tasks"
+
+msgid "Download"
+msgstr "Download"
+
+msgid "Import"
+msgstr "Import"
+
+msgid "Export"
+msgstr "Export"
+
+msgid "No tasks scheduled for today"
+msgstr "No tasks scheduled for today"
+
+msgid "View Details"
+msgstr "View Details"
+
+msgid "Projects Summary"
+msgstr "Projects Summary"
+
+msgid "Search here..."
+msgstr "Search here..."
+
+msgid "Sort By"
+msgstr "Sort By"
+
+msgid "New"
+msgstr "New"
+
+msgid "Popular"
+msgstr "Popular"
+
+msgid "Related"
+msgstr "Related"
+
+msgid "#"
+msgstr "#"
+
+msgid "Project Title"
+msgstr "Project Title"
+
+msgid "Assigned Team"
+msgstr "Assigned Team"
+
+msgid "Due Date"
+msgstr "Due Date"
+
+msgid "Are you sure?"
+msgstr "Are you sure?"
+
+msgid "Showing %d items"
+msgstr "Showing %d items"
+
+msgid "Page navigation"
+msgstr "Page navigation"
+
+msgid "Previous"
+msgstr "Previous"
+
+msgid "Next"
+msgstr "Next"
+
+msgid "Tasks Summary"
+msgstr "Tasks Summary"
+
+msgid "Task Completion Rate"
+msgstr "Task Completion Rate"
+
+msgid "Within scheduled time"
+msgstr "Within scheduled time"
+
+msgid "Filter"
+msgstr "Filter"
+
+msgid "Share"
+msgstr "Share"
+
+msgid "No running projects"
+msgstr "No running projects"
+
+msgid "Revenue"
+msgstr "Revenue"
+
+msgid "چند لحظه پیش"
+msgstr "Just now"
+
+msgid "%d minute ago"
+msgstr "%d minute ago"
+
+msgid "%d minutes ago"
+msgstr "%d minutes ago"
+
+msgid "%d hour ago"
+msgstr "%d hour ago"
+
+msgid "%d hours ago"
+msgstr "%d hours ago"
+
+msgid "%d day ago"
+msgstr "%d day ago"
+
+msgid "%d days ago"
+msgstr "%d days ago"
+
+msgid "%d week ago"
+msgstr "%d week ago"
+
+msgid "%d weeks ago"
+msgstr "%d weeks ago"
+
+msgid "%d month ago"
+msgstr "%d month ago"
+
+msgid "%d months ago"
+msgstr "%d months ago"
+
+msgid "%d year ago"
+msgstr "%d year ago"
+
+msgid "%d years ago"
+msgstr "%d years ago"
+
+msgid "تومان"
+msgstr "Toman"
+
+msgid "میلیارد"
+msgstr "Billion"
+
+msgid "میلیون"
+msgstr "Million"
+
+msgid "هزار"
+msgstr "Thousand"
+
+msgid "بایت"
+msgstr "Bytes"
+
+msgid "کیلوبایت"
+msgstr "KB"
+
+msgid "مگابایت"
+msgstr "MB"
+
+msgid "گیگابایت"
+msgstr "GB"
+
+msgid "بعدی"
+msgstr "Next"
+
+msgid "قبلی"
+msgstr "Previous"
+
+msgid "امروز"
+msgstr "Today"
+
+msgid "تأیید"
+msgstr "Confirm"
+
+msgid "پاک کردن"
+msgstr "Clear"
+
