@@ -29,186 +29,25 @@ if (!class_exists('PuzzlingCRM_Number_Formatter')) {
 	}
 }
 
-// Helper functions for safe formatting
-if (!function_exists('pzl_format_number')) {
-	function pzl_format_number($number, $decimals = 0) {
-		// Get language preference (user meta > cookie > locale)
-		$is_persian = false;
-		
-		// Priority 1: User meta
-		if (is_user_logged_in()) {
-			$user_lang = get_user_meta(get_current_user_id(), 'pzl_language', true);
-			if ($user_lang === 'fa') {
-				$is_persian = true;
-			} elseif ($user_lang === 'en') {
-				$is_persian = false;
-			}
-		}
-		
-		// Priority 2: Cookie (if user meta not set)
-		if ($is_persian === false && !isset($user_lang)) {
-			$cookie_lang = isset($_COOKIE['pzl_language']) ? sanitize_text_field($_COOKIE['pzl_language']) : '';
-			if ($cookie_lang === 'fa') {
-				$is_persian = true;
-			} elseif ($cookie_lang === 'en') {
-				$is_persian = false;
-			}
-		}
-		
-		// Priority 3: WordPress locale (only if explicitly Persian)
-		if ($is_persian === false && !isset($user_lang) && empty($cookie_lang)) {
-			$locale = get_locale();
-			$is_persian = (strpos($locale, 'fa') !== false || strpos($locale, 'fa_IR') !== false);
-		}
-		
-		// If English, return English digits (no conversion)
-		if (!$is_persian) {
-			return number_format($number, $decimals);
-		}
-		
-		// If Persian, use class formatter or convert manually
-		if (class_exists('PuzzlingCRM_Number_Formatter') && method_exists('PuzzlingCRM_Number_Formatter', 'format_number')) {
-			return PuzzlingCRM_Number_Formatter::format_number($number, $decimals);
-		}
-		
-		// Manual conversion to Persian
-		$formatted = number_format($number, $decimals);
-		$persian_digits = array('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹');
-		$english_digits = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
-		return str_replace($english_digits, $persian_digits, $formatted);
+// Helper functions are now defined in includes/puzzling-functions.php
+// They are available globally after plugin initialization
+
+// Debug: Check if helper functions are available
+if (!function_exists('pzl_get_current_language')) {
+	// Fallback: Load from puzzling-functions.php if not loaded
+	if (defined('PUZZLINGCRM_PLUGIN_DIR') && file_exists(PUZZLINGCRM_PLUGIN_DIR . 'includes/puzzling-functions.php')) {
+		require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/puzzling-functions.php';
 	}
 }
 
-if (!function_exists('pzl_format_percentage')) {
-	function pzl_format_percentage($value, $decimals = 1) {
-		// Get language preference (user meta > cookie > locale)
-		$is_persian = false;
-		
-		// Priority 1: User meta
-		if (is_user_logged_in()) {
-			$user_lang = get_user_meta(get_current_user_id(), 'pzl_language', true);
-			if ($user_lang === 'fa') {
-				$is_persian = true;
-			} elseif ($user_lang === 'en') {
-				$is_persian = false;
-			}
-		}
-		
-		// Priority 2: Cookie (if user meta not set)
-		if ($is_persian === false && !isset($user_lang)) {
-			$cookie_lang = isset($_COOKIE['pzl_language']) ? sanitize_text_field($_COOKIE['pzl_language']) : '';
-			if ($cookie_lang === 'fa') {
-				$is_persian = true;
-			} elseif ($cookie_lang === 'en') {
-				$is_persian = false;
-			}
-		}
-		
-		// Priority 3: WordPress locale (only if explicitly Persian)
-		if ($is_persian === false && !isset($user_lang) && empty($cookie_lang)) {
-			$locale = get_locale();
-			$is_persian = (strpos($locale, 'fa') !== false || strpos($locale, 'fa_IR') !== false);
-		}
-		
-		// Format number
-		$formatted = number_format($value, $decimals);
-		
-		// If Persian, convert to Persian digits
-		if ($is_persian) {
-			if (class_exists('PuzzlingCRM_Number_Formatter') && method_exists('PuzzlingCRM_Number_Formatter', 'format_percentage')) {
-				return PuzzlingCRM_Number_Formatter::format_percentage($value, $decimals);
-			}
-			$persian_digits = array('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹');
-			$english_digits = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
-			$formatted = str_replace($english_digits, $persian_digits, $formatted);
-		}
-		
-		return $formatted . '%';
-	}
-}
-
-if (!function_exists('pzl_format_currency')) {
-	function pzl_format_currency($amount, $currency = '') {
-		// Get language preference (user meta > cookie > locale)
-		$is_persian = false;
-		
-		// Priority 1: User meta
-		if (is_user_logged_in()) {
-			$user_lang = get_user_meta(get_current_user_id(), 'pzl_language', true);
-			if ($user_lang === 'fa') {
-				$is_persian = true;
-			} elseif ($user_lang === 'en') {
-				$is_persian = false;
-			}
-		}
-		
-		// Priority 2: Cookie (if user meta not set)
-		if ($is_persian === false && !isset($user_lang)) {
-			$cookie_lang = isset($_COOKIE['pzl_language']) ? sanitize_text_field($_COOKIE['pzl_language']) : '';
-			if ($cookie_lang === 'fa') {
-				$is_persian = true;
-			} elseif ($cookie_lang === 'en') {
-				$is_persian = false;
-			}
-		}
-		
-		// Priority 3: WordPress locale (only if explicitly Persian)
-		if ($is_persian === false && !isset($user_lang) && empty($cookie_lang)) {
-			$locale = get_locale();
-			$is_persian = (strpos($locale, 'fa') !== false || strpos($locale, 'fa_IR') !== false);
-		}
-		
-		// Format number
-		$formatted = number_format($amount);
-		
-		// If Persian, convert to Persian digits
-		if ($is_persian) {
-			if (class_exists('PuzzlingCRM_Number_Formatter') && method_exists('PuzzlingCRM_Number_Formatter', 'format_currency')) {
-				return PuzzlingCRM_Number_Formatter::format_currency($amount, $currency);
-			}
-			$persian_digits = array('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹');
-			$english_digits = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
-			$formatted = str_replace($english_digits, $persian_digits, $formatted);
-			$default_currency = empty($currency) ? 'تومان' : $currency;
-			return $formatted . ' ' . $default_currency;
-		} else {
-			// English: return English digits
-			$default_currency = empty($currency) ? '$' : $currency;
-			return $default_currency . $formatted;
-		}
-	}
-}
-
-if (!function_exists('pzl_format_date')) {
-	function pzl_format_date($date = '', $format = 'Y/m/d') {
-		if (class_exists('PuzzlingCRM_Date_Formatter') && method_exists('PuzzlingCRM_Date_Formatter', 'format_date')) {
-			return PuzzlingCRM_Date_Formatter::format_date($date, $format);
-		}
-		if (empty($date)) {
-			return date_i18n($format);
-		}
-		if (is_numeric($date)) {
-			return date_i18n($format, $date);
-		}
-		return date_i18n($format, strtotime($date));
-	}
-}
-
-if (!function_exists('pzl_human_time_diff')) {
-	function pzl_human_time_diff($from, $to = '') {
-		if (class_exists('PuzzlingCRM_Date_Formatter') && method_exists('PuzzlingCRM_Date_Formatter', 'human_time_diff')) {
-			return PuzzlingCRM_Date_Formatter::human_time_diff($from, $to);
-		}
-		if (empty($to)) {
-			$to = current_time('timestamp');
-		}
-		if (!is_numeric($from)) {
-			$from = strtotime($from);
-		}
-		if (!is_numeric($to)) {
-			$to = strtotime($to);
-		}
-		return human_time_diff($from, $to);
+// Debug: Test language detection
+if (function_exists('pzl_get_current_language')) {
+	$test_lang = pzl_get_current_language();
+	$test_number = pzl_format_number(1234567.89, 2);
+	
+	// Debug output (remove after fixing)
+	if (isset($_GET['debug_lang'])) {
+		echo "<!-- PuzzlingCRM Debug: Current language = " . esc_html($test_lang) . ", Formatted number = " . esc_html($test_number) . ", Cookie = " . (isset($_COOKIE['pzl_language']) ? esc_html($_COOKIE['pzl_language']) : 'not set') . " -->";
 	}
 }
 
@@ -217,7 +56,24 @@ $current_user = wp_get_current_user();
 $user_display_name = $current_user->display_name;
 
 // --- Fetch Dashboard Stats (Cached for 15 minutes) ---
-if (false === ($stats = get_transient('puzzling_system_manager_stats_v4'))) {
+// Get current language for cache key (so each language has its own cache)
+$current_lang_for_cache = function_exists('pzl_get_current_language') ? pzl_get_current_language() : 'en';
+$cache_suffix = '_' . $current_lang_for_cache;
+
+// Clear cache if debug parameter is set
+if (isset($_GET['clear_cache'])) {
+	delete_transient('puzzling_system_manager_stats_v4' . $cache_suffix);
+	delete_transient('puzzling_system_manager_team_data_v4' . $cache_suffix);
+	delete_transient('puzzling_system_manager_running_projects_v4' . $cache_suffix);
+	delete_transient('puzzling_system_manager_projects_table_v4' . $cache_suffix);
+	// Also clear old cache keys without language suffix
+	delete_transient('puzzling_system_manager_stats_v4');
+	delete_transient('puzzling_system_manager_team_data_v4');
+	delete_transient('puzzling_system_manager_running_projects_v4');
+	delete_transient('puzzling_system_manager_projects_table_v4');
+}
+
+if (false === ($stats = get_transient('puzzling_system_manager_stats_v4' . $cache_suffix))) {
 	
 	// Project Stats
 	$all_projects = get_posts(['post_type' => 'project', 'posts_per_page' => -1, 'post_status' => 'publish']);
@@ -369,7 +225,7 @@ if (false === ($stats = get_transient('puzzling_system_manager_stats_v4'))) {
 		'revenue_growth' => $revenue_growth,
 	];
 	
-	set_transient('puzzling_system_manager_stats_v4', $stats, 15 * MINUTE_IN_SECONDS);
+	set_transient('puzzling_system_manager_stats_v4' . $cache_suffix, $stats, 15 * MINUTE_IN_SECONDS);
 }
 
 // Team members with detailed stats
@@ -1233,7 +1089,7 @@ if (isset($contracts) && is_array($contracts)) {
 								}
 							?>
 							<tr>
-								<td><?php echo pzl_format_number($index + 1); ?></td>
+								<td><?php echo esc_html(pzl_format_number($index + 1)); ?></td>
 								<td>
 									<span class="fw-medium"><?php echo esc_html($project->post_title); ?></span>
 								</td>
@@ -1544,9 +1400,9 @@ jQuery(document).ready(function($) {
 				],
 				datasets: [{
 					data: [
-						<?php echo $monthly_goals['new_projects']; ?>,
-						<?php echo $monthly_goals['completed']; ?>,
-						<?php echo $monthly_goals['pending']; ?>
+						<?php echo intval($monthly_goals['new_projects']); ?>,
+						<?php echo intval($monthly_goals['completed']); ?>,
+						<?php echo intval($monthly_goals['pending']); ?>
 					],
 					backgroundColor: [
 						isDarkMode ? 'rgba(132, 90, 223, 0.8)' : '#845adf',
@@ -1588,9 +1444,9 @@ jQuery(document).ready(function($) {
 				datasets: [{
 					label: '<?php echo esc_js(__('Tasks', 'puzzlingcrm')); ?>',
 					data: [
-						<?php echo $stats['completed_tasks']; ?>,
-						<?php echo $stats['pending_tasks'] - $stats['overdue_tasks']; ?>,
-						<?php echo $stats['overdue_tasks']; ?>
+						<?php echo intval($stats['completed_tasks']); ?>,
+						<?php echo intval($stats['pending_tasks'] - $stats['overdue_tasks']); ?>,
+						<?php echo intval($stats['overdue_tasks']); ?>
 					],
 					backgroundColor: [
 						isDarkMode ? 'rgba(40, 167, 69, 0.8)' : '#28a745',

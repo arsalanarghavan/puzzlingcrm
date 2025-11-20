@@ -293,6 +293,194 @@ if ( ! function_exists( 'puzzling_convert_phone_to_english' ) ) {
     }
 }
 
+// ============================================
+// Language and Number Formatting Helpers
+// ============================================
+
+/**
+ * Get current language preference (returns 'en' or 'fa')
+ * Priority: User Meta > Cookie > WordPress Locale
+ * 
+ * @return string 'en' or 'fa'
+ */
+if (!function_exists('pzl_get_current_language')) {
+	function pzl_get_current_language() {
+		// Priority 1: User meta
+		if (is_user_logged_in()) {
+			$user_lang = get_user_meta(get_current_user_id(), 'pzl_language', true);
+			if (!empty($user_lang) && ($user_lang === 'fa' || $user_lang === 'en')) {
+				return $user_lang;
+			}
+		}
+		
+		// Priority 2: Cookie
+		$cookie_lang = isset($_COOKIE['pzl_language']) ? sanitize_text_field($_COOKIE['pzl_language']) : '';
+		if ($cookie_lang === 'fa' || $cookie_lang === 'en') {
+			return $cookie_lang;
+		}
+		
+		// Priority 3: WordPress locale (only if explicitly Persian)
+		$locale = get_locale();
+		if (strpos($locale, 'fa') !== false || strpos($locale, 'fa_IR') !== false) {
+			return 'fa';
+		}
+		
+		// Default: English
+		return 'en';
+	}
+}
+
+/**
+ * Format number based on current language
+ * 
+ * @param int|float|string $number Number to format
+ * @param int $decimals Number of decimal places
+ * @return string Formatted number
+ */
+if (!function_exists('pzl_format_number')) {
+	function pzl_format_number($number, $decimals = 0) {
+		// Get current language
+		$current_lang = pzl_get_current_language();
+		
+		// If English, return English digits (no conversion) - DO NOT use class formatter
+		if ($current_lang === 'en') {
+			return number_format($number, $decimals);
+		}
+		
+		// If Persian, use class formatter or convert manually
+		if (class_exists('PuzzlingCRM_Number_Formatter')) {
+			// Double-check: Make sure the class also thinks it's Persian
+			if (method_exists('PuzzlingCRM_Number_Formatter', 'is_persian')) {
+				$class_is_persian = PuzzlingCRM_Number_Formatter::is_persian();
+				if (!$class_is_persian) {
+					// Class thinks it's English, so return English digits
+					return number_format($number, $decimals);
+				}
+			}
+			
+			// Use class formatter
+			if (method_exists('PuzzlingCRM_Number_Formatter', 'format_number')) {
+				return PuzzlingCRM_Number_Formatter::format_number($number, $decimals);
+			}
+		}
+		
+		// Manual conversion to Persian
+		$formatted = number_format($number, $decimals);
+		$persian_digits = array('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹');
+		$english_digits = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+		return str_replace($english_digits, $persian_digits, $formatted);
+	}
+}
+
+/**
+ * Format percentage based on current language
+ * 
+ * @param float|string $value Percentage value
+ * @param int $decimals Number of decimal places
+ * @return string Formatted percentage
+ */
+if (!function_exists('pzl_format_percentage')) {
+	function pzl_format_percentage($value, $decimals = 1) {
+		// Get current language
+		$current_lang = pzl_get_current_language();
+		
+		// Format number
+		$formatted = number_format($value, $decimals);
+		
+		// If Persian, convert to Persian digits
+		if ($current_lang === 'fa') {
+			if (class_exists('PuzzlingCRM_Number_Formatter') && method_exists('PuzzlingCRM_Number_Formatter', 'format_percentage')) {
+				return PuzzlingCRM_Number_Formatter::format_percentage($value, $decimals);
+			}
+			$persian_digits = array('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹');
+			$english_digits = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+			$formatted = str_replace($english_digits, $persian_digits, $formatted);
+		}
+		
+		return $formatted . '%';
+	}
+}
+
+/**
+ * Format currency based on current language
+ * 
+ * @param float|string $amount Amount to format
+ * @param string $currency Currency symbol or name
+ * @return string Formatted currency
+ */
+if (!function_exists('pzl_format_currency')) {
+	function pzl_format_currency($amount, $currency = '') {
+		// Get current language
+		$current_lang = pzl_get_current_language();
+		
+		// Format number
+		$formatted = number_format($amount);
+		
+		// If Persian, convert to Persian digits
+		if ($current_lang === 'fa') {
+			if (class_exists('PuzzlingCRM_Number_Formatter') && method_exists('PuzzlingCRM_Number_Formatter', 'format_currency')) {
+				return PuzzlingCRM_Number_Formatter::format_currency($amount, $currency);
+			}
+			$persian_digits = array('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹');
+			$english_digits = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+			$formatted = str_replace($english_digits, $persian_digits, $formatted);
+			$default_currency = empty($currency) ? 'تومان' : $currency;
+			return $formatted . ' ' . $default_currency;
+		} else {
+			// English: return English digits
+			$default_currency = empty($currency) ? '$' : $currency;
+			return $default_currency . $formatted;
+		}
+	}
+}
+
+/**
+ * Format date based on current language
+ * 
+ * @param string|int $date Date string or timestamp
+ * @param string $format Date format
+ * @return string Formatted date
+ */
+if (!function_exists('pzl_format_date')) {
+	function pzl_format_date($date = '', $format = 'Y/m/d') {
+		if (class_exists('PuzzlingCRM_Date_Formatter') && method_exists('PuzzlingCRM_Date_Formatter', 'format_date')) {
+			return PuzzlingCRM_Date_Formatter::format_date($date, $format);
+		}
+		if (empty($date)) {
+			return date_i18n($format);
+		}
+		if (is_numeric($date)) {
+			return date_i18n($format, $date);
+		}
+		return date_i18n($format, strtotime($date));
+	}
+}
+
+/**
+ * Get human-readable time difference
+ * 
+ * @param int|string $from Start time
+ * @param int|string $to End time (default: current time)
+ * @return string Human-readable time difference
+ */
+if (!function_exists('pzl_human_time_diff')) {
+	function pzl_human_time_diff($from, $to = '') {
+		if (class_exists('PuzzlingCRM_Date_Formatter') && method_exists('PuzzlingCRM_Date_Formatter', 'human_time_diff')) {
+			return PuzzlingCRM_Date_Formatter::human_time_diff($from, $to);
+		}
+		if (empty($to)) {
+			$to = current_time('timestamp');
+		}
+		if (!is_numeric($from)) {
+			$from = strtotime($from);
+		}
+		if (!is_numeric($to)) {
+			$to = strtotime($to);
+		}
+		return human_time_diff($from, $to);
+	}
+}
+
 if ( ! function_exists( 'puzzling_get_sms_handler' ) ) {
     /**
      * Retrieves the correct SMS handler instance based on saved settings.
