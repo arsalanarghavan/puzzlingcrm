@@ -607,8 +607,15 @@ class PuzzlingCRM_Dashboard_Router {
         <?php
         // Load reports export script for reports page
         $view = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'dashboard';
+        $current_page = get_query_var('dashboard_page') ?: '';
         if ($view === 'reports') {
             echo '<script src="' . esc_url(PUZZLINGCRM_PLUGIN_URL . 'assets/js/reports-export.js') . '?v=' . PUZZLINGCRM_VERSION . '"></script>';
+        }
+        // Load leads page init script and dragula
+        if ($current_page === 'puzzle-leads' || $current_page === 'leads') {
+            wp_enqueue_style('pzl-dragula', PUZZLINGCRM_PLUGIN_URL . 'assets/libs/dragula/dragula.min.css', [], PUZZLINGCRM_VERSION);
+            echo '<script src="' . esc_url(PUZZLINGCRM_PLUGIN_URL . 'assets/libs/dragula/dragula.min.js') . '?v=' . PUZZLINGCRM_VERSION . '"></script>';
+            echo '<script src="' . esc_url(PUZZLINGCRM_PLUGIN_URL . 'assets/js/leads-page-init.js') . '?v=' . PUZZLINGCRM_VERSION . '"></script>';
         }
         ?>
         <!-- End::custom-scripts -->
@@ -734,6 +741,51 @@ class PuzzlingCRM_Dashboard_Router {
             wp_enqueue_script('pzl-reports-export', PUZZLINGCRM_PLUGIN_URL . 'assets/js/reports-export.js', ['jquery'], PUZZLINGCRM_VERSION, true);
         }
         
+        // Quill Editor and FilePond for project create/edit pages
+        $action = isset($_GET['action']) ? sanitize_key($_GET['action']) : '';
+        if ($view === 'projects' && ($action === 'new' || $action === 'edit')) {
+            // Quill Editor CSS
+            wp_enqueue_style('pzl-quill-snow', $assets_url . 'libs/quill/quill.snow.css', [], PUZZLINGCRM_VERSION);
+            wp_enqueue_style('pzl-quill-bubble', $assets_url . 'libs/quill/quill.bubble.css', [], PUZZLINGCRM_VERSION);
+            
+            // FilePond CSS
+            wp_enqueue_style('pzl-filepond', $assets_url . 'libs/filepond/filepond.min.css', [], PUZZLINGCRM_VERSION);
+            wp_enqueue_style('pzl-filepond-image-preview', $assets_url . 'libs/filepond-plugin-image-preview/filepond-plugin-image-preview.min.css', ['pzl-filepond'], PUZZLINGCRM_VERSION);
+            wp_enqueue_style('pzl-filepond-image-edit', $assets_url . 'libs/filepond-plugin-image-edit/filepond-plugin-image-edit.min.css', ['pzl-filepond'], PUZZLINGCRM_VERSION);
+            
+            // Quill Editor JS
+            wp_enqueue_script('pzl-quill', $assets_url . 'libs/quill/quill.js', [], PUZZLINGCRM_VERSION, true);
+            
+            // FilePond JS
+            wp_enqueue_script('pzl-filepond', $assets_url . 'libs/filepond/filepond.min.js', [], PUZZLINGCRM_VERSION, true);
+            wp_enqueue_script('pzl-filepond-image-preview', $assets_url . 'libs/filepond-plugin-image-preview/filepond-plugin-image-preview.min.js', ['pzl-filepond'], PUZZLINGCRM_VERSION, true);
+            wp_enqueue_script('pzl-filepond-image-exif', $assets_url . 'libs/filepond-plugin-image-exif-orientation/filepond-plugin-image-exif-orientation.min.js', ['pzl-filepond'], PUZZLINGCRM_VERSION, true);
+            wp_enqueue_script('pzl-filepond-validate-size', $assets_url . 'libs/filepond-plugin-file-validate-size/filepond-plugin-file-validate-size.min.js', ['pzl-filepond'], PUZZLINGCRM_VERSION, true);
+            wp_enqueue_script('pzl-filepond-file-encode', $assets_url . 'libs/filepond-plugin-file-encode/filepond-plugin-file-encode.min.js', ['pzl-filepond'], PUZZLINGCRM_VERSION, true);
+            wp_enqueue_script('pzl-filepond-image-edit', $assets_url . 'libs/filepond-plugin-image-edit/filepond-plugin-image-edit.min.js', ['pzl-filepond'], PUZZLINGCRM_VERSION, true);
+            wp_enqueue_script('pzl-filepond-validate-type', $assets_url . 'libs/filepond-plugin-file-validate-type/filepond-plugin-file-validate-type.min.js', ['pzl-filepond'], PUZZLINGCRM_VERSION, true);
+            wp_enqueue_script('pzl-filepond-image-crop', $assets_url . 'libs/filepond-plugin-image-crop/filepond-plugin-image-crop.min.js', ['pzl-filepond'], PUZZLINGCRM_VERSION, true);
+            wp_enqueue_script('pzl-filepond-image-resize', $assets_url . 'libs/filepond-plugin-image-resize/filepond-plugin-image-resize.min.js', ['pzl-filepond'], PUZZLINGCRM_VERSION, true);
+            wp_enqueue_script('pzl-filepond-image-transform', $assets_url . 'libs/filepond-plugin-image-transform/filepond-plugin-image-transform.min.js', ['pzl-filepond'], PUZZLINGCRM_VERSION, true);
+            
+            // Create project script - must load after all dependencies
+            wp_enqueue_script('pzl-create-project', $assets_url . 'js/create-project.js', [
+                'jquery', 
+                'pzl-choices',
+                'pzl-quill', 
+                'pzl-filepond',
+                'pzl-filepond-image-preview',
+                'pzl-filepond-image-exif',
+                'pzl-filepond-validate-size',
+                'pzl-filepond-file-encode',
+                'pzl-filepond-image-edit',
+                'pzl-filepond-validate-type',
+                'pzl-filepond-image-crop',
+                'pzl-filepond-image-resize',
+                'pzl-filepond-image-transform'
+            ], PUZZLINGCRM_VERSION, true);
+        }
+        
         // Add inline script to suppress PWA errors until service worker is properly implemented
         $inline_script = "
         // Suppress PWA service worker errors (to be implemented later)
@@ -824,9 +876,8 @@ class PuzzlingCRM_Dashboard_Router {
         if ($base_partial === 'page-projects') {
             switch ($user_role) {
                 case 'system_manager':
-                    return 'page-projects';
                 case 'team_member':
-                    return 'list-team-member-projects';
+                    return 'page-projects';
                 case 'client':
                     return 'list-projects';
             }

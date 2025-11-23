@@ -87,12 +87,10 @@ class PuzzlingCRM_Frontend_Dashboard {
         if ( ! is_user_logged_in() ) return self::render_partial('common/login-prompt');
         $role = self::get_user_role();
 
-        if ( $role === 'system_manager' ) {
+        if ( $role === 'system_manager' || $role === 'team_member' ) {
             return self::render_partial('page-projects');
         } elseif ( $role === 'customer' ) {
             return self::render_partial('list-projects');
-        } elseif ( $role === 'team_member' ) {
-            return self::render_partial('list-team-member-projects');
         } else {
             return '<p>' . __('You do not have permission to view this page.', 'puzzlingcrm') . '</p>';
         }

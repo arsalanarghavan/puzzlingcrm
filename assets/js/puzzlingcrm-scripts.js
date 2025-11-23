@@ -719,6 +719,68 @@ jQuery(document).ready(function($) {
         });
     });
 
+    // --- Delete Project Handler ---
+    $(document).on('click', '.delete-project', function(e) {
+        e.preventDefault();
+        const button = $(this);
+        const projectId = button.data('project-id');
+        const nonce = button.data('nonce');
+        const projectRow = button.closest('tr');
+
+        if (!projectId || !nonce) {
+            showPuzzlingAlert('خطا', 'اطلاعات پروژه یافت نشد.', 'error');
+            return;
+        }
+
+        // Confirm deletion
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'آیا مطمئن هستید؟',
+                text: 'این عمل قابل بازگشت نیست!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'بله، حذف کن',
+                cancelButtonText: 'لغو'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performDelete();
+                }
+            });
+        } else {
+            if (confirm('آیا مطمئن هستید که می‌خواهید این پروژه را حذف کنید؟')) {
+                performDelete();
+            }
+        }
+
+        function performDelete() {
+            projectRow.css('opacity', '0.5');
+            $.ajax({
+                url: puzzlingcrm_ajax_obj.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'puzzling_delete_project',
+                    security: puzzlingcrm_ajax_obj.nonce,
+                    project_id: projectId,
+                    nonce: nonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showPuzzlingAlert('موفق', response.data.message || 'پروژه با موفقیت حذف شد.', 'success', { reload: true });
+                    } else {
+                        showPuzzlingAlert('خطا', response.data.message || 'خطا در حذف پروژه.', 'error');
+                        projectRow.css('opacity', '1');
+                    }
+                },
+                error: function() {
+                    showPuzzlingAlert('خطا', 'خطا در ارتباط با سرور.', 'error');
+                    projectRow.css('opacity', '1');
+                }
+            });
+        }
+    });
+
     // **CRITICAL FIX**: Safely initialize persianDatepicker at the end of the script
     // This will only run if the datepicker script has been successfully loaded on the page.
     if (typeof $.fn.persianDatepicker === 'function') {

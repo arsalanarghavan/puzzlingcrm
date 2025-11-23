@@ -46,10 +46,11 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             $last_name = sanitize_text_field($_POST['last_name'] ?? '');
             $mobile = sanitize_text_field($_POST['mobile'] ?? '');
             $business_name = sanitize_text_field($_POST['business_name'] ?? '');
+            $email = sanitize_email($_POST['email'] ?? '');
             $gender = sanitize_text_field($_POST['gender'] ?? '');
             $notes = sanitize_textarea_field($_POST['notes'] ?? '');
 
-            error_log("PuzzlingCRM: Lead data - First: {$first_name}, Last: {$last_name}, Mobile: {$mobile}, Business: {$business_name}, Gender: {$gender}");
+            error_log("PuzzlingCRM: Lead data - First: {$first_name}, Last: {$last_name}, Mobile: {$mobile}, Email: {$email}, Business: {$business_name}, Gender: {$gender}");
 
             // Validate required fields
             if (empty($first_name) || empty($last_name) || empty($mobile)) {
@@ -76,6 +77,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             update_post_meta($lead_id, '_first_name', $first_name);
             update_post_meta($lead_id, '_last_name', $last_name);
             update_post_meta($lead_id, '_mobile', $mobile);
+            update_post_meta($lead_id, '_email', $email);
             update_post_meta($lead_id, '_business_name', $business_name);
             update_post_meta($lead_id, '_gender', $gender);
             
@@ -178,10 +180,11 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             $last_name = sanitize_text_field($_POST['last_name'] ?? '');
             $mobile = sanitize_text_field($_POST['mobile'] ?? '');
             $business_name = sanitize_text_field($_POST['business_name'] ?? '');
+            $email = sanitize_email($_POST['email'] ?? '');
             $gender = sanitize_text_field($_POST['gender'] ?? '');
             $notes = sanitize_textarea_field($_POST['notes'] ?? '');
 
-            error_log("PuzzlingCRM: Lead edit data - First: {$first_name}, Last: {$last_name}, Mobile: {$mobile}, Business: {$business_name}, Gender: {$gender}");
+            error_log("PuzzlingCRM: Lead edit data - First: {$first_name}, Last: {$last_name}, Mobile: {$mobile}, Email: {$email}, Business: {$business_name}, Gender: {$gender}");
 
             // Validate required fields
             if (empty($first_name) || empty($last_name) || empty($mobile)) {
@@ -204,6 +207,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             update_post_meta($lead_id, '_first_name', $first_name);
             update_post_meta($lead_id, '_last_name', $last_name);
             update_post_meta($lead_id, '_mobile', $mobile);
+            update_post_meta($lead_id, '_email', $email);
             update_post_meta($lead_id, '_business_name', $business_name);
             update_post_meta($lead_id, '_gender', $gender);
 

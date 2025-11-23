@@ -100,6 +100,103 @@ class PuzzlingCRM_Project_Ajax_Handler {
         update_post_meta($the_project_id, '_contract_id', $contract_id);
         wp_set_object_terms($the_project_id, $project_status_id, 'project_status');
         
+        // Project Manager
+        if (isset($_POST['project_manager'])) {
+            $project_manager_id = intval($_POST['project_manager']);
+            if ($project_manager_id > 0) {
+                update_post_meta($the_project_id, '_project_manager', $project_manager_id);
+            } else {
+                delete_post_meta($the_project_id, '_project_manager');
+            }
+        }
+        
+        // Project Dates
+        if (isset($_POST['project_start_date']) && !empty($_POST['project_start_date'])) {
+            $start_date_jalali = sanitize_text_field($_POST['project_start_date']);
+            // Convert Jalali to Gregorian if jdate function exists
+            if (function_exists('puzzling_jalali_to_gregorian')) {
+                $start_date_gregorian = puzzling_jalali_to_gregorian($start_date_jalali);
+            } elseif (function_exists('jalali_to_gregorian')) {
+                $date_parts = explode('/', $start_date_jalali);
+                if (count($date_parts) == 3) {
+                    $start_date_gregorian = jalali_to_gregorian($date_parts[0], $date_parts[1], $date_parts[2]);
+                    $start_date_gregorian = sprintf('%04d-%02d-%02d', $start_date_gregorian[0], $start_date_gregorian[1], $start_date_gregorian[2]);
+                } else {
+                    $start_date_gregorian = '';
+                }
+            } else {
+                $start_date_gregorian = $start_date_jalali; // Fallback
+            }
+            if ($start_date_gregorian) {
+                update_post_meta($the_project_id, '_project_start_date', $start_date_gregorian);
+            }
+        }
+        
+        if (isset($_POST['project_end_date']) && !empty($_POST['project_end_date'])) {
+            $end_date_jalali = sanitize_text_field($_POST['project_end_date']);
+            // Convert Jalali to Gregorian if jdate function exists
+            if (function_exists('puzzling_jalali_to_gregorian')) {
+                $end_date_gregorian = puzzling_jalali_to_gregorian($end_date_jalali);
+            } elseif (function_exists('jalali_to_gregorian')) {
+                $date_parts = explode('/', $end_date_jalali);
+                if (count($date_parts) == 3) {
+                    $end_date_gregorian = jalali_to_gregorian($date_parts[0], $date_parts[1], $date_parts[2]);
+                    $end_date_gregorian = sprintf('%04d-%02d-%02d', $end_date_gregorian[0], $end_date_gregorian[1], $end_date_gregorian[2]);
+                } else {
+                    $end_date_gregorian = '';
+                }
+            } else {
+                $end_date_gregorian = $end_date_jalali; // Fallback
+            }
+            if ($end_date_gregorian) {
+                update_post_meta($the_project_id, '_project_end_date', $end_date_gregorian);
+            }
+        }
+        
+        // Project Priority
+        if (isset($_POST['project_priority'])) {
+            $priority = sanitize_key($_POST['project_priority']);
+            update_post_meta($the_project_id, '_project_priority', $priority);
+        }
+        
+        // Assigned Team Members
+        if (isset($_POST['assigned_team_members']) && is_array($_POST['assigned_team_members'])) {
+            $assigned_members = array_map('intval', $_POST['assigned_team_members']);
+            $assigned_members = array_filter($assigned_members);
+            update_post_meta($the_project_id, '_assigned_team_members', $assigned_members);
+        } else {
+            delete_post_meta($the_project_id, '_assigned_team_members');
+        }
+        
+        // Project Tags
+        if (isset($_POST['project_tags']) && !empty($_POST['project_tags'])) {
+            $tags_string = sanitize_text_field($_POST['project_tags']);
+            // Split by Persian comma (،) or English comma
+            $tags = preg_split('/[،,]+/', $tags_string);
+            $tags = array_map('trim', $tags);
+            $tags = array_filter($tags);
+            
+            // Check if project_tag taxonomy exists, if not create it
+            if (!taxonomy_exists('project_tag')) {
+                register_taxonomy('project_tag', 'project', [
+                    'label' => __('برچسب‌های پروژه', 'puzzlingcrm'),
+                    'hierarchical' => false,
+                    'public' => false,
+                    'show_ui' => true,
+                    'show_admin_column' => true,
+                ]);
+            }
+            
+            if (!empty($tags)) {
+                wp_set_object_terms($the_project_id, $tags, 'project_tag');
+            } else {
+                wp_set_object_terms($the_project_id, [], 'project_tag');
+            }
+        } else {
+            wp_set_object_terms($the_project_id, [], 'project_tag');
+        }
+        
+        // Project Logo
         if (isset($_FILES['project_logo']) && $_FILES['project_logo']['error'] == 0) {
             $attachment_id = media_handle_upload('project_logo', $the_project_id);
             if (!is_wp_error($attachment_id)) {
