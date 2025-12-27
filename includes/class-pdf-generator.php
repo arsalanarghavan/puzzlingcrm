@@ -19,20 +19,35 @@ class PuzzlingCRM_PDF_Generator extends FPDF {
     public function __construct() {
         parent::__construct('P', 'mm', 'A4');
         
-        // Get company info from settings
-        $this->company_name = get_option('blogname', 'شرکت');
+        // Get company info from white label or settings
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $this->company_name = PuzzlingCRM_White_Label::get_company_name();
+            $logo_url = PuzzlingCRM_White_Label::get_company_logo();
+            // Convert URL to file path
+            if ($logo_url && strpos($logo_url, home_url()) === 0) {
+                $this->logo_path = str_replace(home_url('/'), ABSPATH, $logo_url);
+            } elseif ($logo_url && strpos($logo_url, 'http') !== 0) {
+                // Relative path
+                $this->logo_path = ABSPATH . ltrim($logo_url, '/');
+            } elseif ($logo_url) {
+                // Try to download external logo or use as-is
+                $this->logo_path = $logo_url;
+            }
+        } else {
+            $this->company_name = get_option('blogname', 'شرکت');
+            // Logo
+            $custom_logo_id = get_theme_mod('custom_logo');
+            if ($custom_logo_id) {
+                $logo = wp_get_attachment_image_src($custom_logo_id, 'full');
+                if ($logo) {
+                    $this->logo_path = str_replace(home_url('/'), ABSPATH, $logo[0]);
+                }
+            }
+        }
+        
         $this->company_address = get_option('puzzlingcrm_company_address', '');
         $this->company_phone = get_option('puzzlingcrm_company_phone', '');
         $this->company_email = get_option('puzzlingcrm_company_email', get_option('admin_email'));
-        
-        // Logo
-        $custom_logo_id = get_theme_mod('custom_logo');
-        if ($custom_logo_id) {
-            $logo = wp_get_attachment_image_src($custom_logo_id, 'full');
-            if ($logo) {
-                $this->logo_path = str_replace(home_url('/'), ABSPATH, $logo[0]);
-            }
-        }
         
         // Add Persian font
         $this->AddFont('Vazir', '', 'Vazirmatn.ttf', true);
@@ -77,9 +92,15 @@ class PuzzlingCRM_PDF_Generator extends FPDF {
         $this->SetX(120);
         $this->Cell(80, 5, $this->company_email, 0, 1, 'R');
         
-        // Line
+        // Line - Use white label primary color if available
         $this->SetLineWidth(0.5);
-        $this->SetDrawColor(132, 90, 223);
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $primary_color = PuzzlingCRM_White_Label::get_primary_color();
+            $rgb = $this->hex_to_rgb($primary_color);
+            $this->SetDrawColor($rgb[0], $rgb[1], $rgb[2]);
+        } else {
+            $this->SetDrawColor(132, 90, 223);
+        }
         $this->Line(10, 35, 200, 35);
         
         $this->Ln(15);
@@ -114,9 +135,15 @@ class PuzzlingCRM_PDF_Generator extends FPDF {
         
         $this->AddPage();
         
-        // Title
+        // Title - Use white label primary color if available
         $this->SetFont('Vazir', '', 18);
-        $this->SetTextColor(132, 90, 223);
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $primary_color = PuzzlingCRM_White_Label::get_primary_color();
+            $rgb = $this->hex_to_rgb($primary_color);
+            $this->SetTextColor($rgb[0], $rgb[1], $rgb[2]);
+        } else {
+            $this->SetTextColor(132, 90, 223);
+        }
         $this->Cell(0, 15, 'قرارداد همکاری', 0, 1, 'C');
         
         // Contract Number
@@ -126,8 +153,14 @@ class PuzzlingCRM_PDF_Generator extends FPDF {
         $this->Cell(0, 8, 'تاریخ: ' . ($start_date ? date_i18n('Y/m/d', strtotime($start_date)) : '---'), 0, 1, 'R');
         $this->Ln(5);
         
-        // Customer Info
-        $this->SetFillColor(132, 90, 223);
+        // Customer Info - Use white label primary color if available
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $primary_color = PuzzlingCRM_White_Label::get_primary_color();
+            $rgb = $this->hex_to_rgb($primary_color);
+            $this->SetFillColor($rgb[0], $rgb[1], $rgb[2]);
+        } else {
+            $this->SetFillColor(132, 90, 223);
+        }
         $this->SetTextColor(255, 255, 255);
         $this->SetFont('Vazir', '', 12);
         $this->Cell(0, 10, 'اطلاعات طرف قرارداد', 0, 1, 'R', true);
@@ -138,8 +171,14 @@ class PuzzlingCRM_PDF_Generator extends FPDF {
         $this->Cell(0, 8, 'ایمیل: ' . ($customer ? $customer->user_email : '---'), 0, 1, 'R');
         $this->Ln(5);
         
-        // Contract Details
-        $this->SetFillColor(132, 90, 223);
+        // Contract Details - Use white label primary color if available
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $primary_color = PuzzlingCRM_White_Label::get_primary_color();
+            $rgb = $this->hex_to_rgb($primary_color);
+            $this->SetFillColor($rgb[0], $rgb[1], $rgb[2]);
+        } else {
+            $this->SetFillColor(132, 90, 223);
+        }
         $this->SetTextColor(255, 255, 255);
         $this->SetFont('Vazir', '', 12);
         $this->Cell(0, 10, 'جزئیات قرارداد', 0, 1, 'R', true);
@@ -150,9 +189,15 @@ class PuzzlingCRM_PDF_Generator extends FPDF {
         $this->Cell(0, 8, 'مبلغ کل: ' . number_format($total_amount) . ' تومان', 0, 1, 'R');
         $this->Ln(5);
         
-        // Installments Table
+        // Installments Table - Use white label primary color if available
         if (!empty($installments) && is_array($installments)) {
-            $this->SetFillColor(132, 90, 223);
+            if (class_exists('PuzzlingCRM_White_Label')) {
+                $primary_color = PuzzlingCRM_White_Label::get_primary_color();
+                $rgb = $this->hex_to_rgb($primary_color);
+                $this->SetFillColor($rgb[0], $rgb[1], $rgb[2]);
+            } else {
+                $this->SetFillColor(132, 90, 223);
+            }
             $this->SetTextColor(255, 255, 255);
             $this->SetFont('Vazir', '', 12);
             $this->Cell(0, 10, 'اقساط', 0, 1, 'R', true);
@@ -217,9 +262,15 @@ class PuzzlingCRM_PDF_Generator extends FPDF {
         
         $this->AddPage();
         
-        // Title
+        // Title - Use white label primary color if available
         $this->SetFont('Vazir', '', 18);
-        $this->SetTextColor(132, 90, 223);
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $primary_color = PuzzlingCRM_White_Label::get_primary_color();
+            $rgb = $this->hex_to_rgb($primary_color);
+            $this->SetTextColor($rgb[0], $rgb[1], $rgb[2]);
+        } else {
+            $this->SetTextColor(132, 90, 223);
+        }
         $this->Cell(0, 15, 'پیش‌فاکتور', 0, 1, 'C');
         
         // Invoice Number
@@ -229,8 +280,14 @@ class PuzzlingCRM_PDF_Generator extends FPDF {
         $this->Cell(0, 8, 'تاریخ صدور: ' . ($issue_date ? date_i18n('Y/m/d', strtotime($issue_date)) : date_i18n('Y/m/d')), 0, 1, 'R');
         $this->Ln(5);
         
-        // Customer Info
-        $this->SetFillColor(132, 90, 223);
+        // Customer Info - Use white label primary color if available
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $primary_color = PuzzlingCRM_White_Label::get_primary_color();
+            $rgb = $this->hex_to_rgb($primary_color);
+            $this->SetFillColor($rgb[0], $rgb[1], $rgb[2]);
+        } else {
+            $this->SetFillColor(132, 90, 223);
+        }
         $this->SetTextColor(255, 255, 255);
         $this->Cell(0, 10, 'مشتری', 0, 1, 'R', true);
         
@@ -240,9 +297,15 @@ class PuzzlingCRM_PDF_Generator extends FPDF {
         $this->Cell(0, 8, 'ایمیل: ' . ($customer ? $customer->user_email : '---'), 0, 1, 'R');
         $this->Ln(5);
         
-        // Items Table
+        // Items Table - Use white label primary color if available
         if (!empty($items) && is_array($items)) {
-            $this->SetFillColor(132, 90, 223);
+            if (class_exists('PuzzlingCRM_White_Label')) {
+                $primary_color = PuzzlingCRM_White_Label::get_primary_color();
+                $rgb = $this->hex_to_rgb($primary_color);
+                $this->SetFillColor($rgb[0], $rgb[1], $rgb[2]);
+            } else {
+                $this->SetFillColor(132, 90, 223);
+            }
             $this->SetTextColor(255, 255, 255);
             $this->SetFont('Vazir', '', 11);
             $this->Cell(0, 10, 'اقلام', 0, 1, 'R', true);
@@ -276,8 +339,14 @@ class PuzzlingCRM_PDF_Generator extends FPDF {
                 $this->Cell(40, 7, number_format($final), 1, 1, 'C');
             }
             
-            // Total
-            $this->SetFillColor(132, 90, 223);
+            // Total - Use white label primary color if available
+            if (class_exists('PuzzlingCRM_White_Label')) {
+                $primary_color = PuzzlingCRM_White_Label::get_primary_color();
+                $rgb = $this->hex_to_rgb($primary_color);
+                $this->SetFillColor($rgb[0], $rgb[1], $rgb[2]);
+            } else {
+                $this->SetFillColor(132, 90, 223);
+            }
             $this->SetTextColor(255, 255, 255);
             $this->SetFont('Vazir', '', 11);
             $this->Cell(140, 8, 'جمع کل', 1, 0, 'R', true);
@@ -301,6 +370,21 @@ class PuzzlingCRM_PDF_Generator extends FPDF {
             'path' => $pdf_path,
             'url' => $upload_dir['url'] . '/' . $filename,
             'filename' => $filename
+        ];
+    }
+    
+    /**
+     * Convert hex color to RGB array
+     */
+    private function hex_to_rgb($hex) {
+        $hex = str_replace('#', '', $hex);
+        if (strlen($hex) == 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        return [
+            hexdec(substr($hex, 0, 2)),
+            hexdec(substr($hex, 2, 2)),
+            hexdec(substr($hex, 4, 2))
         ];
     }
 }

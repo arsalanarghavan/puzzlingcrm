@@ -64,7 +64,7 @@ $response_to_edit = ($response_id > 0) ? get_post($response_id) : null;
                 </div>
 
                 <div class="form-submit">
-                    <button type="submit" class="pzl-button">ذخیره</button>
+                    <button type="submit" class="pzl-button" data-puzzling-skip-global-handler="true">ذخیره</button>
                     <?php if ($response_to_edit): ?>
                         <a href="<?php echo esc_url(remove_query_arg(['action', 'response_id'])); ?>" class="pzl-button-secondary">انصراف</a>
                     <?php endif; ?>

@@ -71,7 +71,7 @@ $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
         </div>
 
         <div class="form-submit">
-            <button type="submit" class="pzl-button">ذخیره تنظیمات اطلاع‌رسانی</button>
+            <button type="submit" class="pzl-button" data-puzzling-skip-global-handler="true">ذخیره تنظیمات اطلاع‌رسانی</button>
         </div>
     </form>
 </div>

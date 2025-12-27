@@ -12,6 +12,7 @@ class PuzzlingCRM_Settings_Ajax_Handler {
     public function __construct() {
         // Save general settings
         add_action('wp_ajax_puzzling_save_settings', [$this, 'save_settings']);
+        add_action('wp_ajax_puzzling_save_white_label_settings', [$this, 'save_white_label_settings']);
         add_action('wp_ajax_save_auth_settings', [$this, 'save_auth_settings']);
         
         // Save user preferences (language, theme, sidebar, etc.)
@@ -209,6 +210,141 @@ class PuzzlingCRM_Settings_Ajax_Handler {
         wp_send_json_success([
             'message' => 'تنظیمات استایل ذخیره شد.',
             'reload' => true
+        ]);
+    }
+
+    /**
+     * Save White Label Settings
+     */
+    public function save_white_label_settings() {
+        // Check nonce with better error handling
+        $nonce_check = check_ajax_referer('puzzlingcrm-ajax-nonce', 'security', false);
+        if (!$nonce_check) {
+            error_log('PuzzlingCRM: Nonce verification failed. POST data: ' . print_r($_POST, true));
+            wp_send_json_error([
+                'message' => 'خطا در تأیید امنیتی. لطفاً صفحه را رفرش کرده و دوباره تلاش کنید.',
+                'error_code' => 'nonce_failed'
+            ], 403);
+        }
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم برای این عملیات را ندارید.']);
+        }
+
+        // Debug: Log received data (remove in production)
+        error_log('PuzzlingCRM White Label Save - POST Data: ' . print_r($_POST, true));
+
+        // Branding settings - always save even if empty
+        $company_name = isset($_POST['wl_company_name']) ? sanitize_text_field($_POST['wl_company_name']) : '';
+        update_option('puzzlingcrm_wl_company_name', $company_name);
+        
+        $company_url = isset($_POST['wl_company_url']) ? esc_url_raw($_POST['wl_company_url']) : '';
+        update_option('puzzlingcrm_wl_company_url', $company_url);
+        
+        // Logo settings - always save even if empty
+        $company_logo = isset($_POST['wl_company_logo']) ? esc_url_raw($_POST['wl_company_logo']) : '';
+        error_log('PuzzlingCRM: Saving company_logo = ' . $company_logo);
+        update_option('puzzlingcrm_wl_company_logo', $company_logo);
+        
+        $login_logo = isset($_POST['wl_login_logo']) ? esc_url_raw($_POST['wl_login_logo']) : '';
+        error_log('PuzzlingCRM: Saving login_logo = ' . $login_logo);
+        update_option('puzzlingcrm_wl_login_logo', $login_logo);
+        
+        $email_logo = isset($_POST['wl_email_logo']) ? esc_url_raw($_POST['wl_email_logo']) : '';
+        error_log('PuzzlingCRM: Saving email_logo = ' . $email_logo);
+        update_option('puzzlingcrm_wl_email_logo', $email_logo);
+        
+        $company_icon = isset($_POST['wl_company_icon']) ? esc_url_raw($_POST['wl_company_icon']) : '';
+        error_log('PuzzlingCRM: Saving company_icon = ' . $company_icon);
+        update_option('puzzlingcrm_wl_company_icon', $company_icon);
+
+        // Color settings - always save
+        $primary_color = isset($_POST['wl_primary_color']) ? sanitize_hex_color($_POST['wl_primary_color']) : '#e03f2b';
+        update_option('puzzlingcrm_wl_primary_color', $primary_color);
+        
+        $secondary_color = isset($_POST['wl_secondary_color']) ? sanitize_hex_color($_POST['wl_secondary_color']) : '#6c757d';
+        update_option('puzzlingcrm_wl_secondary_color', $secondary_color);
+        
+        $accent_color = isset($_POST['wl_accent_color']) ? sanitize_hex_color($_POST['wl_accent_color']) : '#FF5722';
+        update_option('puzzlingcrm_wl_accent_color', $accent_color);
+        
+        $success_color = isset($_POST['wl_success_color']) ? sanitize_hex_color($_POST['wl_success_color']) : '#28a745';
+        update_option('puzzlingcrm_wl_success_color', $success_color);
+        
+        $warning_color = isset($_POST['wl_warning_color']) ? sanitize_hex_color($_POST['wl_warning_color']) : '#ffc107';
+        update_option('puzzlingcrm_wl_warning_color', $warning_color);
+        
+        $danger_color = isset($_POST['wl_danger_color']) ? sanitize_hex_color($_POST['wl_danger_color']) : '#dc3545';
+        update_option('puzzlingcrm_wl_danger_color', $danger_color);
+        
+        $info_color = isset($_POST['wl_info_color']) ? sanitize_hex_color($_POST['wl_info_color']) : '#17a2b8';
+        update_option('puzzlingcrm_wl_info_color', $info_color);
+
+        // Text settings - always save even if empty
+        $dashboard_title = isset($_POST['wl_dashboard_title']) ? sanitize_text_field($_POST['wl_dashboard_title']) : '';
+        update_option('puzzlingcrm_wl_dashboard_title', $dashboard_title);
+        
+        $welcome_message = isset($_POST['wl_welcome_message']) ? sanitize_textarea_field($_POST['wl_welcome_message']) : '';
+        update_option('puzzlingcrm_wl_welcome_message', $welcome_message);
+        
+        $footer_text = isset($_POST['wl_footer_text']) ? sanitize_text_field($_POST['wl_footer_text']) : '';
+        update_option('puzzlingcrm_wl_footer_text', $footer_text);
+        
+        $copyright_text = isset($_POST['wl_copyright_text']) ? wp_kses_post($_POST['wl_copyright_text']) : '';
+        update_option('puzzlingcrm_wl_copyright_text', $copyright_text);
+
+        // Support settings - always save even if empty
+        $support_email = isset($_POST['wl_support_email']) ? sanitize_email($_POST['wl_support_email']) : '';
+        update_option('puzzlingcrm_wl_support_email', $support_email);
+        
+        $support_phone = isset($_POST['wl_support_phone']) ? sanitize_text_field($_POST['wl_support_phone']) : '';
+        update_option('puzzlingcrm_wl_support_phone', $support_phone);
+        
+        $support_url = isset($_POST['wl_support_url']) ? esc_url_raw($_POST['wl_support_url']) : '';
+        update_option('puzzlingcrm_wl_support_url', $support_url);
+
+        // Font and theme settings (save to general settings)
+        $current_settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+        
+        if (isset($_POST['font_family'])) {
+            $current_settings['font_family'] = sanitize_text_field($_POST['font_family']);
+        }
+        
+        if (isset($_POST['base_font_size'])) {
+            $current_settings['base_font_size'] = sanitize_text_field($_POST['base_font_size']);
+        }
+        
+        if (isset($_POST['default_theme'])) {
+            $current_settings['default_theme'] = sanitize_text_field($_POST['default_theme']);
+        }
+        
+        PuzzlingCRM_Settings_Handler::update_settings($current_settings);
+
+        // Advanced settings
+        if (isset($_POST['wl_custom_css'])) {
+            update_option('puzzlingcrm_wl_custom_css', wp_strip_all_tags($_POST['wl_custom_css']));
+        }
+        
+        if (isset($_POST['wl_custom_js'])) {
+            update_option('puzzlingcrm_wl_custom_js', wp_strip_all_tags($_POST['wl_custom_js']));
+        }
+        
+        $hide_branding = isset($_POST['wl_hide_branding']) ? 1 : 0;
+        update_option('puzzlingcrm_wl_hide_branding', $hide_branding);
+        
+        // Verify some values were actually saved
+        $saved_company_name = get_option('puzzlingcrm_wl_company_name', '');
+        error_log('PuzzlingCRM: Verification - Saved company_name = ' . $saved_company_name);
+        $saved_company_logo = get_option('puzzlingcrm_wl_company_logo', '');
+        error_log('PuzzlingCRM: Verification - Saved company_logo = ' . $saved_company_logo);
+        
+        wp_send_json_success([
+            'message' => 'تمامی تنظیمات White Label با موفقیت ذخیره شد.',
+            'reload' => true,
+            'debug' => [
+                'company_name' => $saved_company_name,
+                'company_logo' => $saved_company_logo
+            ]
         ]);
     }
 

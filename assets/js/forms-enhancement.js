@@ -225,9 +225,15 @@ jQuery(document).ready(function($) {
 
     /**
      * Loading State for Buttons
+     * Skip buttons with data-puzzling-skip-global-handler attribute
      */
     $(document).on('click', '.btn[type="submit"], button[type="submit"]', function() {
         const $btn = $(this);
+        
+        // Skip buttons that have the skip flag (for custom AJAX handlers)
+        if ($btn.data('puzzling-skip-global-handler') || $btn.attr('data-puzzling-skip-global-handler')) {
+            return;
+        }
         
         if (!$btn.data('loading')) {
             $btn.data('loading', true);

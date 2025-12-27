@@ -72,15 +72,15 @@
 
 .pzl-button-primary,
 .pzl-button {
-    background-color: #845adf;
-    border-color: #845adf;
+    background-color: var(--puzzling-primary-color, #845adf);
+    border-color: var(--puzzling-primary-color, #845adf);
     color: #fff;
 }
 
 .pzl-button-primary:hover,
 .pzl-button:hover {
-    background-color: #7249d4;
-    border-color: #7249d4;
+    background-color: var(--puzzling-primary-color-dark, #7249d4);
+    border-color: var(--puzzling-primary-color-dark, #7249d4);
     color: #fff;
 }
 
@@ -161,9 +161,9 @@
 .pzl-form .form-group textarea:focus {
     color: #212529;
     background-color: #fff;
-    border-color: #a28ee1;
+    border-color: rgba(var(--puzzling-primary-rgb, 132, 90, 223), 0.7);
     outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(132, 90, 223, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(var(--puzzling-primary-rgb, 132, 90, 223), 0.25);
 }
 
 .pzl-form-row {
@@ -303,7 +303,7 @@
 }
 
 .pzl-badge-primary {
-    background-color: #845adf;
+    background-color: var(--puzzling-primary-color, #845adf);
 }
 
 .pzl-badge-danger {
@@ -345,7 +345,7 @@
 }
 
 .gradient-1 .stat-widget-icon {
-    background: linear-gradient(135deg, #845adf 0%, #a28ee1 100%);
+    background: linear-gradient(135deg, var(--puzzling-primary-color, #845adf) 0%, var(--puzzling-primary-color-dark, #a28ee1) 100%);
 }
 
 .gradient-2 .stat-widget-icon {
@@ -586,7 +586,7 @@ pre,
    ======================================== */
 
 .gradient-1 {
-    background: linear-gradient(135deg, #845adf 0%, #a28ee1 100%);
+    background: linear-gradient(135deg, var(--puzzling-primary-color, #845adf) 0%, var(--puzzling-primary-color-dark, #a28ee1) 100%);
 }
 
 .gradient-2 {
@@ -675,14 +675,14 @@ pre,
     padding: 0.5rem 0.75rem;
     border: 1px solid #dee2e6;
     border-radius: 0.375rem;
-    color: #845adf;
+    color: var(--puzzling-primary-color, #845adf);
     text-decoration: none;
 }
 
 .pzl-pagination .current {
-    background-color: #845adf;
+    background-color: var(--puzzling-primary-color, #845adf);
     color: #fff;
-    border-color: #845adf;
+    border-color: var(--puzzling-primary-color, #845adf);
 }
 
 /* ========================================
@@ -767,7 +767,7 @@ pre,
 }
 
 .user-info a {
-    color: #845adf;
+    color: var(--puzzling-primary-color, #845adf);
     text-decoration: none;
 }
 
@@ -845,7 +845,7 @@ pre,
 .pzl-logo-placeholder {
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #845adf 0%, #a28ee1 100%);
+    background: linear-gradient(135deg, var(--puzzling-primary-color, #845adf) 0%, var(--puzzling-primary-color-dark, #a28ee1) 100%);
     color: #fff;
     font-size: 1.75rem;
     font-weight: 700;
@@ -887,7 +887,7 @@ pre,
 }
 
 .pzl-project-card-details-grid i {
-    color: #845adf;
+    color: var(--puzzling-primary-color, #845adf);
     width: 16px;
 }
 
@@ -925,7 +925,7 @@ pre,
 }
 
 .pzl-status-badge.status-completed {
-    background-color: #845adf;
+    background-color: var(--puzzling-primary-color, #845adf);
 }
 
 .pzl-status-badge.status-on-hold {
@@ -1127,13 +1127,13 @@ pre,
 }
 
 .pzl-tab:hover {
-    color: #845adf;
-    border-bottom-color: #a28ee1;
+    color: var(--puzzling-primary-color, #845adf);
+    border-bottom-color: rgba(var(--puzzling-primary-rgb, 132, 90, 223), 0.7);
 }
 
 .pzl-tab.active {
-    color: #845adf;
-    border-bottom-color: #845adf;
+    color: var(--puzzling-primary-color, #845adf);
+    border-bottom-color: var(--puzzling-primary-color, #845adf);
     font-weight: 600;
 }
 
@@ -1175,7 +1175,7 @@ pre,
 }
 
 .pzl-kanban-column-header .count {
-    background: #845adf;
+    background: var(--puzzling-primary-color, #845adf);
     color: #fff;
     padding: 0.25rem 0.5rem;
     border-radius: 1rem;
@@ -1226,7 +1226,7 @@ pre,
 
 .pzl-task-placeholder {
     background: #e9ecef;
-    border: 2px dashed #845adf;
+    border: 2px dashed var(--puzzling-primary-color, #845adf);
     border-radius: 0.375rem;
     height: 80px;
     margin-bottom: 0.75rem;

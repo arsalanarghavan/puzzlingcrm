@@ -21,7 +21,10 @@ class PuzzlingCRM_White_Label {
         add_filter('admin_footer_text', [$this, 'custom_admin_footer']);
         add_filter('update_footer', [$this, 'custom_version_footer'], 11);
         add_action('wp_head', [$this, 'add_custom_css']);
+        add_action('wp_head', [$this, 'apply_color_scheme']);
         add_action('admin_head', [$this, 'add_custom_admin_css']);
+        add_action('admin_head', [$this, 'apply_color_scheme']);
+        add_action('login_head', [$this, 'apply_color_scheme']);
     }
 
     /**
@@ -71,6 +74,14 @@ class PuzzlingCRM_White_Label {
         // Domain/URL Customization
         register_setting('puzzlingcrm_white_label', 'puzzlingcrm_wl_custom_domain');
         register_setting('puzzlingcrm_white_label', 'puzzlingcrm_wl_app_url_slug');
+        register_setting('puzzlingcrm_white_label', 'puzzlingcrm_wl_company_url');
+        register_setting('puzzlingcrm_white_label', 'puzzlingcrm_wl_copyright_text');
+        
+        // Additional color settings
+        register_setting('puzzlingcrm_white_label', 'puzzlingcrm_wl_success_color');
+        register_setting('puzzlingcrm_white_label', 'puzzlingcrm_wl_warning_color');
+        register_setting('puzzlingcrm_white_label', 'puzzlingcrm_wl_danger_color');
+        register_setting('puzzlingcrm_white_label', 'puzzlingcrm_wl_info_color');
     }
 
     /**
@@ -167,6 +178,38 @@ class PuzzlingCRM_White_Label {
                                                value="<?php echo esc_attr(get_option('puzzlingcrm_wl_accent_color', '#FF5722')); ?>">
                                     </td>
                                 </tr>
+                                
+                                <tr>
+                                    <th>رنگ موفقیت</th>
+                                    <td>
+                                        <input type="color" name="puzzlingcrm_wl_success_color" 
+                                               value="<?php echo esc_attr(get_option('puzzlingcrm_wl_success_color', '#28a745')); ?>">
+                                    </td>
+                                </tr>
+                                
+                                <tr>
+                                    <th>رنگ هشدار</th>
+                                    <td>
+                                        <input type="color" name="puzzlingcrm_wl_warning_color" 
+                                               value="<?php echo esc_attr(get_option('puzzlingcrm_wl_warning_color', '#ffc107')); ?>">
+                                    </td>
+                                </tr>
+                                
+                                <tr>
+                                    <th>رنگ خطا</th>
+                                    <td>
+                                        <input type="color" name="puzzlingcrm_wl_danger_color" 
+                                               value="<?php echo esc_attr(get_option('puzzlingcrm_wl_danger_color', '#dc3545')); ?>">
+                                    </td>
+                                </tr>
+                                
+                                <tr>
+                                    <th>رنگ اطلاعات</th>
+                                    <td>
+                                        <input type="color" name="puzzlingcrm_wl_info_color" 
+                                               value="<?php echo esc_attr(get_option('puzzlingcrm_wl_info_color', '#17a2b8')); ?>">
+                                    </td>
+                                </tr>
                             </table>
                         </div>
                     </div>
@@ -228,6 +271,27 @@ class PuzzlingCRM_White_Label {
                                         <input type="url" name="puzzlingcrm_wl_support_url" 
                                                value="<?php echo esc_url(get_option('puzzlingcrm_wl_support_url')); ?>" 
                                                class="regular-text">
+                                    </td>
+                                </tr>
+                                
+                                <tr>
+                                    <th>URL شرکت</th>
+                                    <td>
+                                        <input type="url" name="puzzlingcrm_wl_company_url" 
+                                               value="<?php echo esc_url(get_option('puzzlingcrm_wl_company_url', 'https://puzzlingco.com')); ?>" 
+                                               class="regular-text">
+                                        <p class="description">این URL در کپی‌رایت فوتر استفاده می‌شود</p>
+                                    </td>
+                                </tr>
+                                
+                                <tr>
+                                    <th>متن کپی‌رایت سفارشی</th>
+                                    <td>
+                                        <textarea name="puzzlingcrm_wl_copyright_text" 
+                                                  class="large-text" 
+                                                  rows="3" 
+                                                  placeholder="<?php esc_attr_e('اگر خالی باشد، از متن پیش‌فرض استفاده می‌شود', 'puzzlingcrm'); ?>"><?php echo esc_textarea(get_option('puzzlingcrm_wl_copyright_text')); ?></textarea>
+                                        <p class="description">می‌توانید از HTML استفاده کنید. متغیرهای موجود: {year}, {company_name}, {company_url}</p>
                                     </td>
                                 </tr>
                             </table>
@@ -332,8 +396,13 @@ class PuzzlingCRM_White_Label {
                 --puzzling-accent: {$accent_color};
             }
             .puzzling-primary-bg { background-color: {$primary_color} !important; }
-            .puzzling-primary-color { color: {$primary_color} !important; }
-            .btn-primary { background-color: {$primary_color} !important; border-color: {$primary_color} !important; }
+            .puzzling-primary-color { color: #ffffff !important; }
+            .btn-primary,
+            .btn-purple { 
+                background-color: {$primary_color} !important; 
+                border-color: {$primary_color} !important; 
+                color: #ffffff !important; 
+            }
         ";
 
         wp_add_inline_style('puzzlingcrm-styles', $custom_css);
@@ -436,24 +505,396 @@ class PuzzlingCRM_White_Label {
     }
 
     /**
+     * Apply color scheme to CSS variables
+     */
+    public function apply_color_scheme() {
+        $primary_color = self::get_primary_color();
+        $secondary_color = self::get_secondary_color();
+        $accent_color = self::get_accent_color();
+        $success_color = self::get_success_color();
+        $warning_color = self::get_warning_color();
+        $danger_color = self::get_danger_color();
+        $info_color = self::get_info_color();
+        
+        // Convert hex to RGB for CSS variables
+        $primary_rgb = self::hex_to_rgb($primary_color);
+        $secondary_rgb = self::hex_to_rgb($secondary_color);
+        
+        ?>
+        <style type="text/css">
+            :root {
+                --puzzling-primary-color: <?php echo esc_attr($primary_color); ?>;
+                --puzzling-primary-rgb: <?php echo esc_attr($primary_rgb); ?>;
+                --puzzling-secondary-color: <?php echo esc_attr($secondary_color); ?>;
+                --puzzling-secondary-rgb: <?php echo esc_attr($secondary_rgb); ?>;
+                --puzzling-accent-color: <?php echo esc_attr($accent_color); ?>;
+                --puzzling-success-color: <?php echo esc_attr($success_color); ?>;
+                --puzzling-warning-color: <?php echo esc_attr($warning_color); ?>;
+                --puzzling-danger-color: <?php echo esc_attr($danger_color); ?>;
+                --puzzling-info-color: <?php echo esc_attr($info_color); ?>;
+            }
+            
+            /* Override Bootstrap primary colors */
+            .bg-primary {
+                background-color: <?php echo esc_attr($primary_color); ?> !important;
+            }
+            
+            .border-primary {
+                border-color: <?php echo esc_attr($primary_color); ?> !important;
+            }
+            
+            /* Text primary - always white for visibility */
+            .text-primary,
+            [class*="text-primary"],
+            *[style*="color"][style*="<?php echo esc_attr($primary_color); ?>"] {
+                color: #ffffff !important;
+            }
+            
+            /* Buttons - keep background primary but text white */
+            .btn-primary,
+            .btn-purple {
+                background-color: <?php echo esc_attr($primary_color); ?> !important;
+                border-color: <?php echo esc_attr($primary_color); ?> !important;
+                color: #ffffff !important;
+            }
+            
+            .btn-primary:hover,
+            .btn-primary:focus,
+            .btn-primary:active,
+            .btn-purple:hover,
+            .btn-purple:focus,
+            .btn-purple:active {
+                background-color: <?php echo esc_attr(self::darken_color($primary_color, 10)); ?> !important;
+                border-color: <?php echo esc_attr(self::darken_color($primary_color, 10)); ?> !important;
+                color: #ffffff !important;
+            }
+            
+            /* Settings tabs */
+            .pzl-tab:hover,
+            .pzl-tab.active {
+                color: <?php echo esc_attr($primary_color); ?> !important;
+                border-bottom-color: <?php echo esc_attr($primary_color); ?> !important;
+            }
+            
+            .pzl-tab:hover {
+                border-bottom-color: rgba(<?php echo esc_attr($primary_rgb); ?>, 0.7) !important;
+            }
+            
+            /* Nav tabs */
+            .nav-tabs .nav-link:hover,
+            .nav-tabs .nav-link.active {
+                color: <?php echo esc_attr($primary_color); ?> !important;
+                border-bottom-color: <?php echo esc_attr($primary_color); ?> !important;
+            }
+            
+            /* Override any text elements using primary color variable */
+            * {
+                --primary-text-color: #ffffff !important;
+            }
+            
+            /* Additional purple/primary color overrides */
+            .settings-nav-item.active {
+                background-color: <?php echo esc_attr($primary_color); ?> !important;
+                color: #ffffff !important;
+            }
+            
+            .settings-nav-item:hover:not(.active) {
+                background-color: rgba(<?php echo esc_attr($primary_rgb); ?>, 0.1) !important;
+            }
+            
+            /* Gradient backgrounds - use primary color */
+            .project-card-header,
+            .data-table thead th,
+            .profile-header,
+            .gradient-1,
+            .gradient-1 .stat-widget-icon {
+                background: linear-gradient(135deg, <?php echo esc_attr($primary_color); ?> 0%, <?php echo esc_attr(self::darken_color($primary_color, 15)); ?> 100%) !important;
+            }
+            
+            /* Progress bars */
+            .project-progress-bar {
+                background: linear-gradient(90deg, <?php echo esc_attr($primary_color); ?> 0%, <?php echo esc_attr(self::darken_color($primary_color, 10)); ?> 100%) !important;
+            }
+            
+            /* Custom buttons */
+            .pzl-btn-primary,
+            .pzl-button,
+            .pzl-button-primary,
+            .pzl-badge-primary,
+            .pzl-status-badge.status-completed {
+                background: <?php echo esc_attr($primary_color); ?> !important;
+                border-color: <?php echo esc_attr($primary_color); ?> !important;
+                color: #ffffff !important;
+            }
+            
+            .pzl-button:hover,
+            .pzl-button:focus,
+            .pzl-button:active,
+            .pzl-button-primary:hover {
+                background: <?php echo esc_attr(self::darken_color($primary_color, 10)); ?> !important;
+                border-color: <?php echo esc_attr(self::darken_color($primary_color, 10)); ?> !important;
+                color: #ffffff !important;
+            }
+            
+            /* Icons and meta items */
+            .project-card-meta-item i,
+            .pzl-project-card-details-grid i {
+                color: <?php echo esc_attr($primary_color); ?> !important;
+            }
+            
+            /* Pagination */
+            .pzl-pagination .current,
+            .pagination-wrapper .current {
+                background-color: <?php echo esc_attr($primary_color); ?> !important;
+                border-color: <?php echo esc_attr($primary_color); ?> !important;
+            }
+            
+            /* Task placeholder */
+            .pzl-task-placeholder {
+                border-color: <?php echo esc_attr($primary_color); ?> !important;
+            }
+            
+            /* Calendar */
+            .calendar-day.has-appointment {
+                background: <?php echo esc_attr($primary_color); ?> !important;
+            }
+            
+            /* Staff stat */
+            .staff-stat-value {
+                color: <?php echo esc_attr($primary_color); ?> !important;
+            }
+            
+            /* Breadcrumb links */
+            .breadcrumb .breadcrumb-item a,
+            .pzl-breadcrumb a {
+                color: <?php echo esc_attr($primary_color); ?> !important;
+            }
+            
+            /* Light buttons - commonly used in tables */
+            .btn-primary-light,
+            .btn.btn-primary-light {
+                background-color: rgba(<?php echo esc_attr($primary_rgb); ?>, 0.1) !important;
+                color: <?php echo esc_attr($primary_color); ?> !important;
+                border-color: rgba(<?php echo esc_attr($primary_rgb); ?>, 0.2) !important;
+            }
+            
+            .btn-primary-light:hover,
+            .btn-primary-light:focus,
+            .btn-primary-light:active,
+            .btn.btn-primary-light:hover,
+            .btn.btn-primary-light:focus,
+            .btn.btn-primary-light:active {
+                background-color: <?php echo esc_attr($primary_color); ?> !important;
+                color: #ffffff !important;
+                border-color: <?php echo esc_attr($primary_color); ?> !important;
+            }
+            
+            /* DataTables buttons */
+            .dt-button {
+                background-color: <?php echo esc_attr($primary_color); ?> !important;
+                color: #ffffff !important;
+            }
+            
+            /* Breadcrumb links in dashboard */
+            .page-header-breadcrumb .breadcrumb-item a,
+            .page-header-breadcrumb .breadcrumb-item a:hover {
+                color: <?php echo esc_attr($primary_color); ?> !important;
+            }
+        </style>
+        <?php
+    }
+    
+    /**
+     * Convert hex color to RGB
+     */
+    private static function hex_to_rgb($hex) {
+        $hex = str_replace('#', '', $hex);
+        if (strlen($hex) == 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        return "$r, $g, $b";
+    }
+    
+    /**
+     * Darken a hex color
+     */
+    private static function darken_color($hex, $percent) {
+        $hex = str_replace('#', '', $hex);
+        if (strlen($hex) == 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        
+        $r = max(0, min(255, $r - ($r * $percent / 100)));
+        $g = max(0, min(255, $g - ($g * $percent / 100)));
+        $b = max(0, min(255, $b - ($b * $percent / 100)));
+        
+        return '#' . str_pad(dechex($r), 2, '0', STR_PAD_LEFT) . 
+                   str_pad(dechex($g), 2, '0', STR_PAD_LEFT) . 
+                   str_pad(dechex($b), 2, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * Get company name
      */
     public static function get_company_name() {
-        return get_option('puzzlingcrm_wl_company_name', 'PuzzlingCRM');
+        $name = get_option('puzzlingcrm_wl_company_name', 'PuzzlingCRM');
+        return apply_filters('puzzlingcrm_company_name', $name);
     }
 
     /**
      * Get company logo
      */
     public static function get_company_logo() {
-        return get_option('puzzlingcrm_wl_company_logo', PUZZLINGCRM_PLUGIN_URL . 'assets/images/logo.png');
+        $logo = get_option('puzzlingcrm_wl_company_logo', '');
+        if (empty($logo)) {
+            $logo = PUZZLINGCRM_PLUGIN_URL . 'assets/images/logo.png';
+        }
+        return apply_filters('puzzlingcrm_company_logo', $logo);
+    }
+    
+    /**
+     * Get company URL
+     */
+    public static function get_company_url() {
+        $url = get_option('puzzlingcrm_wl_company_url', 'https://puzzlingco.com');
+        return apply_filters('puzzlingcrm_company_url', $url);
+    }
+    
+    /**
+     * Get favicon
+     */
+    public static function get_favicon() {
+        $favicon = get_option('puzzlingcrm_wl_company_icon', '');
+        if (empty($favicon)) {
+            $favicon = PUZZLINGCRM_PLUGIN_URL . 'assets/images/brand-logos/favicon.ico';
+        }
+        return apply_filters('puzzlingcrm_favicon', $favicon);
+    }
+    
+    /**
+     * Get favicon by size (for PWA)
+     */
+    public static function get_favicon_by_size($size = 'default') {
+        $favicon = self::get_favicon();
+        // If default favicon is used, try to get size-specific icon
+        if (strpos($favicon, 'favicon.ico') !== false) {
+            $size_map = [
+                '72x72' => 'icon-72x72.png',
+                '96x96' => 'icon-96x96.png',
+                '128x128' => 'icon-128x128.png',
+                '144x144' => 'icon-144x144.png',
+                '152x152' => 'icon-152x152.png',
+                '192x192' => 'icon-192x192.png',
+                '384x384' => 'icon-384x384.png',
+                '512x512' => 'icon-512x512.png',
+            ];
+            if (isset($size_map[$size])) {
+                $size_icon = PUZZLINGCRM_PLUGIN_URL . 'assets/images/' . $size_map[$size];
+                if (file_exists(str_replace(PUZZLINGCRM_PLUGIN_URL, PUZZLINGCRM_PLUGIN_DIR, $size_icon))) {
+                    return apply_filters('puzzlingcrm_favicon_size', $size_icon, $size);
+                }
+            }
+        }
+        return apply_filters('puzzlingcrm_favicon_size', $favicon, $size);
+    }
+    
+    /**
+     * Get login logo
+     */
+    public static function get_login_logo() {
+        $logo = get_option('puzzlingcrm_wl_login_logo', '');
+        if (empty($logo)) {
+            $logo = self::get_company_logo();
+        }
+        return apply_filters('puzzlingcrm_login_logo', $logo);
+    }
+    
+    /**
+     * Get email logo
+     */
+    public static function get_email_logo() {
+        $logo = get_option('puzzlingcrm_wl_email_logo', '');
+        if (empty($logo)) {
+            $logo = self::get_company_logo();
+        }
+        return apply_filters('puzzlingcrm_email_logo', $logo);
     }
 
     /**
      * Get primary color
      */
     public static function get_primary_color() {
-        return get_option('puzzlingcrm_wl_primary_color', '#4CAF50');
+        $color = get_option('puzzlingcrm_wl_primary_color', '#4CAF50');
+        return apply_filters('puzzlingcrm_primary_color', $color);
+    }
+    
+    /**
+     * Get secondary color
+     */
+    public static function get_secondary_color() {
+        $color = get_option('puzzlingcrm_wl_secondary_color', '#2196F3');
+        return apply_filters('puzzlingcrm_secondary_color', $color);
+    }
+    
+    /**
+     * Get accent color
+     */
+    public static function get_accent_color() {
+        $color = get_option('puzzlingcrm_wl_accent_color', '#FF5722');
+        return apply_filters('puzzlingcrm_accent_color', $color);
+    }
+    
+    /**
+     * Get success color
+     */
+    public static function get_success_color() {
+        $color = get_option('puzzlingcrm_wl_success_color', '#28a745');
+        return apply_filters('puzzlingcrm_success_color', $color);
+    }
+    
+    /**
+     * Get warning color
+     */
+    public static function get_warning_color() {
+        $color = get_option('puzzlingcrm_wl_warning_color', '#ffc107');
+        return apply_filters('puzzlingcrm_warning_color', $color);
+    }
+    
+    /**
+     * Get danger color
+     */
+    public static function get_danger_color() {
+        $color = get_option('puzzlingcrm_wl_danger_color', '#dc3545');
+        return apply_filters('puzzlingcrm_danger_color', $color);
+    }
+    
+    /**
+     * Get info color
+     */
+    public static function get_info_color() {
+        $color = get_option('puzzlingcrm_wl_info_color', '#17a2b8');
+        return apply_filters('puzzlingcrm_info_color', $color);
+    }
+    
+    /**
+     * Get primary colors as array
+     */
+    public static function get_primary_colors() {
+        return [
+            'primary' => self::get_primary_color(),
+            'secondary' => self::get_secondary_color(),
+            'accent' => self::get_accent_color(),
+            'success' => self::get_success_color(),
+            'warning' => self::get_warning_color(),
+            'danger' => self::get_danger_color(),
+            'info' => self::get_info_color(),
+        ];
     }
 
     /**
@@ -468,6 +909,60 @@ class PuzzlingCRM_White_Label {
      */
     public static function get_support_phone() {
         return get_option('puzzlingcrm_wl_support_phone', '');
+    }
+    
+    /**
+     * Get support URL
+     */
+    public static function get_support_url() {
+        return get_option('puzzlingcrm_wl_support_url', '');
+    }
+    
+    /**
+     * Get copyright text
+     */
+    public static function get_copyright_text() {
+        $custom_text = get_option('puzzlingcrm_wl_copyright_text', '');
+        if (!empty($custom_text)) {
+            $text = $custom_text;
+            $text = str_replace('{year}', date('Y'), $text);
+            $text = str_replace('{company_name}', self::get_company_name(), $text);
+            $text = str_replace('{company_url}', self::get_company_url(), $text);
+            return apply_filters('puzzlingcrm_copyright_text', $text);
+        }
+        
+        // Default copyright
+        $year = date('Y');
+        $company_name = self::get_company_name();
+        $company_url = self::get_company_url();
+        
+        $text = sprintf(
+            '%s © Designed with %s by <a href="%s" target="_blank" rel="noopener">%s</a>',
+            $year,
+            '<span class="bi bi-heart-fill text-danger"></span>',
+            esc_url($company_url),
+            esc_html($company_name)
+        );
+        
+        return apply_filters('puzzlingcrm_copyright_text', $text);
+    }
+    
+    /**
+     * Check if branding should be hidden
+     */
+    public static function should_hide_branding() {
+        return (bool) get_option('puzzlingcrm_wl_hide_branding', false);
+    }
+    
+    /**
+     * Replace PuzzlingCRM text with custom name in a string
+     */
+    public static function replace_brand_name($text) {
+        if (self::should_hide_branding()) {
+            $text = str_replace('PuzzlingCRM', self::get_company_name(), $text);
+            $text = str_replace('پازلینگ سی‌آرام', self::get_company_name(), $text);
+        }
+        return $text;
     }
 }
 

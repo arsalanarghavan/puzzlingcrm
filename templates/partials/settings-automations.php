@@ -64,7 +64,7 @@ $actions = [
         <button type="button" id="add-automation-rule" class="pzl-button">افزودن قانون جدید</button>
         
         <div class="form-submit">
-            <button type="submit" class="pzl-button">ذخیره قوانین اتوماسیون</button>
+            <button type="submit" class="pzl-button" data-puzzling-skip-global-handler="true">ذخیره قوانین اتوماسیون</button>
         </div>
     </form>
 </div>

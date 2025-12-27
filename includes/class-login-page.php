@@ -46,11 +46,17 @@ class PuzzlingCRM_Login_Page {
 
     private function render_login_with_xintra() {
         $assets_url = PUZZLINGCRM_PLUGIN_URL . 'assets/';
-        $custom_logo_id = get_theme_mod('custom_logo');
-        $logo_url = '';
-        if ($custom_logo_id) {
-            $logo = wp_get_attachment_image_src($custom_logo_id, 'full');
-            $logo_url = $logo[0];
+        
+        // Use white label login logo if available
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $logo_url = PuzzlingCRM_White_Label::get_login_logo();
+        } else {
+            $custom_logo_id = get_theme_mod('custom_logo');
+            $logo_url = '';
+            if ($custom_logo_id) {
+                $logo = wp_get_attachment_image_src($custom_logo_id, 'full');
+                $logo_url = $logo ? $logo[0] : '';
+            }
         }
         ?>
 <!DOCTYPE html>
@@ -68,7 +74,13 @@ class PuzzlingCRM_Login_Page {
         <title>ورود - <?php bloginfo('name'); ?></title>
 
         <!-- Favicon -->
-        <link rel="icon" href="<?php echo $assets_url; ?>images/brand-logos/favicon.ico" type="image/x-icon">
+        <?php
+        $favicon_url = PUZZLINGCRM_PLUGIN_URL . 'assets/images/brand-logos/favicon.ico';
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $favicon_url = PuzzlingCRM_White_Label::get_favicon();
+        }
+        ?>
+        <link rel="icon" href="<?php echo esc_url($favicon_url); ?>" type="image/x-icon">
 
         <!-- Start::custom-styles -->
             

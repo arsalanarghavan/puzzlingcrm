@@ -23,6 +23,18 @@ class PuzzlingCRM_Footer_Data_Provider {
 	 * @return string Copyright text.
 	 */
 	public static function get_copyright_text() {
+		// Use white label copyright if available
+		if (class_exists('PuzzlingCRM_White_Label')) {
+			$copyright_text = PuzzlingCRM_White_Label::get_copyright_text();
+			/**
+			 * Filter footer copyright text
+			 *
+			 * @param string $copyright_text Copyright text with HTML.
+			 */
+			return apply_filters( 'puzzlingcrm_footer_copyright_text', $copyright_text );
+		}
+		
+		// Default copyright
 		$year = gmdate( 'Y' );
 		
 		$company_name = __( 'Puzzling Institute', 'puzzlingcrm' );

@@ -45,7 +45,7 @@ $form_to_edit = ($form_id > 0) ? get_post($form_id) : null;
              <button type="button" id="add-form-field" class="pzl-button" style="align-self: flex-start;"><?php _e('افزودن فیلد', 'puzzlingcrm'); ?></button>
 
             <div class="form-submit">
-                <button type="submit" class="pzl-button"><?php echo $form_id > 0 ? __('ذخیره تغییرات', 'puzzlingcrm') : __('ایجاد فرم', 'puzzlingcrm'); ?></button>
+                <button type="submit" class="pzl-button" data-puzzling-skip-global-handler="true"><?php echo $form_id > 0 ? __('ذخیره تغییرات', 'puzzlingcrm') : __('ایجاد فرم', 'puzzlingcrm'); ?></button>
             </div>
         </form>
         

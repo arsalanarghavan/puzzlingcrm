@@ -55,7 +55,7 @@ $categories = get_terms(['taxonomy' => 'task_category', 'hide_empty' => false, '
                     <input type="text" id="category-name" name="name" required>
                 </div>
                 <div class="form-submit">
-                    <button type="submit" class="pzl-button">ذخیره</button>
+                    <button type="submit" class="pzl-button" data-puzzling-skip-global-handler="true">ذخیره</button>
                     <button type="button" id="cancel-edit-category" class="pzl-button-secondary" style="display: none;">انصراف</button>
                 </div>
             </form>

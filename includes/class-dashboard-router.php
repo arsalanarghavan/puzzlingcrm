@@ -224,11 +224,17 @@ class PuzzlingCRM_Dashboard_Router {
 
     private function render_dashboard_wrapper_original($current_page, $route, $user) {
         $assets_url = PUZZLINGCRM_PLUGIN_URL . 'assets/';
-        $custom_logo_id = get_theme_mod('custom_logo');
-        $logo_url = '';
-        if ($custom_logo_id) {
-            $logo = wp_get_attachment_image_src($custom_logo_id, 'full');
-            $logo_url = $logo[0];
+        
+        // Use white label logo if available
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $logo_url = PuzzlingCRM_White_Label::get_company_logo();
+        } else {
+            $custom_logo_id = get_theme_mod('custom_logo');
+            $logo_url = '';
+            if ($custom_logo_id) {
+                $logo = wp_get_attachment_image_src($custom_logo_id, 'full');
+                $logo_url = $logo ? $logo[0] : '';
+            }
         }
         ?>
 <!DOCTYPE html>
@@ -244,10 +250,22 @@ class PuzzlingCRM_Dashboard_Router {
         <meta name="Author" content="<?php bloginfo('name'); ?>">
         
 		<!-- Title -->
-        <title><?php echo esc_html($route['title']); ?> - <?php bloginfo('name'); ?></title>
+        <?php
+        $site_name = get_bloginfo('name');
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $site_name = PuzzlingCRM_White_Label::get_company_name();
+        }
+        ?>
+        <title><?php echo esc_html($route['title']); ?> - <?php echo esc_html($site_name); ?></title>
 
         <!-- Favicon -->
-        <link rel="icon" href="<?php echo $assets_url; ?>images/brand-logos/favicon.ico" type="image/x-icon">
+        <?php
+        $favicon_url = $assets_url . 'images/brand-logos/favicon.ico';
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $favicon_url = PuzzlingCRM_White_Label::get_favicon();
+        }
+        ?>
+        <link rel="icon" href="<?php echo esc_url($favicon_url); ?>" type="image/x-icon">
 
         <!-- Start::Styles -->
         
@@ -352,16 +370,22 @@ class PuzzlingCRM_Dashboard_Router {
         
         <!-- PuzzlingCRM AJAX Config -->
         <script>
-        var puzzlingcrm_ajax_obj = {
-            ajax_url: '<?php echo admin_url('admin-ajax.php'); ?>',
-            nonce: '<?php echo wp_create_nonce('puzzlingcrm-ajax-nonce'); ?>',
-            lang: {
+        window.puzzlingcrm_ajax_obj = window.puzzlingcrm_ajax_obj || {};
+        var puzzlingcrm_ajax_obj = window.puzzlingcrm_ajax_obj;
+        if (!puzzlingcrm_ajax_obj.ajax_url) {
+            puzzlingcrm_ajax_obj.ajax_url = '<?php echo admin_url('admin-ajax.php'); ?>';
+        }
+        if (!puzzlingcrm_ajax_obj.nonce) {
+            puzzlingcrm_ajax_obj.nonce = '<?php echo wp_create_nonce('puzzlingcrm-ajax-nonce'); ?>';
+        }
+        if (!puzzlingcrm_ajax_obj.lang) {
+            puzzlingcrm_ajax_obj.lang = {
                 success_title: 'موفق',
                 error_title: 'خطا',
                 ok_button: 'باشه',
                 server_error: 'خطای سرور'
-            }
-        };
+            };
+        }
         </script>
         <!-- End::Styles -->
 
@@ -711,6 +735,9 @@ class PuzzlingCRM_Dashboard_Router {
         // Custom Switcher
         wp_enqueue_script('pzl-custom-switcher', $assets_url . 'js/custom-switcher.min.js', ['jquery'], PUZZLINGCRM_VERSION, true);
         
+        // SweetAlert2 for notifications
+        wp_enqueue_script('pzl-sweetalert2', 'https://cdn.jsdelivr.net/npm/sweetalert2@11', [], '11', true);
+        
         // PuzzlingCRM specific scripts
         wp_enqueue_script('pzl-crm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery'], PUZZLINGCRM_VERSION, true);
         
@@ -739,6 +766,23 @@ class PuzzlingCRM_Dashboard_Router {
         // Reports export for reports page
         if ($view === 'reports') {
             wp_enqueue_script('pzl-reports-export', PUZZLINGCRM_PLUGIN_URL . 'assets/js/reports-export.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        }
+        
+        // WordPress Media Uploader for settings page
+        // Note: wp_enqueue_media() works in frontend for logged-in users
+        if ($current_page === 'settings' && is_user_logged_in()) {
+            // Force load media scripts in frontend
+            if (!function_exists('wp_enqueue_media')) {
+                require_once(ABSPATH . 'wp-admin/includes/media.php');
+            }
+            wp_enqueue_media();
+            
+            // Also ensure required scripts are loaded
+            wp_enqueue_script('jquery');
+            wp_enqueue_script('jquery-ui-core');
+            wp_enqueue_script('jquery-ui-widget');
+            wp_enqueue_script('jquery-ui-mouse');
+            wp_enqueue_script('jquery-ui-sortable');
         }
         
         // Quill Editor and FilePond for project create/edit pages

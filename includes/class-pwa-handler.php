@@ -23,14 +23,23 @@ class PuzzlingCRM_PWA_Handler {
      * Add manifest link to head
      */
     public function add_manifest_link() {
+        $company_name = 'PuzzlingCRM';
+        $theme_color = '#4CAF50';
+        $apple_icon = PUZZLINGCRM_PLUGIN_URL . 'assets/images/logo.png';
+        
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $company_name = PuzzlingCRM_White_Label::get_company_name();
+            $theme_color = PuzzlingCRM_White_Label::get_primary_color();
+            $apple_icon = PuzzlingCRM_White_Label::get_company_logo();
+        }
         ?>
         <link rel="manifest" href="<?php echo esc_url(home_url('/puzzlingcrm-manifest.json')); ?>">
-        <meta name="theme-color" content="#4CAF50">
+        <meta name="theme-color" content="<?php echo esc_attr($theme_color); ?>">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-        <meta name="apple-mobile-web-app-title" content="PuzzlingCRM">
-        <link rel="apple-touch-icon" href="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/images/logo.png">
+        <meta name="apple-mobile-web-app-title" content="<?php echo esc_attr($company_name); ?>">
+        <link rel="apple-touch-icon" href="<?php echo esc_url($apple_icon); ?>">
         <?php
     }
 
@@ -127,85 +136,68 @@ class PuzzlingCRM_PWA_Handler {
     private function serve_manifest() {
         header('Content-Type: application/json');
         
+        $app_name = get_option('puzzlingcrm_app_name', 'PuzzlingCRM');
+        $app_short_name = get_option('puzzlingcrm_app_short_name', 'PCRM');
+        $theme_color = '#4CAF50';
+        $background_color = '#ffffff';
+        
+        // Use white label if available
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $company_name = PuzzlingCRM_White_Label::get_company_name();
+            $app_name = get_option('puzzlingcrm_app_name', $company_name);
+            $app_short_name = get_option('puzzlingcrm_app_short_name', mb_substr($company_name, 0, 4, 'UTF-8'));
+            $theme_color = PuzzlingCRM_White_Label::get_primary_color();
+        }
+        
+        // Generate icons array using white label favicon if available
+        $icons = [];
+        $icon_sizes = ['72x72', '96x96', '128x128', '144x144', '152x152', '192x192', '384x384', '512x512'];
+        
+        foreach ($icon_sizes as $size) {
+            if (class_exists('PuzzlingCRM_White_Label')) {
+                $icon_url = PuzzlingCRM_White_Label::get_favicon_by_size($size);
+            } else {
+                $icon_url = PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-' . $size . '.png';
+            }
+            
+            $icons[] = [
+                'src' => $icon_url,
+                'sizes' => $size,
+                'type' => 'image/png',
+                'purpose' => 'any maskable'
+            ];
+        }
+        
         $manifest = [
-            'name' => get_option('puzzlingcrm_app_name', 'PuzzlingCRM'),
-            'short_name' => get_option('puzzlingcrm_app_short_name', 'PCRM'),
+            'name' => $app_name,
+            'short_name' => $app_short_name,
             'description' => 'سیستم مدیریت ارتباط با مشتری و مدیریت پروژه',
             'start_url' => home_url('/?puzzlingcrm_pwa=1'),
             'scope' => home_url('/'),
             'display' => 'standalone',
-            'background_color' => '#ffffff',
-            'theme_color' => '#4CAF50',
+            'background_color' => $background_color,
+            'theme_color' => $theme_color,
             'orientation' => 'any',
-            'icons' => [
-                [
-                    'src' => PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-72x72.png',
-                    'sizes' => '72x72',
-                    'type' => 'image/png',
-                    'purpose' => 'any maskable'
-                ],
-                [
-                    'src' => PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-96x96.png',
-                    'sizes' => '96x96',
-                    'type' => 'image/png',
-                    'purpose' => 'any maskable'
-                ],
-                [
-                    'src' => PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-128x128.png',
-                    'sizes' => '128x128',
-                    'type' => 'image/png',
-                    'purpose' => 'any maskable'
-                ],
-                [
-                    'src' => PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-144x144.png',
-                    'sizes' => '144x144',
-                    'type' => 'image/png',
-                    'purpose' => 'any maskable'
-                ],
-                [
-                    'src' => PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-152x152.png',
-                    'sizes' => '152x152',
-                    'type' => 'image/png',
-                    'purpose' => 'any maskable'
-                ],
-                [
-                    'src' => PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-192x192.png',
-                    'sizes' => '192x192',
-                    'type' => 'image/png',
-                    'purpose' => 'any maskable'
-                ],
-                [
-                    'src' => PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-384x384.png',
-                    'sizes' => '384x384',
-                    'type' => 'image/png',
-                    'purpose' => 'any maskable'
-                ],
-                [
-                    'src' => PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-512x512.png',
-                    'sizes' => '512x512',
-                    'type' => 'image/png',
-                    'purpose' => 'any maskable'
-                ]
-            ],
+            'icons' => $icons,
             'categories' => ['business', 'productivity'],
             'shortcuts' => [
                 [
                     'name' => 'داشبورد',
                     'short_name' => 'Dashboard',
                     'url' => home_url('/?page=puzzling-dashboard'),
-                    'icons' => [['src' => PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-96x96.png', 'sizes' => '96x96']]
+                    'icons' => [['src' => (class_exists('PuzzlingCRM_White_Label') ? PuzzlingCRM_White_Label::get_favicon_by_size('96x96') : PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-96x96.png'), 'sizes' => '96x96']]
                 ],
                 [
                     'name' => 'لیدها',
                     'short_name' => 'Leads',
                     'url' => home_url('/?page=puzzling-leads'),
-                    'icons' => [['src' => PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-96x96.png', 'sizes' => '96x96']]
+                    'icons' => [['src' => (class_exists('PuzzlingCRM_White_Label') ? PuzzlingCRM_White_Label::get_favicon_by_size('96x96') : PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-96x96.png'), 'sizes' => '96x96']]
                 ],
                 [
                     'name' => 'پروژه‌ها',
                     'short_name' => 'Projects',
                     'url' => home_url('/?page=puzzling-projects'),
-                    'icons' => [['src' => PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-96x96.png', 'sizes' => '96x96']]
+                    'icons' => [['src' => (class_exists('PuzzlingCRM_White_Label') ? PuzzlingCRM_White_Label::get_favicon_by_size('96x96') : PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-96x96.png'), 'sizes' => '96x96']]
                 ]
             ]
         ];
@@ -227,7 +219,13 @@ const urlsToCache = [
     '/puzzlingcrm-offline.html',
     '<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/css/all-pages-complete.css',
     '<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/puzzlingcrm-scripts.js',
-    '<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/images/logo.png'
+    <?php
+    $pwa_logo = PUZZLINGCRM_PLUGIN_URL . 'assets/images/logo.png';
+    if (class_exists('PuzzlingCRM_White_Label')) {
+        $pwa_logo = PuzzlingCRM_White_Label::get_company_logo();
+    }
+    echo esc_js($pwa_logo);
+    ?>
 ];
 
 // Install event - cache static assets
@@ -322,8 +320,8 @@ self.addEventListener('push', function(event) {
     
     const options = {
         body: data.message || 'شما یک اعلان جدید دارید',
-        icon: '<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/images/icon-192x192.png',
-        badge: '<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/images/icon-96x96.png',
+        icon: '<?php echo class_exists('PuzzlingCRM_White_Label') ? esc_js(PuzzlingCRM_White_Label::get_favicon_by_size('192x192')) : esc_js(PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-192x192.png'); ?>',
+        badge: '<?php echo class_exists('PuzzlingCRM_White_Label') ? esc_js(PuzzlingCRM_White_Label::get_favicon_by_size('96x96')) : esc_js(PUZZLINGCRM_PLUGIN_URL . 'assets/images/icon-96x96.png'); ?>',
         vibrate: [200, 100, 200],
         data: data,
         actions: [
@@ -333,7 +331,7 @@ self.addEventListener('push', function(event) {
     };
 
     event.waitUntil(
-        self.registration.showNotification(data.title || 'PuzzlingCRM', options)
+        self.registration.showNotification(data.title || '<?php echo class_exists('PuzzlingCRM_White_Label') ? esc_js(PuzzlingCRM_White_Label::get_company_name()) : 'PuzzlingCRM'; ?>', options)
     );
 });
 
@@ -378,7 +376,7 @@ async function syncData() {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>آفلاین - PuzzlingCRM</title>
+            <title>آفلاین - <?php echo class_exists('PuzzlingCRM_White_Label') ? esc_html(PuzzlingCRM_White_Label::get_company_name()) : 'PuzzlingCRM'; ?></title>
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
                 body {

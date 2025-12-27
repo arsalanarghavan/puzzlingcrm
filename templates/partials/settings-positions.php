@@ -79,7 +79,7 @@ function pzl_display_positions_tree($parent_id = 0, $level = 0) {
                      <p class="description">برای ایجاد یک عنوان شغلی، دپارتمان والد آن را انتخاب کنید.</p>
                 </div>
                 <div class="form-submit">
-                    <button type="submit" class="pzl-button">ذخیره</button>
+                    <button type="submit" class="pzl-button" data-puzzling-skip-global-handler="true">ذخیره</button>
                     <button type="button" id="cancel-edit-position" class="pzl-button-secondary" style="display: none;">انصراف</button>
                 </div>
             </form>

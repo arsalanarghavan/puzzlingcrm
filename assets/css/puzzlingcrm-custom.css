@@ -454,3 +454,28 @@ body.puzzling-dashboard-body,
     border-radius: 8px;
 }
 
+/* Fix: Make all primary text white for visibility */
+.text-primary,
+[class*="text-primary"]:not(.btn-primary):not(.bg-primary),
+*[style*="color"][style*="var(--primary"]:not(.btn-primary):not(.bg-primary),
+*[style*="color"][style*="var(--puzzling-primary"]:not(.btn-primary):not(.bg-primary) {
+    color: #ffffff !important;
+}
+
+/* But keep primary color for backgrounds and borders */
+.bg-primary {
+    color: #ffffff !important;
+}
+
+/* Links and hover states with primary color */
+a.text-primary,
+a[class*="text-primary"]:not(.btn-primary) {
+    color: #ffffff !important;
+}
+
+a.text-primary:hover,
+a[class*="text-primary"]:not(.btn-primary):hover {
+    color: #ffffff !important;
+    opacity: 0.9;
+}
+

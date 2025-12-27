@@ -48,7 +48,7 @@ $delete_nonce = wp_create_nonce('puzzlingcrm-ajax-nonce');
             </tr>
         </table>
         <div class="form-submit">
-            <button type="submit" class="pzl-button">ذخیره تنظیمات</button>
+            <button type="submit" class="pzl-button" data-puzzling-skip-global-handler="true">ذخیره تنظیمات</button>
         </div>
     </form>
 </div>

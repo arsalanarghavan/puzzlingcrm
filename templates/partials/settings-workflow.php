@@ -56,7 +56,7 @@ $roles = get_editable_roles();
                 </tbody>
             </table>
             <div class="form-submit">
-                <button type="submit" class="pzl-button">ذخیره قوانین گردش کار</button>
+                <button type="submit" class="pzl-button" data-puzzling-skip-global-handler="true">ذخیره قوانین گردش کار</button>
             </div>
         </form>
     </div>

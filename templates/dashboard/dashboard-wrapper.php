@@ -70,10 +70,23 @@ $lang      = substr( $locale, 0, 2 );
 	<meta name="description" content="<?php bloginfo( 'description' ); ?>">
 	<meta name="author" content="<?php bloginfo( 'name' ); ?>">
 	
-	<title><?php echo esc_html( $page_title ); ?> - <?php bloginfo( 'name' ); ?></title>
+	<?php
+	// Use white label company name if available
+	$site_name = get_bloginfo('name');
+	if (class_exists('PuzzlingCRM_White_Label')) {
+		$site_name = PuzzlingCRM_White_Label::get_company_name();
+	}
+	?>
+	<title><?php echo esc_html( $page_title ); ?> - <?php echo esc_html($site_name); ?></title>
 	
 	<!-- Favicon -->
-	<link rel="icon" href="<?php echo esc_url( PUZZLINGCRM_PLUGIN_URL . 'assets/images/brand-logos/favicon.ico' ); ?>" type="image/x-icon">
+	<?php
+	$favicon_url = PUZZLINGCRM_PLUGIN_URL . 'assets/images/brand-logos/favicon.ico';
+	if (class_exists('PuzzlingCRM_White_Label')) {
+		$favicon_url = PuzzlingCRM_White_Label::get_favicon();
+	}
+	?>
+	<link rel="icon" href="<?php echo esc_url($favicon_url); ?>" type="image/x-icon">
 	
 	<!-- Global Search Styles (from maneli) -->
 	<style>

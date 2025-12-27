@@ -31,8 +31,8 @@ canvas {
 }
 
 .table thead {
-    background: linear-gradient(135deg, #845adf 0%, #9575de 100%);
-    color: white;
+    background-color: #f8f9fa;
+    color: var(--default-text-color, #212b37);
 }
 
 .table thead th {
@@ -224,19 +224,19 @@ canvas {
 }
 
 .nav-tabs-header .nav-link:hover {
-    color: #845adf;
-    border-bottom-color: rgba(132, 90, 223, 0.3);
+    color: var(--puzzling-primary-color, #845adf);
+    border-bottom-color: rgba(var(--puzzling-primary-rgb, 132, 90, 223), 0.3);
 }
 
 .nav-tabs-header .nav-link.active {
-    color: #845adf;
-    border-bottom-color: #845adf;
+    color: var(--puzzling-primary-color, #845adf);
+    border-bottom-color: var(--puzzling-primary-color, #845adf);
     background: transparent;
 }
 
 /* Gradient Backgrounds */
 .bg-gradient-primary {
-    background: linear-gradient(135deg, #845adf 0%, #9575de 100%);
+    background: linear-gradient(135deg, var(--puzzling-primary-color, #845adf) 0%, var(--puzzling-primary-color-dark, #9575de) 100%);
 }
 
 .bg-gradient-success {
@@ -281,7 +281,7 @@ html {
 }
 
 .table-responsive::-webkit-scrollbar-thumb {
-    background: #845adf;
+    background: var(--puzzling-primary-color, #845adf);
     border-radius: 10px;
 }
 

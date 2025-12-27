@@ -23,6 +23,11 @@ class PuzzlingCRM_Sidebar_Data_Provider {
 	 * @return string Logo URL.
 	 */
 	public static function get_logo_url() {
+		// Use white label logo if available
+		if (class_exists('PuzzlingCRM_White_Label')) {
+			return PuzzlingCRM_White_Label::get_company_logo();
+		}
+		
 		$custom_logo_id = get_theme_mod( 'custom_logo' );
 
 		if ( $custom_logo_id ) {

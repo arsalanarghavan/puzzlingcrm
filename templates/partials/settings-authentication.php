@@ -319,7 +319,7 @@ $parsgreen_login_template = $settings['parsgreen_login_template'] ?? '';
 
     <!-- دکمه ذخیره -->
     <div class="pzl-form-actions">
-        <button type="submit" class="btn btn-primary">
+        <button type="submit" class="btn btn-primary" data-puzzling-skip-global-handler="true">
             <i class="ri-save-line"></i> ذخیره تنظیمات
         </button>
     </div>

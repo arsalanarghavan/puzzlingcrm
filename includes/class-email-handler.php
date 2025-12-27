@@ -37,9 +37,13 @@ class PuzzlingCRM_Email_Handler {
             return false;
         }
 
-        // Email content
-        $subject = 'قرارداد همکاری - ' . get_option('blogname');
-        $message = self::get_contract_email_template($contract, $pdf_result['url']);
+        // Email content - Use white label company name if available
+        $company_name = get_option('blogname');
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $company_name = PuzzlingCRM_White_Label::get_company_name();
+        }
+        $subject = 'قرارداد همکاری - ' . $company_name;
+        $message = self::get_contract_email_template($contract, $pdf_result['url'], $company_name);
 
         // Send email
         $headers = ['Content-Type: text/html; charset=UTF-8'];
@@ -80,10 +84,14 @@ class PuzzlingCRM_Email_Handler {
             return false;
         }
 
-        // Email content
+        // Email content - Use white label company name if available
+        $company_name = get_option('blogname');
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $company_name = PuzzlingCRM_White_Label::get_company_name();
+        }
         $invoice_number = get_post_meta($invoice_id, '_pro_invoice_number', true);
-        $subject = 'پیش‌فاکتور شماره ' . $invoice_number . ' - ' . get_option('blogname');
-        $message = self::get_invoice_email_template($invoice, $pdf_result['url'], $invoice_number);
+        $subject = 'پیش‌فاکتور شماره ' . $invoice_number . ' - ' . $company_name;
+        $message = self::get_invoice_email_template($invoice, $pdf_result['url'], $invoice_number, $company_name);
 
         // Send email
         $headers = ['Content-Type: text/html; charset=UTF-8'];
@@ -97,8 +105,21 @@ class PuzzlingCRM_Email_Handler {
     /**
      * Contract Email Template
      */
-    private static function get_contract_email_template($contract, $pdf_url) {
-        $company_name = get_option('blogname');
+    private static function get_contract_email_template($contract, $pdf_url, $company_name = null) {
+        if (!$company_name) {
+            $company_name = get_option('blogname');
+        }
+        
+        // Get white label colors and logo
+        $primary_color = '#845adf';
+        $logo_url = '';
+        $header_color = '';
+        
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $primary_color = PuzzlingCRM_White_Label::get_primary_color();
+            $logo_url = PuzzlingCRM_White_Label::get_email_logo();
+            $header_color = get_option('puzzlingcrm_wl_email_header_color', $primary_color);
+        }
         
         ob_start();
         ?>
@@ -109,7 +130,12 @@ class PuzzlingCRM_Email_Handler {
         </head>
         <body style="font-family: Tahoma, Arial, sans-serif; direction: rtl; text-align: right; background: #f5f5f5; padding: 20px;">
             <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <div style="background: linear-gradient(135deg, #845adf 0%, #9575de 100%); color: #fff; padding: 30px; text-align: center;">
+                <?php if ($logo_url): ?>
+                <div style="text-align: center; padding: 20px 30px 10px;">
+                    <img src="<?php echo esc_url($logo_url); ?>" alt="<?php echo esc_attr($company_name); ?>" style="max-width: 150px; height: auto;">
+                </div>
+                <?php endif; ?>
+                <div style="background: linear-gradient(135deg, <?php echo esc_attr($primary_color); ?> 0%, <?php echo esc_attr(self::darken_color($primary_color, 10)); ?> 100%); color: #fff; padding: 30px; text-align: center;">
                     <h1 style="margin: 0; font-size: 24px;">قرارداد همکاری</h1>
                     <p style="margin: 10px 0 0 0; opacity: 0.9;"><?php echo esc_html($company_name); ?></p>
                 </div>
@@ -129,7 +155,7 @@ class PuzzlingCRM_Email_Handler {
                     
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="<?php echo esc_url($pdf_url); ?>" 
-                           style="display: inline-block; background: #28a745; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold;">
+                           style="display: inline-block; background: <?php echo esc_attr($primary_color); ?>; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold;">
                             دانلود فایل PDF قرارداد
                         </a>
                     </div>
@@ -150,8 +176,21 @@ class PuzzlingCRM_Email_Handler {
     /**
      * Invoice Email Template
      */
-    private static function get_invoice_email_template($invoice, $pdf_url, $invoice_number) {
-        $company_name = get_option('blogname');
+    private static function get_invoice_email_template($invoice, $pdf_url, $invoice_number, $company_name = null) {
+        if (!$company_name) {
+            $company_name = get_option('blogname');
+        }
+        
+        // Get white label colors and logo
+        $primary_color = '#845adf';
+        $logo_url = '';
+        $header_color = '';
+        
+        if (class_exists('PuzzlingCRM_White_Label')) {
+            $primary_color = PuzzlingCRM_White_Label::get_primary_color();
+            $logo_url = PuzzlingCRM_White_Label::get_email_logo();
+            $header_color = get_option('puzzlingcrm_wl_email_header_color', $primary_color);
+        }
         
         ob_start();
         ?>
@@ -162,7 +201,12 @@ class PuzzlingCRM_Email_Handler {
         </head>
         <body style="font-family: Tahoma, Arial, sans-serif; direction: rtl; text-align: right; background: #f5f5f5; padding: 20px;">
             <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <div style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: #fff; padding: 30px; text-align: center;">
+                <?php if ($logo_url): ?>
+                <div style="text-align: center; padding: 20px 30px 10px;">
+                    <img src="<?php echo esc_url($logo_url); ?>" alt="<?php echo esc_attr($company_name); ?>" style="max-width: 150px; height: auto;">
+                </div>
+                <?php endif; ?>
+                <div style="background: linear-gradient(135deg, <?php echo esc_attr($primary_color); ?> 0%, <?php echo esc_attr(self::darken_color($primary_color, 10)); ?> 100%); color: #fff; padding: 30px; text-align: center;">
                     <h1 style="margin: 0; font-size: 24px;">پیش‌فاکتور</h1>
                     <p style="margin: 10px 0 0 0; opacity: 0.9;">شماره: <?php echo esc_html($invoice_number); ?></p>
                 </div>
@@ -178,12 +222,12 @@ class PuzzlingCRM_Email_Handler {
                     
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="<?php echo esc_url($pdf_url); ?>" 
-                           style="display: inline-block; background: #845adf; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold;">
+                           style="display: inline-block; background: <?php echo esc_attr($primary_color); ?>; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold;">
                             دانلود پیش‌فاکتور PDF
                         </a>
                     </div>
                     
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-right: 4px solid #845adf; margin: 20px 0;">
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-right: 4px solid <?php echo esc_attr($primary_color); ?>; margin: 20px 0;">
                         <p style="margin: 0; font-size: 13px; color: #555;">
                             <strong>توجه:</strong> این پیش‌فاکتور صرفاً جهت اطلاع بوده و به منزله صدور فاکتور رسمی نیست.
                         </p>
@@ -200,6 +244,27 @@ class PuzzlingCRM_Email_Handler {
         </html>
         <?php
         return ob_get_clean();
+    }
+    
+    /**
+     * Darken a hex color
+     */
+    private static function darken_color($hex, $percent) {
+        $hex = str_replace('#', '', $hex);
+        if (strlen($hex) == 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        
+        $r = max(0, min(255, $r - ($r * $percent / 100)));
+        $g = max(0, min(255, $g - ($g * $percent / 100)));
+        $b = max(0, min(255, $b - ($b * $percent / 100)));
+        
+        return '#' . str_pad(dechex($r), 2, '0', STR_PAD_LEFT) . 
+                   str_pad(dechex($g), 2, '0', STR_PAD_LEFT) . 
+                   str_pad(dechex($b), 2, '0', STR_PAD_LEFT);
     }
 }
 

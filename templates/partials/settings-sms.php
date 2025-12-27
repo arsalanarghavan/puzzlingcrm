@@ -87,7 +87,7 @@ $active_service = $settings['sms_service'] ?? 'melipayamak';
         </div>
         
         <div class="form-submit">
-            <button type="submit" class="pzl-button">ذخیره تنظیمات</button>
+            <button type="submit" class="pzl-button" data-puzzling-skip-global-handler="true">ذخیره تنظیمات</button>
         </div>
     </form>
 </div>
