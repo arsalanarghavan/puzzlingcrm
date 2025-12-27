@@ -300,7 +300,7 @@ class PuzzlingCRM_Dashboard_Router {
         <link href="<?php echo $assets_url; ?>css/puzzlingcrm-xintra-bridge.css" rel="stylesheet">
         
         <!-- PuzzlingCRM Custom Styles -->
-        <link href="<?php echo $assets_url; ?>css/puzzlingcrm-custom.css" rel="stylesheet">
+        <link href="<?php echo $assets_url; ?>css/puzzlingcrm-custom.css?v=<?php echo PUZZLINGCRM_VERSION; ?>&t=<?php echo time(); ?>" rel="stylesheet">
         
         <!-- RTL Complete Fix (آخرین فایل - بالاترین اولویت) -->
         <link href="<?php echo $assets_url; ?>css/rtl-complete-fix.css" rel="stylesheet">
@@ -681,7 +681,7 @@ class PuzzlingCRM_Dashboard_Router {
         
         // 6. Custom styles (highest priority - loaded last)
         wp_enqueue_style('pzl-xintra-bridge', $assets_url . 'css/puzzlingcrm-xintra-bridge.css', ['pzl-styles', 'pzl-icons'], PUZZLINGCRM_VERSION);
-        wp_enqueue_style('pzl-custom', $assets_url . 'css/puzzlingcrm-custom.css', ['pzl-xintra-bridge'], PUZZLINGCRM_VERSION);
+        wp_enqueue_style('pzl-custom', $assets_url . 'css/puzzlingcrm-custom.css', ['pzl-xintra-bridge'], PUZZLINGCRM_VERSION . '.' . time());
         wp_enqueue_style('pzl-rtl-fix', $assets_url . 'css/rtl-complete-fix.css', ['pzl-custom'], PUZZLINGCRM_VERSION);
         
         // Page-specific styles
@@ -711,6 +711,9 @@ class PuzzlingCRM_Dashboard_Router {
         wp_enqueue_script('pzl-node-waves', $assets_url . 'libs/node-waves/waves.min.js', ['jquery'], PUZZLINGCRM_VERSION, true);
         wp_enqueue_script('pzl-simplebar', $assets_url . 'libs/simplebar/simplebar.min.js', ['jquery'], PUZZLINGCRM_VERSION, true);
         wp_enqueue_script('pzl-sticky', $assets_url . 'js/sticky.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+        
+        // Page Wrapper Component
+        wp_enqueue_script('pzl-page-wrapper', $assets_url . 'js/components/page-wrapper.js', ['jquery', 'pzl-bootstrap-js'], PUZZLINGCRM_VERSION, true);
         
         // Theme switcher (must load before custom.js)
         wp_enqueue_script('pzl-theme-switcher', PUZZLINGCRM_PLUGIN_URL . 'assets/js/components/theme-switcher.js', ['jquery'], PUZZLINGCRM_VERSION, true);

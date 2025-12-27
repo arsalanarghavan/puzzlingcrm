@@ -503,25 +503,7 @@ if (isset($contracts) && is_array($contracts)) {
 }
 ?>
 
-<!-- Start::page-header -->
-<div class="d-flex align-items-center justify-content-between page-header-breadcrumb flex-wrap gap-2 mb-4">
-	<div>
-		<nav>
-			<ol class="breadcrumb mb-1">
-				<li class="breadcrumb-item">
-					<a href="javascript:void(0);">
-						<?php esc_html_e('Dashboard', 'puzzlingcrm'); ?>
-					</a>
-				</li>
-				<li class="breadcrumb-item active" aria-current="page">
-					<?php esc_html_e('Projects', 'puzzlingcrm'); ?>
-				</li>
-			</ol>
-		</nav>
-		<h1 class="page-title fw-medium fs-18 mb-0">
-			<?php esc_html_e('Projects', 'puzzlingcrm'); ?>
-		</h1>
-	</div>
+<!-- Start::page-header removed - now handled by page wrapper -->
 	<div class="btn-list">
 		<button class="btn btn-white btn-wave">
 			<i class="ri-filter-3-line align-middle me-1 lh-1"></i>

@@ -653,13 +653,17 @@ $lang      = substr( $locale, 0, 2 );
 		
 		<!-- Start::app-content -->
 		<div class="main-content app-content">
-			<div class="container-fluid">
-				
-				<?php
-				/**
-				 * Fires before dashboard content
-				 */
-				do_action( 'puzzlingcrm_before_dashboard_content' );
+			<?php
+			/**
+			 * Fires before dashboard content
+			 */
+			do_action( 'puzzlingcrm_before_dashboard_content' );
+			
+			// Include page wrapper component
+			$page_wrapper_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/components/page-wrapper/page-wrapper.php';
+			if ( file_exists( $page_wrapper_path ) ) {
+				// Start output buffering to capture page content
+				ob_start();
 				
 				// Load page content
 				$template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/';
@@ -701,13 +705,60 @@ $lang      = substr( $locale, 0, 2 );
 					<?php
 				}
 				
-				/**
-				 * Fires after dashboard content
-				 */
-				do_action( 'puzzlingcrm_after_dashboard_content' );
-				?>
+				$pzl_page_content = ob_get_clean();
 				
-			</div>
+				// Include page wrapper and inject content
+				include $page_wrapper_path;
+			} else {
+				// Fallback if wrapper doesn't exist
+				?>
+				<div class="container-fluid">
+					<?php
+					// Load page content directly
+					$template_path = PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/';
+					$partial_file  = '';
+					
+					if ( empty( $current_page ) ) {
+						switch ( $user_role ) {
+							case 'system_manager':
+								$partial_file = $template_path . 'dashboard-system-manager.php';
+								break;
+							case 'finance_manager':
+								$partial_file = $template_path . 'dashboard-finance.php';
+								break;
+							case 'team_member':
+								$partial_file = $template_path . 'dashboard-team-member.php';
+								break;
+							case 'customer':
+								$partial_file = $template_path . 'dashboard-client.php';
+								break;
+						}
+					} else {
+						$routes = PuzzlingCRM_Dashboard_Router::get_routes();
+						if ( isset( $routes[ $current_page ] ) && ! empty( $routes[ $current_page ]['partial'] ) ) {
+							$partial_file = $template_path . $routes[ $current_page ]['partial'] . '.php';
+						}
+					}
+					
+					if ( ! empty( $partial_file ) && file_exists( $partial_file ) ) {
+						include $partial_file;
+					} else {
+						?>
+						<div class="alert alert-danger">
+							<?php esc_html_e( 'Page not found.', 'puzzlingcrm' ); ?>
+						</div>
+						<?php
+					}
+					?>
+				</div>
+				<?php
+			}
+			
+			/**
+			 * Fires after dashboard content
+			 */
+			do_action( 'puzzlingcrm_after_dashboard_content' );
+			?>
 		</div>
 		<!-- End::app-content -->
 		

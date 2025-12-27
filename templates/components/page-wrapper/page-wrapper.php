@@ -120,6 +120,9 @@ $page_title = puzzlingcrm_get_page_title( $current_page, $user_role );
 		 * Content will be inserted here by dashboard-wrapper.php
 		 * This is where the page partials will be included
 		 */
+		if ( isset( $pzl_page_content ) && ! empty( $pzl_page_content ) ) {
+			echo $pzl_page_content;
+		}
 		?>
 	</div>
 	<!-- End::pzl-page-content -->

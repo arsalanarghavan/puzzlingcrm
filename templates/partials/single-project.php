@@ -127,18 +127,7 @@ $edit_url = add_query_arg(['view' => 'projects', 'action' => 'edit', 'project_id
 $back_url = remove_query_arg(['project_id', 'action'], $dashboard_url);
 ?>
 
-<!-- Page Header -->
-<div class="d-flex align-items-center justify-content-between page-header-breadcrumb flex-wrap gap-2 mb-4">
-    <div>
-        <nav>
-            <ol class="breadcrumb mb-1">
-                <li class="breadcrumb-item"><a href="<?php echo esc_url($back_url); ?>">برنامه‌ها</a></li>
-                <li class="breadcrumb-item"><a href="<?php echo esc_url(add_query_arg('view', 'projects', $dashboard_url)); ?>">پروژه‌ها</a></li>
-                <li class="breadcrumb-item active" aria-current="page">نمای کلی پروژه‌ها</li>
-            </ol>
-        </nav>
-        <h1 class="page-title fw-medium fs-18 mb-0">نمای کلی پروژه‌ها</h1>
-    </div>
+<!-- Page Header removed - now handled by page wrapper -->
     <div class="btn-list">
         <button class="btn btn-white btn-wave">
             <i class="ri-filter-3-line align-middle me-1 lh-1"></i> فیلتر

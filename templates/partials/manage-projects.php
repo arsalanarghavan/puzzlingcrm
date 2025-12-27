@@ -43,18 +43,7 @@ if (empty($project_statuses)) {
         $dashboard_url = puzzling_get_dashboard_url();
         $projects_list_url = add_query_arg('view', 'projects', $dashboard_url);
         ?>
-        <!-- Page Header -->
-        <div class="d-flex align-items-center justify-content-between page-header-breadcrumb flex-wrap gap-2">
-            <div>
-                <nav>
-                    <ol class="breadcrumb mb-1">
-                        <li class="breadcrumb-item"><a href="<?php echo esc_url($dashboard_url); ?>">برنامه‌ها</a></li>
-                        <li class="breadcrumb-item"><a href="<?php echo esc_url($projects_list_url); ?>">پروژه‌ها</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">ایجاد پروژه</li>
-                    </ol>
-                </nav>
-                <h1 class="page-title fw-medium fs-18 mb-0">ایجاد پروژه</h1>
-                </div>
+        <!-- Page Header removed - now handled by page wrapper -->
             <div class="btn-list">
                 <button class="btn btn-white btn-wave">
                     <i class="ri-filter-3-line align-middle me-1 lh-1"></i> فیلتر
@@ -275,28 +264,7 @@ if (empty($project_statuses)) {
         <?php
         $dashboard_url = puzzling_get_dashboard_url();
         ?>
-        <!-- Page Header -->
-        <div class="d-flex align-items-center justify-content-between page-header-breadcrumb flex-wrap gap-2 mb-4">
-            <div>
-                <nav>
-                    <ol class="breadcrumb mb-1">
-                        <li class="breadcrumb-item"><a href="<?php echo esc_url($dashboard_url); ?>">برنامه‌ها</a></li>
-                        <li class="breadcrumb-item"><a href="<?php echo esc_url(add_query_arg('view', 'projects', $dashboard_url)); ?>">پروژه‌ها</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">لیست پروژه‌ها</li>
-                    </ol>
-                </nav>
-                <h1 class="page-title fw-medium fs-18 mb-0">لیست پروژه‌ها</h1>
-            </div>
-            <div class="btn-list">
-                <button class="btn btn-white btn-wave">
-                    <i class="ri-filter-3-line align-middle me-1 lh-1"></i> فیلتر
-                </button>
-                <button class="btn btn-primary btn-wave me-0">
-                    <i class="ri-share-forward-line me-1"></i> اشتراک‌گذاری
-                </button>
-            </div>
-        </div>
-        <!-- Page Header Close -->
+        <!-- Page Header removed - now handled by page wrapper -->
 
         <!-- Start::row-1 -->
         <div class="row">
