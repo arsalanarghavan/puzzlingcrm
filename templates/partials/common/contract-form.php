@@ -71,22 +71,35 @@ $total_installments_value = $contract_to_edit ? esc_attr(get_post_meta($contract
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label for="contract_number" class="form-label">شماره قرارداد</label>
+                    <label for="contract_number" class="form-label">
+                        <i class="ri-hashtag me-1"></i>شماره قرارداد
+                    </label>
                     <input type="text" id="contract_number" name="contract_number" class="form-control ltr-input" 
                            value="<?php echo $contract_to_edit ? esc_attr(get_post_meta($contract_to_edit->ID, '_contract_number', true)) : 'پس از انتخاب مشتری تولید می‌شود'; ?>" 
                            readonly>
+                    <small class="form-text text-muted">
+                        <i class="ri-information-line me-1"></i>شماره قرارداد به صورت خودکار پس از انتخاب مشتری و تاریخ تولید می‌شود.
+                    </small>
                 </div>
                 
                 <div class="col-md-6 mb-3">
-                    <label for="_project_start_date" class="form-label">تاریخ شروع قرارداد <span class="text-danger">*</span></label>
+                    <label for="_project_start_date" class="form-label">
+                        <i class="ri-calendar-line me-1"></i>تاریخ شروع قرارداد <span class="text-danger">*</span>
+                    </label>
                     <input type="text" id="_project_start_date" name="_project_start_date" class="form-control pzl-jalali-date-picker" 
-                           value="<?php echo $start_date_jalali_value; ?>" required>
+                           value="<?php echo $start_date_jalali_value; ?>" required
+                           placeholder="1404/01/01">
+                    <small class="form-text text-muted">
+                        <i class="ri-information-line me-1"></i>فرمت تاریخ: YYYY/MM/DD (مثال: 1404/01/01)
+                    </small>
                 </div>
             </div>
 
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label for="customer_id" class="form-label">مشتری <span class="text-danger">*</span></label>
+                    <label for="customer_id" class="form-label">
+                        <i class="ri-user-line me-1"></i>مشتری <span class="text-danger">*</span>
+                    </label>
                     <select name="customer_id" id="customer_id" class="form-select" required <?php echo $contract_to_edit ? 'disabled' : ''; ?>>
                         <option value="">-- انتخاب مشتری --</option>
                         <?php
@@ -99,11 +112,20 @@ $total_installments_value = $contract_to_edit ? esc_attr(get_post_meta($contract
                     </select>
                     <?php if ($contract_to_edit): ?>
                     <input type="hidden" name="customer_id" value="<?php echo esc_attr($selected_customer); ?>">
+                    <small class="form-text text-muted">
+                        <i class="ri-lock-line me-1"></i>مشتری در حالت ویرایش قابل تغییر نیست.
+                    </small>
+                    <?php else: ?>
+                    <small class="form-text text-muted">
+                        <i class="ri-information-line me-1"></i>مشتری قرارداد را انتخاب کنید.
+                    </small>
                     <?php endif; ?>
                 </div>
                 
                 <div class="col-md-6 mb-3">
-                    <label for="_project_contract_duration" class="form-label">مدت قرارداد</label>
+                    <label for="_project_contract_duration" class="form-label">
+                        <i class="ri-time-line me-1"></i>مدت قرارداد
+                    </label>
                     <select name="_project_contract_duration" id="_project_contract_duration" class="form-select">
                         <?php
                         $durations = ['یک ماهه' => '1-month', 'سه ماهه' => '3-months', 'شش ماهه' => '6-months', 'یک ساله' => '12-months'];
@@ -113,19 +135,29 @@ $total_installments_value = $contract_to_edit ? esc_attr(get_post_meta($contract
                         }
                         ?>
                     </select>
+                    <small class="form-text text-muted">
+                        <i class="ri-information-line me-1"></i>مدت زمان قرارداد برای محاسبه تاریخ پایان استفاده می‌شود.
+                    </small>
                 </div>
             </div>
 
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label for="contract_title" class="form-label">عنوان قرارداد (اختیاری)</label>
+                    <label for="contract_title" class="form-label">
+                        <i class="ri-file-text-line me-1"></i>عنوان قرارداد (اختیاری)
+                    </label>
                     <input type="text" id="contract_title" name="contract_title" class="form-control" 
                            value="<?php echo $contract_to_edit ? esc_attr($contract_to_edit->post_title) : ''; ?>" 
                            placeholder="مثال: قرارداد پشتیبانی سالانه">
+                    <small class="form-text text-muted">
+                        <i class="ri-information-line me-1"></i>در صورت خالی بودن، عنوان به صورت خودکار تولید می‌شود.
+                    </small>
                 </div>
                 
                 <div class="col-md-6 mb-3">
-                    <label for="_project_subscription_model" class="form-label">مدل اشتراک</label>
+                    <label for="_project_subscription_model" class="form-label">
+                        <i class="ri-repeat-line me-1"></i>مدل اشتراک
+                    </label>
                     <select name="_project_subscription_model" id="_project_subscription_model" class="form-select">
                         <?php
                         $models = ['یکبار پرداخت' => 'onetime', 'اشتراکی' => 'subscription'];
@@ -135,6 +167,9 @@ $total_installments_value = $contract_to_edit ? esc_attr(get_post_meta($contract
                         }
                         ?>
                     </select>
+                    <small class="form-text text-muted">
+                        <i class="ri-information-line me-1"></i>نوع پرداخت قرارداد را مشخص کنید.
+                    </small>
                 </div>
             </div>
         </div>
@@ -189,26 +224,51 @@ $total_installments_value = $contract_to_edit ? esc_attr(get_post_meta($contract
             </div>
         </div>
         <div class="card-body">
+            <!-- Help Text -->
+            <div class="alert alert-info d-flex align-items-start mb-4">
+                <i class="ri-information-line fs-5 me-3 mt-1"></i>
+                <div>
+                    <strong>راهنمای استفاده از محاسبه‌گر اقساط:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>مبلغ کل قرارداد و تعداد اقساط را وارد کنید</li>
+                        <li>فاصله بین اقساط را به روز مشخص کنید (مثال: 30 برای ماهانه)</li>
+                        <li>تاریخ اولین قسط را انتخاب کنید</li>
+                        <li>روی دکمه "محاسبه" کلیک کنید تا اقساط به صورت خودکار تولید شوند</li>
+                        <li>می‌توانید اقساط تولید شده را ویرایش یا حذف کنید</li>
+                        <li>همچنین می‌توانید اقساط را به صورت دستی اضافه کنید</li>
+                    </ul>
+                </div>
+            </div>
+            
             <!-- Calculator -->
             <div class="alert alert-primary-transparent">
                 <div class="row g-3 align-items-end">
                     <div class="col-md-3">
-                        <label for="total_amount" class="form-label fw-semibold">مبلغ کل (تومان)</label>
+                        <label for="total_amount" class="form-label fw-semibold">
+                            <i class="ri-money-dollar-circle-line me-1"></i>مبلغ کل (تومان)
+                        </label>
                         <input type="text" id="total_amount" name="total_amount" class="form-control item-price" 
                                value="<?php echo esc_attr($total_amount_value); ?>" placeholder="30,000,000">
                     </div>
                     <div class="col-md-2">
-                        <label for="total_installments" class="form-label fw-semibold">تعداد اقساط</label>
+                        <label for="total_installments" class="form-label fw-semibold">
+                            <i class="ri-numbers-line me-1"></i>تعداد اقساط
+                        </label>
                         <input type="number" id="total_installments" name="total_installments" class="form-control" 
-                               placeholder="6" value="<?php echo esc_attr($total_installments_value); ?>">
+                               placeholder="6" value="<?php echo esc_attr($total_installments_value); ?>" min="1">
                     </div>
                     <div class="col-md-2">
-                        <label for="installment_interval" class="form-label fw-semibold">فاصله (روز)</label>
-                        <input type="number" id="installment_interval" class="form-control" placeholder="30" value="30">
+                        <label for="installment_interval" class="form-label fw-semibold">
+                            <i class="ri-calendar-check-line me-1"></i>فاصله (روز)
+                        </label>
+                        <input type="number" id="installment_interval" class="form-control" placeholder="30" value="30" min="1">
                     </div>
                     <div class="col-md-3">
-                        <label for="start_date" class="form-label fw-semibold">تاریخ اولین قسط</label>
-                        <input type="text" id="start_date" class="form-control pzl-jalali-date-picker" value="<?php echo $start_date_jalali_value; ?>">
+                        <label for="start_date" class="form-label fw-semibold">
+                            <i class="ri-calendar-line me-1"></i>تاریخ اولین قسط
+                        </label>
+                        <input type="text" id="start_date" class="form-control pzl-jalali-date-picker" 
+                               value="<?php echo $start_date_jalali_value; ?>" placeholder="1404/01/01">
                     </div>
                     <div class="col-md-2">
                         <button type="button" id="calculate-installments" class="btn btn-success w-100">
@@ -218,44 +278,73 @@ $total_installments_value = $contract_to_edit ? esc_attr(get_post_meta($contract
                 </div>
             </div>
 
+            <!-- Payment Rows Header -->
+            <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+                <h5 class="mb-0">
+                    <i class="ri-list-check me-2"></i>لیست اقساط
+                </h5>
+                <button type="button" id="add-payment-row" class="btn btn-secondary-light btn-sm">
+                    <i class="ri-add-line me-1"></i>افزودن قسط دستی
+                </button>
+            </div>
+            
             <!-- Payment Rows -->
-            <div id="payment-rows-container" class="mt-4">
+            <div id="payment-rows-container" class="mt-3">
                 <?php if ($contract_to_edit): 
                     $installments = get_post_meta($contract_to_edit->ID, '_installments', true);
                     if (!empty($installments) && is_array($installments)): 
                         foreach ($installments as $index => $inst):
                 ?>
                 <div class="payment-row d-flex gap-2 align-items-center mb-2">
-                    <input type="text" name="payment_amount[]" class="form-control item-price" placeholder="مبلغ (تومان)" value="<?php echo esc_attr($inst['amount']); ?>" required style="flex: 2;">
-                    <input type="text" name="payment_due_date[]" class="form-control pzl-jalali-date-picker" value="<?php echo esc_attr(puzzling_gregorian_to_jalali($inst['due_date'])); ?>" required style="flex: 2;">
+                    <div class="flex-shrink-0" style="width: 30px; text-align: center; color: #6c757d;">
+                        <strong>#<?php echo $index + 1; ?></strong>
+                    </div>
+                    <input type="text" name="payment_amount[]" class="form-control item-price" 
+                           placeholder="مبلغ (تومان)" value="<?php echo esc_attr($inst['amount']); ?>" required style="flex: 2;">
+                    <input type="text" name="payment_due_date[]" class="form-control pzl-jalali-date-picker" 
+                           value="<?php echo esc_attr(puzzling_gregorian_to_jalali($inst['due_date'])); ?>" 
+                           required style="flex: 2;" placeholder="1404/01/01">
                     <select name="payment_status[]" class="form-select" style="flex: 1;">
                         <option value="pending" <?php selected($inst['status'] ?? 'pending', 'pending'); ?>>در انتظار</option>
                         <option value="paid" <?php selected($inst['status'] ?? 'pending', 'paid'); ?>>پرداخت شده</option>
                         <option value="cancelled" <?php selected($inst['status'] ?? 'pending', 'cancelled'); ?>>لغو شده</option>
                     </select>
-                    <button type="button" class="btn btn-danger-light btn-sm btn-icon remove-payment-row">
+                    <button type="button" class="btn btn-danger-light btn-sm btn-icon remove-payment-row" title="حذف قسط">
                         <i class="ri-delete-bin-line"></i>
                     </button>
                 </div>
                 <?php 
                         endforeach;
+                    else:
+                ?>
+                <div class="alert alert-warning">
+                    <i class="ri-information-line me-2"></i>هیچ قسطی برای این قرارداد ثبت نشده است. می‌توانید از محاسبه‌گر استفاده کنید یا به صورت دستی اضافه کنید.
+                </div>
+                <?php
                     endif;
                 endif; 
                 ?>
             </div>
-
-            <!-- Add Payment Row Button -->
-            <button type="button" id="add-payment-row" class="btn btn-secondary-light btn-sm mt-3">
-                <i class="ri-add-line me-1"></i>افزودن قسط دستی
-            </button>
+            
+            <?php if (!$contract_to_edit): ?>
+            <div class="alert alert-warning mt-3">
+                <i class="ri-information-line me-2"></i>هیچ قسطی ثبت نشده است. لطفاً از محاسبه‌گر استفاده کنید یا به صورت دستی اقساط را اضافه کنید.
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 
     <!-- Submit Button -->
-    <div class="text-center">
-        <button type="submit" name="submit_contract" class="btn btn-primary btn-lg">
+    <div class="text-center mt-4 mb-4">
+        <button type="submit" name="submit_contract" class="btn btn-primary btn-lg px-5">
             <i class="ri-save-line me-2"></i>
             <?php echo $contract_to_edit ? 'ذخیره تغییرات قرارداد' : 'ایجاد قرارداد'; ?>
         </button>
+        <div class="mt-3">
+            <small class="text-muted">
+                <i class="ri-information-line me-1"></i>
+                قبل از ثبت، مطمئن شوید تمام اطلاعات به درستی وارد شده‌اند.
+            </small>
+        </div>
     </div>
 </form>

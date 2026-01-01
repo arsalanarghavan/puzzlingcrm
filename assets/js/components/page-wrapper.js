@@ -21,7 +21,18 @@
 			this.setupSidebarAdaptation();
 			this.setupShareActions();
 			this.setupFilterModal();
-			this.updateWrapperMargin();
+			
+			// Initial call with delay to ensure DOM is ready
+			setTimeout(() => {
+				this.updateWrapperMargin();
+			}, 100);
+			
+			// Also call after window load to ensure all styles are loaded
+			$(window).on('load', () => {
+				setTimeout(() => {
+					this.updateWrapperMargin();
+				}, 200);
+			});
 			
 			// Listen for sidebar state changes
 			$(document).on('sidebar:toggled', this.updateWrapperMargin.bind(this));
@@ -37,11 +48,12 @@
 		 * Setup sidebar adaptation
 		 */
 		setupSidebarAdaptation: function () {
+			const self = this;
 			// Use MutationObserver to watch for sidebar state changes
 			const observer = new MutationObserver((mutations) => {
 				mutations.forEach((mutation) => {
 					if (mutation.type === 'attributes' && mutation.attributeName === 'data-toggled') {
-						this.updateWrapperMargin();
+						self.updateWrapperMargin();
 					}
 				});
 			});
@@ -66,7 +78,7 @@
 		},
 
 		/**
-		 * Update wrapper margin based on sidebar state
+		 * Update wrapper margin and width based on sidebar state
 		 */
 		updateWrapperMargin: function () {
 			const $wrapper = $('.pzl-page-wrapper');
@@ -83,24 +95,94 @@
 			// Margin from opposite edge (always 15px)
 			const oppositeMargin = 15;
 			
-			// Apply margins only on desktop
+			// Check if sidebar is collapsed
+			const isCollapsed = toggled.includes('close') || 
+			                   toggled.includes('closed') ||
+			                   toggled.includes('overlay-close');
+			
+			// Apply margins and width only on desktop
 			if (window.innerWidth >= 992) {
 				if (isRTL) {
 					// RTL: sidebar on right, margin-right from sidebar, margin-left from left edge
-					$wrapper.css('margin-right', sidebarMargin + 'px');
-					$wrapper.css('margin-left', oppositeMargin + 'px');
-					$wrapper.css('width', ''); // Remove width, let it be auto
+					// margin-left MUST stay fixed at 15px - DO NOT CHANGE
+					// Wrapper expands to RIGHT (sidebar side), LEFT stays fixed
+					// Use setProperty with !important to override any conflicting styles
+					$wrapper[0].style.setProperty('margin-left', oppositeMargin + 'px', 'important');
+					$wrapper[0].style.setProperty('margin-right', sidebarMargin + 'px', 'important');
+					$wrapper[0].style.setProperty('position', 'relative', 'important');
+					$wrapper[0].style.setProperty('left', '0', 'important');
+					$wrapper[0].style.setProperty('right', 'auto', 'important');
+					// ONLY set width when collapsed - use viewport width to ensure proper expansion
+					// RTL: sidebar on RIGHT, margin-left stays fixed, wrapper expands to RIGHT
+					if (isCollapsed) {
+						// IMPORTANT: app-content has margin-inline-start: 5rem when collapsed
+						// In RTL, this means margin-right: 5rem
+						// Wrapper is INSIDE app-content, so calculate width relative to app-content (100%), NOT viewport
+						// CRITICAL: In RTL, wrapper must expand to the RIGHT (towards sidebar)
+						// To make wrapper expand from RIGHT: margin-right: fixed (10px), margin-left: auto (pushes to right)
+						// This ensures wrapper starts from the right and expands to the right (towards sidebar)
+						$wrapper[0].style.setProperty('margin-right', sidebarMargin + 'px', 'important');
+						$wrapper[0].style.setProperty('margin-left', 'auto', 'important'); // AUTO pushes to right
+						$wrapper[0].style.setProperty('margin-inline-start', 'auto', 'important');
+						$wrapper[0].style.setProperty('margin-inline-end', sidebarMargin + 'px', 'important');
+						$wrapper[0].style.setProperty('width', 'calc(100% - ' + sidebarMargin + 'px)', 'important');
+						$wrapper[0].style.setProperty('max-width', 'calc(100% - ' + sidebarMargin + 'px)', 'important');
+						$wrapper[0].style.setProperty('position', 'relative', 'important');
+						$wrapper[0].style.setProperty('left', 'auto', 'important');
+						$wrapper[0].style.setProperty('right', 'auto', 'important');
+						$wrapper[0].style.setProperty('box-sizing', 'border-box', 'important');
+					} else {
+						// Remove width, let CSS handle it for open state
+						$wrapper[0].style.removeProperty('width');
+						$wrapper[0].style.removeProperty('max-width');
+						$wrapper[0].style.removeProperty('left');
+						$wrapper[0].style.removeProperty('right');
+						// Ensure margins are set with !important
+						$wrapper[0].style.setProperty('margin-left', oppositeMargin + 'px', 'important');
+						$wrapper[0].style.setProperty('margin-right', sidebarMargin + 'px', 'important');
+					}
 				} else {
 					// LTR: sidebar on left, margin-left from sidebar, margin-right from right edge
-					$wrapper.css('margin-left', sidebarMargin + 'px');
-					$wrapper.css('margin-right', oppositeMargin + 'px');
-					$wrapper.css('width', ''); // Remove width, let it be auto
+					// margin-right MUST stay fixed at 15px - DO NOT CHANGE
+					// Use setProperty with !important to override any conflicting styles
+					$wrapper[0].style.setProperty('margin-right', oppositeMargin + 'px', 'important');
+					$wrapper[0].style.setProperty('margin-left', sidebarMargin + 'px', 'important');
+					$wrapper[0].style.setProperty('position', 'relative', 'important');
+					$wrapper[0].style.setProperty('right', '0', 'important');
+					$wrapper[0].style.setProperty('left', 'auto', 'important');
+					// ONLY set width when collapsed - use viewport width to ensure proper expansion
+					// LTR: sidebar on LEFT, margin-right stays fixed, wrapper expands to LEFT
+					if (isCollapsed) {
+						// Use CSS with !important to override any conflicting styles
+						$wrapper[0].style.setProperty('width', 'calc(100vw - 5rem - 25px)', 'important');
+						$wrapper[0].style.setProperty('max-width', 'calc(100vw - 5rem - 25px)', 'important');
+						$wrapper[0].style.setProperty('left', 'auto', 'important');
+						$wrapper[0].style.setProperty('right', 'auto', 'important');
+						// Ensure margins are set with !important
+						$wrapper[0].style.setProperty('margin-left', sidebarMargin + 'px', 'important');
+						$wrapper[0].style.setProperty('margin-right', oppositeMargin + 'px', 'important');
+					} else {
+						// Remove width, let CSS handle it for open state
+						$wrapper[0].style.removeProperty('width');
+						$wrapper[0].style.removeProperty('max-width');
+						$wrapper[0].style.removeProperty('left');
+						$wrapper[0].style.removeProperty('right');
+						// Ensure margins are set with !important
+						$wrapper[0].style.setProperty('margin-left', sidebarMargin + 'px', 'important');
+						$wrapper[0].style.setProperty('margin-right', oppositeMargin + 'px', 'important');
+					}
 				}
 			} else {
 				// Mobile: reset to default
-				$wrapper.css('margin-right', '15px');
-				$wrapper.css('margin-left', '15px');
-				$wrapper.css('width', '');
+				$wrapper.css({
+					'margin-right': '15px',
+					'margin-left': '15px',
+					'width': '',
+					'max-width': '',
+					'position': 'relative',
+					'left': 'auto',
+					'right': 'auto'
+				});
 			}
 		},
 
@@ -225,10 +307,12 @@
 		PuzzlingPageWrapper.init();
 	});
 
-	// Also initialize after a short delay to ensure all scripts are loaded
-	setTimeout(function () {
-		PuzzlingPageWrapper.init();
-	}, 100);
+	// Also initialize after window load to ensure all styles and scripts are loaded
+	$(window).on('load', function () {
+		setTimeout(function () {
+			PuzzlingPageWrapper.updateWrapperMargin();
+		}, 300);
+	});
 
 })(jQuery);
 

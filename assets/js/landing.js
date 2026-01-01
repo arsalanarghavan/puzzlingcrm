@@ -234,8 +234,7 @@ function switcherClick() {
 
   /* rtl start */
   let rtlVar = rtlBtn?.addEventListener("click", () => {
-    localStorage.setItem("xintrartl", true);
-    localStorage.removeItem("xintraltr");
+    localStorage.setItem('pzl_language', 'fa');
     rtlFn();
   });
   /* rtl end */
@@ -243,8 +242,7 @@ function switcherClick() {
   /* ltr start */
   let ltrVar = ltrBtn?.addEventListener("click", () => {
     //    local storage
-    localStorage.setItem("xintraltr", true);
-    localStorage.removeItem("xintrartl");
+    localStorage.setItem('pzl_language', 'en');
     ltrFn();
   });
   /* ltr end */
@@ -284,9 +282,36 @@ function rtlFn() {
     );
   checkOptions();
 }
-rtlFn();
-if (localStorage.xintraltr) {
-  ltrFn();
+
+// Language-based initialization - don't force RTL
+try {
+  let lang = localStorage.getItem('pzl_language');
+  if (!lang) {
+    // Try to get from cookie
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.startsWith('pzl_language=')) {
+        lang = cookie.substring('pzl_language='.length);
+        break;
+      }
+    }
+  }
+  if (!lang) {
+    // Check HTML dir attribute as fallback
+    const htmlDir = document.documentElement.getAttribute('dir');
+    lang = htmlDir === 'rtl' ? 'fa' : 'en';
+  }
+  
+  if (lang === 'fa') {
+    rtlFn();
+  } else {
+    ltrFn();
+  }
+} catch (e) {
+  // Silently fail, default to RTL for Persian sites
+  rtlFn();
+}
 }
 
 function lightFn() {
@@ -339,9 +364,26 @@ function checkOptions() {
     document.querySelector("#switcher-dark-theme").checked = true;
   }
 
-  //RTL
-  if (localStorage.getItem("xintrartl")) {
-    document.querySelector("#switcher-rtl").checked = true;
+  // RTL/LTR - Use pzl_language system
+  let lang = localStorage.getItem('pzl_language');
+  if (!lang) {
+    try {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.startsWith('pzl_language=')) {
+          lang = cookie.substring('pzl_language='.length);
+          break;
+        }
+      }
+    } catch(e) {
+      // Silently fail
+    }
+  }
+  if (lang === 'fa') {
+    document.querySelector("#switcher-rtl")?.setAttribute('checked', 'checked');
+  } else if (lang === 'en') {
+    document.querySelector("#switcher-ltr")?.setAttribute('checked', 'checked');
   }
 }
 
@@ -370,9 +412,34 @@ function localStorageBackup() {
     html.setAttribute("data-theme-mode", "dark");
   }
 
-  if (localStorage.xintrartl) {
+  // Language-based direction - use pzl_language
+  let lang = localStorage.getItem('pzl_language');
+  if (!lang) {
+    try {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.startsWith('pzl_language=')) {
+          lang = cookie.substring('pzl_language='.length);
+          break;
+        }
+      }
+    } catch(e) {
+      // Silently fail
+    }
+  }
+  if (lang === 'fa') {
     let html = document.querySelector("html");
-    html.setAttribute("dir", "rtl");
+    if (html) {
+      html.setAttribute("dir", "rtl");
+      html.setAttribute("lang", "fa");
+    }
+  } else if (lang === 'en') {
+    let html = document.querySelector("html");
+    if (html) {
+      html.setAttribute("dir", "ltr");
+      html.setAttribute("lang", "en");
+    }
   }
   if (localStorage.xintralayout) {
     let html = document.querySelector("html");

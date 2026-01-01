@@ -370,9 +370,30 @@ async function syncData() {
      */
     private function serve_offline_page() {
         header('Content-Type: text/html; charset=UTF-8');
+        
+        // Get language preference - check cookie first, then user meta, then locale
+        $cookie_lang = isset( $_COOKIE['pzl_language'] ) ? sanitize_text_field( $_COOKIE['pzl_language'] ) : '';
+        $locale = get_locale();
+        
+        if ( $cookie_lang === 'en' ) {
+            $locale = 'en_US';
+        } elseif ( $cookie_lang === 'fa' ) {
+            $locale = 'fa_IR';
+        } elseif ( is_user_logged_in() ) {
+            $user_lang = get_user_meta( get_current_user_id(), 'pzl_language', true );
+            if ( $user_lang === 'en' ) {
+                $locale = 'en_US';
+            } elseif ( $user_lang === 'fa' ) {
+                $locale = 'fa_IR';
+            }
+        }
+        
+        $is_rtl = ( $locale === 'fa_IR' );
+        $direction = $is_rtl ? 'rtl' : 'ltr';
+        $lang = substr( $locale, 0, 2 );
         ?>
         <!DOCTYPE html>
-        <html dir="rtl" lang="fa">
+        <html dir="<?php echo esc_attr( $direction ); ?>" lang="<?php echo esc_attr( $lang ); ?>">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">

@@ -1,4 +1,9 @@
+console.log('PuzzlingCRM Custom Datepicker: Script file loaded!');
+console.log('PuzzlingCRM Custom Datepicker: jQuery available?', typeof jQuery !== 'undefined');
+console.log('PuzzlingCRM Custom Datepicker: $ available?', typeof $ !== 'undefined');
+
 jQuery(document).ready(function($) {
+    console.log('PuzzlingCRM Custom Datepicker: jQuery ready callback executed!');
     /**
      * PuzzlingCRM Custom Jalali Date Picker - V2
      * with Month/Year selection and new theme.
@@ -50,9 +55,14 @@ jQuery(document).ready(function($) {
         let todayJalali = toJalali(today.getFullYear(), today.getMonth() + 1, today.getDate());
 
         function createPicker(input) {
-            if (input.data('pzl-datepicker-active')) return;
+            if (input.data('pzl-datepicker-active')) {
+                console.log('PuzzlingCRM Custom Datepicker: Picker already active for', input.attr('id') || input.attr('name'));
+                return;
+            }
+            console.log('PuzzlingCRM Custom Datepicker: Creating picker for', input.attr('id') || input.attr('name'));
             input.data('pzl-datepicker-active', true);
             input.attr('autocomplete', 'off');
+            // Don't set readonly as it might interfere with form submission
 
             let currentYear = todayJalali[0];
             let currentMonth = todayJalali[1];
@@ -70,7 +80,12 @@ jQuery(document).ready(function($) {
             
             const todayBtn = $('<button type="button" class="pzl-datepicker-today">امروز</button>').appendTo(pickerContainer);
 
+            // Append to body and ensure it's visible when shown
             $('body').append(pickerContainer);
+            pickerContainer.hide(); // Initially hidden
+            
+            // Store reference to picker container in input data
+            input.data('pzl-picker-container', pickerContainer);
 
             function switchView(view) {
                 currentView = view;
@@ -196,8 +211,15 @@ jQuery(document).ready(function($) {
                 pickerContainer.hide();
             });
 
-            input.on('focus', function() {
-                let dateValue = $(this).val();
+            // Use both focus and click events to ensure picker opens
+            function showPicker(e) {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                
+                console.log('PuzzlingCRM Custom Datepicker: Showing picker for', input.attr('id') || input.attr('name'));
+                let dateValue = input.val();
                 if (dateValue && /^\d{4}\/\d{1,2}\/\d{1,2}$/.test(dateValue)) {
                     let parts = dateValue.split('/');
                     currentYear = parseInt(parts[0]);
@@ -212,26 +234,142 @@ jQuery(document).ready(function($) {
                 renderYears(Math.floor(currentYear / 10) * 10);
 
                 let offset = input.offset();
-                $('.pzl-datepicker-container').hide();
-                pickerContainer.css({ top: offset.top + input.outerHeight() + 5, left: offset.left, right: 'auto' }).show();
-                if(offset.left + pickerContainer.width() > $(window).width()) {
-                    pickerContainer.css({left: 'auto', right: $(window).width() - (offset.left + input.outerWidth())});
+                if (!offset) {
+                    console.error('PuzzlingCRM Custom Datepicker: Cannot get offset for input');
+                    return;
+                }
+                
+                // Hide all other pickers
+                $('.pzl-datepicker-container').not(pickerContainer).hide();
+                
+                // Show this picker - use show() method and force display
+                pickerContainer.css({ 
+                    top: (offset.top + input.outerHeight() + 5) + 'px', 
+                    left: offset.left + 'px', 
+                    right: 'auto',
+                    position: 'absolute',
+                    zIndex: 10000,
+                    display: 'block',
+                    visibility: 'visible',
+                    opacity: 1
+                });
+                
+                // Force show using jQuery
+                pickerContainer.show();
+                
+                // Double check it's visible
+                if (!pickerContainer.is(':visible')) {
+                    console.warn('PuzzlingCRM Custom Datepicker: Picker container is not visible after show(), forcing display');
+                    pickerContainer.css('display', 'block !important');
+                }
+                
+                // Adjust position if it goes off screen
+                setTimeout(function() {
+                    var containerWidth = pickerContainer.outerWidth();
+                    var windowWidth = $(window).width();
+                    if(offset.left + containerWidth > windowWidth) {
+                        pickerContainer.css({
+                            left: 'auto', 
+                            right: (windowWidth - (offset.left + input.outerWidth())) + 'px'
+                        });
+                    }
+                }, 10);
+                
+                console.log('PuzzlingCRM Custom Datepicker: Picker shown at', offset.top, offset.left);
+            }
+            
+            // Handle focus event - use namespaced events to prevent conflicts
+            input.off('focus.pzl-datepicker click.pzl-datepicker mousedown.pzl-datepicker')
+                 .on('focus.pzl-datepicker', function(e) {
+                     console.log('PuzzlingCRM Custom Datepicker: Focus event triggered for', input.attr('id') || input.attr('name'));
+                     showPicker(e);
+                 })
+                 .on('click.pzl-datepicker', function(e) {
+                     console.log('PuzzlingCRM Custom Datepicker: Click event triggered for', input.attr('id') || input.attr('name'));
+                     showPicker(e);
+                 })
+                 .on('mousedown.pzl-datepicker', function(e) {
+                     console.log('PuzzlingCRM Custom Datepicker: Mousedown event triggered for', input.attr('id') || input.attr('name'));
+                     // Small delay to ensure input gets focus first
+                     setTimeout(function() {
+                         if (!pickerContainer.is(':visible')) {
+                             showPicker();
+                         }
+                     }, 50);
+                 });
+            
+            // Debug: Log when input is ready
+            console.log('PuzzlingCRM Custom Datepicker: Picker created and events bound for', input.attr('id') || input.attr('name'), 'Container:', pickerContainer.length);
+        }
+        
+        function initializeAllPickers() {
+            console.log('PuzzlingCRM Custom Datepicker: Initializing all pickers...');
+            var pickers = $('.pzl-jalali-date-picker');
+            console.log('PuzzlingCRM Custom Datepicker: Found', pickers.length, 'datepicker fields');
+            
+            if (pickers.length === 0) {
+                console.warn('PuzzlingCRM Custom Datepicker: No datepicker fields found!');
+                // Try to find by name attribute
+                var byName = $('input[name*="date"], input[id*="date"]');
+                console.log('PuzzlingCRM Custom Datepicker: Found', byName.length, 'fields by name/id containing "date"');
+            }
+            
+            pickers.each(function() {
+                var $this = $(this);
+                var fieldId = $this.attr('id') || $this.attr('name') || 'unknown';
+                console.log('PuzzlingCRM Custom Datepicker: Processing field:', fieldId, 'Active:', $this.data('pzl-datepicker-active'));
+                
+                if (!$this.data('pzl-datepicker-active')) {
+                    console.log('PuzzlingCRM Custom Datepicker: Creating picker for', fieldId);
+                    try {
+                        createPicker($this);
+                        console.log('PuzzlingCRM Custom Datepicker: Successfully created picker for', fieldId);
+                    } catch(e) {
+                        console.error('PuzzlingCRM Custom Datepicker: Error creating picker for', fieldId, ':', e);
+                    }
+                } else {
+                    console.log('PuzzlingCRM Custom Datepicker: Picker already active for', fieldId);
                 }
             });
         }
         
-        function initializeAllPickers() {
-             $('.pzl-jalali-date-picker').each(function() {
-                createPicker($(this));
-            });
-        }
-        
+        // Initialize immediately when DOM is ready
+        console.log('PuzzlingCRM Custom Datepicker: DOM ready, starting initialization...');
         initializeAllPickers();
+        
+        // Also initialize after delays to catch dynamically added fields
+        setTimeout(function() {
+            console.log('PuzzlingCRM Custom Datepicker: Delayed initialization (100ms)');
+            initializeAllPickers();
+        }, 100);
+        setTimeout(function() {
+            console.log('PuzzlingCRM Custom Datepicker: Delayed initialization (500ms)');
+            initializeAllPickers();
+        }, 500);
+        setTimeout(function() {
+            console.log('PuzzlingCRM Custom Datepicker: Delayed initialization (1000ms)');
+            initializeAllPickers();
+        }, 1000);
+        setTimeout(function() {
+            console.log('PuzzlingCRM Custom Datepicker: Final delayed initialization (2000ms)');
+            initializeAllPickers();
+        }, 2000);
 
+        // Watch for dynamically added datepicker fields
         const observer = new MutationObserver(function(mutationsList) {
             for (const mutation of mutationsList) {
                 if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                   initializeAllPickers();
+                    // Check if any added node is a datepicker field
+                    for (let node of mutation.addedNodes) {
+                        if (node.nodeType === 1) { // Element node
+                            var $node = $(node);
+                            if ($node.hasClass('pzl-jalali-date-picker') || $node.find('.pzl-jalali-date-picker').length > 0) {
+                                console.log('PuzzlingCRM Custom Datepicker: New datepicker field detected, initializing...');
+                                initializeAllPickers();
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -244,5 +382,20 @@ jQuery(document).ready(function($) {
         });
     }
 
-    PuzzlingJalaliDatePicker();
+    // Initialize the custom datepicker
+    console.log('PuzzlingCRM Custom Datepicker: Starting initialization...');
+    console.log('PuzzlingCRM Custom Datepicker: jQuery version:', $.fn.jquery);
+    console.log('PuzzlingCRM Custom Datepicker: Document ready state:', document.readyState);
+    
+    try {
+        PuzzlingJalaliDatePicker();
+        console.log('PuzzlingCRM Custom Datepicker: Initialization complete');
+    } catch(e) {
+        console.error('PuzzlingCRM Custom Datepicker: Error during initialization:', e);
+        console.error('PuzzlingCRM Custom Datepicker: Stack trace:', e.stack);
+    }
+    
+    // Also expose globally for debugging
+    window.PuzzlingJalaliDatePickerInstance = PuzzlingJalaliDatePicker;
+    console.log('PuzzlingCRM Custom Datepicker: Exposed globally as window.PuzzlingJalaliDatePickerInstance');
 });

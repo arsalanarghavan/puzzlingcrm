@@ -137,9 +137,29 @@
   document.getElementById("switcher-ltr").addEventListener("click", ratingLTR);
   document.getElementById("reset-all").addEventListener("click", ratingLTR);
 
-  if (localStorage.getItem("xintrartl")) {
+  // Language-based direction - use pzl_language
+  let lang = localStorage.getItem('pzl_language');
+  if (!lang) {
+    try {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.startsWith('pzl_language=')) {
+          lang = cookie.substring('pzl_language='.length);
+          break;
+        }
+      }
+    } catch(e) {
+      // Silently fail
+    }
+  }
+  if (lang === 'fa') {
     setTimeout(() => {
       ratingRTL();
+    }, 100);
+  } else if (lang === 'en') {
+    setTimeout(() => {
+      ratingLTR();
     }, 100);
   }
 

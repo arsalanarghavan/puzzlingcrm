@@ -139,56 +139,142 @@ $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']
                 <table class="pzl-table">
                     <thead>
                         <tr>
-                            <th>شماره قرارداد</th>
-                            <th>مشتری</th>
-                            <th>مبلغ کل</th>
-                            <th>مبلغ پرداخت شده</th>
-                            <th>وضعیت</th>
-                            <th>عملیات</th>
+                            <th><i class="ri-hashtag me-1"></i>شماره قرارداد</th>
+                            <th><i class="ri-user-line me-1"></i>مشتری</th>
+                            <th><i class="ri-money-dollar-circle-line me-1"></i>مبلغ کل</th>
+                            <th><i class="ri-checkbox-circle-line me-1"></i>مبلغ پرداخت شده</th>
+                            <th><i class="ri-information-line me-1"></i>وضعیت</th>
+                            <th><i class="ri-settings-3-line me-1"></i>عملیات</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php while($contracts_query->have_posts()): $contracts_query->the_post(); 
                             $contract_id = get_the_ID();
-                            $customer = get_userdata(get_the_author_meta('ID'));
-                            $customer_name = ($customer) ? $customer->display_name : 'مشتری حذف شده'; // FIX: Check if customer exists
+                            $author_id = get_the_author_meta('ID');
+                            $customer = $author_id ? get_userdata($author_id) : null;
+                            $customer_name = ($customer && $customer->exists()) ? $customer->display_name : 'مشتری حذف شده';
 
                             $installments = get_post_meta($contract_id, '_installments', true);
+                            if (!is_array($installments)) {
+                                $installments = [];
+                            }
                             
                             $total_amount = get_post_meta($contract_id, '_total_amount', true);
+                            $total_amount_int = (int) preg_replace('/[^\d]/', '', $total_amount);
                             $paid_amount = 0;
+                            $pending_amount = 0;
+                            $cancelled_amount = 0;
                             $has_pending = false;
+                            $installment_count = count($installments);
+                            $paid_count = 0;
+                            $pending_count = 0;
 
-                            if (is_array($installments)) {
-                                foreach($installments as $inst) {
-                                    if (isset($inst['status']) && $inst['status'] === 'paid' && isset($inst['amount'])) {
-                                        $paid_amount += (int) preg_replace('/[^\d]/', '', $inst['amount']);
-                                    } else {
-                                        $has_pending = true;
-                                    }
+                            // Calculate amounts and status
+                            foreach($installments as $inst) {
+                                $inst_amount = (int) preg_replace('/[^\d]/', '', ($inst['amount'] ?? 0));
+                                $inst_status = $inst['status'] ?? 'pending';
+                                
+                                if ($inst_status === 'paid') {
+                                    $paid_amount += $inst_amount;
+                                    $paid_count++;
+                                } elseif ($inst_status === 'cancelled') {
+                                    $cancelled_amount += $inst_amount;
+                                } else {
+                                    $pending_amount += $inst_amount;
+                                    $has_pending = true;
+                                    $pending_count++;
                                 }
                             }
 
-                            if (empty($total_amount) && is_array($installments)) {
-                                $calculated_total = 0;
-                                foreach ($installments as $inst) {
-                                    $calculated_total += (int)preg_replace('/[^\d]/', '', ($inst['amount'] ?? 0));
-                                }
-                                $total_amount = $calculated_total;
+                            // If total amount is empty, calculate from installments
+                            if (empty($total_amount_int) && $installment_count > 0) {
+                                $total_amount_int = $paid_amount + $pending_amount + $cancelled_amount;
                             }
 
-                            $status_text = (!$has_pending && (int)$total_amount > 0 && $paid_amount >= (int)$total_amount) ? 'تکمیل پرداخت' : 'در حال پرداخت';
-                            $status_class = (!$has_pending && (int)$total_amount > 0 && $paid_amount >= (int)$total_amount) ? 'status-paid' : 'status-pending';
+                            // Determine status
+                            $contract_status = get_post_meta($contract_id, '_contract_status', true);
+                            if ($contract_status === 'cancelled') {
+                                $status_text = 'لغو شده';
+                                $status_class = 'status-cancelled';
+                            } elseif ($total_amount_int > 0 && $paid_amount >= $total_amount_int) {
+                                $status_text = 'تکمیل پرداخت';
+                                $status_class = 'status-paid';
+                            } elseif ($paid_amount > 0) {
+                                $status_text = 'در حال پرداخت';
+                                $status_class = 'status-pending';
+                            } else {
+                                $status_text = 'در انتظار پرداخت';
+                                $status_class = 'status-pending';
+                            }
+
+                            // Get dates
+                            $start_date = get_post_meta($contract_id, '_project_start_date', true);
+                            $start_date_display = $start_date ? puzzling_gregorian_to_jalali($start_date) : '-';
+                            
+                            // Apply payment status filter
+                            $payment_status_filter = isset($_GET['payment_status']) ? sanitize_key($_GET['payment_status']) : '';
+                            if ($payment_status_filter === 'paid' && $status_class !== 'status-paid') {
+                                continue; // Skip if filter is "paid" but contract is not paid
+                            }
+                            if ($payment_status_filter === 'pending' && $status_class === 'status-paid') {
+                                continue; // Skip if filter is "pending" but contract is paid
+                            }
 
                             $edit_url = add_query_arg(['view' => 'contracts', 'action' => 'edit', 'contract_id' => $contract_id]);
+                            
+                            // Calculate percentage
+                            $payment_percentage = $total_amount_int > 0 ? round(($paid_amount / $total_amount_int) * 100) : 0;
                         ?>
                         <tr>
-                            <td><strong>#<?php echo esc_html(get_post_meta($contract_id, '_contract_number', true) ?: $contract_id); ?></strong></td>
-                            <td><?php echo esc_html($customer_name); ?></td>
-                            <td><?php echo esc_html(number_format((int)$total_amount)); ?> تومان</td>
-                            <td><?php echo esc_html(number_format((int)$paid_amount)); ?> تومان</td>
-                            <td><span class="pzl-status <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_text); ?></span></td>
-                            <td><a href="<?php echo esc_url($edit_url); ?>" class="pzl-button pzl-button-sm">ویرایش / مشاهده جزئیات</a></td>
+                            <td>
+                                <strong>#<?php echo esc_html(get_post_meta($contract_id, '_contract_number', true) ?: $contract_id); ?></strong>
+                                <?php if ($contract_status === 'cancelled'): ?>
+                                    <span class="badge bg-danger ms-2">لغو شده</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <div><?php echo esc_html($customer_name); ?></div>
+                                <?php if ($customer && $customer->exists()): ?>
+                                    <small class="text-muted"><?php echo esc_html($customer->user_email); ?></small>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <div class="fw-semibold"><?php echo esc_html(number_format($total_amount_int)); ?> تومان</div>
+                                <?php if ($installment_count > 0): ?>
+                                    <small class="text-muted"><?php echo $installment_count; ?> قسط</small>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-success"><?php echo esc_html(number_format($paid_amount)); ?> تومان</div>
+                                <small class="text-muted"><?php echo $payment_percentage; ?>%</small>
+                                <?php if ($pending_amount > 0): ?>
+                                    <div class="text-warning small"><?php echo esc_html(number_format($pending_amount)); ?> تومان باقیمانده</div>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <span class="pzl-status <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_text); ?></span>
+                                <?php if ($installment_count > 0): ?>
+                                    <div class="mt-1">
+                                        <small class="text-muted">
+                                            <?php echo $paid_count; ?> پرداخت شده / <?php echo $pending_count; ?> در انتظار
+                                        </small>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <a href="<?php echo esc_url($edit_url); ?>" class="btn btn-primary btn-sm">
+                                        <i class="ri-edit-line me-1"></i>ویرایش
+                                    </a>
+                                </div>
+                                <?php if ($start_date_display !== '-'): ?>
+                                    <div class="mt-1">
+                                        <small class="text-muted">
+                                            <i class="ri-calendar-line"></i> <?php echo esc_html($start_date_display); ?>
+                                        </small>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                         <?php endwhile; ?>
                     </tbody>
@@ -205,7 +291,17 @@ $contract_id_to_edit = isset($_GET['contract_id']) ? intval($_GET['contract_id']
                 </div>
                 <?php wp_reset_postdata(); ?>
             <?php else: ?>
-                <p>هیچ قراردادی یافت نشد.</p>
+                <div class="alert alert-info text-center py-5">
+                    <i class="ri-inbox-line fs-1 d-block mb-3"></i>
+                    <h5>هیچ قراردادی یافت نشد</h5>
+                    <p class="text-muted mb-0">
+                        <?php if (!empty($_GET['s']) || !empty($_GET['customer_filter']) || !empty($_GET['payment_status'])): ?>
+                            با فیلترهای فعلی هیچ قراردادی یافت نشد. لطفاً فیلترها را تغییر دهید.
+                        <?php else: ?>
+                            هنوز هیچ قراردادی ثبت نشده است. برای ایجاد قرارداد جدید روی تب "قرارداد جدید" کلیک کنید.
+                        <?php endif; ?>
+                    </p>
+                </div>
             <?php endif; ?>
         </div>
     <?php endif; ?>

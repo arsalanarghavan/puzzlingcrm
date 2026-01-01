@@ -184,45 +184,229 @@ if ( ! function_exists( 'puzzling_render_task_card' ) ) {
 if ( ! function_exists( 'puzzling_jalali_to_gregorian' ) ) {
     /**
      * Converts a Jalali date string (with potential Farsi numerals) to Gregorian 'Y-m-d' format.
+     * Enhanced with comprehensive validation and error handling.
      *
      * @param string $jalali_date The Jalali date, e.g., '1404/07/08' or '۱۴۰۴/۰۷/۰۸'.
+     * @param bool $log_errors Whether to log errors for debugging (default: false).
      * @return string The Gregorian date, e.g., '2025-09-29', or an empty string on failure.
      */
-    function puzzling_jalali_to_gregorian($jalali_date) {
-        if(empty($jalali_date)) return '';
+    function puzzling_jalali_to_gregorian($jalali_date, $log_errors = false) {
+        // Early return for empty input
+        if(empty($jalali_date) || trim($jalali_date) === '') {
+            if ($log_errors) {
+                error_log('PuzzlingCRM Date Conversion: Empty date input');
+            }
+            return '';
+        }
+        
+        // Store original for logging
+        $original_input = $jalali_date;
         
         // *** CRITICAL FIX: Convert Farsi/Arabic numerals to English before any processing ***
-        $jalali_date = tr_num($jalali_date, 'en');
+        if (function_exists('tr_num')) {
+            $jalali_date = tr_num($jalali_date, 'en');
+        } else {
+            // Fallback: manual conversion if tr_num doesn't exist
+            $jalali_date = str_replace(['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'], 
+                                      ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], $jalali_date);
+        }
         
-        // Normalize separators
-        $jalali_date = str_replace('-', '/', $jalali_date);
+        // Normalize separators (accept both / and -)
+        $jalali_date = str_replace(['-', '\\'], '/', $jalali_date);
+        // Remove any whitespace
+        $jalali_date = trim($jalali_date);
+        
+        // Validate format: should be YYYY/MM/DD or YYYY/M/D
+        if (!preg_match('/^\d{4}\/\d{1,2}\/\d{1,2}$/', $jalali_date)) {
+            if ($log_errors) {
+                error_log('PuzzlingCRM Date Conversion: Invalid format - ' . $original_input);
+            }
+            return '';
+        }
         
         $parts = explode('/', $jalali_date);
-        if(count($parts) !== 3) return ''; // Return empty string for incorrect format
-
-        // Ensure parts are integers
-        $j_y = intval($parts[0]);
-        $j_m = intval($parts[1]);
-        $j_d = intval($parts[2]);
-        
-        // Basic validation to prevent errors in jdf.php if parts become zero after conversion
-        if ($j_y < 1000 || $j_m < 1 || $j_m > 12 || $j_d < 1 || $j_d > 31) {
-             return '';
-        }
-        
-        if (function_exists('jcheckdate') && !jcheckdate($j_m, $j_d, $j_y)) {
-            return ''; // Return empty for invalid Jalali dates
+        if(count($parts) !== 3) {
+            if ($log_errors) {
+                error_log('PuzzlingCRM Date Conversion: Incorrect parts count - ' . $original_input);
+            }
+            return '';
         }
 
-        $gregorian_parts = jalali_to_gregorian($j_y, $j_m, $j_d);
-        return implode('-', $gregorian_parts);
+        // Ensure parts are integers and trim any whitespace
+        $j_y = intval(trim($parts[0]));
+        $j_m = intval(trim($parts[1]));
+        $j_d = intval(trim($parts[2]));
+        
+        // Enhanced validation: check reasonable ranges
+        // Jalali year should be between 1000 and 2000 (roughly 1620-2620 AD)
+        if ($j_y < 1000 || $j_y > 2000) {
+            if ($log_errors) {
+                error_log('PuzzlingCRM Date Conversion: Invalid year - ' . $original_input . ' (year: ' . $j_y . ')');
+            }
+            return '';
+        }
+        
+        // Month should be 1-12
+        if ($j_m < 1 || $j_m > 12) {
+            if ($log_errors) {
+                error_log('PuzzlingCRM Date Conversion: Invalid month - ' . $original_input . ' (month: ' . $j_m . ')');
+            }
+            return '';
+        }
+        
+        // Day should be at least 1
+        if ($j_d < 1) {
+            if ($log_errors) {
+                error_log('PuzzlingCRM Date Conversion: Invalid day - ' . $original_input . ' (day: ' . $j_d . ')');
+            }
+            return '';
+        }
+        
+        // Use jcheckdate if available for precise validation
+        if (function_exists('jcheckdate')) {
+            if (!jcheckdate($j_m, $j_d, $j_y)) {
+                if ($log_errors) {
+                    error_log('PuzzlingCRM Date Conversion: Invalid Jalali date - ' . $original_input . ' (Y:' . $j_y . ' M:' . $j_m . ' D:' . $j_d . ')');
+                }
+                return '';
+            }
+        } else {
+            // Fallback validation: check day against max days in month
+            $max_days = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29]; // Persian months
+            // Check for leap year in month 12
+            if ($j_m == 12) {
+                // Simple leap year check (not perfect but better than nothing)
+                $max_days[11] = 30; // Default for Esfand
+            }
+            if ($j_d > $max_days[$j_m - 1]) {
+                if ($log_errors) {
+                    error_log('PuzzlingCRM Date Conversion: Day exceeds month max - ' . $original_input);
+                }
+                return '';
+            }
+        }
+
+        // Convert to Gregorian
+        if (!function_exists('jalali_to_gregorian')) {
+            if ($log_errors) {
+                error_log('PuzzlingCRM Date Conversion: jalali_to_gregorian function not found');
+            }
+            return '';
+        }
+        
+        try {
+            $gregorian_parts = jalali_to_gregorian($j_y, $j_m, $j_d);
+            
+            // Validate conversion result
+            if (!is_array($gregorian_parts) || count($gregorian_parts) !== 3) {
+                if ($log_errors) {
+                    error_log('PuzzlingCRM Date Conversion: Invalid conversion result - ' . $original_input);
+                }
+                return '';
+            }
+            
+            // Ensure all parts are valid
+            $g_y = intval($gregorian_parts[0]);
+            $g_m = intval($gregorian_parts[1]);
+            $g_d = intval($gregorian_parts[2]);
+            
+            if ($g_y < 1900 || $g_y > 2100 || $g_m < 1 || $g_m > 12 || $g_d < 1 || $g_d > 31) {
+                if ($log_errors) {
+                    error_log('PuzzlingCRM Date Conversion: Invalid Gregorian result - ' . $original_input . ' -> ' . implode('-', $gregorian_parts));
+                }
+                return '';
+            }
+            
+            // Format as Y-m-d
+            $result = sprintf('%04d-%02d-%02d', $g_y, $g_m, $g_d);
+            
+            // Final validation: check if the date is valid using strtotime
+            if (strtotime($result) === false) {
+                if ($log_errors) {
+                    error_log('PuzzlingCRM Date Conversion: Invalid final date - ' . $result);
+                }
+                return '';
+            }
+            
+            return $result;
+            
+        } catch (\Exception $e) {
+            if ($log_errors) {
+                error_log('PuzzlingCRM Date Conversion: Exception - ' . $e->getMessage() . ' for input: ' . $original_input);
+            }
+            return '';
+        }
     }
 }
 
 if ( ! function_exists( 'puzzling_gregorian_to_jalali' ) ) {
-    function puzzling_gregorian_to_jalali($gregorian_date) {
-        if(empty($gregorian_date) || $gregorian_date == '0000-00-00' || strtotime($gregorian_date) === false) return '';
-        return jdate('Y/m/d', strtotime($gregorian_date));
+    /**
+     * Converts a Gregorian date string to Jalali 'Y/m/d' format.
+     * Enhanced with comprehensive validation and error handling.
+     *
+     * @param string $gregorian_date The Gregorian date, e.g., '2025-09-29' or '2025/09/29'.
+     * @param bool $log_errors Whether to log errors for debugging (default: false).
+     * @return string The Jalali date, e.g., '1404/07/08', or an empty string on failure.
+     */
+    function puzzling_gregorian_to_jalali($gregorian_date, $log_errors = false) {
+        // Early return for empty or invalid input
+        if(empty($gregorian_date) || trim($gregorian_date) === '' || $gregorian_date == '0000-00-00') {
+            if ($log_errors) {
+                error_log('PuzzlingCRM Date Conversion: Empty or invalid Gregorian date input');
+            }
+            return '';
+        }
+        
+        // Store original for logging
+        $original_input = $gregorian_date;
+        
+        // Normalize separators
+        $gregorian_date = str_replace(['/', '\\'], '-', trim($gregorian_date));
+        
+        // Validate format: should be YYYY-MM-DD or YYYY-M-D
+        if (!preg_match('/^\d{4}-\d{1,2}-\d{1,2}$/', $gregorian_date)) {
+            if ($log_errors) {
+                error_log('PuzzlingCRM Date Conversion: Invalid Gregorian format - ' . $original_input);
+            }
+            return '';
+        }
+        
+        // Validate using strtotime
+        $timestamp = strtotime($gregorian_date);
+        if ($timestamp === false) {
+            if ($log_errors) {
+                error_log('PuzzlingCRM Date Conversion: Invalid Gregorian date (strtotime failed) - ' . $original_input);
+            }
+            return '';
+        }
+        
+        // Check if jdate function exists
+        if (!function_exists('jdate')) {
+            if ($log_errors) {
+                error_log('PuzzlingCRM Date Conversion: jdate function not found');
+            }
+            return '';
+        }
+        
+        try {
+            $jalali_date = jdate('Y/m/d', $timestamp);
+            
+            // Validate result
+            if (empty($jalali_date) || !preg_match('/^\d{4}\/\d{1,2}\/\d{1,2}$/', $jalali_date)) {
+                if ($log_errors) {
+                    error_log('PuzzlingCRM Date Conversion: Invalid Jalali conversion result - ' . $original_input . ' -> ' . $jalali_date);
+                }
+                return '';
+            }
+            
+            return $jalali_date;
+            
+        } catch (\Exception $e) {
+            if ($log_errors) {
+                error_log('PuzzlingCRM Date Conversion: Exception - ' . $e->getMessage() . ' for input: ' . $original_input);
+            }
+            return '';
+        }
     }
 }
 

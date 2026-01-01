@@ -272,11 +272,24 @@ class PuzzlingCRM_Smart_Reminders {
         if ($reminder->entity_id && $reminder->entity_type) {
             $entity_link = get_edit_post_link($reminder->entity_id);
         }
+        
+        // Get user language preference
+        $locale = get_locale();
+        $user_lang = get_user_meta($reminder->user_id, 'pzl_language', true);
+        if ($user_lang === 'en') {
+            $locale = 'en_US';
+        } elseif ($user_lang === 'fa') {
+            $locale = 'fa_IR';
+        }
+        
+        $is_rtl = ($locale === 'fa_IR');
+        $direction = $is_rtl ? 'rtl' : 'ltr';
+        $lang = substr($locale, 0, 2);
 
         ob_start();
         ?>
         <!DOCTYPE html>
-        <html dir="rtl">
+        <html dir="<?php echo esc_attr($direction); ?>" lang="<?php echo esc_attr($lang); ?>">
         <head>
             <meta charset="UTF-8">
             <style>

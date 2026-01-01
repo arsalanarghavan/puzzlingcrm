@@ -5,8 +5,8 @@
 
 /* LTR Input for dates */
 .ltr-input {
-    direction: ltr !important;
-    text-align: left !important;
+    direction: ltr;
+    text-align: left;
 }
 
 /* Stats Cards Enhancement */
@@ -100,14 +100,14 @@ canvas {
     }
     
     canvas {
-        max-height: 250px !important;
+        max-height: 250px;
     }
 }
 
 /* Print Styles */
 @media print {
     .btn, .nav-tabs, .card-header .btn-group {
-        display: none !important;
+        display: none;
     }
     
     .card {
@@ -115,7 +115,7 @@ canvas {
     }
     
     canvas {
-        max-height: 300px !important;
+        max-height: 300px;
     }
 }
 
@@ -133,11 +133,11 @@ canvas {
 }
 
 .swal2-title {
-    font-family: 'IRANSans', sans-serif !important;
+    font-family: 'IRANSans', sans-serif;
 }
 
 .swal2-content {
-    font-family: 'IRANSans', sans-serif !important;
+    font-family: 'IRANSans', sans-serif;
 }
 
 /* Date Range Filters */
@@ -286,6 +286,7 @@ html {
 }
 
 .table-responsive::-webkit-scrollbar-thumb:hover {
-    background: #6d48c7;
+    background: var(--puzzling-primary-color, #845adf);
+    opacity: 0.8;
 }
 

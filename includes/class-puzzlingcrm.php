@@ -226,25 +226,65 @@ class PuzzlingCRM {
      * OPTIMIZED: Conditional loading based on current page/shortcode
      */
     public function enqueue_dashboard_assets() {
-        // Only load on dashboard shortcode pages
+        // Load on dashboard pages (both shortcode and router)
         global $post;
         
-        if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'puzzling_dashboard')) {
+        // Check if it's a dashboard page via router
+        $is_dashboard_router = (bool) get_query_var('puzzling_dashboard', false);
+        
+        // Check if it's a dashboard page via shortcode
+        $is_dashboard_shortcode = false;
+        if (is_a($post, 'WP_Post')) {
+            $shortcodes = ['puzzling_dashboard', 'puzzling_contracts', 'puzzling_projects', 'puzzling_appointments', 'puzzling_tasks'];
+            foreach ($shortcodes as $shortcode) {
+                if (has_shortcode($post->post_content, $shortcode)) {
+                    $is_dashboard_shortcode = true;
+                    break;
+                }
+            }
+        }
+        
+        // Also check URL for dashboard pages
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+        $is_dashboard_url = (strpos($request_uri, '/dashboard') !== false || strpos($request_uri, '/contracts') !== false || strpos($request_uri, '/projects') !== false);
+        
+        // If none of the conditions match, don't load assets
+        if (!$is_dashboard_router && !$is_dashboard_shortcode && !$is_dashboard_url) {
             return;
         }
+        
+        // Debug log
+        error_log('PuzzlingCRM: Enqueuing dashboard assets - Router: ' . ($is_dashboard_router ? 'YES' : 'NO') . ', Shortcode: ' . ($is_dashboard_shortcode ? 'YES' : 'NO') . ', URL: ' . ($is_dashboard_url ? 'YES' : 'NO'));
         
         // Enqueue Font Awesome - Deferred
         wp_enqueue_style( 'font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css', [], '6.5.1' );
         
         // SweetAlert - Essential
         wp_enqueue_script('sweetalert2', 'https://cdn.jsdelivr.net/npm/sweetalert2@11', [], '11', true);
-
-        // Main scripts file - Minified dependencies
-        wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'sweetalert2'], PUZZLINGCRM_VERSION, true );
         
         // Load heavy libraries ONLY when needed
         $current_action = isset($_GET['action']) ? sanitize_key($_GET['action']) : '';
-        $current_page = isset($_GET['pzl_page']) ? sanitize_key($_GET['pzl_page']) : 'dashboard';
+        $current_page = isset($_GET['pzl_page']) ? sanitize_key($_GET['pzl_page']) : (isset($_GET['view']) ? sanitize_key($_GET['view']) : 'dashboard');
+        
+        // Also check URL path for contracts/projects pages
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+        if (strpos($request_uri, '/contracts') !== false || strpos($request_uri, 'view=contracts') !== false || strpos($request_uri, 'contracts') !== false) {
+            $current_page = 'contracts';
+        } elseif (strpos($request_uri, '/projects') !== false || strpos($request_uri, 'view=projects') !== false || strpos($request_uri, 'projects') !== false) {
+            $current_page = 'projects';
+        } elseif (strpos($request_uri, '/appointments') !== false || strpos($request_uri, 'view=appointments') !== false || strpos($request_uri, 'appointments') !== false) {
+            $current_page = 'appointments';
+        } elseif (strpos($request_uri, '/tasks') !== false || strpos($request_uri, 'view=tasks') !== false || strpos($request_uri, 'tasks') !== false) {
+            $current_page = 'tasks';
+        }
+        
+        // Debug: Log page detection
+        error_log('PuzzlingCRM: Current page detected: ' . $current_page . ', URI: ' . $request_uri);
+        
+        $needs_datepicker = in_array($current_page, ['contracts', 'projects', 'appointments', 'tasks']);
+        
+        // Debug: Log datepicker needs
+        error_log('PuzzlingCRM: Needs datepicker: ' . ($needs_datepicker ? 'YES' : 'NO'));
         
         // Calendar - Only on calendar/appointments pages
         if (in_array($current_page, ['appointments', 'calendar', 'schedule'])) {
@@ -257,11 +297,46 @@ class PuzzlingCRM {
             wp_enqueue_style('dhtmlx-gantt', 'https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css', [], '8.0');
         }
         
-        // Persian Date & Datepicker - Only when date inputs exist
-        if (in_array($current_page, ['contracts', 'projects', 'appointments', 'tasks'])) {
+        // Persian Date & Datepicker - Always load on contracts page (force load)
+        // Check if we're on contracts page by multiple methods
+        $is_contracts_page = (
+            $current_page === 'contracts' || 
+            strpos($request_uri, 'contracts') !== false || 
+            (isset($_GET['view']) && $_GET['view'] === 'contracts') ||
+            (isset($_GET['pzl_page']) && $_GET['pzl_page'] === 'contracts')
+        );
+        
+        if ($needs_datepicker || $is_contracts_page || in_array($current_page, ['contracts', 'projects', 'appointments', 'tasks'])) {
+            error_log('PuzzlingCRM: Enqueuing datepicker scripts for page: ' . $current_page . ', is_contracts: ' . ($is_contracts_page ? 'YES' : 'NO'));
+            
+            // Load persian-date first
             wp_enqueue_script('persian-date', 'https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js', [], '1.1.0', true);
+            
+            // Load persianDatepicker from CDN (PRIMARY METHOD)
+            wp_enqueue_style('persian-datepicker-css', 'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css', [], '1.2.0');
+            wp_enqueue_script('persian-datepicker-js', 'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js', ['jquery', 'persian-date'], '1.2.0', true);
+            
+            // Also load custom datepicker as fallback
             wp_enqueue_style( 'puzzling-datepicker-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzling-datepicker.css', [], PUZZLINGCRM_VERSION );
             wp_enqueue_script( 'puzzling-datepicker-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzling-datepicker.js', ['jquery', 'persian-date'], PUZZLINGCRM_VERSION, true );
+            
+            // Verify files exist
+            $datepicker_js_path = PUZZLINGCRM_PLUGIN_DIR . 'assets/js/puzzling-datepicker.js';
+            $datepicker_css_path = PUZZLINGCRM_PLUGIN_DIR . 'assets/css/puzzling-datepicker.css';
+            error_log('PuzzlingCRM: Datepicker JS file exists: ' . (file_exists($datepicker_js_path) ? 'YES' : 'NO') . ' - Path: ' . $datepicker_js_path);
+            error_log('PuzzlingCRM: Datepicker CSS file exists: ' . (file_exists($datepicker_css_path) ? 'YES' : 'NO') . ' - Path: ' . $datepicker_css_path);
+            error_log('PuzzlingCRM: Datepicker scripts enqueued successfully');
+        } else {
+            error_log('PuzzlingCRM: NOT enqueuing datepicker scripts - page: ' . $current_page . ', needs_datepicker: ' . ($needs_datepicker ? 'YES' : 'NO') . ', is_contracts: ' . ($is_contracts_page ? 'YES' : 'NO'));
+        }
+        
+        // Re-enqueue main scripts with proper dependencies if datepicker is needed
+        if ($needs_datepicker) {
+            wp_dequeue_script('puzzlingcrm-scripts');
+            wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'sweetalert2', 'persian-datepicker-js'], PUZZLINGCRM_VERSION, true );
+        } else {
+            // Main scripts file - Minified dependencies (when datepicker is not needed)
+            wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'sweetalert2'], PUZZLINGCRM_VERSION, true );
         }
         
         // Sortable - Only on kanban/task pages

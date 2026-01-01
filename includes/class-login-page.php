@@ -58,9 +58,25 @@ class PuzzlingCRM_Login_Page {
                 $logo_url = $logo ? $logo[0] : '';
             }
         }
+        
+        // Determine language and direction (check cookie first)
+        $cookie_lang = isset( $_COOKIE['pzl_language'] ) ? sanitize_text_field( $_COOKIE['pzl_language'] ) : '';
+        $locale      = get_locale();
+        
+        // Override locale if cookie is set
+        if ( $cookie_lang === 'en' ) {
+            $locale = 'en_US';
+        } elseif ( $cookie_lang === 'fa' ) {
+            $locale = 'fa_IR';
+        }
+        
+        $is_rtl    = ( $locale === 'fa_IR' );
+        $direction = $is_rtl ? 'rtl' : 'ltr';
+        $lang      = substr( $locale, 0, 2 );
+        $bootstrap_css = $is_rtl ? 'bootstrap.rtl.min.css' : 'bootstrap.min.css';
         ?>
 <!DOCTYPE html>
-<html lang="fa" dir="rtl" data-nav-layout="vertical" data-vertical-style="overlay" data-theme-mode="light" data-header-styles="light" data-menu-styles="light" data-toggled="close">
+<html lang="<?php echo esc_attr( $lang ); ?>" dir="<?php echo esc_attr( $direction ); ?>" data-nav-layout="vertical" data-vertical-style="overlay" data-theme-mode="light" data-header-styles="light" data-menu-styles="light" data-toggled="close">
 
     <head>
 
@@ -88,7 +104,7 @@ class PuzzlingCRM_Login_Page {
         <script src="<?php echo $assets_url; ?>js/authentication-main.js"></script>
 
         <!-- Bootstrap Css -->
-        <link id="style" href="<?php echo $assets_url; ?>libs/bootstrap/css/bootstrap.rtl.min.css" rel="stylesheet">
+        <link id="style" href="<?php echo $assets_url; ?>libs/bootstrap/css/<?php echo esc_attr( $bootstrap_css ); ?>" rel="stylesheet">
 
         <!-- Fonts (قبل از همه) -->
         <link href="<?php echo $assets_url; ?>css/fonts.css" rel="stylesheet">
@@ -100,7 +116,7 @@ class PuzzlingCRM_Login_Page {
         <link href="<?php echo $assets_url; ?>css/icons.css" rel="stylesheet">
         
         <!-- RTL Complete Fix -->
-        <link href="<?php echo $assets_url; ?>css/rtl-complete-fix.css" rel="stylesheet">
+        <link href="<?php echo $assets_url; ?>css/rtl-complete-fix.css?v=<?php echo PUZZLINGCRM_VERSION; ?>&t=<?php echo time(); ?>" rel="stylesheet">
         
         <!-- SweetAlert2 -->
         <link rel="stylesheet" href="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/libs/sweetalert2/sweetalert2.min.css">

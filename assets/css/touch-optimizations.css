@@ -713,12 +713,13 @@
     }
     
     ::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
+        background: var(--puzzling-primary-color, #845adf);
         border-radius: 4px;
     }
     
     ::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8;
+        background: var(--puzzling-primary-color, #845adf);
+        opacity: 0.8;
     }
 }
 
@@ -872,6 +873,6 @@
     .dropdown-menu,
     .tooltip,
     .popover {
-        display: none !important;
+        display: none;
     }
 }

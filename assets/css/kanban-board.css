@@ -90,12 +90,13 @@
 }
 
 .kanban-cards::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
+    background: var(--puzzling-primary-color, #845adf);
     border-radius: 10px;
 }
 
 .kanban-cards::-webkit-scrollbar-thumb:hover {
-    background: #a1a1a1;
+    background: var(--puzzling-primary-color, #845adf);
+    opacity: 0.8;
 }
 
 /* Card */

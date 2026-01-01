@@ -276,10 +276,12 @@ class PuzzlingCRM_Project_Ajax_Handler {
             $contract_title = 'قرارداد برای ' . $customer_display_name;
         }
 
-        $start_date_gregorian = puzzling_jalali_to_gregorian($start_date_jalali);
+        // Convert and validate start date with error logging
+        $start_date_gregorian = puzzling_jalali_to_gregorian($start_date_jalali, true);
         $start_timestamp = strtotime($start_date_gregorian);
 
         if (empty($start_date_gregorian) || $start_timestamp === false) {
+            error_log('PuzzlingCRM Contract: Invalid start date conversion - Input: ' . $start_date_jalali . ', Output: ' . $start_date_gregorian);
             $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_INVALID_START_DATE, ['input_date' => $start_date_jalali]);
         }
         
@@ -305,9 +307,40 @@ class PuzzlingCRM_Project_Ajax_Handler {
         update_post_meta($the_contract_id, '_total_amount', preg_replace('/[^\d]/', '', $total_amount));
         update_post_meta($the_contract_id, '_total_installments', $total_installments);
 
-        if ($contract_id == 0 && $result && function_exists('jdate')) {
-            $contract_number = 'puz-' . jdate('ymd', $start_timestamp, '', 'en') . '-' . $customer_id;
+        // Generate or update contract number
+        // For new contracts, always generate
+        // For existing contracts, only update if not already set or if explicitly provided
+        $existing_contract_number = get_post_meta($the_contract_id, '_contract_number', true);
+        
+        if ($contract_id == 0) {
+            // New contract - always generate number
+            if (function_exists('jdate')) {
+                $contract_number = 'puz-' . jdate('ymd', $start_timestamp, '', 'en') . '-' . $customer_id;
+            } else {
+                // Fallback: use current date
+                $date_parts = explode('-', $start_date_gregorian);
+                $contract_number = 'puz-' . substr($date_parts[0], 2) . $date_parts[1] . $date_parts[2] . '-' . $customer_id;
+            }
             update_post_meta($the_contract_id, '_contract_number', $contract_number);
+        } else {
+            // Existing contract - only update if number is missing or explicitly provided
+            if (empty($existing_contract_number)) {
+                // Generate if missing
+                if (function_exists('jdate')) {
+                    $contract_number = 'puz-' . jdate('ymd', $start_timestamp, '', 'en') . '-' . $customer_id;
+                } else {
+                    $date_parts = explode('-', $start_date_gregorian);
+                    $contract_number = 'puz-' . substr($date_parts[0], 2) . $date_parts[1] . $date_parts[2] . '-' . $customer_id;
+                }
+                update_post_meta($the_contract_id, '_contract_number', $contract_number);
+            }
+            // If contract_number is provided in POST, update it (for manual override)
+            if (isset($_POST['contract_number']) && !empty($_POST['contract_number'])) {
+                $new_contract_number = sanitize_text_field($_POST['contract_number']);
+                if (!empty($new_contract_number)) {
+                    update_post_meta($the_contract_id, '_contract_number', $new_contract_number);
+                }
+            }
         }
 
         update_post_meta($the_contract_id, '_project_start_date', $start_date_gregorian);
@@ -318,42 +351,127 @@ class PuzzlingCRM_Project_Ajax_Handler {
         update_post_meta($the_contract_id, '_project_end_date', $end_date);
         update_post_meta($the_contract_id, '_project_subscription_model', sanitize_key($_POST['_project_subscription_model']));
 
+        // Process installments with comprehensive validation
         $installments = [];
+        $installment_errors = [];
+        
         if (isset($_POST['payment_amount']) && is_array($_POST['payment_amount'])) {
-            // Debug: Log the received data
-            error_log('PuzzlingCRM Debug - Payment data received:');
-            error_log('payment_amount: ' . print_r($_POST['payment_amount'], true));
-            error_log('payment_due_date: ' . print_r($_POST['payment_due_date'], true));
-            error_log('payment_status: ' . print_r($_POST['payment_status'], true));
+            $payment_amounts = $_POST['payment_amount'];
+            $payment_due_dates = isset($_POST['payment_due_date']) && is_array($_POST['payment_due_date']) ? $_POST['payment_due_date'] : [];
+            $payment_statuses = isset($_POST['payment_status']) && is_array($_POST['payment_status']) ? $_POST['payment_status'] : [];
             
-            for ($i = 0; $i < count($_POST['payment_amount']); $i++) {
-                if (!empty($_POST['payment_amount'][$i]) && isset($_POST['payment_due_date'][$i], $_POST['payment_status'][$i])) {
-                    $jalali_date = sanitize_text_field($_POST['payment_due_date'][$i]);
-                    $due_date_gregorian = puzzling_jalali_to_gregorian($jalali_date);
-                    
-                    error_log("PuzzlingCRM Debug - Installment $i: jalali_date=$jalali_date, gregorian=$due_date_gregorian");
-                    
-                    if (empty($due_date_gregorian) || strtotime($due_date_gregorian) === false) {
-                        error_log("PuzzlingCRM Debug - Skipping installment $i due to invalid date conversion");
-                        continue;
-                    }
-                    
-                    $installments[] = [
-                        'amount' => preg_replace('/[^\d]/', '', sanitize_text_field($_POST['payment_amount'][$i])),
-                        'due_date' => $due_date_gregorian,
-                        'status' => sanitize_key($_POST['payment_status'][$i]),
-                    ];
+            $installment_count = count($payment_amounts);
+            
+            // Validate that all arrays have the same length
+            if (count($payment_due_dates) !== $installment_count || count($payment_statuses) !== $installment_count) {
+                error_log('PuzzlingCRM Contract: Mismatched installment arrays - amounts: ' . $installment_count . ', dates: ' . count($payment_due_dates) . ', statuses: ' . count($payment_statuses));
+            }
+            
+            for ($i = 0; $i < $installment_count; $i++) {
+                $amount_raw = isset($payment_amounts[$i]) ? trim($payment_amounts[$i]) : '';
+                $jalali_date = isset($payment_due_dates[$i]) ? trim($payment_due_dates[$i]) : '';
+                $status = isset($payment_statuses[$i]) ? trim($payment_statuses[$i]) : 'pending';
+                
+                // Skip empty rows
+                if (empty($amount_raw) && empty($jalali_date)) {
+                    continue;
                 }
+                
+                // Validate amount
+                if (empty($amount_raw)) {
+                    $installment_errors[] = 'قسط شماره ' . ($i + 1) . ': مبلغ وارد نشده است.';
+                    continue;
+                }
+                
+                $amount_clean = preg_replace('/[^\d]/', '', $amount_raw);
+                if (empty($amount_clean) || intval($amount_clean) <= 0) {
+                    $installment_errors[] = 'قسط شماره ' . ($i + 1) . ': مبلغ نامعتبر است.';
+                    continue;
+                }
+                
+                // Validate date
+                if (empty($jalali_date)) {
+                    $installment_errors[] = 'قسط شماره ' . ($i + 1) . ': تاریخ سررسید وارد نشده است.';
+                    continue;
+                }
+                
+                // Convert date with error logging
+                $due_date_gregorian = puzzling_jalali_to_gregorian($jalali_date, true);
+                
+                if (empty($due_date_gregorian) || strtotime($due_date_gregorian) === false) {
+                    error_log("PuzzlingCRM Contract: Invalid installment date - Index: $i, Jalali: $jalali_date");
+                    $installment_errors[] = 'قسط شماره ' . ($i + 1) . ': تاریخ سررسید نامعتبر است (' . sanitize_text_field($jalali_date) . ').';
+                    continue;
+                }
+                
+                // Validate status
+                $valid_statuses = ['pending', 'paid', 'cancelled'];
+                if (!in_array($status, $valid_statuses)) {
+                    $status = 'pending'; // Default to pending if invalid
+                }
+                
+                // All validations passed, add installment
+                $installments[] = [
+                    'amount' => $amount_clean,
+                    'due_date' => $due_date_gregorian,
+                    'status' => $status,
+                ];
             }
         }
         
-        error_log('PuzzlingCRM Debug - Final installments: ' . print_r($installments, true));
+        // Handle installment validation errors
+        if (!empty($installment_errors)) {
+            if ($contract_id == 0) {
+                // For new contracts, fail if there are errors
+                $error_message = 'خطا در ثبت اقساط:\n' . implode('\n', array_slice($installment_errors, 0, 5));
+                if (count($installment_errors) > 5) {
+                    $error_message .= '\nو ' . (count($installment_errors) - 5) . ' خطای دیگر...';
+                }
+                $this->clean_buffer_and_send_error(PuzzlingCRM_Error_Codes::PRJ_ERR_MISSING_CONTRACT_DATA, ['installment_errors' => $installment_errors, 'message' => $error_message]);
+            } else {
+                // For existing contracts, log but continue
+                error_log('PuzzlingCRM Contract: Installment validation errors (edit mode): ' . implode(', ', $installment_errors));
+            }
+        }
+        
+        // Update installments meta
         update_post_meta($the_contract_id, '_installments', $installments);
         
-        PuzzlingCRM_Logger::add('قرارداد مدیریت شد', ['action' => $contract_id > 0 ? 'به‌روزرسانی' : 'ایجاد', 'contract_id' => $the_contract_id], 'success');
+        // If creating new contract and no valid installments, warn but don't fail (allow contracts without installments)
+        if ($contract_id == 0 && empty($installments)) {
+            error_log('PuzzlingCRM Contract: No valid installments for new contract ID: ' . $the_contract_id);
+        }
+        
+        // Validate total amount matches installments (if installments exist)
+        if (!empty($installments)) {
+            $calculated_total = 0;
+            foreach ($installments as $inst) {
+                $calculated_total += intval($inst['amount']);
+            }
+            $stored_total = intval(preg_replace('/[^\d]/', '', $total_amount));
+            
+            // If totals don't match, update the stored total to match installments
+            if ($calculated_total > 0 && abs($calculated_total - $stored_total) > 100) {
+                // Difference is more than 100, update total
+                update_post_meta($the_contract_id, '_total_amount', $calculated_total);
+                error_log('PuzzlingCRM Contract: Total amount updated to match installments - Old: ' . $stored_total . ', New: ' . $calculated_total);
+            }
+        }
+        
+        PuzzlingCRM_Logger::add('قرارداد مدیریت شد', [
+            'action' => $contract_id > 0 ? 'به‌روزرسانی' : 'ایجاد', 
+            'contract_id' => $the_contract_id,
+            'installments_count' => count($installments),
+            'total_amount' => get_post_meta($the_contract_id, '_total_amount', true)
+        ], 'success');
         
         ob_end_clean();
-        wp_send_json_success(['message' => $message, 'reload' => true]);
+        wp_send_json_success([
+            'message' => $message, 
+            'reload' => true,
+            'contract_id' => $the_contract_id,
+            'contract_number' => get_post_meta($the_contract_id, '_contract_number', true)
+        ]);
     }
     
     public function ajax_delete_contract() {

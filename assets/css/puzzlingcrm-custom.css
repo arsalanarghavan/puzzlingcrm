@@ -1,7 +1,7 @@
 /**
  * PuzzlingCRM Custom Styles (Compatible with Xintra)
  * فقط استایل‌های خاص پلاگین - بدون override کردن Xintra
- * Version: 3.0.0
+ * Version: 3.1.0 - Fixed RTL/LTR wrapper positioning
  */
 
 /* استایل‌های خاص برای فیلدهای admin پلاگین */
@@ -76,8 +76,8 @@
 
 /* RTL Specific Fixes */
 .ltr-input {
-    direction: ltr !important;
-    text-align: left !important;
+    direction: ltr;
+    text-align: left;
 }
 
 /* فونت فارسی (در صورت نیاز) */
@@ -86,13 +86,113 @@ body.puzzling-dashboard-body,
     font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Utility Classes */
-.text-end {
-    text-align: left !important; /* RTL */
+/* Utility Classes - These are now handled by rtl-complete-fix.css */
+
+/* Sidebar Shadow - سایه برای مشخص بودن سایدبار */
+[dir="ltr"] .app-sidebar,
+[dir="ltr"] .puzzlingcrm-sidebar,
+[dir="ltr"] .pzl-sidebar,
+[dir="ltr"] .main-sidebar,
+[dir="ltr"] .customer-sidebar {
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
 }
 
-.text-start {
-    text-align: right !important; /* RTL */
+[dir="rtl"] .app-sidebar,
+[dir="rtl"] .puzzlingcrm-sidebar,
+[dir="rtl"] .pzl-sidebar,
+[dir="rtl"] .main-sidebar,
+[dir="rtl"] .customer-sidebar {
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Main Page Scrollbar - White Label */
+html ::-webkit-scrollbar-thumb,
+body ::-webkit-scrollbar-thumb {
+    background: var(--puzzling-primary-color, #845adf);
+}
+
+html ::-webkit-scrollbar-thumb:hover,
+body ::-webkit-scrollbar-thumb:hover {
+    background: var(--puzzling-primary-color, #845adf);
+    opacity: 0.8;
+}
+
+/* Sidebar Scrollbar - White Label */
+.app-sidebar::-webkit-scrollbar,
+.puzzlingcrm-sidebar::-webkit-scrollbar,
+.pzl-sidebar::-webkit-scrollbar,
+.main-sidebar::-webkit-scrollbar,
+.customer-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.app-sidebar::-webkit-scrollbar-track,
+.puzzlingcrm-sidebar::-webkit-scrollbar-track,
+.pzl-sidebar::-webkit-scrollbar-track,
+.main-sidebar::-webkit-scrollbar-track,
+.customer-sidebar::-webkit-scrollbar-track {
+    background: var(--default-background, #f9fafb);
+    border-radius: 3px;
+}
+
+.app-sidebar::-webkit-scrollbar-thumb,
+.puzzlingcrm-sidebar::-webkit-scrollbar-thumb,
+.pzl-sidebar::-webkit-scrollbar-thumb,
+.main-sidebar::-webkit-scrollbar-thumb,
+.customer-sidebar::-webkit-scrollbar-thumb {
+    background: var(--puzzling-primary-color, #845adf);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+.app-sidebar::-webkit-scrollbar-thumb:hover,
+.puzzlingcrm-sidebar::-webkit-scrollbar-thumb:hover,
+.pzl-sidebar::-webkit-scrollbar-thumb:hover,
+.main-sidebar::-webkit-scrollbar-thumb:hover,
+.customer-sidebar::-webkit-scrollbar-thumb:hover {
+    background: var(--puzzling-primary-color, #845adf);
+    opacity: 0.8;
+}
+
+/* Dark Mode Sidebar Scrollbar */
+html[data-theme-mode="dark"] .app-sidebar::-webkit-scrollbar-track,
+html[data-theme-mode="dark"] .puzzlingcrm-sidebar::-webkit-scrollbar-track,
+html[data-theme-mode="dark"] .pzl-sidebar::-webkit-scrollbar-track,
+html[data-theme-mode="dark"] .main-sidebar::-webkit-scrollbar-track,
+html[data-theme-mode="dark"] .customer-sidebar::-webkit-scrollbar-track,
+html[data-theme="dark"] .app-sidebar::-webkit-scrollbar-track,
+html[data-theme="dark"] .puzzlingcrm-sidebar::-webkit-scrollbar-track,
+html[data-theme="dark"] .pzl-sidebar::-webkit-scrollbar-track,
+html[data-theme="dark"] .main-sidebar::-webkit-scrollbar-track,
+html[data-theme="dark"] .customer-sidebar::-webkit-scrollbar-track {
+    background: var(--bg-primary, #1a1a2e);
+}
+
+html[data-theme-mode="dark"] .app-sidebar::-webkit-scrollbar-thumb,
+html[data-theme-mode="dark"] .puzzlingcrm-sidebar::-webkit-scrollbar-thumb,
+html[data-theme-mode="dark"] .pzl-sidebar::-webkit-scrollbar-thumb,
+html[data-theme-mode="dark"] .main-sidebar::-webkit-scrollbar-thumb,
+html[data-theme-mode="dark"] .customer-sidebar::-webkit-scrollbar-thumb,
+html[data-theme="dark"] .app-sidebar::-webkit-scrollbar-thumb,
+html[data-theme="dark"] .puzzlingcrm-sidebar::-webkit-scrollbar-thumb,
+html[data-theme="dark"] .pzl-sidebar::-webkit-scrollbar-thumb,
+html[data-theme="dark"] .main-sidebar::-webkit-scrollbar-thumb,
+html[data-theme="dark"] .customer-sidebar::-webkit-scrollbar-thumb {
+    background: var(--puzzling-primary-color, #845adf);
+}
+
+html[data-theme-mode="dark"] .app-sidebar::-webkit-scrollbar-thumb:hover,
+html[data-theme-mode="dark"] .puzzlingcrm-sidebar::-webkit-scrollbar-thumb:hover,
+html[data-theme-mode="dark"] .pzl-sidebar::-webkit-scrollbar-thumb:hover,
+html[data-theme-mode="dark"] .main-sidebar::-webkit-scrollbar-thumb:hover,
+html[data-theme-mode="dark"] .customer-sidebar::-webkit-scrollbar-thumb:hover,
+html[data-theme="dark"] .app-sidebar::-webkit-scrollbar-thumb:hover,
+html[data-theme="dark"] .puzzlingcrm-sidebar::-webkit-scrollbar-thumb:hover,
+html[data-theme="dark"] .pzl-sidebar::-webkit-scrollbar-thumb:hover,
+html[data-theme="dark"] .main-sidebar::-webkit-scrollbar-thumb:hover,
+html[data-theme="dark"] .customer-sidebar::-webkit-scrollbar-thumb:hover {
+    background: var(--puzzling-primary-color, #845adf);
+    opacity: 0.8;
 }
 
 /* فیکس‌های کوچک برای سازگاری با Xintra */
@@ -261,8 +361,8 @@ body.puzzling-dashboard-body,
     
     .card.custom-card .d-flex.flex-wrap {
         flex-direction: column;
-        align-items: stretch !important;
-        gap: 1rem !important;
+        align-items: stretch;
+        gap: 1rem;
     }
     
     .card.custom-card .d-flex.flex-wrap > div:first-child {
@@ -275,7 +375,7 @@ body.puzzling-dashboard-body,
         width: 100%;
         justify-content: center;
         flex-wrap: wrap;
-        gap: 0.5rem !important;
+        gap: 0.5rem;
     }
     
     .btn-group {
@@ -375,8 +475,19 @@ body.puzzling-dashboard-body,
 }
 
 [dir="rtl"] .pzl-leads-card-view .ms-auto {
-    margin-left: 0 !important;
-    margin-right: auto !important;
+    margin-left: 0;
+    margin-right: auto;
+}
+
+/* LTR support for card view */
+[dir="ltr"] .pzl-leads-card-view .dropdown-menu-end {
+    right: 0;
+    left: auto;
+}
+
+[dir="ltr"] .pzl-leads-card-view .ms-auto {
+    margin-right: 0;
+    margin-left: auto;
 }
 
 /* Ensure container-fluid is responsive */
@@ -459,23 +570,23 @@ body.puzzling-dashboard-body,
 [class*="text-primary"]:not(.btn-primary):not(.bg-primary),
 *[style*="color"][style*="var(--primary"]:not(.btn-primary):not(.bg-primary),
 *[style*="color"][style*="var(--puzzling-primary"]:not(.btn-primary):not(.bg-primary) {
-    color: #ffffff !important;
+    color: #ffffff;
 }
 
 /* But keep primary color for backgrounds and borders */
 .bg-primary {
-    color: #ffffff !important;
+    color: #ffffff;
 }
 
 /* Links and hover states with primary color */
 a.text-primary,
 a[class*="text-primary"]:not(.btn-primary) {
-    color: #ffffff !important;
+    color: #ffffff;
 }
 
 a.text-primary:hover,
 a[class*="text-primary"]:not(.btn-primary):hover {
-    color: #ffffff !important;
+    color: #ffffff;
     opacity: 0.9;
 }
 
@@ -485,7 +596,7 @@ a[class*="text-primary"]:not(.btn-primary):hover {
 
 /* Main Page Wrapper */
 .pzl-page-wrapper {
-    background: #ffffff !important;
+    background: #ffffff;
     border-radius: 15px;
     padding: 0;
     margin-top: 15px;
@@ -505,7 +616,7 @@ a[class*="text-primary"]:not(.btn-primary):hover {
     justify-content: space-between;
     padding: 20px 30px;
     border-bottom: 1px solid #e9ecef;
-    background: #ffffff !important;
+    background: #ffffff;
     flex-wrap: nowrap;
     gap: 20px;
     width: 100%;
@@ -646,7 +757,7 @@ a[class*="text-primary"]:not(.btn-primary):hover {
 
 /* Page Content */
 .pzl-page-content {
-    padding: 15px !important;
+    padding: 15px;
     min-height: 200px;
 }
 
@@ -660,13 +771,8 @@ a[class*="text-primary"]:not(.btn-primary):hover {
 }
 
 /* Sidebar Adaptation - When sidebar is collapsed */
-[data-toggled="close-menu-close"] .pzl-page-wrapper,
-[data-toggled="icon-overlay-close"] .pzl-page-wrapper,
-[data-toggled="icon-click-closed"] .pzl-page-wrapper,
-[data-toggled="icon-hover-closed"] .pzl-page-wrapper,
-[data-toggled="detached-close"] .pzl-page-wrapper {
-    margin-inline-start: calc(5rem + 10px);
-}
+/* REMOVED: This rule was conflicting with the more specific rules below */
+/* The collapsed state is now handled by the .app-content .pzl-page-wrapper rules */
 
 /* Responsive Styles */
 @media (max-width: 1199.98px) {
@@ -675,26 +781,8 @@ a[class*="text-primary"]:not(.btn-primary):hover {
         margin-inline-end: 15px;
     }
     
-    [data-toggled="close-menu-close"] .pzl-page-wrapper,
-    [data-toggled="icon-overlay-close"] .pzl-page-wrapper,
-    [data-toggled="icon-click-closed"] .pzl-page-wrapper,
-    [data-toggled="icon-hover-closed"] .pzl-page-wrapper,
-    [data-toggled="detached-close"] .pzl-page-wrapper {
-        margin-inline-start: calc(5rem + 10px);
-    }
-}
-
-/* Fix for app-content margin to prevent double margin */
-.app-content .pzl-page-wrapper {
-    margin-top: 15px;
-    margin-inline-start: 15px;
-    margin-inline-end: 15px;
-}
-
-@media (min-width: 992px) {
-    .app-content .pzl-page-wrapper {
-        margin-inline-start: 15px;
-    }
+    /* REMOVED: This rule was conflicting with the more specific rules below */
+    /* The collapsed state is now handled by the .app-content .pzl-page-wrapper rules */
 }
 
 @media (max-width: 991.98px) {
@@ -712,28 +800,28 @@ a[class*="text-primary"]:not(.btn-primary):hover {
     }
     
     .pzl-page-breadcrumb {
-        order: 1 !important;
+        order: 1;
         width: 100%;
     }
     
     .pzl-page-title {
-        order: 2 !important;
+        order: 2;
         width: 100%;
         text-align: center;
-        position: static !important;
-        transform: none !important;
-        left: auto !important;
-        right: auto !important;
+        position: static;
+        transform: none;
+        left: auto;
+        right: auto;
         max-width: 100%;
         padding: 0;
     }
     
     [dir="rtl"] .pzl-page-title {
-        transform: none !important;
+        transform: none;
     }
     
     .pzl-page-actions {
-        order: 3 !important;
+        order: 3;
         width: 100%;
         justify-content: flex-end;
     }
@@ -743,7 +831,7 @@ a[class*="text-primary"]:not(.btn-primary):hover {
     }
     
     .pzl-page-content {
-        padding: 15px !important;
+        padding: 15px;
     }
     
     .pzl-page-title-text {
@@ -766,7 +854,7 @@ a[class*="text-primary"]:not(.btn-primary):hover {
     }
     
     .pzl-page-content {
-        padding: 15px !important;
+        padding: 15px;
     }
     
     .pzl-page-title-text {
@@ -785,12 +873,12 @@ a[class*="text-primary"]:not(.btn-primary):hover {
 
 /* Dark Mode Support */
 [data-theme-mode="dark"] .pzl-page-wrapper {
-    background: var(--default-background, #1a1d29);
+    background: #19191C;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme-mode="dark"] .pzl-page-header {
-    background: var(--default-background, #1a1d29);
+    background: #19191C;
     border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -814,90 +902,79 @@ a[class*="text-primary"]:not(.btn-primary):hover {
     color: var(--primary-color, #5e72e4);
 }
 
-/* Fix for app-content - completely reset margins so wrapper can control positioning */
-@media (min-width: 992px) {
-    .app-content,
-    .main-content.app-content {
-        margin-inline-start: 0 !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        margin-block-start: 4.25rem !important;
-        padding: 0 !important;
-        position: relative;
-    }
-    
-    /* Override rtl-complete-fix.css margin */
-    .page:not(.sidebar-closed) .main-content,
-    .page:not(.sidebar-closed) .app-content,
-    .page .main-content,
-    .page .app-content {
-        margin-right: 0 !important;
-        margin-left: 0 !important;
-    }
-    
-    /* Override styles.css margin-inline-start */
-    .app-content {
-        margin-inline-start: 0 !important;
-    }
-}
-
-/* Wrapper positioning - starts from left edge (RTL: right edge) */
+/* Page Wrapper - All positioning logic is here, NOT in app-content */
 .app-content .pzl-page-wrapper {
     margin-top: 15px;
     margin-bottom: 15px;
     position: relative;
+    box-sizing: border-box;
 }
 
 /* RTL: wrapper starts from right edge, 10px from sidebar, 15px from left edge */
 [dir="rtl"] .app-content .pzl-page-wrapper {
-    margin-right: 10px !important;
-    margin-left: 15px !important;
+    margin-right: 10px;
+    margin-left: 15px;
 }
 
 /* LTR: wrapper starts from left edge, 10px from sidebar, 15px from right edge */
 [dir="ltr"] .app-content .pzl-page-wrapper {
-    margin-left: 10px !important;
-    margin-right: 15px !important;
+    margin-left: 10px;
+    margin-right: 15px;
 }
 
 @media (min-width: 992px) {
-    /* RTL: sidebar on right, wrapper starts 10px from sidebar */
+    /* RTL: sidebar on right, wrapper starts 10px from sidebar - DEFAULT STATE (sidebar open) */
     [dir="rtl"] .app-content .pzl-page-wrapper {
-        margin-right: 10px !important;
-        margin-left: 15px !important;
+        margin-right: 10px;
+        margin-left: 15px;
+        /* Width is auto - let it fill naturally */
     }
     
-    /* LTR: sidebar on left, wrapper starts 10px from sidebar */
+    /* LTR: sidebar on left, wrapper starts 10px from sidebar - DEFAULT STATE (sidebar open) */
     [dir="ltr"] .app-content .pzl-page-wrapper {
-        margin-left: 10px !important;
-        margin-right: 15px !important;
+        margin-left: 10px;
+        margin-right: 15px;
+        /* Width is auto - let it fill naturally */
     }
     
-    /* When sidebar is collapsed - RTL: wrapper expands by reducing margin from sidebar */
+    /* When sidebar is collapsed - RTL: wrapper expands to the right only */
     [dir="rtl"][data-toggled="close-menu-close"] .app-content .pzl-page-wrapper,
     [dir="rtl"][data-toggled="icon-overlay-close"] .app-content .pzl-page-wrapper,
     [dir="rtl"][data-toggled="icon-click-closed"] .app-content .pzl-page-wrapper,
     [dir="rtl"][data-toggled="icon-hover-closed"] .app-content .pzl-page-wrapper,
     [dir="rtl"][data-toggled="detached-close"] .app-content .pzl-page-wrapper {
-        margin-right: 10px !important;
-        margin-left: 15px !important;
+        margin-right: 10px; /* FIXED - distance from right edge of app-content (sidebar side) */
+        margin-left: auto; /* AUTO - pushes wrapper to the right, allows expansion to the right */
+        margin-inline-start: auto; /* Override any inline-start rules - push to right */
+        margin-inline-end: 10px; /* Override any inline-end rules - fixed from right */
+        width: calc(100% - 10px);
+        max-width: calc(100% - 10px);
+        position: relative;
+        left: auto;
+        right: auto;
+        box-sizing: border-box;
     }
     
-    /* When sidebar is collapsed - LTR: wrapper expands by reducing margin from sidebar */
+    /* When sidebar is collapsed - LTR: wrapper expands to the left only */
     [dir="ltr"][data-toggled="close-menu-close"] .app-content .pzl-page-wrapper,
     [dir="ltr"][data-toggled="icon-overlay-close"] .app-content .pzl-page-wrapper,
     [dir="ltr"][data-toggled="icon-click-closed"] .app-content .pzl-page-wrapper,
     [dir="ltr"][data-toggled="icon-hover-closed"] .app-content .pzl-page-wrapper,
     [dir="ltr"][data-toggled="detached-close"] .app-content .pzl-page-wrapper {
-        margin-left: 10px !important;
-        margin-right: 15px !important;
+        margin-left: 10px;
+        margin-right: 15px; /* FIXED - MUST NOT CHANGE - keeps right side fixed */
+        width: calc(100vw - 5rem - 25px);
+        max-width: calc(100vw - 5rem - 25px);
+        position: relative;
+        left: auto;
+        right: auto;
     }
 }
 
 @media (max-width: 991.98px) {
     .app-content .pzl-page-wrapper {
-        margin-right: 15px !important;
-        margin-left: 15px !important;
+        margin-right: 15px;
+        margin-left: 15px;
     }
 }
 

@@ -154,12 +154,13 @@
 }
 
 .pzl-sidebar::-webkit-scrollbar-thumb {
-	background: var(--scrollbar-thumb, #cbd5e0);
+	background: var(--puzzling-primary-color, #845adf);
 	border-radius: 3px;
 }
 
 .pzl-sidebar::-webkit-scrollbar-thumb:hover {
-	background: var(--scrollbar-thumb-hover, #a0aec0);
+	background: var(--puzzling-primary-color, #845adf);
+	opacity: 0.8;
 }
 
 /* Dark Mode */

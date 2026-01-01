@@ -5,11 +5,40 @@
         document.querySelector("html").setAttribute("data-menu-styles", "dark")
         document.querySelector("html").setAttribute("data-header-styles", "dark")
     }
-    if (localStorage.xintrartl) {
-        let html = document.querySelector('html');
-        html.setAttribute("dir", "rtl");
-        document.querySelector("#style")?.setAttribute("href", "./assets/libs/bootstrap/css/bootstrap.rtl.min.css");
-            // rtlFn();
+    // Language-based direction - use pzl_language from cookie/localStorage
+    try {
+        let lang = localStorage.getItem('pzl_language');
+        if (!lang) {
+            // Try to get from cookie
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith('pzl_language=')) {
+                    lang = cookie.substring('pzl_language='.length);
+                    break;
+                }
+            }
+        }
+        if (!lang) {
+            // Check HTML dir attribute as fallback
+            const htmlDir = document.documentElement.getAttribute('dir');
+            lang = htmlDir === 'rtl' ? 'fa' : 'en';
+        }
+        
+        const isRTL = lang === 'fa';
+        const html = document.querySelector('html');
+        if (html) {
+            html.setAttribute("dir", isRTL ? "rtl" : "ltr");
+            html.setAttribute("lang", isRTL ? "fa" : "en");
+            
+            const styleLink = document.querySelector("#style");
+            if (styleLink) {
+                const bootstrapCss = isRTL ? 'bootstrap.rtl.min.css' : 'bootstrap.min.css';
+                styleLink.setAttribute("href", "./assets/libs/bootstrap/css/" + bootstrapCss);
+            }
+        }
+    } catch (e) {
+        // Silently fail if localStorage/cookie is not available
     }
     if (localStorage.getItem("xintralayout") == "horizontal") {
         document.querySelector("html").setAttribute("data-nav-layout", "horizontal") 
@@ -44,13 +73,46 @@
             let html = document.querySelector('html');
             html.setAttribute('data-theme-mode', 'dark');
         }
-        if (localStorage.xintrartl) {
-            let html = document.querySelector('html');
-            html.setAttribute('dir', 'rtl');
-            document.querySelector("#style")?.setAttribute("href", "./assets/libs/bootstrap/css/bootstrap.rtl.min.css");
-            setTimeout(() => {
-                rtlFn();
-            }, 10);
+        // Language-based direction in localStorageBackup - use pzl_language
+        try {
+            let lang = localStorage.getItem('pzl_language');
+            if (!lang) {
+                // Try to get from cookie
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith('pzl_language=')) {
+                        lang = cookie.substring('pzl_language='.length);
+                        break;
+                    }
+                }
+            }
+            if (!lang) {
+                // Check HTML dir attribute as fallback
+                const htmlDir = document.documentElement.getAttribute('dir');
+                lang = htmlDir === 'rtl' ? 'fa' : 'en';
+            }
+            
+            const isRTL = lang === 'fa';
+            if (isRTL) {
+                let html = document.querySelector('html');
+                html.setAttribute('dir', 'rtl');
+                html.setAttribute('lang', 'fa');
+                document.querySelector("#style")?.setAttribute("href", "./assets/libs/bootstrap/css/bootstrap.rtl.min.css");
+                setTimeout(() => {
+                    rtlFn();
+                }, 10);
+            } else {
+                let html = document.querySelector('html');
+                html.setAttribute('dir', 'ltr');
+                html.setAttribute('lang', 'en');
+                document.querySelector("#style")?.setAttribute("href", "./assets/libs/bootstrap/css/bootstrap.min.css");
+                setTimeout(() => {
+                    ltrFn();
+                }, 10);
+            }
+        } catch (e) {
+            // Silently fail if localStorage/cookie is not available
         }
     }
     localStorageBackup()

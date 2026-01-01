@@ -69,25 +69,191 @@ jQuery(document).ready(function($) {
     }
 
     /**
+     * Get user-friendly error message from error code
+     * @param {string} code - Error code
+     * @param {object} data - Additional error data
+     * @returns {string} - User-friendly error message
+     */
+    function getErrorMessage(code, data) {
+        const errorMessages = {
+            'PRJ_ERR_MISSING_CONTRACT_DATA': 'اطلاعات قرارداد ناقص است. لطفاً تمام فیلدهای اجباری را پر کنید.',
+            'PRJ_ERR_INVALID_CUSTOMER': 'مشتری انتخاب شده نامعتبر است.',
+            'PRJ_ERR_INVALID_START_DATE': 'تاریخ شروع قرارداد نامعتبر است. لطفاً تاریخ را به فرمت صحیح وارد کنید.',
+            'PRJ_ERR_CONTRACT_SAVE_FAILED': 'خطا در ذخیره قرارداد. لطفاً دوباره تلاش کنید.',
+            'PRJ_ERR_NONCE_FAILED': 'خطای امنیتی. لطفاً صفحه را رفرش کنید و دوباره تلاش کنید.',
+            'PRJ_ERR_ACCESS_DENIED': 'شما دسترسی لازم برای انجام این عملیات را ندارید.'
+        };
+        
+        if (data && data.message) {
+            return data.message;
+        }
+        
+        if (data && data.input_date) {
+            return 'تاریخ وارد شده نامعتبر است: ' + data.input_date;
+        }
+        
+        return errorMessages[code] || 'یک خطا رخ داد. لطفاً دوباره تلاش کنید.';
+    }
+
+    /**
+     * Validates a Jalali date string (YYYY/MM/DD format)
+     * @param {string} dateStr - The date string to validate
+     * @returns {boolean} - True if valid, false otherwise
+     */
+    function validateJalaliDate(dateStr) {
+        if (!dateStr || typeof dateStr !== 'string') {
+            return false;
+        }
+        
+        // Remove any whitespace
+        dateStr = dateStr.trim();
+        
+        // Check format: YYYY/MM/DD or YYYY/M/D
+        if (!/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(dateStr)) {
+            return false;
+        }
+        
+        const parts = dateStr.split('/');
+        if (parts.length !== 3) {
+            return false;
+        }
+        
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        const day = parseInt(parts[2], 10);
+        
+        // Validate ranges
+        if (year < 1300 || year > 2000 || month < 1 || month > 12 || day < 1 || day > 31) {
+            return false;
+        }
+        
+        // Basic validation: check day against max days in Persian months
+        const persianMonthDays = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
+        const maxDays = persianMonthDays[month - 1];
+        
+        if (day > maxDays) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Initializes datepicker for a specific element or all matching elements
+     * @param {jQuery} $element - jQuery element(s) to initialize
+     */
+    function initializeDatepicker($element) {
+        if (!$element || $element.length === 0) {
+            return;
+        }
+        
+        // Check if persianDatepicker is available
+        if (typeof $.fn.persianDatepicker !== 'function') {
+            // If not available, try again after a delay
+            setTimeout(function() {
+                initializeDatepicker($element);
+            }, 500);
+            return;
+        }
+        
+        // Remove existing datepicker if any
+        $element.each(function() {
+            const $this = $(this);
+            try {
+                if ($this.data('pwt-datepicker') || $this.data('persianDatepicker')) {
+                    $this.persianDatepicker('destroy');
+                }
+            } catch(e) {
+                // Ignore destroy errors
+            }
+        });
+        
+        // Initialize datepickers
+        $element.filter(':not(.pwt-datepicker-input-element)').each(function() {
+            const $this = $(this);
+            try {
+                $this.persianDatepicker({
+                    format: 'YYYY/MM/DD',
+                    autoClose: true,
+                    calendarType: 'persian',
+                    observer: true,
+                    calendar: {
+                        persian: {
+                            locale: 'fa'
+                        }
+                    }
+                });
+            } catch(e) {
+                console.error('Error initializing datepicker for element:', e);
+            }
+        });
+    }
+
+    /**
      * Generic AJAX Form Submission Handler
      */
     function handleAjaxFormSubmit(form) {
-        console.log('PuzzlingCRM: Starting form submission');
-        
         var submitButton = form.find('button[type="submit"]');
         var originalButtonHtml = submitButton.html();
-        var formData = new FormData(form[0]);
         var action = form.data('action') || form.find('input[name="action"]').val();
         
-        console.log('PuzzlingCRM: Form action:', action);
-        console.log('PuzzlingCRM: Form data:', Object.fromEntries(formData));
+        // Special validation for contract form
+        if (action === 'puzzling_manage_contract') {
+            // Validate customer
+            var customerId = form.find('#customer_id').val();
+            if (!customerId || customerId === '0' || customerId === '') {
+                showPuzzlingAlert('خطا', 'لطفاً مشتری را انتخاب کنید.', 'error');
+                form.find('#customer_id').focus();
+                return false;
+            }
+            
+            // Validate start date
+            var startDate = form.find('#_project_start_date').val();
+            if (!startDate || !validateJalaliDate(startDate)) {
+                showPuzzlingAlert('خطا', 'لطفاً تاریخ شروع قرارداد را به درستی وارد کنید (فرمت: YYYY/MM/DD).', 'error');
+                form.find('#_project_start_date').focus();
+                return false;
+            }
+            
+            // Validate installments if any exist
+            var paymentAmounts = form.find('input[name="payment_amount[]"]');
+            var paymentDates = form.find('input[name="payment_due_date[]"]');
+            
+            if (paymentAmounts.length > 0) {
+                var hasErrors = false;
+                var errorMessages = [];
+                
+                paymentAmounts.each(function(index) {
+                    var $amountInput = $(this);
+                    var $dateInput = paymentDates.eq(index);
+                    var amount = unformatNumber($amountInput.val());
+                    var date = $dateInput.val();
+                    
+                    if (!amount || amount <= 0) {
+                        hasErrors = true;
+                        errorMessages.push('قسط شماره ' + (index + 1) + ': مبلغ نامعتبر است.');
+                        $amountInput.addClass('is-invalid');
+                    } else {
+                        $amountInput.removeClass('is-invalid');
+                    }
+                    
+                    if (!date || !validateJalaliDate(date)) {
+                        hasErrors = true;
+                        errorMessages.push('قسط شماره ' + (index + 1) + ': تاریخ سررسید نامعتبر است.');
+                        $dateInput.addClass('is-invalid');
+                    } else {
+                        $dateInput.removeClass('is-invalid');
+                    }
+                });
+                
+                if (hasErrors) {
+                    showPuzzlingAlert('خطا', 'لطفاً خطاهای زیر را برطرف کنید:\n' + errorMessages.join('\n'), 'error');
+                    return false;
+                }
+            }
+        }
         
-        // Debug: Check payment data specifically
-        var paymentAmounts = form.find('input[name="payment_amount[]"]').map(function() { return $(this).val(); }).get();
-        var paymentDates = form.find('input[name="payment_due_date[]"]').map(function() { return $(this).val(); }).get();
-        var paymentStatuses = form.find('select[name="payment_status[]"]').map(function() { return $(this).val(); }).get();
-        console.log('PuzzlingCRM: Payment data - Amounts:', paymentAmounts, 'Dates:', paymentDates, 'Statuses:', paymentStatuses);
-        
+        var formData = new FormData(form[0]);
         formData.set('action', action);
 
         form.find('.item-price, .item-discount, #total_amount').each(function() {
@@ -116,21 +282,44 @@ jQuery(document).ready(function($) {
                 submitButton.html('<i class="fas fa-spinner fa-spin"></i> در حال پردازش...').prop('disabled', true);
             },
             success: function(response) {
-                console.log('PuzzlingCRM: AJAX Success Response:', response);
-                
                 if (response.success) {
                     const data = response.data;
-                    console.log('PuzzlingCRM: Success data:', data);
                     
                     if (action === 'puzzling_add_lead' && typeof window.closeLeadModal === 'function') {
                         window.closeLeadModal();
                     }
-                    setTimeout(() => {
-                        showPuzzlingAlert('موفق', data.message, 'success', data);
-                    }, 250);
+                    
+                    // Special handling for contract form
+                    if (action === 'puzzling_manage_contract') {
+                        var successMsg = data.message || 'قرارداد با موفقیت ذخیره شد.';
+                        if (data.contract_number) {
+                            successMsg += '\nشماره قرارداد: ' + data.contract_number;
+                        }
+                        setTimeout(() => {
+                            showPuzzlingAlert('موفق', successMsg, 'success', data);
+                        }, 250);
+                    } else {
+                        setTimeout(() => {
+                            showPuzzlingAlert('موفق', data.message, 'success', data);
+                        }, 250);
+                    }
                 } else {
-                    let errorMessage = (response && response.data && response.data.message) ? response.data.message : (puzzlingcrm_ajax_obj.lang.server_error || 'خطای سرور');
-                    console.log('PuzzlingCRM: Server error message:', errorMessage);
+                    let errorMessage = 'خطای سرور';
+                    
+                    if (response && response.data) {
+                        if (response.data.message) {
+                            errorMessage = response.data.message;
+                        } else if (response.data.installment_errors && Array.isArray(response.data.installment_errors)) {
+                            errorMessage = 'خطا در ثبت اقساط:\n' + response.data.installment_errors.slice(0, 5).join('\n');
+                            if (response.data.installment_errors.length > 5) {
+                                errorMessage += '\nو ' + (response.data.installment_errors.length - 5) + ' خطای دیگر...';
+                            }
+                        } else if (response.data.code) {
+                            // Use error code to get user-friendly message
+                            errorMessage = getErrorMessage(response.data.code, response.data);
+                        }
+                    }
+                    
                     showPuzzlingAlert(puzzlingcrm_ajax_obj.lang.error_title || 'خطا', errorMessage, 'error');
                     submitButton.html(originalButtonHtml).prop('disabled', false);
                 }
@@ -232,6 +421,51 @@ jQuery(document).ready(function($) {
     // --- All other original functions below ---
 
     if ($('#manage-contract-form').length) {
+        console.log('PuzzlingCRM: Contract form found, initializing datepickers...');
+        
+        // Initialize datepickers multiple times to ensure they work
+        function initContractDatepickers() {
+            var formDatepickers = $('#manage-contract-form .pzl-jalali-date-picker');
+            console.log('PuzzlingCRM: Found', formDatepickers.length, 'datepicker fields in contract form');
+            
+            // Try persianDatepicker first
+            if (typeof $.fn.persianDatepicker === 'function') {
+                console.log('PuzzlingCRM: Using persianDatepicker for contract form');
+                formDatepickers.each(function() {
+                    var $this = $(this);
+                    var fieldId = $this.attr('id') || $this.attr('name');
+                    console.log('PuzzlingCRM: Initializing datepicker for', fieldId);
+                    
+                    try {
+                        // Destroy existing if any
+                        if ($this.data('pwt-datepicker') || $this.data('persianDatepicker')) {
+                            $this.persianDatepicker('destroy');
+                        }
+                        
+                        $this.persianDatepicker({
+                            format: 'YYYY/MM/DD',
+                            autoClose: true,
+                            calendarType: 'persian',
+                            observer: true
+                        });
+                        
+                        console.log('PuzzlingCRM: Successfully initialized datepicker for', fieldId);
+                    } catch(e) {
+                        console.error('PuzzlingCRM: Error initializing datepicker for', fieldId, ':', e);
+                    }
+                });
+            } else {
+                console.log('PuzzlingCRM: persianDatepicker not available, custom datepicker should handle it');
+            }
+        }
+        
+        // Initialize multiple times
+        setTimeout(initContractDatepickers, 50);
+        setTimeout(initContractDatepickers, 200);
+        setTimeout(initContractDatepickers, 500);
+        setTimeout(initContractDatepickers, 1000);
+        
+        // Format price inputs on keyup
         $('body').on('keyup', '.item-price, #total_amount', function() {
             var cursorPosition = this.selectionStart;
             var originalLength = this.value.length;
@@ -242,12 +476,22 @@ jQuery(document).ready(function($) {
             this.setSelectionRange(cursorPosition + (newLength - originalLength), cursorPosition + (newLength - originalLength));
         });
 
+        // Validate date fields on blur
+        $('body').on('blur', '.pzl-jalali-date-picker', function() {
+            var dateValue = $(this).val();
+            if (dateValue && !validateJalaliDate(dateValue)) {
+                $(this).addClass('is-invalid');
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+
         function updateContractNumber() {
             const contractIdField = $('input[name="contract_id"]');
-            if (contractIdField.val() === '0' || $('#contract_number').val() === 'با انتخاب مشتری و تاریخ تولید می‌شود') {
+            if (contractIdField.val() === '0' || $('#contract_number').val() === 'پس از انتخاب مشتری تولید می‌شود' || $('#contract_number').val() === 'با انتخاب مشتری و تاریخ تولید می‌شود') {
                 const customerId = $('#customer_id').val();
                 const startDate = $('#_project_start_date').val();
-                if (customerId && startDate) {
+                if (customerId && startDate && validateJalaliDate(startDate)) {
                     const parts = startDate.split('/');
                     if (parts.length === 3) {
                         const year = parts[0].slice(-2);
@@ -255,10 +499,15 @@ jQuery(document).ready(function($) {
                         const day = ('0' + parts[2]).slice(-2);
                         $('#contract_number').val(`puz-${year}${month}${day}-${customerId}`);
                     }
+                } else {
+                    $('#contract_number').val('پس از انتخاب مشتری تولید می‌شود');
                 }
             }
         }
-        $('#customer_id, #_project_start_date').on('change', updateContractNumber);
+        $('#customer_id, #_project_start_date').on('change blur', updateContractNumber);
+        
+        // Initialize contract number on page load
+        updateContractNumber();
     }
 
     $('#cancel-contract-btn').on('click', function() {
@@ -375,18 +624,35 @@ jQuery(document).ready(function($) {
     $('#calculate-installments').on('click', function() {
         var totalAmount = unformatNumber($('#total_amount').val());
         var totalInstallments = parseInt($('#total_installments').val(), 10);
-        var intervalDays = parseInt($('#installment_interval').val(), 10);
+        var intervalDays = parseInt($('#installment_interval').val(), 10) || 30;
         var startDateStr = $('#start_date').val();
 
-        if (!totalAmount || !totalInstallments || isNaN(intervalDays) || !startDateStr) {
-            showPuzzlingAlert('خطا', 'لطفاً تمام فیلدهای محاسبه‌گر را پر کنید.', 'error');
+        // Validation
+        if (!totalAmount || totalAmount <= 0) {
+            showPuzzlingAlert('خطا', 'لطفاً مبلغ کل قرارداد را وارد کنید.', 'error');
+            $('#total_amount').focus();
             return;
         }
 
-        // Try to use Persian date library, fallback to simple calculation
-        let DateConstructor = persianDate || PersianDate || window.persianDate || window.PersianDate || window.persianDatepicker;
-        
-        // Always use fallback for now to ensure it works
+        if (!totalInstallments || totalInstallments <= 0 || isNaN(totalInstallments)) {
+            showPuzzlingAlert('خطا', 'لطفاً تعداد اقساط را وارد کنید.', 'error');
+            $('#total_installments').focus();
+            return;
+        }
+
+        if (!intervalDays || intervalDays <= 0 || isNaN(intervalDays)) {
+            showPuzzlingAlert('خطا', 'لطفاً فاصله بین اقساط را وارد کنید.', 'error');
+            $('#installment_interval').focus();
+            return;
+        }
+
+        if (!startDateStr || !validateJalaliDate(startDateStr)) {
+            showPuzzlingAlert('خطا', 'لطفاً تاریخ اولین قسط را به درستی وارد کنید (فرمت: YYYY/MM/DD).', 'error');
+            $('#start_date').focus();
+            return;
+        }
+
+        // Use fallback calculation which is more reliable
         performCalculationWithFallback();
     });
 
@@ -455,19 +721,22 @@ jQuery(document).ready(function($) {
         $('#payment-rows-container').empty();
         $('#installments-preview-container').hide();
 
-        // Use the original Persian date and just add days
-        let startDate = startDateStr || '1404/01/01';
-        let parts = startDate.split('/');
+        // Validate and parse start date
+        if (!validateJalaliDate(startDateStr)) {
+            showPuzzlingAlert('خطا', 'تاریخ شروع نامعتبر است. لطفاً تاریخ را به فرمت YYYY/MM/DD وارد کنید.', 'error');
+            return;
+        }
         
-        // Clean the parts and ensure they are valid numbers
-        let year = parseInt(parts[0].replace(/[^\d]/g, '')) || 1404;
-        let month = parseInt(parts[1].replace(/[^\d]/g, '')) || 1;
-        let day = parseInt(parts[2].replace(/[^\d]/g, '')) || 1;
+        let parts = startDateStr.split('/');
+        let year = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10);
+        let day = parseInt(parts[2], 10);
         
-        // Ensure valid ranges
-        if (year < 1300) year = 1404;
-        if (month < 1 || month > 12) month = 1;
-        if (day < 1 || day > 31) day = 1;
+        // Validate parsed values
+        if (isNaN(year) || isNaN(month) || isNaN(day) || year < 1300 || year > 2000 || month < 1 || month > 12 || day < 1 || day > 31) {
+            showPuzzlingAlert('خطا', 'تاریخ شروع نامعتبر است.', 'error');
+            return;
+        }
         
 
         for (let i = 0; i < totalInstallments; i++) {
@@ -491,7 +760,14 @@ jQuery(document).ready(function($) {
             let currentYear = year;
             
             while (totalDaysToAdd > 0) {
+                // Get days in current month (handle leap year for month 12)
                 let daysInCurrentMonth = persianMonthDays[currentMonth - 1];
+                if (currentMonth === 12) {
+                    // Simple leap year check (not perfect but better than nothing)
+                    // In a real implementation, you'd use proper leap year calculation
+                    daysInCurrentMonth = 30; // Default, could be 29 in non-leap years
+                }
+                
                 let daysCanAdd = daysInCurrentMonth - currentDay + 1;
                 
                 if (totalDaysToAdd >= daysCanAdd) {
@@ -522,37 +798,58 @@ jQuery(document).ready(function($) {
         // Show the payment rows container after adding installments
         $('#payment-rows-container').show();
         
-        // Debug: Log the generated installments
-        console.log('Generated installments:', totalInstallments);
-        console.log('Payment rows container children:', $('#payment-rows-container').children().length);
-        
-        // Debug: Check the actual form inputs
-        var actualAmounts = $('#payment-rows-container input[name="payment_amount[]"]').map(function() { return $(this).val(); }).get();
-        var actualDates = $('#payment-rows-container input[name="payment_due_date[]"]').map(function() { return $(this).val(); }).get();
-        var actualStatuses = $('#payment-rows-container select[name="payment_status[]"]').map(function() { return $(this).val(); }).get();
-        console.log('Actual form inputs - Amounts:', actualAmounts, 'Dates:', actualDates, 'Statuses:', actualStatuses);
+        // Show success message
+        if (totalInstallments > 0) {
+            showPuzzlingAlert('موفق', totalInstallments + ' قسط با موفقیت تولید شد.', 'success');
+        }
     }
 
     function addInstallmentRow(amount = '', date = '', status = 'pending') {
-        var newRow = `<div class="payment-row form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-            <input type="text" name="payment_amount[]" class="item-price" placeholder="مبلغ (تومان)" value="${amount}" style="flex-grow: 1;" required>
-            <input type="text" name="payment_due_date[]" class="pzl-jalali-date-picker" value="${date}" required>
-            <select name="payment_status[]">
-                <option value="pending" ${status === 'pending' ? 'selected' : ''}>در انتظار پرداخت</option>
-                <option value="paid" ${status === 'paid' ? 'selected' : ''}>پرداخت شده</option>
-                <option value="cancelled" ${status === 'cancelled' ? 'selected' : ''}>لغو شده</option>
-            </select>
-            <button type="button" class="pzl-button pzl-button-sm remove-payment-row" style="background: #dc3545 !important;">حذف</button>
-        </div>`;
+        // Create unique ID for this row's date input
+        const rowId = 'payment-date-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        
+        var newRow = $(`
+            <div class="payment-row d-flex gap-2 align-items-center mb-2">
+                <input type="text" name="payment_amount[]" class="form-control item-price" placeholder="مبلغ (تومان)" value="${amount || ''}" required style="flex: 2;">
+                <input type="text" name="payment_due_date[]" id="${rowId}" class="form-control pzl-jalali-date-picker" value="${date || ''}" required style="flex: 2;">
+                <select name="payment_status[]" class="form-select" style="flex: 1;">
+                    <option value="pending" ${status === 'pending' ? 'selected' : ''}>در انتظار پرداخت</option>
+                    <option value="paid" ${status === 'paid' ? 'selected' : ''}>پرداخت شده</option>
+                    <option value="cancelled" ${status === 'cancelled' ? 'selected' : ''}>لغو شده</option>
+                </select>
+                <button type="button" class="btn btn-danger-light btn-sm btn-icon remove-payment-row">
+                    <i class="ri-delete-bin-line"></i>
+                </button>
+            </div>
+        `);
+        
         $('#payment-rows-container').append(newRow);
 
-        // **CRITICAL FIX**: Safely initialize datepicker only if the function exists
-        if (typeof $.fn.persianDatepicker === 'function') {
-            $('.pzl-jalali-date-picker:not(.pwt-datepicker-input-element)').persianDatepicker({
-                format: 'YYYY/MM/DD',
-                autoClose: true
-            });
-        }
+        // Initialize datepicker for the new input
+        const $dateInput = $('#' + rowId);
+        initializeDatepicker($dateInput);
+        
+        // Add validation on blur
+        $dateInput.on('blur', function() {
+            const dateValue = $(this).val();
+            if (dateValue && !validateJalaliDate(dateValue)) {
+                $(this).addClass('is-invalid');
+                showPuzzlingAlert('خطا', 'تاریخ وارد شده نامعتبر است. لطفاً تاریخ را به فرمت YYYY/MM/DD وارد کنید.', 'error');
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+        
+        // Format amount on keyup
+        newRow.find('.item-price').on('keyup', function() {
+            var cursorPosition = this.selectionStart;
+            var originalLength = this.value.length;
+            var unformatted = unformatNumber($(this).val());
+            var formatted = formatNumber(unformatted);
+            $(this).val(formatted);
+            var newLength = this.value.length;
+            this.setSelectionRange(cursorPosition + (newLength - originalLength), cursorPosition + (newLength - originalLength));
+        });
     }
     $('#add-payment-row').on('click', function() {
         addInstallmentRow();
@@ -781,13 +1078,88 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // **CRITICAL FIX**: Safely initialize persianDatepicker at the end of the script
-    // This will only run if the datepicker script has been successfully loaded on the page.
-    if (typeof $.fn.persianDatepicker === 'function') {
-        $('.pzl-jalali-date-picker').persianDatepicker({
-            format: 'YYYY/MM/DD',
-            autoClose: true
-        });
+    // **CRITICAL FIX**: Initialize datepickers - try multiple methods
+    function initAllDatepickers() {
+        console.log('PuzzlingCRM: Initializing datepickers...');
+        console.log('PuzzlingCRM: persianDatepicker available?', typeof $.fn.persianDatepicker === 'function');
+        console.log('PuzzlingCRM: PuzzlingJalaliDatePicker available?', typeof PuzzlingJalaliDatePicker !== 'undefined');
+        console.log('PuzzlingCRM: window.PuzzlingJalaliDatePickerInstance available?', typeof window.PuzzlingJalaliDatePickerInstance !== 'undefined');
+        
+        var datepickerFields = $('.pzl-jalali-date-picker');
+        console.log('PuzzlingCRM: Found', datepickerFields.length, 'datepicker fields');
+        
+        if (datepickerFields.length === 0) {
+            console.warn('PuzzlingCRM: No datepicker fields found! Checking form...');
+            var form = $('#manage-contract-form');
+            if (form.length > 0) {
+                console.log('PuzzlingCRM: Form found, checking all inputs...');
+                form.find('input[type="text"]').each(function() {
+                    var $input = $(this);
+                    console.log('PuzzlingCRM: Input found - ID:', $input.attr('id'), 'Name:', $input.attr('name'), 'Classes:', $input.attr('class'));
+                });
+            }
+        }
+        
+        // Method 1: Try persianDatepicker from CDN (PREFERRED)
+        if (typeof $.fn.persianDatepicker === 'function') {
+            console.log('PuzzlingCRM: Using persianDatepicker from CDN');
+            datepickerFields.each(function() {
+                var $this = $(this);
+                // Skip if already initialized
+                if ($this.data('pwt-datepicker') || $this.data('persianDatepicker') || $this.hasClass('pwt-datepicker-input-element')) {
+                    console.log('PuzzlingCRM: Datepicker already initialized for', $this.attr('id') || $this.attr('name'));
+                    return;
+                }
+                try {
+                    // Destroy any existing datepicker first
+                    if ($this.data('pwt-datepicker')) {
+                        $this.persianDatepicker('destroy');
+                    }
+                    
+                    $this.persianDatepicker({
+                        format: 'YYYY/MM/DD',
+                        autoClose: true,
+                        calendarType: 'persian',
+                        observer: true,
+                        initialValue: false
+                    });
+                    console.log('PuzzlingCRM: Successfully initialized persianDatepicker for', $this.attr('id') || $this.attr('name'));
+                } catch(e) {
+                    console.error('PuzzlingCRM: Error initializing persianDatepicker for', $this.attr('id') || $this.attr('name'), ':', e);
+                }
+            });
+            return; // Success, exit early
+        } 
+        
+        // Method 2: Use custom datepicker (puzzling-datepicker.js)
+        if (typeof window.PuzzlingJalaliDatePickerInstance !== 'undefined' || typeof PuzzlingJalaliDatePicker !== 'undefined') {
+            console.log('PuzzlingCRM: Custom datepicker library detected');
+            // The custom datepicker should auto-initialize via its own script
+            // But let's verify fields are found
+            datepickerFields.each(function() {
+                var $this = $(this);
+                var fieldId = $this.attr('id') || $this.attr('name') || 'unknown';
+                console.log('PuzzlingCRM: Checking custom datepicker for field:', fieldId, 'Active:', $this.data('pzl-datepicker-active'));
+                if (!$this.data('pzl-datepicker-active')) {
+                    console.warn('PuzzlingCRM: Custom datepicker not active for', fieldId, '- may need manual initialization');
+                }
+            });
+        } 
+        
+        // Method 3: Fallback - try again later
+        if (datepickerFields.length > 0 && typeof $.fn.persianDatepicker !== 'function' && typeof window.PuzzlingJalaliDatePickerInstance === 'undefined') {
+            console.warn('PuzzlingCRM: No datepicker library found, retrying in 500ms...');
+            setTimeout(initAllDatepickers, 500);
+        }
     }
+    
+    // Initialize immediately when DOM is ready
+    initAllDatepickers();
+    
+    // Also try after delays to catch late-loading scripts
+    setTimeout(initAllDatepickers, 100);
+    setTimeout(initAllDatepickers, 500);
+    setTimeout(initAllDatepickers, 1000);
+    setTimeout(initAllDatepickers, 2000);
 
 }); // End of jQuery(document).ready

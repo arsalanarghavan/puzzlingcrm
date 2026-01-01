@@ -430,8 +430,8 @@ code,
 pre,
 .letter-spacing-1,
 .letter-spacing-2 {
-    direction: ltr !important;
-    text-align: left !important;
+    direction: ltr;
+    text-align: left;
 }
 
 /* ========================================
@@ -439,11 +439,11 @@ pre,
    ======================================== */
 
 .text-end-rtl {
-    text-align: left !important;
+    text-align: left;
 }
 
 .text-start-rtl {
-    text-align: right !important;
+    text-align: right;
 }
 
 /* ========================================
@@ -651,12 +651,13 @@ pre,
 }
 
 .pzl-scrollable::-webkit-scrollbar-thumb {
-    background: #888;
+    background: var(--puzzling-primary-color, #845adf);
     border-radius: 3px;
 }
 
 .pzl-scrollable::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: var(--puzzling-primary-color, #845adf);
+    opacity: 0.8;
 }
 
 /* ========================================
@@ -1234,7 +1235,7 @@ pre,
 
 .ui-sortable-helper {
     opacity: 0.8;
-    cursor: grabbing !important;
+    cursor: grabbing;
 }
 
 /* ========================================
@@ -1280,7 +1281,7 @@ pre,
     .pzl-project-card-actions,
     .pzl-lead-actions,
     .btn {
-        display: none !important;
+        display: none;
     }
     
     .pzl-project-card-item,

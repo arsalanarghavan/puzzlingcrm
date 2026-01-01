@@ -496,6 +496,7 @@ $lang      = substr( $locale, 0, 2 );
 				if (!localStorage.getItem("primaryRGB")) {
 					html.setAttribute("style", "");
 				}
+				// Remove all dark mode CSS variables
 				html.style.removeProperty("--body-bg-rgb");
 				html.style.removeProperty("--body-bg-rgb2");
 				html.style.removeProperty("--light-rgb");
@@ -505,6 +506,15 @@ $lang      = substr( $locale, 0, 2 );
 				html.style.removeProperty("--menu-bg");
 				html.style.removeProperty("--header-bg");
 				html.style.removeProperty("--custom-white");
+				// Remove dark mode specific variables
+				html.style.removeProperty("--bg-primary");
+				html.style.removeProperty("--bg-secondary");
+				html.style.removeProperty("--bg-tertiary");
+				html.style.removeProperty("--text-primary");
+				html.style.removeProperty("--text-secondary");
+				html.style.removeProperty("--text-muted");
+				html.style.removeProperty("--border-color");
+				
 				localStorage.removeItem("xintradarktheme");
 				localStorage.removeItem("xintraMenu");
 				localStorage.removeItem("xintraHeader");

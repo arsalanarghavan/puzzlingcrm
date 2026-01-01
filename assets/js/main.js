@@ -5,15 +5,51 @@
     document.querySelector("html").setAttribute("data-menu-styles", "dark");
     document.querySelector("html").setAttribute("data-header-styles", "transparent");
   }
-  if (localStorage.xintrartl) {
-    let html = document.querySelector("html");
-    html.setAttribute("dir", "rtl");
-    document
-      .querySelector("#style")
-      ?.setAttribute(
-        "href",
-        "./assets/libs/bootstrap/css/bootstrap.rtl.min.css"
-      );
+  // Language-based direction - use pzl_language from cookie/localStorage
+  // Priority: localStorage pzl_language > cookie pzl_language > HTML dir attribute
+  try {
+    let lang = localStorage.getItem('pzl_language');
+    if (!lang) {
+      // Try to get from cookie
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.startsWith('pzl_language=')) {
+          lang = cookie.substring('pzl_language='.length);
+          break;
+        }
+      }
+    }
+    if (!lang) {
+      // Check HTML dir attribute as fallback
+      const htmlDir = document.documentElement.getAttribute('dir');
+      lang = htmlDir === 'rtl' ? 'fa' : 'en';
+    }
+    
+    const isRTL = lang === 'fa';
+    const html = document.querySelector("html");
+    if (html) {
+      html.setAttribute("dir", isRTL ? "rtl" : "ltr");
+      html.setAttribute("lang", isRTL ? "fa" : "en");
+      
+      const styleLink = document.querySelector("#style");
+      if (styleLink) {
+        const currentHref = styleLink.getAttribute("href") || "";
+        if (isRTL) {
+          const newHref = currentHref.includes('bootstrap.min.css') 
+            ? currentHref.replace('bootstrap.min.css', 'bootstrap.rtl.min.css')
+            : (currentHref.includes('bootstrap.rtl.min.css') ? currentHref : currentHref.replace(/bootstrap[^/]*\.css/, 'bootstrap.rtl.min.css'));
+          styleLink.setAttribute("href", newHref);
+        } else {
+          const newHref = currentHref.includes('bootstrap.rtl.min.css')
+            ? currentHref.replace('bootstrap.rtl.min.css', 'bootstrap.min.css')
+            : (currentHref.includes('bootstrap.min.css') ? currentHref : currentHref.replace(/bootstrap[^/]*\.css/, 'bootstrap.min.css'));
+          styleLink.setAttribute("href", newHref);
+        }
+      }
+    }
+  } catch (e) {
+    // Silently fail if localStorage/cookie is not available
   }
   if (localStorage.xintralayout) {
     let html = document.querySelector("html");

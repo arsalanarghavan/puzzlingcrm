@@ -20,7 +20,7 @@
   font-display: swap;
 }
 [class^="ri-"], [class*=" ri-"] {
-  font-family: 'remixicon' !important;
+  font-family: 'remixicon';
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -2902,7 +2902,7 @@
 	/* iOS 4.1- */
 }
 .fe {
-	font-family: 'feather' !important;
+	font-family: 'feather';
 	speak: none;
 	font-style: normal;
 	font-weight: normal;
@@ -3717,9 +3717,9 @@ url("../icon-fonts/bootstrap-icons/icons/font/fonts/bootstrap-icons.woff?2820a38
 [class^="bi-"]::before,
 [class*=" bi-"]::before {
   display: inline-block;
-  font-family: bootstrap-icons !important;
+  font-family: bootstrap-icons;
   font-style: normal;
-  font-weight: normal !important;
+  font-weight: normal;
   font-variant: normal;
   text-transform: none;
   line-height: 1;
@@ -5792,7 +5792,7 @@ url("../icon-fonts/bootstrap-icons/icons/font/fonts/bootstrap-icons.woff?2820a38
   url("../icon-fonts/tabler-icons/webfont/fonts/tabler-icons.ttf?v2.11.0") format("truetype");
 }
 .ti {
-  font-family: "tabler-icons" !important;
+  font-family: "tabler-icons";
   speak: none;
   font-style: normal;
   font-weight: normal;
@@ -22426,7 +22426,7 @@ readers do not read off random characters that represent icons */
 }
 .bx
 {
-    font-family: 'boxicons' !important;
+    font-family: 'boxicons';
     font-weight: normal;
     font-style: normal;
     font-variant: normal;
@@ -22663,19 +22663,19 @@ readers do not read off random characters that represent icons */
 }
 .bx-xs
 {
-    font-size: 1rem!important;
+    font-size: 1rem;
 }
 .bx-sm
 {
-    font-size: 1.55rem!important;
+    font-size: 1.55rem;
 }
 .bx-md
 {
-    font-size: 2.25rem!important;
+    font-size: 2.25rem;
 }
 .bx-lg
 {
-    font-size: 3.0rem!important;
+    font-size: 3.0rem;
 }
 .bx-fw
 {
@@ -22684,7 +22684,7 @@ readers do not read off random characters that represent icons */
 
     width: 1.2857142857em;
     height: .8em;
-    margin-top: -.2em!important;
+    margin-top: -.2em;
 
     vertical-align: middle;
 }
@@ -22692,13 +22692,13 @@ readers do not read off random characters that represent icons */
 {
     float: left;
 
-    margin-right: .3em!important;
+    margin-right: .3em;
 }
 .bx-pull-right
 {
     float: right;
 
-    margin-left: .3em!important;
+    margin-left: .3em;
 }
 .bx-rotate-90
 {

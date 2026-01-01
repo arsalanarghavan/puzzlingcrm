@@ -140,11 +140,11 @@ svg circle {
 /* Financial Summary Cards */
 .border.rounded {
     transition: all 0.3s ease;
-    border-color: #dee2e6 !important;
+    border-color: #dee2e6;
 }
 
 .border.rounded:hover {
-    border-color: #845adf !important;
+    border-color: #845adf;
     box-shadow: 0 4px 12px rgba(132, 90, 223, 0.15);
     transform: translateY(-2px);
 }
@@ -249,7 +249,7 @@ svg circle {
     }
     
     canvas {
-        max-height: 250px !important;
+        max-height: 250px;
     }
     
     .btn-group {
@@ -267,7 +267,7 @@ svg circle {
 @media (prefers-color-scheme: dark) {
     .card.border {
         background-color: #1e1e2d;
-        border-color: #2e2e3e !important;
+        border-color: #2e2e3e;
     }
     
     .card-header {
@@ -281,7 +281,7 @@ svg circle {
     .btn,
     .btn-group,
     .timeline-widget-list::after {
-        display: none !important;
+        display: none;
     }
     
     .card {
@@ -289,7 +289,7 @@ svg circle {
     }
     
     canvas {
-        max-height: 300px !important;
+        max-height: 300px;
     }
 }
 
@@ -310,12 +310,13 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #845adf;
+    background: var(--puzzling-primary-color, #845adf);
     border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #6d48c7;
+    background: var(--puzzling-primary-color, #845adf);
+    opacity: 0.8;
 }
 
 /* Accessibility */
@@ -345,7 +346,7 @@ a.fw-semibold {
 }
 
 a.fw-semibold:hover {
-    color: #845adf !important;
+    color: #845adf;
     text-decoration: underline;
 }
 

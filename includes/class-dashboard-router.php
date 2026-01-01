@@ -236,9 +236,25 @@ class PuzzlingCRM_Dashboard_Router {
                 $logo_url = $logo ? $logo[0] : '';
             }
         }
+        
+        // Determine language and direction (check cookie first)
+        $cookie_lang = isset( $_COOKIE['pzl_language'] ) ? sanitize_text_field( $_COOKIE['pzl_language'] ) : '';
+        $locale      = get_locale();
+        
+        // Override locale if cookie is set
+        if ( $cookie_lang === 'en' ) {
+            $locale = 'en_US';
+        } elseif ( $cookie_lang === 'fa' ) {
+            $locale = 'fa_IR';
+        }
+        
+        $is_rtl    = ( $locale === 'fa_IR' );
+        $direction = $is_rtl ? 'rtl' : 'ltr';
+        $lang      = substr( $locale, 0, 2 );
+        $bootstrap_css = $is_rtl ? 'bootstrap.rtl.min.css' : 'bootstrap.min.css';
         ?>
 <!DOCTYPE html>
-<html lang="fa" dir="rtl" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light" data-menu-styles="dark" data-toggled="close">
+<html lang="<?php echo esc_attr( $lang ); ?>" dir="<?php echo esc_attr( $direction ); ?>" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light" data-menu-styles="dark" data-toggled="close">
 
     <head>
 
@@ -276,7 +292,7 @@ class PuzzlingCRM_Dashboard_Router {
         <script src="<?php echo $assets_url; ?>js/main.js"></script>
         
         <!-- Bootstrap Css -->
-        <link id="style" href="<?php echo $assets_url; ?>libs/bootstrap/css/bootstrap.rtl.min.css" rel="stylesheet">
+        <link id="style" href="<?php echo $assets_url; ?>libs/bootstrap/css/<?php echo esc_attr( $bootstrap_css ); ?>" rel="stylesheet">
 
         <!-- Fonts (قبل از همه) -->
         <link href="<?php echo $assets_url; ?>css/fonts.css" rel="stylesheet">
@@ -303,7 +319,7 @@ class PuzzlingCRM_Dashboard_Router {
         <link href="<?php echo $assets_url; ?>css/puzzlingcrm-custom.css?v=<?php echo PUZZLINGCRM_VERSION; ?>&t=<?php echo time(); ?>" rel="stylesheet">
         
         <!-- RTL Complete Fix (آخرین فایل - بالاترین اولویت) -->
-        <link href="<?php echo $assets_url; ?>css/rtl-complete-fix.css" rel="stylesheet">
+        <link href="<?php echo $assets_url; ?>css/rtl-complete-fix.css?v=<?php echo PUZZLINGCRM_VERSION; ?>&t=<?php echo time(); ?>" rel="stylesheet">
         
         <?php
         // Load page-specific styles
@@ -660,13 +676,26 @@ class PuzzlingCRM_Dashboard_Router {
         
         $assets_url = PUZZLINGCRM_PLUGIN_URL . 'assets/';
         
+        // Determine language and direction
+        $cookie_lang = isset( $_COOKIE['pzl_language'] ) ? sanitize_text_field( $_COOKIE['pzl_language'] ) : '';
+        $locale      = get_locale();
+        
+        if ( $cookie_lang === 'en' ) {
+            $locale = 'en_US';
+        } elseif ( $cookie_lang === 'fa' ) {
+            $locale = 'fa_IR';
+        }
+        
+        $is_rtl = ( $locale === 'fa_IR' );
+        $bootstrap_css = $is_rtl ? 'bootstrap.rtl.min.css' : 'bootstrap.min.css';
+        
         // Priority order is important!
         
         // 1. Fonts (highest priority)
         wp_enqueue_style('pzl-fonts', $assets_url . 'css/fonts.css', [], PUZZLINGCRM_VERSION);
         
         // 2. Bootstrap CSS
-        wp_enqueue_style('pzl-bootstrap', $assets_url . 'libs/bootstrap/css/bootstrap.rtl.min.css', ['pzl-fonts'], PUZZLINGCRM_VERSION);
+        wp_enqueue_style('pzl-bootstrap', $assets_url . 'libs/bootstrap/css/' . $bootstrap_css, ['pzl-fonts'], PUZZLINGCRM_VERSION);
         
         // 3. Main styles (depends on Bootstrap)
         wp_enqueue_style('pzl-styles', $assets_url . 'css/styles.css', ['pzl-bootstrap'], PUZZLINGCRM_VERSION);
@@ -681,8 +710,8 @@ class PuzzlingCRM_Dashboard_Router {
         
         // 6. Custom styles (highest priority - loaded last)
         wp_enqueue_style('pzl-xintra-bridge', $assets_url . 'css/puzzlingcrm-xintra-bridge.css', ['pzl-styles', 'pzl-icons'], PUZZLINGCRM_VERSION);
-        wp_enqueue_style('pzl-custom', $assets_url . 'css/puzzlingcrm-custom.css', ['pzl-xintra-bridge'], PUZZLINGCRM_VERSION . '.' . time());
-        wp_enqueue_style('pzl-rtl-fix', $assets_url . 'css/rtl-complete-fix.css', ['pzl-custom'], PUZZLINGCRM_VERSION);
+        wp_enqueue_style('pzl-custom', $assets_url . 'css/puzzlingcrm-custom.css', ['pzl-xintra-bridge'], PUZZLINGCRM_VERSION . '.' . time() . '.3');
+        wp_enqueue_style('pzl-rtl-fix', $assets_url . 'css/rtl-complete-fix.css', ['pzl-custom'], PUZZLINGCRM_VERSION . '.' . time());
         
         // Page-specific styles
         $view = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'dashboard';

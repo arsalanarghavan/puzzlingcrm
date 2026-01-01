@@ -743,7 +743,7 @@
     .pzl-btn,
     .card-header .btn,
     .filters-section {
-        display: none !important;
+        display: none;
     }
     
     .project-card,

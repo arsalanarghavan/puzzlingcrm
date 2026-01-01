@@ -1,475 +1,970 @@
 /**
- * RTL Complete Fix - اصلاح کامل راست‌چین
- * این فایل تضمین می‌کنه که همه چیز راست‌چین باشه
- * Version: 1.0.0
+ * RTL/LTR Complete Fix - اصلاح کامل راست‌چین و چپ‌چین
+ * این فایل تضمین می‌کنه که همه چیز برای هر دو جهت درست کار کنه
+ * Version: 3.0.0 - No !important, using higher specificity
  */
 
 /* ========================================
-   HTML & Body راست‌چین
+   HTML & Body - RTL (Higher Specificity)
    ======================================== */
 
-html {
-    direction: rtl !important;
+html[dir="rtl"] {
+    direction: rtl;
 }
 
-body {
-    direction: rtl !important;
-    text-align: right !important;
+html[dir="rtl"] body {
+    direction: rtl;
+    text-align: right;
 }
 
 /* ========================================
-   Container های اصلی
+   HTML & Body - LTR (Higher Specificity)
    ======================================== */
 
-.page,
-.main-content,
-.app-content,
-.container,
-.container-fluid,
-.main-header-container {
-    direction: rtl !important;
+html[dir="ltr"] {
+    direction: ltr;
+}
+
+html[dir="ltr"] body {
+    direction: ltr;
+    text-align: left;
 }
 
 /* ========================================
-   Header راست‌چین
+   Container های اصلی - RTL
    ======================================== */
 
-.app-header,
-.header-content-left,
-.header-content-right {
-    direction: rtl !important;
+html[dir="rtl"] .page,
+html[dir="rtl"] .main-content,
+html[dir="rtl"] .app-content,
+html[dir="rtl"] .container,
+html[dir="rtl"] .container-fluid,
+html[dir="rtl"] .main-header-container {
+    direction: rtl;
 }
 
-/* header-content-left باید سمت راست باشه */
-.header-content-left {
+/* ========================================
+   Container های اصلی - LTR
+   ======================================== */
+
+html[dir="ltr"] .page,
+html[dir="ltr"] .main-content,
+html[dir="ltr"] .app-content,
+html[dir="ltr"] .container,
+html[dir="ltr"] .container-fluid,
+html[dir="ltr"] .main-header-container {
+    direction: ltr;
+}
+
+/* ========================================
+   Header - RTL (Higher Specificity)
+   ======================================== */
+
+html[dir="rtl"] .app-header,
+html[dir="rtl"] .header-content-left,
+html[dir="rtl"] .header-content-right {
+    direction: rtl;
+}
+
+/* header-content-left باید سمت راست باشه در RTL */
+html[dir="rtl"] .main-header-container .header-content-left {
     order: 1;
 }
 
-.header-content-right {
+html[dir="rtl"] .main-header-container .header-content-right {
     order: 0;
 }
 
-.main-header-container {
+html[dir="rtl"] .main-header-container {
     display: flex;
     justify-content: space-between;
 }
 
 /* ========================================
-   Sidebar راست‌چین
+   Header - LTR (Higher Specificity)
    ======================================== */
 
-.app-sidebar {
-    right: 0 !important;
-    left: auto !important;
-    direction: rtl !important;
+html[dir="ltr"] .app-header,
+html[dir="ltr"] .header-content-left,
+html[dir="ltr"] .header-content-right {
+    direction: ltr;
 }
 
-.main-sidebar,
-.main-menu,
-.side-menu__item {
-    direction: rtl !important;
-    text-align: right !important;
+/* header-content-left باید سمت چپ باشه در LTR */
+html[dir="ltr"] .main-header-container .header-content-left {
+    order: 0;
 }
 
-.side-menu__icon {
-    margin-left: 0.75rem !important;
-    margin-right: 0 !important;
+html[dir="ltr"] .main-header-container .header-content-right {
+    order: 1;
 }
 
-.side-menu__angle {
-    margin-right: auto !important;
-    margin-left: 0.5rem !important;
+html[dir="ltr"] .main-header-container {
+    display: flex;
+    justify-content: space-between;
 }
 
 /* ========================================
-   Content راست‌چین
+   Sidebar - RTL (Higher Specificity - Override styles.css)
    ======================================== */
 
-.main-content {
-    margin-right: 0 !important;
-    margin-left: 0 !important;
+html[dir="rtl"] .app-sidebar,
+html[dir="rtl"][data-nav-layout="vertical"] .app-sidebar,
+html[dir="rtl"][data-nav-layout="vertical"] .app-sidebar.sticky {
+    right: 0;
+    left: auto;
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+    direction: rtl;
 }
 
-/* با sidebar باز */
-@media (min-width: 992px) {
-    .page:not(.sidebar-closed) .main-content {
-        margin-right: 240px !important;
-        margin-left: 0 !important;
-    }
+html[dir="rtl"] .app-sidebar .main-sidebar,
+html[dir="rtl"] .app-sidebar .main-menu,
+html[dir="rtl"] .app-sidebar .side-menu__item {
+    direction: rtl;
+    text-align: right;
+}
+
+html[dir="rtl"] .app-sidebar .side-menu__item {
+    padding-inline-start: 1.25rem;
+    padding-inline-end: 1.25rem;
+}
+
+html[dir="rtl"] .app-sidebar .side-menu__icon {
+    margin-left: 0.75rem;
+    margin-right: 0;
+    margin-inline-end: 0.75rem;
+    margin-inline-start: 0;
+}
+
+html[dir="rtl"] .app-sidebar .side-menu__angle {
+    margin-right: auto;
+    margin-left: 0.5rem;
+    margin-inline-start: 0.5rem;
+    margin-inline-end: auto;
+}
+
+html[dir="rtl"] .app-sidebar .side-menu__label {
+    text-align: right;
+}
+
+html[dir="rtl"] .app-sidebar .slide-menu.child1 li,
+html[dir="rtl"] .app-sidebar .slide-menu.child2 li,
+html[dir="rtl"] .app-sidebar .slide-menu.child3 li {
+    padding-inline-start: 2rem;
+    padding-inline-end: 0;
 }
 
 /* ========================================
-   Cards راست‌چین
+   Sidebar - LTR (Higher Specificity - Override styles.css)
    ======================================== */
 
-.card,
-.card-header,
-.card-body,
-.card-title,
-.custom-card {
-    direction: rtl !important;
-    text-align: right !important;
+html[dir="ltr"] .app-sidebar,
+html[dir="ltr"][data-nav-layout="vertical"] .app-sidebar,
+html[dir="ltr"][data-nav-layout="vertical"] .app-sidebar.sticky {
+    left: 0;
+    right: auto;
+    inset-inline-start: 0;
+    inset-inline-end: auto;
+    direction: ltr;
 }
 
-.card-header.justify-content-between {
+html[dir="ltr"] .app-sidebar .main-sidebar,
+html[dir="ltr"] .app-sidebar .main-menu,
+html[dir="ltr"] .app-sidebar .side-menu__item {
+    direction: ltr;
+    text-align: left;
+}
+
+html[dir="ltr"] .app-sidebar .side-menu__item {
+    padding-inline-start: 1.25rem;
+    padding-inline-end: 1.25rem;
+}
+
+html[dir="ltr"] .app-sidebar .side-menu__icon {
+    margin-right: 0.75rem;
+    margin-left: 0;
+    margin-inline-start: 0;
+    margin-inline-end: 0.75rem;
+}
+
+html[dir="ltr"] .app-sidebar .side-menu__angle {
+    margin-left: auto;
+    margin-right: 0.5rem;
+    margin-inline-start: auto;
+    margin-inline-end: 0.5rem;
+}
+
+html[dir="ltr"] .app-sidebar .side-menu__label {
+    text-align: left;
+}
+
+html[dir="ltr"] .app-sidebar .slide-menu.child1 li,
+html[dir="ltr"] .app-sidebar .slide-menu.child2 li,
+html[dir="ltr"] .app-sidebar .slide-menu.child3 li {
+    padding-inline-start: 2rem;
+    padding-inline-end: 0;
+}
+
+/* ========================================
+   Content - RTL
+   ======================================== */
+
+html[dir="rtl"] .main-content {
+    margin-right: 0;
+    margin-left: 0;
+}
+
+/* ========================================
+   Content - LTR
+   ======================================== */
+
+html[dir="ltr"] .main-content {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* ========================================
+   Cards - RTL
+   ======================================== */
+
+html[dir="rtl"] .card,
+html[dir="rtl"] .card-header,
+html[dir="rtl"] .card-body,
+html[dir="rtl"] .card-title,
+html[dir="rtl"] .custom-card {
+    direction: rtl;
+    text-align: right;
+}
+
+html[dir="rtl"] .card-header.justify-content-between {
     flex-direction: row-reverse;
 }
 
 /* ========================================
-   Tables راست‌چین
+   Cards - LTR
    ======================================== */
 
-.table,
-.table thead,
-.table tbody,
-.table th,
-.table td {
-    direction: rtl !important;
-    text-align: right !important;
+html[dir="ltr"] .card,
+html[dir="ltr"] .card-header,
+html[dir="ltr"] .card-body,
+html[dir="ltr"] .card-title,
+html[dir="ltr"] .custom-card {
+    direction: ltr;
+    text-align: left;
 }
 
-.table th:first-child,
-.table td:first-child {
-    text-align: right !important;
-}
-
-.table th:last-child,
-.table td:last-child {
-    text-align: left !important; /* عملیات معمولا سمت چپ */
+html[dir="ltr"] .card-header.justify-content-between {
+    flex-direction: row;
 }
 
 /* ========================================
-   Forms راست‌چین
+   Tables - RTL
    ======================================== */
 
-.form-label,
-.form-text,
-.form-check-label {
-    direction: rtl !important;
-    text-align: right !important;
+html[dir="rtl"] .table,
+html[dir="rtl"] .table thead,
+html[dir="rtl"] .table tbody,
+html[dir="rtl"] .table th,
+html[dir="rtl"] .table td {
+    direction: rtl;
+    text-align: right;
 }
 
-.form-control,
-.form-select {
-    direction: rtl !important;
-    text-align: right !important;
-    padding-right: 0.75rem !important;
-    padding-left: 0.75rem !important;
+html[dir="rtl"] .table th:first-child,
+html[dir="rtl"] .table td:first-child {
+    text-align: right;
+}
+
+html[dir="rtl"] .table th:last-child,
+html[dir="rtl"] .table td:last-child {
+    text-align: left; /* عملیات معمولا سمت چپ */
+}
+
+/* ========================================
+   Tables - LTR
+   ======================================== */
+
+html[dir="ltr"] .table,
+html[dir="ltr"] .table thead,
+html[dir="ltr"] .table tbody,
+html[dir="ltr"] .table th,
+html[dir="ltr"] .table td {
+    direction: ltr;
+    text-align: left;
+}
+
+html[dir="ltr"] .table th:first-child,
+html[dir="ltr"] .table td:first-child {
+    text-align: left;
+}
+
+html[dir="ltr"] .table th:last-child,
+html[dir="ltr"] .table td:last-child {
+    text-align: right; /* Actions usually on right */
+}
+
+/* ========================================
+   Forms - RTL
+   ======================================== */
+
+html[dir="rtl"] .form-label,
+html[dir="rtl"] .form-text,
+html[dir="rtl"] .form-check-label {
+    direction: rtl;
+    text-align: right;
+}
+
+html[dir="rtl"] .form-control,
+html[dir="rtl"] .form-select {
+    direction: rtl;
+    text-align: right;
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
 }
 
 /* فقط این input ها LTR */
-input[type="email"],
-input[type="url"],
-input[type="tel"].ltr-input,
-.ltr-input {
-    direction: ltr !important;
-    text-align: left !important;
+html[dir="rtl"] input[type="email"],
+html[dir="rtl"] input[type="url"],
+html[dir="rtl"] input[type="tel"].ltr-input,
+html[dir="rtl"] .ltr-input {
+    direction: ltr;
+    text-align: left;
 }
 
-.form-select {
-    background-position: left 0.75rem center !important;
-    padding-left: 2.5rem !important;
+html[dir="rtl"] .form-select {
+    background-position: left 0.75rem center;
+    padding-left: 2.5rem;
 }
 
 /* ========================================
-   Buttons راست‌چین
+   Forms - LTR
    ======================================== */
 
-.btn,
-.pzl-button {
-    direction: rtl !important;
+html[dir="ltr"] .form-label,
+html[dir="ltr"] .form-text,
+html[dir="ltr"] .form-check-label {
+    direction: ltr;
+    text-align: left;
 }
 
-.btn i,
-.pzl-button i {
+html[dir="ltr"] .form-control,
+html[dir="ltr"] .form-select {
+    direction: ltr;
+    text-align: left;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+html[dir="ltr"] .form-select {
+    background-position: right 0.75rem center;
+    padding-right: 2.5rem;
+}
+
+/* ========================================
+   Buttons - RTL
+   ======================================== */
+
+html[dir="rtl"] .btn,
+html[dir="rtl"] .pzl-button {
+    direction: rtl;
+}
+
+html[dir="rtl"] .btn i,
+html[dir="rtl"] .pzl-button i {
     margin-left: 0.5rem;
     margin-right: 0;
 }
 
-/* دکمه‌های close */
-.btn-close {
+html[dir="rtl"] .btn-close {
     margin-right: auto;
     margin-left: 0;
 }
 
 /* ========================================
-   Dropdowns راست‌چین
+   Buttons - LTR
    ======================================== */
 
-.dropdown-menu {
-    right: 0 !important;
-    left: auto !important;
-    text-align: right !important;
+html[dir="ltr"] .btn,
+html[dir="ltr"] .pzl-button {
+    direction: ltr;
 }
 
-.dropdown-menu-end {
-    right: 0 !important;
-    left: auto !important;
+html[dir="ltr"] .btn i,
+html[dir="ltr"] .pzl-button i {
+    margin-right: 0.5rem;
+    margin-left: 0;
 }
 
-.dropdown-item {
-    direction: rtl !important;
-    text-align: right !important;
+html[dir="ltr"] .btn-close {
+    margin-left: auto;
+    margin-right: 0;
 }
 
-.dropdown-item i {
+/* ========================================
+   Dropdowns - RTL
+   ======================================== */
+
+html[dir="rtl"] .dropdown-menu {
+    right: 0;
+    left: auto;
+    text-align: right;
+}
+
+html[dir="rtl"] .dropdown-menu-end {
+    right: 0;
+    left: auto;
+}
+
+html[dir="rtl"] .dropdown-item {
+    direction: rtl;
+    text-align: right;
+}
+
+html[dir="rtl"] .dropdown-item i {
     margin-left: 0.5rem;
     margin-right: 0;
 }
 
 /* ========================================
-   Breadcrumb راست‌چین
+   Dropdowns - LTR
    ======================================== */
 
-.breadcrumb {
-    direction: rtl !important;
+html[dir="ltr"] .dropdown-menu {
+    left: 0;
+    right: auto;
+    text-align: left;
 }
 
-.breadcrumb-item + .breadcrumb-item::before {
-    float: right !important;
-    padding-left: 0.5rem !important;
-    padding-right: 0 !important;
-    content: "/" !important;
+html[dir="ltr"] .dropdown-menu-end {
+    left: auto;
+    right: 0;
+}
+
+html[dir="ltr"] .dropdown-item {
+    direction: ltr;
+    text-align: left;
+}
+
+html[dir="ltr"] .dropdown-item i {
+    margin-right: 0.5rem;
+    margin-left: 0;
 }
 
 /* ========================================
-   List Group راست‌چین
+   Breadcrumb - RTL
    ======================================== */
 
-.list-group,
-.list-group-item {
-    direction: rtl !important;
-    text-align: right !important;
+html[dir="rtl"] .breadcrumb {
+    direction: rtl;
+}
+
+html[dir="rtl"] .breadcrumb-item + .breadcrumb-item::before {
+    float: right;
+    padding-left: 0.5rem;
+    padding-right: 0;
+    content: "/";
 }
 
 /* ========================================
-   Avatar & Icons راست‌چین
+   Breadcrumb - LTR
    ======================================== */
 
-.avatar + * {
+html[dir="ltr"] .breadcrumb {
+    direction: ltr;
+}
+
+html[dir="ltr"] .breadcrumb-item + .breadcrumb-item::before {
+    float: left;
+    padding-right: 0.5rem;
+    padding-left: 0;
+    content: "/";
+}
+
+/* ========================================
+   List Group - RTL
+   ======================================== */
+
+html[dir="rtl"] .list-group,
+html[dir="rtl"] .list-group-item {
+    direction: rtl;
+    text-align: right;
+}
+
+/* ========================================
+   List Group - LTR
+   ======================================== */
+
+html[dir="ltr"] .list-group,
+html[dir="ltr"] .list-group-item {
+    direction: ltr;
+    text-align: left;
+}
+
+/* ========================================
+   Avatar & Icons - RTL
+   ======================================== */
+
+html[dir="rtl"] .avatar + * {
     margin-right: 0.75rem;
     margin-left: 0;
 }
 
 /* ========================================
-   Alerts راست‌چین
+   Avatar & Icons - LTR
    ======================================== */
 
-.alert {
-    direction: rtl !important;
-    text-align: right !important;
+html[dir="ltr"] .avatar + * {
+    margin-left: 0.75rem;
+    margin-right: 0;
 }
 
-.alert i {
+/* ========================================
+   Alerts - RTL
+   ======================================== */
+
+html[dir="rtl"] .alert {
+    direction: rtl;
+    text-align: right;
+}
+
+html[dir="rtl"] .alert i {
     margin-left: 0.5rem;
     margin-right: 0;
 }
 
 /* ========================================
-   Navigation راست‌چین
+   Alerts - LTR
    ======================================== */
 
-.nav {
-    direction: rtl !important;
+html[dir="ltr"] .alert {
+    direction: ltr;
+    text-align: left;
 }
 
-.nav-link {
-    direction: rtl !important;
-    text-align: right !important;
-}
-
-.nav-tabs .nav-link {
-    border-radius: 0.375rem 0.375rem 0 0 !important;
+html[dir="ltr"] .alert i {
+    margin-right: 0.5rem;
+    margin-left: 0;
 }
 
 /* ========================================
-   Modal راست‌چین
+   Navigation - RTL
    ======================================== */
 
-.modal-header,
-.modal-body,
-.modal-footer {
-    direction: rtl !important;
-    text-align: right !important;
+html[dir="rtl"] .nav {
+    direction: rtl;
 }
 
-.modal-header .btn-close {
+html[dir="rtl"] .nav-link {
+    direction: rtl;
+    text-align: right;
+}
+
+html[dir="rtl"] .nav-tabs .nav-link {
+    border-radius: 0.375rem 0.375rem 0 0;
+}
+
+/* ========================================
+   Navigation - LTR
+   ======================================== */
+
+html[dir="ltr"] .nav {
+    direction: ltr;
+}
+
+html[dir="ltr"] .nav-link {
+    direction: ltr;
+    text-align: left;
+}
+
+html[dir="ltr"] .nav-tabs .nav-link {
+    border-radius: 0.375rem 0.375rem 0 0;
+}
+
+/* ========================================
+   Modal - RTL
+   ======================================== */
+
+html[dir="rtl"] .modal-header,
+html[dir="rtl"] .modal-body,
+html[dir="rtl"] .modal-footer {
+    direction: rtl;
+    text-align: right;
+}
+
+html[dir="rtl"] .modal-header .btn-close {
     margin-right: auto;
     margin-left: 0;
 }
 
 /* ========================================
-   Pagination راست‌چین
+   Modal - LTR
    ======================================== */
 
-.pagination {
-    direction: rtl !important;
+html[dir="ltr"] .modal-header,
+html[dir="ltr"] .modal-body,
+html[dir="ltr"] .modal-footer {
+    direction: ltr;
+    text-align: left;
+}
+
+html[dir="ltr"] .modal-header .btn-close {
+    margin-left: auto;
+    margin-right: 0;
 }
 
 /* ========================================
-   Float Fix برای RTL
+   Pagination - RTL
    ======================================== */
 
-.float-end {
-    float: left !important;
-}
-
-.float-start {
-    float: right !important;
+html[dir="rtl"] .pagination {
+    direction: rtl;
 }
 
 /* ========================================
-   Flexbox Fix برای RTL
+   Pagination - LTR
    ======================================== */
 
-.d-flex {
-    direction: rtl !important;
-}
-
-.ms-auto {
-    margin-right: auto !important;
-    margin-left: 0 !important;
-}
-
-.me-auto {
-    margin-left: auto !important;
-    margin-right: 0 !important;
+html[dir="ltr"] .pagination {
+    direction: ltr;
 }
 
 /* ========================================
-   Grid راست‌چین
+   Float Fix - RTL
    ======================================== */
 
-.row {
-    direction: rtl !important;
+html[dir="rtl"] .float-end {
+    float: left;
+}
+
+html[dir="rtl"] .float-start {
+    float: right;
 }
 
 /* ========================================
-   Text Alignment Override
+   Float Fix - LTR
    ======================================== */
 
-.text-start {
-    text-align: right !important;
+html[dir="ltr"] .float-end {
+    float: right;
 }
 
-.text-end {
-    text-align: left !important;
-}
-
-.text-center {
-    text-align: center !important;
+html[dir="ltr"] .float-start {
+    float: left;
 }
 
 /* ========================================
-   Sidebar Position Fix
+   Flexbox Fix - RTL
    ======================================== */
 
-.app-sidebar.sticky {
-    right: 0 !important;
-    left: auto !important;
+html[dir="rtl"] .d-flex {
+    direction: rtl;
+}
+
+html[dir="rtl"] .ms-auto {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+html[dir="rtl"] .me-auto {
+    margin-left: auto;
+    margin-right: 0;
 }
 
 /* ========================================
-   Logo Images راست‌چین
+   Flexbox Fix - LTR
    ======================================== */
 
-.header-logo,
-.main-sidebar-header {
-    direction: rtl !important;
-    text-align: right !important;
+html[dir="ltr"] .d-flex {
+    direction: ltr;
+}
+
+html[dir="ltr"] .ms-auto {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+html[dir="ltr"] .me-auto {
+    margin-right: auto;
+    margin-left: 0;
 }
 
 /* ========================================
-   User Dropdown راست‌چین
+   Grid - RTL
    ======================================== */
 
-.header-profile-dropdown {
-    right: 0 !important;
-    left: auto !important;
-}
-
-.header-navheading {
-    text-align: right !important;
+html[dir="rtl"] .row {
+    direction: rtl;
 }
 
 /* ========================================
-   Form Row راست‌چین
+   Grid - LTR
    ======================================== */
 
-.pzl-form-row,
-.row.gy-3,
-.row.gx-3 {
-    direction: rtl !important;
+html[dir="ltr"] .row {
+    direction: ltr;
 }
 
 /* ========================================
-   Authentication راست‌چین
+   Text Alignment - RTL
    ======================================== */
 
-.authentication,
-.authentication-cover-main {
-    direction: rtl !important;
+html[dir="rtl"] .text-start {
+    text-align: right;
 }
 
-.authentication-cover-logo,
-.aunthentication-cover-content {
-    direction: rtl !important;
-    text-align: right !important;
+html[dir="rtl"] .text-end {
+    text-align: left;
+}
+
+html[dir="rtl"] .text-center {
+    text-align: center;
 }
 
 /* ========================================
-   Stats Cards راست‌چین
+   Text Alignment - LTR
    ======================================== */
 
-.d-flex.align-items-top {
-    direction: rtl !important;
+html[dir="ltr"] .text-start {
+    text-align: left;
 }
 
-.flex-fill {
-    direction: rtl !important;
-    text-align: right !important;
+html[dir="ltr"] .text-end {
+    text-align: right;
+}
+
+html[dir="ltr"] .text-center {
+    text-align: center;
 }
 
 /* ========================================
-   Input Groups راست‌چین
+   Sidebar Position Fix - RTL
    ======================================== */
 
-.input-group {
-    direction: rtl !important;
-}
-
-.input-group > :not(:last-child) {
-    border-top-left-radius: 0 !important;
-    border-bottom-left-radius: 0 !important;
-    border-top-right-radius: 0.375rem !important;
-    border-bottom-right-radius: 0.375rem !important;
-}
-
-.input-group > :not(:first-child) {
-    border-top-right-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-    border-top-left-radius: 0.375rem !important;
-    border-bottom-left-radius: 0.375rem !important;
+html[dir="rtl"] .app-sidebar.sticky,
+html[dir="rtl"][data-nav-layout="vertical"] .app-sidebar.sticky {
+    right: 0;
+    left: auto;
+    inset-inline-start: auto;
+    inset-inline-end: 0;
 }
 
 /* ========================================
-   Offcanvas راست‌چین
+   Sidebar Position Fix - LTR
    ======================================== */
 
-.offcanvas-end {
-    right: auto !important;
-    left: 0 !important;
+html[dir="ltr"] .app-sidebar.sticky,
+html[dir="ltr"][data-nav-layout="vertical"] .app-sidebar.sticky {
+    left: 0;
+    right: auto;
+    inset-inline-start: 0;
+    inset-inline-end: auto;
 }
 
 /* ========================================
-   Kanban راست‌چین
+   Logo Images - RTL
    ======================================== */
 
-.pzl-kanban-board {
-    direction: rtl !important;
+html[dir="rtl"] .header-logo,
+html[dir="rtl"] .main-sidebar-header {
+    direction: rtl;
+    text-align: right;
 }
 
-.pzl-kanban-column {
-    direction: rtl !important;
+/* ========================================
+   Logo Images - LTR
+   ======================================== */
+
+html[dir="ltr"] .header-logo,
+html[dir="ltr"] .main-sidebar-header {
+    direction: ltr;
+    text-align: left;
 }
 
+/* ========================================
+   User Dropdown - RTL
+   ======================================== */
+
+html[dir="rtl"] .header-profile-dropdown {
+    right: 0;
+    left: auto;
+}
+
+html[dir="rtl"] .header-navheading {
+    text-align: right;
+}
+
+/* ========================================
+   User Dropdown - LTR
+   ======================================== */
+
+html[dir="ltr"] .header-profile-dropdown {
+    left: 0;
+    right: auto;
+}
+
+html[dir="ltr"] .header-navheading {
+    text-align: left;
+}
+
+/* ========================================
+   Form Row - RTL
+   ======================================== */
+
+html[dir="rtl"] .pzl-form-row,
+html[dir="rtl"] .row.gy-3,
+html[dir="rtl"] .row.gx-3 {
+    direction: rtl;
+}
+
+/* ========================================
+   Form Row - LTR
+   ======================================== */
+
+html[dir="ltr"] .pzl-form-row,
+html[dir="ltr"] .row.gy-3,
+html[dir="ltr"] .row.gx-3 {
+    direction: ltr;
+}
+
+/* ========================================
+   Authentication - RTL
+   ======================================== */
+
+html[dir="rtl"] .authentication,
+html[dir="rtl"] .authentication-cover-main {
+    direction: rtl;
+}
+
+html[dir="rtl"] .authentication-cover-logo,
+html[dir="rtl"] .aunthentication-cover-content {
+    direction: rtl;
+    text-align: right;
+}
+
+/* ========================================
+   Authentication - LTR
+   ======================================== */
+
+html[dir="ltr"] .authentication,
+html[dir="ltr"] .authentication-cover-main {
+    direction: ltr;
+}
+
+html[dir="ltr"] .authentication-cover-logo,
+html[dir="ltr"] .aunthentication-cover-content {
+    direction: ltr;
+    text-align: left;
+}
+
+/* ========================================
+   Stats Cards - RTL
+   ======================================== */
+
+html[dir="rtl"] .d-flex.align-items-top {
+    direction: rtl;
+}
+
+html[dir="rtl"] .flex-fill {
+    direction: rtl;
+    text-align: right;
+}
+
+/* ========================================
+   Stats Cards - LTR
+   ======================================== */
+
+html[dir="ltr"] .d-flex.align-items-top {
+    direction: ltr;
+}
+
+html[dir="ltr"] .flex-fill {
+    direction: ltr;
+    text-align: left;
+}
+
+/* ========================================
+   Input Groups - RTL
+   ======================================== */
+
+html[dir="rtl"] .input-group {
+    direction: rtl;
+}
+
+html[dir="rtl"] .input-group > :not(:last-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+
+html[dir="rtl"] .input-group > :not(:first-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+/* ========================================
+   Input Groups - LTR
+   ======================================== */
+
+html[dir="ltr"] .input-group {
+    direction: ltr;
+}
+
+html[dir="ltr"] .input-group > :not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+html[dir="ltr"] .input-group > :not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+
+/* ========================================
+   Offcanvas - RTL
+   ======================================== */
+
+html[dir="rtl"] .offcanvas-end {
+    right: auto;
+    left: 0;
+}
+
+/* ========================================
+   Offcanvas - LTR
+   ======================================== */
+
+html[dir="ltr"] .offcanvas-end {
+    left: auto;
+    right: 0;
+}
+
+/* ========================================
+   Kanban - RTL
+   ======================================== */
+
+html[dir="rtl"] .pzl-kanban-board {
+    direction: rtl;
+}
+
+html[dir="rtl"] .pzl-kanban-column {
+    direction: rtl;
+}
+
+/* ========================================
+   Kanban - LTR
+   ======================================== */
+
+html[dir="ltr"] .pzl-kanban-board {
+    direction: ltr;
+}
+
+html[dir="ltr"] .pzl-kanban-column {
+    direction: ltr;
+}

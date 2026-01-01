@@ -25,11 +25,11 @@
 }
 
 .license-card-success .progress-bar {
-    background-color: #28a745 !important;
+    background-color: #28a745;
 }
 
 .license-card-success .badge.bg-success {
-    background-color: #28a745 !important;
+    background-color: #28a745;
 }
 
 /* Warning (Yellow) - 50-75% */
@@ -43,11 +43,11 @@
 }
 
 .license-card-warning .progress-bar {
-    background-color: #ffc107 !important;
+    background-color: #ffc107;
 }
 
 .license-card-warning .badge.bg-warning {
-    background-color: #ffc107 !important;
+    background-color: #ffc107;
     color: #856404;
 }
 
@@ -62,11 +62,11 @@
 }
 
 .license-card-danger .progress-bar {
-    background-color: #dc3545 !important;
+    background-color: #dc3545;
 }
 
 .license-card-danger .badge.bg-danger {
-    background-color: #dc3545 !important;
+    background-color: #dc3545;
 }
 
 /* Black (VIP) - No expiry date */
@@ -81,15 +81,15 @@
 }
 
 .license-card-black .text-muted {
-    color: #cccccc !important;
+    color: #cccccc;
 }
 
 .license-card-black .progress-bar {
-    background-color: #ffd700 !important;
+    background-color: #ffd700;
 }
 
 .license-card-black .badge.bg-black {
-    background-color: #000000 !important;
+    background-color: #000000;
     color: #ffd700;
     border: 1px solid #ffd700;
 }
@@ -149,7 +149,7 @@
 
 .license-card .dropdown-item.text-danger:hover {
     background-color: #f8d7da;
-    color: #721c24 !important;
+    color: #721c24;
 }
 
 /* Progress bar styling */

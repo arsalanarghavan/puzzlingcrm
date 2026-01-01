@@ -66,8 +66,9 @@ class PuzzlingCRM_Email_Handler {
         }
 
         // Get customer
+        $customer_id = $invoice->post_author;
         if (!$customer_email) {
-            $customer = get_user_by('id', $invoice->post_author);
+            $customer = get_user_by('id', $customer_id);
             $customer_email = $customer ? $customer->user_email : null;
         }
 
@@ -91,7 +92,7 @@ class PuzzlingCRM_Email_Handler {
         }
         $invoice_number = get_post_meta($invoice_id, '_pro_invoice_number', true);
         $subject = 'پیش‌فاکتور شماره ' . $invoice_number . ' - ' . $company_name;
-        $message = self::get_invoice_email_template($invoice, $pdf_result['url'], $invoice_number, $company_name);
+        $message = self::get_invoice_email_template($invoice, $pdf_result['url'], $invoice_number, $company_name, $customer_id);
 
         // Send email
         $headers = ['Content-Type: text/html; charset=UTF-8'];
@@ -105,10 +106,25 @@ class PuzzlingCRM_Email_Handler {
     /**
      * Contract Email Template
      */
-    private static function get_contract_email_template($contract, $pdf_url, $company_name = null) {
+    private static function get_contract_email_template($contract, $pdf_url, $company_name = null, $user_id = null) {
         if (!$company_name) {
             $company_name = get_option('blogname');
         }
+        
+        // Get user language preference
+        $locale = get_locale();
+        if ($user_id) {
+            $user_lang = get_user_meta($user_id, 'pzl_language', true);
+            if ($user_lang === 'en') {
+                $locale = 'en_US';
+            } elseif ($user_lang === 'fa') {
+                $locale = 'fa_IR';
+            }
+        }
+        
+        $is_rtl = ($locale === 'fa_IR');
+        $direction = $is_rtl ? 'rtl' : 'ltr';
+        $lang = substr($locale, 0, 2);
         
         // Get white label colors and logo
         $primary_color = '#845adf';
@@ -124,11 +140,11 @@ class PuzzlingCRM_Email_Handler {
         ob_start();
         ?>
         <!DOCTYPE html>
-        <html dir="rtl" lang="fa">
+        <html dir="<?php echo esc_attr($direction); ?>" lang="<?php echo esc_attr($lang); ?>">
         <head>
             <meta charset="UTF-8">
         </head>
-        <body style="font-family: Tahoma, Arial, sans-serif; direction: rtl; text-align: right; background: #f5f5f5; padding: 20px;">
+        <body style="font-family: Tahoma, Arial, sans-serif; direction: <?php echo esc_attr($direction); ?>; text-align: <?php echo $is_rtl ? 'right' : 'left'; ?>; background: #f5f5f5; padding: 20px;">
             <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                 <?php if ($logo_url): ?>
                 <div style="text-align: center; padding: 20px 30px 10px;">
@@ -136,7 +152,7 @@ class PuzzlingCRM_Email_Handler {
                 </div>
                 <?php endif; ?>
                 <div style="background: linear-gradient(135deg, <?php echo esc_attr($primary_color); ?> 0%, <?php echo esc_attr(self::darken_color($primary_color, 10)); ?> 100%); color: #fff; padding: 30px; text-align: center;">
-                    <h1 style="margin: 0; font-size: 24px;">قرارداد همکاری</h1>
+                    <h1 style="margin: 0; font-size: 24px;"><?php echo $is_rtl ? 'قرارداد همکاری' : 'Contract Agreement'; ?></h1>
                     <p style="margin: 10px 0 0 0; opacity: 0.9;"><?php echo esc_html($company_name); ?></p>
                 </div>
                 
@@ -176,10 +192,25 @@ class PuzzlingCRM_Email_Handler {
     /**
      * Invoice Email Template
      */
-    private static function get_invoice_email_template($invoice, $pdf_url, $invoice_number, $company_name = null) {
+    private static function get_invoice_email_template($invoice, $pdf_url, $invoice_number, $company_name = null, $user_id = null) {
         if (!$company_name) {
             $company_name = get_option('blogname');
         }
+        
+        // Get user language preference
+        $locale = get_locale();
+        if ($user_id) {
+            $user_lang = get_user_meta($user_id, 'pzl_language', true);
+            if ($user_lang === 'en') {
+                $locale = 'en_US';
+            } elseif ($user_lang === 'fa') {
+                $locale = 'fa_IR';
+            }
+        }
+        
+        $is_rtl = ($locale === 'fa_IR');
+        $direction = $is_rtl ? 'rtl' : 'ltr';
+        $lang = substr($locale, 0, 2);
         
         // Get white label colors and logo
         $primary_color = '#845adf';
@@ -195,11 +226,11 @@ class PuzzlingCRM_Email_Handler {
         ob_start();
         ?>
         <!DOCTYPE html>
-        <html dir="rtl" lang="fa">
+        <html dir="<?php echo esc_attr($direction); ?>" lang="<?php echo esc_attr($lang); ?>">
         <head>
             <meta charset="UTF-8">
         </head>
-        <body style="font-family: Tahoma, Arial, sans-serif; direction: rtl; text-align: right; background: #f5f5f5; padding: 20px;">
+        <body style="font-family: Tahoma, Arial, sans-serif; direction: <?php echo esc_attr($direction); ?>; text-align: <?php echo $is_rtl ? 'right' : 'left'; ?>; background: #f5f5f5; padding: 20px;">
             <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                 <?php if ($logo_url): ?>
                 <div style="text-align: center; padding: 20px 30px 10px;">
@@ -207,7 +238,7 @@ class PuzzlingCRM_Email_Handler {
                 </div>
                 <?php endif; ?>
                 <div style="background: linear-gradient(135deg, <?php echo esc_attr($primary_color); ?> 0%, <?php echo esc_attr(self::darken_color($primary_color, 10)); ?> 100%); color: #fff; padding: 30px; text-align: center;">
-                    <h1 style="margin: 0; font-size: 24px;">پیش‌فاکتور</h1>
+                    <h1 style="margin: 0; font-size: 24px;"><?php echo $is_rtl ? 'پیش‌فاکتور' : 'Invoice'; ?></h1>
                     <p style="margin: 10px 0 0 0; opacity: 0.9;">شماره: <?php echo esc_html($invoice_number); ?></p>
                 </div>
                 

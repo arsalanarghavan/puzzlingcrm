@@ -1,10 +1,82 @@
 /**
  * Dark Mode Theme for PuzzlingCRM
  * Comprehensive dark theme styling
+ * NOTE: This file should ONLY apply in dark mode, not in light mode
  */
 
-[data-theme="dark"] {
-    /* Color Variables */
+/* Light Mode - Ensure proper backgrounds (only when NOT in dark mode) */
+/* Reset any dark mode CSS variables in light mode */
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) {
+    --bg-primary: #f9fafb;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f5f6f7;
+    --text-primary: #212b37;
+    --text-secondary: #4d5875;
+    --text-muted: #6e829f;
+    --border-color: #e0e7ff;
+    /* Override styles.css dark mode variables */
+    --body-bg-rgb: 249, 250, 252;
+    --body-bg-rgb2: 255, 255, 255;
+    --default-body-bg-color: #f9fafb;
+    --custom-white: #ffffff;
+    --menu-bg: #ffffff;
+    --header-bg: #ffffff;
+    --form-control-bg: #ffffff;
+    --input-border: #dee7f1;
+    --default-text-color: #212b37;
+    --default-border: #ecf3fb;
+}
+
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) body {
+    background-color: #f9fafb;
+    background-color: var(--default-body-bg-color, #f9fafb);
+    color: #212b37;
+}
+
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .puzzlingcrm-container,
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .card,
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .postbox,
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .main-content,
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .page {
+    background-color: #ffffff;
+    background-color: var(--custom-white, #ffffff);
+    color: #212b37;
+}
+
+/* Sidebar in Light Mode */
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .app-sidebar,
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .puzzlingcrm-sidebar,
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .pzl-sidebar,
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .main-sidebar,
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .customer-sidebar {
+    background-color: #ffffff;
+    background-color: var(--menu-bg, #ffffff);
+    border-color: var(--menu-border-color, #e2e6f1);
+}
+
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .app-sidebar .side-menu__item,
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .puzzlingcrm-sidebar .menu-item,
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .pzl-sidebar__menu-link {
+    color: var(--menu-prime-color, #61748f);
+}
+
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .app-sidebar .side-menu__item:hover,
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .puzzlingcrm-sidebar .menu-item:hover,
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .pzl-sidebar__menu-link:hover {
+    background-color: var(--list-hover-focus-bg, #f5f6f7);
+    color: var(--primary-color, rgb(92, 103, 247));
+}
+
+html:not([data-theme-mode="dark"]):not([data-theme="dark"]) .app-sidebar .main-sidebar-header {
+    background-color: #ffffff;
+    background-color: var(--menu-bg, #ffffff);
+    border-color: var(--menu-border-color, #e2e6f1);
+}
+
+/* Only apply dark mode styles when data-theme-mode="dark" is set */
+html[data-theme-mode="dark"],
+html[data-theme="dark"] {
+    /* Color Variables - Only in dark mode */
     --bg-primary: #1a1a2e;
     --bg-secondary: #16213e;
     --bg-tertiary: #0f3460;
@@ -21,261 +93,271 @@
     --info-color: #17a2b8;
 }
 
-/* Base Elements */
-[data-theme="dark"] body {
+/* Base Elements - Only in dark mode */
+html[data-theme-mode="dark"] body,
+html[data-theme="dark"] body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
 }
 
-[data-theme="dark"] .puzzlingcrm-container,
-[data-theme="dark"] .card,
-[data-theme="dark"] .postbox {
+html[data-theme-mode="dark"] .puzzlingcrm-container,
+html[data-theme-mode="dark"] .card,
+html[data-theme-mode="dark"] .postbox,
+html[data-theme="dark"] .puzzlingcrm-container,
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .postbox {
     background-color: var(--bg-secondary);
     color: var(--text-primary);
     border-color: var(--border-color);
 }
 
 /* Typography */
-[data-theme="dark"] h1, 
-[data-theme="dark"] h2, 
-[data-theme="dark"] h3, 
-[data-theme="dark"] h4, 
-[data-theme="dark"] h5, 
-[data-theme="dark"] h6 {
+html[data-theme-mode="dark"] h1, html[data-theme="dark"] h1, 
+html[data-theme-mode="dark"] h2, html[data-theme="dark"] h2, 
+html[data-theme-mode="dark"] h3, html[data-theme="dark"] h3, 
+html[data-theme-mode="dark"] h4, html[data-theme="dark"] h4, 
+html[data-theme-mode="dark"] h5, html[data-theme="dark"] h5, 
+html[data-theme-mode="dark"] h6, html[data-theme="dark"] h6 {
     color: var(--text-primary);
 }
 
-[data-theme="dark"] p,
-[data-theme="dark"] span,
-[data-theme="dark"] label {
+html[data-theme-mode="dark"] p, html[data-theme="dark"] p,
+html[data-theme-mode="dark"] span, html[data-theme="dark"] span,
+html[data-theme-mode="dark"] label, html[data-theme="dark"] label {
     color: var(--text-secondary);
 }
 
 /* Forms */
-[data-theme="dark"] input[type="text"],
-[data-theme="dark"] input[type="email"],
-[data-theme="dark"] input[type="password"],
-[data-theme="dark"] input[type="number"],
-[data-theme="dark"] input[type="date"],
-[data-theme="dark"] input[type="tel"],
-[data-theme="dark"] textarea,
-[data-theme="dark"] select {
+html[data-theme-mode="dark"] input[type="text"], html[data-theme="dark"] input[type="text"],
+html[data-theme-mode="dark"] input[type="email"], html[data-theme="dark"] input[type="email"],
+html[data-theme-mode="dark"] input[type="password"], html[data-theme="dark"] input[type="password"],
+html[data-theme-mode="dark"] input[type="number"], html[data-theme="dark"] input[type="number"],
+html[data-theme-mode="dark"] input[type="date"], html[data-theme="dark"] input[type="date"],
+html[data-theme-mode="dark"] input[type="tel"], html[data-theme="dark"] input[type="tel"],
+html[data-theme-mode="dark"] textarea, html[data-theme="dark"] textarea,
+html[data-theme-mode="dark"] select, html[data-theme="dark"] select {
     background-color: var(--bg-tertiary);
     color: var(--text-primary);
     border-color: var(--border-color);
 }
 
-[data-theme="dark"] input:focus,
-[data-theme="dark"] textarea:focus,
-[data-theme="dark"] select:focus {
+html[data-theme-mode="dark"] input:focus, html[data-theme="dark"] input:focus,
+html[data-theme-mode="dark"] textarea:focus, html[data-theme="dark"] textarea:focus,
+html[data-theme-mode="dark"] select:focus, html[data-theme="dark"] select:focus {
     background-color: var(--bg-secondary);
     border-color: var(--primary-color);
     color: var(--text-primary);
 }
 
-[data-theme="dark"] input::placeholder,
-[data-theme="dark"] textarea::placeholder {
+html[data-theme-mode="dark"] input::placeholder, html[data-theme="dark"] input::placeholder,
+html[data-theme-mode="dark"] textarea::placeholder, html[data-theme="dark"] textarea::placeholder {
     color: var(--text-muted);
 }
 
 /* Buttons */
-[data-theme="dark"] .btn {
+html[data-theme-mode="dark"] .btn, html[data-theme="dark"] .btn {
     border-color: var(--border-color);
 }
 
-[data-theme="dark"] .btn-primary {
+html[data-theme-mode="dark"] .btn-primary, html[data-theme="dark"] .btn-primary {
     background-color: var(--primary-color);
     color: white;
 }
 
-[data-theme="dark"] .btn-secondary {
+html[data-theme-mode="dark"] .btn-secondary, html[data-theme="dark"] .btn-secondary {
     background-color: var(--bg-tertiary);
     color: var(--text-primary);
 }
 
-[data-theme="dark"] .btn-secondary:hover {
+html[data-theme-mode="dark"] .btn-secondary:hover, html[data-theme="dark"] .btn-secondary:hover {
     background-color: var(--bg-secondary);
 }
 
 /* Tables */
-[data-theme="dark"] table {
+html[data-theme-mode="dark"] table, html[data-theme="dark"] table {
     color: var(--text-primary);
 }
 
-[data-theme="dark"] table thead {
+html[data-theme-mode="dark"] table thead, html[data-theme="dark"] table thead {
     background-color: var(--bg-tertiary);
 }
 
-[data-theme="dark"] table tbody tr {
+html[data-theme-mode="dark"] table tbody tr, html[data-theme="dark"] table tbody tr {
     background-color: var(--bg-secondary);
     border-bottom-color: var(--border-color);
 }
 
-[data-theme="dark"] table tbody tr:hover {
+html[data-theme-mode="dark"] table tbody tr:hover, html[data-theme="dark"] table tbody tr:hover {
     background-color: var(--bg-tertiary);
 }
 
 /* Sidebar */
-[data-theme="dark"] .puzzlingcrm-sidebar {
+html[data-theme-mode="dark"] .puzzlingcrm-sidebar,
+html[data-theme="dark"] .puzzlingcrm-sidebar {
     background-color: var(--bg-secondary);
     border-right-color: var(--border-color);
 }
 
-[data-theme="dark"] .puzzlingcrm-sidebar .menu-item {
+html[data-theme-mode="dark"] .puzzlingcrm-sidebar .menu-item,
+html[data-theme="dark"] .puzzlingcrm-sidebar .menu-item {
     color: var(--text-secondary);
 }
 
-[data-theme="dark"] .puzzlingcrm-sidebar .menu-item:hover,
-[data-theme="dark"] .puzzlingcrm-sidebar .menu-item.active {
+html[data-theme-mode="dark"] .puzzlingcrm-sidebar .menu-item:hover,
+html[data-theme-mode="dark"] .puzzlingcrm-sidebar .menu-item.active,
+html[data-theme="dark"] .puzzlingcrm-sidebar .menu-item:hover,
+html[data-theme="dark"] .puzzlingcrm-sidebar .menu-item.active {
     background-color: var(--bg-tertiary);
     color: var(--text-primary);
 }
 
 /* Header */
-[data-theme="dark"] .puzzlingcrm-header {
+html[data-theme-mode="dark"] .puzzlingcrm-header, html[data-theme="dark"] .puzzlingcrm-header {
     background-color: var(--bg-secondary);
     border-bottom-color: var(--border-color);
 }
 
 /* Cards */
-[data-theme="dark"] .puzzling-card {
+html[data-theme-mode="dark"] .puzzling-card, html[data-theme="dark"] .puzzling-card {
     background-color: var(--bg-secondary);
     border-color: var(--border-color);
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
-[data-theme="dark"] .puzzling-card-header {
+html[data-theme-mode="dark"] .puzzling-card-header, html[data-theme="dark"] .puzzling-card-header {
     background-color: var(--bg-tertiary);
     border-bottom-color: var(--border-color);
 }
 
 /* Modal */
-[data-theme="dark"] .modal-content {
+html[data-theme-mode="dark"] .modal-content, html[data-theme="dark"] .modal-content {
     background-color: var(--bg-secondary);
     color: var(--text-primary);
 }
 
-[data-theme="dark"] .modal-header {
+html[data-theme-mode="dark"] .modal-header, html[data-theme="dark"] .modal-header {
     background-color: var(--bg-tertiary);
     border-bottom-color: var(--border-color);
 }
 
-[data-theme="dark"] .modal-footer {
+html[data-theme-mode="dark"] .modal-footer, html[data-theme="dark"] .modal-footer {
     border-top-color: var(--border-color);
 }
 
 /* Dropdown */
-[data-theme="dark"] .dropdown-menu {
+html[data-theme-mode="dark"] .dropdown-menu, html[data-theme="dark"] .dropdown-menu {
     background-color: var(--bg-secondary);
     border-color: var(--border-color);
 }
 
-[data-theme="dark"] .dropdown-item {
+html[data-theme-mode="dark"] .dropdown-item, html[data-theme="dark"] .dropdown-item {
     color: var(--text-primary);
 }
 
-[data-theme="dark"] .dropdown-item:hover {
+html[data-theme-mode="dark"] .dropdown-item:hover, html[data-theme="dark"] .dropdown-item:hover {
     background-color: var(--bg-tertiary);
 }
 
 /* Badges */
-[data-theme="dark"] .badge {
+html[data-theme-mode="dark"] .badge, html[data-theme="dark"] .badge {
     border: 1px solid var(--border-color);
 }
 
 /* Alerts */
-[data-theme="dark"] .alert {
+html[data-theme-mode="dark"] .alert, html[data-theme="dark"] .alert {
     border-color: var(--border-color);
 }
 
-[data-theme="dark"] .alert-success {
+html[data-theme-mode="dark"] .alert-success, html[data-theme="dark"] .alert-success {
     background-color: rgba(40, 167, 69, 0.2);
     color: #7fda89;
 }
 
-[data-theme="dark"] .alert-warning {
+html[data-theme-mode="dark"] .alert-warning, html[data-theme="dark"] .alert-warning {
     background-color: rgba(255, 193, 7, 0.2);
     color: #ffd966;
 }
 
-[data-theme="dark"] .alert-danger {
+html[data-theme-mode="dark"] .alert-danger, html[data-theme="dark"] .alert-danger {
     background-color: rgba(220, 53, 69, 0.2);
     color: #f08a99;
 }
 
-[data-theme="dark"] .alert-info {
+html[data-theme-mode="dark"] .alert-info, html[data-theme="dark"] .alert-info {
     background-color: rgba(23, 162, 184, 0.2);
     color: #6dcde8;
 }
 
 /* Kanban Board */
-[data-theme="dark"] .kanban-column {
+html[data-theme-mode="dark"] .kanban-column, html[data-theme="dark"] .kanban-column {
     background-color: var(--bg-tertiary);
 }
 
-[data-theme="dark"] .kanban-card {
+html[data-theme-mode="dark"] .kanban-card, html[data-theme="dark"] .kanban-card {
     background-color: var(--bg-secondary);
     border-color: var(--border-color);
 }
 
 /* Chat */
-[data-theme="dark"] .chat-container {
+html[data-theme-mode="dark"] .chat-container, html[data-theme="dark"] .chat-container {
     background-color: var(--bg-secondary);
 }
 
-[data-theme="dark"] .chat-message {
+html[data-theme-mode="dark"] .chat-message, html[data-theme="dark"] .chat-message {
     background-color: var(--bg-tertiary);
 }
 
-[data-theme="dark"] .chat-message.own-message {
+html[data-theme-mode="dark"] .chat-message.own-message, html[data-theme="dark"] .chat-message.own-message {
     background-color: var(--primary-color);
     color: white;
 }
 
 /* Code */
-[data-theme="dark"] code,
-[data-theme="dark"] pre {
+html[data-theme-mode="dark"] code, html[data-theme="dark"] code,
+html[data-theme-mode="dark"] p, html[data-theme="dark"] pre {
     background-color: var(--bg-tertiary);
     color: var(--text-primary);
     border-color: var(--border-color);
 }
 
 /* Scrollbar */
-[data-theme="dark"] ::-webkit-scrollbar {
+html[data-theme-mode="dark"] ::-webkit-scrollbar, html[data-theme="dark"] ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-track {
+html[data-theme-mode="dark"] ::-webkit-scrollbar-track, html[data-theme="dark"] ::-webkit-scrollbar-track {
     background: var(--bg-primary);
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb {
-    background: var(--bg-tertiary);
+html[data-theme-mode="dark"] ::-webkit-scrollbar-thumb, html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--puzzling-primary-color, #845adf);
     border-radius: 5px;
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-    background: var(--border-color);
+html[data-theme-mode="dark"] ::-webkit-scrollbar-thumb:hover, html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--puzzling-primary-color, #845adf);
+    opacity: 0.8;
 }
 
 /* Loading */
-[data-theme="dark"] .spinner-border {
+html[data-theme-mode="dark"] .spinner-border, html[data-theme="dark"] .spinner-border {
     border-color: var(--text-muted);
     border-right-color: var(--primary-color);
 }
 
 /* Links */
-[data-theme="dark"] a {
+html[data-theme-mode="dark"] a, html[data-theme="dark"] a {
     color: var(--primary-color);
 }
 
-[data-theme="dark"] a:hover {
+html[data-theme-mode="dark"] a:hover, html[data-theme="dark"] a:hover {
     color: var(--secondary-color);
 }
 
-/* Toggle Switch */
-.dark-mode-toggle {
+/* Toggle Switch - Only in dark mode */
+html[data-theme-mode="dark"] .dark-mode-toggle,
+html[data-theme="dark"] .dark-mode-toggle {
     position: fixed;
     bottom: 20px;
     left: 20px;
@@ -289,165 +371,173 @@
     transition: all 0.3s ease;
 }
 
-.dark-mode-toggle:hover {
+html[data-theme-mode="dark"] .dark-mode-toggle:hover,
+html[data-theme="dark"] .dark-mode-toggle:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(0,0,0,0.3);
 }
 
-.dark-mode-toggle i {
+html[data-theme-mode="dark"] .dark-mode-toggle i,
+html[data-theme="dark"] .dark-mode-toggle i {
     font-size: 20px;
     transition: transform 0.3s ease;
 }
 
-.dark-mode-toggle:hover i {
+html[data-theme-mode="dark"] .dark-mode-toggle:hover i,
+html[data-theme="dark"] .dark-mode-toggle:hover i {
     transform: rotate(20deg);
 }
 
-[data-theme="dark"] .dark-mode-toggle {
-    background: var(--bg-tertiary);
-}
-
-/* Transitions */
-* {
+/* Transitions - Only for specific elements in dark mode */
+html[data-theme-mode="dark"] .card,
+html[data-theme-mode="dark"] .btn,
+html[data-theme-mode="dark"] input,
+html[data-theme-mode="dark"] select,
+html[data-theme-mode="dark"] textarea,
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .btn,
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
     transition: background-color 0.3s ease, 
                 color 0.3s ease, 
                 border-color 0.3s ease;
 }
 
 /* Chart Colors */
-[data-theme="dark"] .apexcharts-text {
-    fill: var(--text-primary) !important;
+html[data-theme-mode="dark"] .apexcharts-text, html[data-theme="dark"] .apexcharts-text {
+    fill: var(--text-primary);
 }
 
-[data-theme="dark"] .apexcharts-gridline {
+html[data-theme-mode="dark"] .apexcharts-gridline, html[data-theme="dark"] .apexcharts-gridline {
     stroke: var(--border-color);
 }
 
-[data-theme="dark"] .apexcharts-tooltip {
-    background: var(--bg-secondary) !important;
-    color: var(--text-primary) !important;
-    border-color: var(--border-color) !important;
+html[data-theme-mode="dark"] .apexcharts-tooltip, html[data-theme="dark"] .apexcharts-tooltip {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
 }
 
 /* Dashboard Widgets */
-[data-theme="dark"] .dashboard-widget {
+html[data-theme-mode="dark"] .dashboard-widget, html[data-theme="dark"] .dashboard-widget {
     background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
     border-color: var(--border-color);
 }
 
-[data-theme="dark"] .stat-card {
+html[data-theme-mode="dark"] .stat-card, html[data-theme="dark"] .stat-card {
     background-color: var(--bg-secondary);
     border-color: var(--border-color);
 }
 
 /* Timeline */
-[data-theme="dark"] .timeline-item {
+html[data-theme-mode="dark"] .timeline-item, html[data-theme="dark"] .timeline-item {
     background-color: var(--bg-secondary);
     border-left-color: var(--primary-color);
 }
 
-[data-theme="dark"] .timeline-item::before {
+html[data-theme-mode="dark"] .timeline-item::before, html[data-theme="dark"] .timeline-item::before {
     background-color: var(--primary-color);
     box-shadow: 0 0 0 4px var(--bg-primary);
 }
 
 /* Empty States */
-[data-theme="dark"] .empty-state {
+html[data-theme-mode="dark"] .empty-state, html[data-theme="dark"] .empty-state {
     background-color: var(--bg-secondary);
     color: var(--text-secondary);
 }
 
 /* File Upload */
-[data-theme="dark"] .file-upload-area {
+html[data-theme-mode="dark"] .file-upload-area, html[data-theme="dark"] .file-upload-area {
     background-color: var(--bg-tertiary);
     border-color: var(--border-color);
     color: var(--text-secondary);
 }
 
-[data-theme="dark"] .file-upload-area.dragover {
+html[data-theme-mode="dark"] .file-upload-area.dragover, html[data-theme="dark"] .file-upload-area.dragover {
     background-color: var(--bg-secondary);
     border-color: var(--primary-color);
 }
 
 /* Notification Badge */
-[data-theme="dark"] .notification-badge {
+html[data-theme-mode="dark"] .notification-badge, html[data-theme="dark"] .notification-badge {
     background-color: var(--danger-color);
     color: white;
 }
 
 /* Progress Bar */
-[data-theme="dark"] .progress {
+html[data-theme-mode="dark"] .progress, html[data-theme="dark"] .progress {
     background-color: var(--bg-tertiary);
 }
 
 /* Breadcrumbs */
-[data-theme="dark"] .breadcrumb {
+html[data-theme-mode="dark"] .breadcrumb, html[data-theme="dark"] .breadcrumb {
     background-color: var(--bg-secondary);
 }
 
-[data-theme="dark"] .breadcrumb-item {
+html[data-theme-mode="dark"] .breadcrumb-item, html[data-theme="dark"] .breadcrumb-item {
     color: var(--text-secondary);
 }
 
-[data-theme="dark"] .breadcrumb-item.active {
+html[data-theme-mode="dark"] .breadcrumb-item.active, html[data-theme="dark"] .breadcrumb-item.active {
     color: var(--text-primary);
 }
 
 /* Tabs */
-[data-theme="dark"] .nav-tabs {
+html[data-theme-mode="dark"] .nav-tabs, html[data-theme="dark"] .nav-tabs {
     border-bottom-color: var(--border-color);
 }
 
-[data-theme="dark"] .nav-tabs .nav-link {
+html[data-theme-mode="dark"] .nav-tabs, html[data-theme="dark"] .nav-tabs .nav-link {
     color: var(--text-secondary);
     border-color: transparent;
 }
 
-[data-theme="dark"] .nav-tabs .nav-link:hover {
+html[data-theme-mode="dark"] .nav-tabs, html[data-theme="dark"] .nav-tabs .nav-link:hover {
     border-color: var(--border-color);
 }
 
-[data-theme="dark"] .nav-tabs .nav-link.active {
+html[data-theme-mode="dark"] .nav-tabs, html[data-theme="dark"] .nav-tabs .nav-link.active {
     background-color: var(--bg-secondary);
     border-color: var(--border-color) var(--border-color) var(--bg-secondary);
     color: var(--text-primary);
 }
 
 /* Pagination */
-[data-theme="dark"] .pagination .page-link {
+html[data-theme-mode="dark"] .pagination, html[data-theme="dark"] .pagination .page-link {
     background-color: var(--bg-secondary);
     border-color: var(--border-color);
     color: var(--text-primary);
 }
 
-[data-theme="dark"] .pagination .page-link:hover {
+html[data-theme-mode="dark"] .pagination, html[data-theme="dark"] .pagination .page-link:hover {
     background-color: var(--bg-tertiary);
 }
 
-[data-theme="dark"] .pagination .page-item.active .page-link {
+html[data-theme-mode="dark"] .pagination, html[data-theme="dark"] .pagination .page-item.active .page-link {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
 }
 
 /* Calendar */
-[data-theme="dark"] .fc {
+html[data-theme-mode="dark"] .fc, html[data-theme="dark"] .fc {
     background-color: var(--bg-secondary);
 }
 
-[data-theme="dark"] .fc-toolbar {
+html[data-theme-mode="dark"] .fc-toolbar, html[data-theme="dark"] .fc-toolbar {
     color: var(--text-primary);
 }
 
-[data-theme="dark"] .fc-daygrid-day {
+html[data-theme-mode="dark"] .fc-daygrid-day, html[data-theme="dark"] .fc-daygrid-day {
     background-color: var(--bg-secondary);
     border-color: var(--border-color);
 }
 
-[data-theme="dark"] .fc-daygrid-day-number {
+html[data-theme-mode="dark"] .fc-daygrid-day-number, html[data-theme="dark"] .fc-daygrid-day-number {
     color: var(--text-primary);
 }
 
-[data-theme="dark"] .fc-event {
+html[data-theme-mode="dark"] .fc-event, html[data-theme="dark"] .fc-event {
     border-color: var(--border-color);
 }
 

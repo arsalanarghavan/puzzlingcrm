@@ -24,6 +24,12 @@
         }
 
         getStoredTheme() {
+            // Check if theme is already set on HTML element (from dashboard-wrapper.php)
+            const htmlTheme = document.documentElement.getAttribute('data-theme-mode');
+            if (htmlTheme === 'dark' || htmlTheme === 'light') {
+                return htmlTheme;
+            }
+            
             const stored = localStorage.getItem('puzzlingcrm_theme');
             
             if (stored) {
@@ -39,7 +45,9 @@
         }
 
         applyTheme(theme) {
-            document.documentElement.setAttribute('data-theme', theme);
+            // Use data-theme-mode to match dashboard-wrapper.php
+            document.documentElement.setAttribute('data-theme-mode', theme);
+            document.documentElement.setAttribute('data-theme', theme); // Keep for compatibility
             this.theme = theme;
             localStorage.setItem('puzzlingcrm_theme', theme);
             
@@ -162,11 +170,13 @@
                 };
                 
                 // Update global defaults
-                Apex._chartInstances.forEach(chart => {
-                    if (chart && chart.updateOptions) {
-                        chart.updateOptions(colors, false, true);
-                    }
-                });
+                if (Apex._chartInstances && Array.isArray(Apex._chartInstances)) {
+                    Apex._chartInstances.forEach(chart => {
+                        if (chart && chart.updateOptions) {
+                            chart.updateOptions(colors, false, true);
+                        }
+                    });
+                }
             }
             
             // Update Chart.js if it exists
