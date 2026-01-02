@@ -116,7 +116,7 @@ class PuzzlingCRM_Login_Page {
         <link href="<?php echo $assets_url; ?>css/icons.css" rel="stylesheet">
         
         <!-- RTL Complete Fix -->
-        <link href="<?php echo $assets_url; ?>css/rtl-complete-fix.css?v=<?php echo PUZZLINGCRM_VERSION; ?>&t=<?php echo time(); ?>" rel="stylesheet">
+        <link href="<?php echo $assets_url; ?>css/rtl-complete-fix.css?v=<?php echo PUZZLINGCRM_VERSION; ?>&t=<?php echo time(); ?>&v4=<?php echo time(); ?>" rel="stylesheet">
         
         <!-- SweetAlert2 -->
         <link rel="stylesheet" href="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/libs/sweetalert2/sweetalert2.min.css">

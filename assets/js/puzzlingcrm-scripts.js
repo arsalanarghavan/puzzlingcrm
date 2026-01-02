@@ -1163,3 +1163,134 @@ jQuery(document).ready(function($) {
     setTimeout(initAllDatepickers, 2000);
 
 }); // End of jQuery(document).ready
+
+/**
+ * Fix app-content margin when sidebar is closed
+ * This ensures wrapper doesn't go under sidebar
+ */
+(function() {
+    'use strict';
+    
+    function updateAppContentMargin() {
+        const html = document.documentElement;
+        const appContent = document.querySelector('.app-content');
+        
+        if (!appContent) {
+            console.warn('PuzzlingCRM: .app-content not found');
+            return;
+        }
+        
+        const dir = html.getAttribute('dir');
+        const navLayout = html.getAttribute('data-nav-layout');
+        const toggled = html.getAttribute('data-toggled');
+        
+        // Check if sidebar is closed
+        const isClosed = toggled && (
+            toggled === 'close' ||
+            toggled === 'menu-click-closed' ||
+            toggled === 'menu-hover-closed' ||
+            toggled === 'icon-click-closed' ||
+            toggled === 'icon-hover-closed' ||
+            toggled === 'icon-text-close' ||
+            toggled === 'close-menu-close' ||
+            toggled === 'detached-close' ||
+            toggled === 'double-menu-close' ||
+            toggled === 'icon-overlay-close'
+        );
+        
+        console.log('PuzzlingCRM: updateAppContentMargin', {
+            navLayout,
+            toggled,
+            dir,
+            isClosed,
+            windowWidth: window.innerWidth
+        });
+        
+        if (navLayout === 'vertical' && isClosed && window.innerWidth >= 992) {
+            // Sidebar is closed - add margin (exactly like RTL)
+            if (dir === 'rtl') {
+                appContent.style.setProperty('margin-left', '0', 'important');
+                appContent.style.setProperty('margin-right', '6rem', 'important');
+                appContent.style.setProperty('margin-inline-start', '6rem', 'important');
+                appContent.style.setProperty('margin-inline-end', '0', 'important');
+                appContent.style.setProperty('width', 'calc(100% - 6rem)', 'important');
+                appContent.style.setProperty('max-width', 'calc(100% - 6rem)', 'important');
+                appContent.style.setProperty('box-sizing', 'border-box', 'important');
+                console.log('PuzzlingCRM: Applied RTL closed sidebar styles');
+            } else {
+                appContent.style.setProperty('margin-right', '0', 'important');
+                appContent.style.setProperty('margin-left', '6rem', 'important');
+                appContent.style.setProperty('margin-inline-start', '6rem', 'important');
+                appContent.style.setProperty('margin-inline-end', '0', 'important');
+                appContent.style.setProperty('width', 'calc(100% - 6rem)', 'important');
+                appContent.style.setProperty('max-width', 'calc(100% - 6rem)', 'important');
+                appContent.style.setProperty('box-sizing', 'border-box', 'important');
+                console.log('PuzzlingCRM: Applied LTR closed sidebar styles');
+            }
+        } else if (navLayout === 'vertical' && !isClosed && window.innerWidth >= 992) {
+            // Sidebar is open - reset to default (15rem)
+            if (dir === 'rtl') {
+                appContent.style.setProperty('margin-left', '0', 'important');
+                appContent.style.setProperty('margin-right', '15rem', 'important');
+                appContent.style.setProperty('margin-inline-start', '15rem', 'important');
+                appContent.style.setProperty('margin-inline-end', '0', 'important');
+            } else {
+                appContent.style.setProperty('margin-right', '0', 'important');
+                appContent.style.setProperty('margin-left', '15rem', 'important');
+                appContent.style.setProperty('margin-inline-start', '15rem', 'important');
+                appContent.style.setProperty('margin-inline-end', '0', 'important');
+            }
+            appContent.style.removeProperty('width');
+            appContent.style.removeProperty('max-width');
+            console.log('PuzzlingCRM: Applied open sidebar styles');
+        }
+    }
+    
+    // Run on page load with delay to ensure DOM is ready
+    function init() {
+        setTimeout(function() {
+            updateAppContentMargin();
+        }, 100);
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+    
+    // Watch for changes to data-toggled attribute
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'data-toggled') {
+                setTimeout(updateAppContentMargin, 50);
+            }
+        });
+    });
+    
+    // Observe html element for data-toggled changes
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-toggled']
+    });
+    
+    // Also watch for window resize
+    window.addEventListener('resize', function() {
+        setTimeout(updateAppContentMargin, 50);
+    });
+    
+    // Watch for dir attribute changes
+    const dirObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'dir') {
+                setTimeout(updateAppContentMargin, 50);
+            }
+        });
+    });
+    
+    dirObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['dir']
+    });
+})();
+

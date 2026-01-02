@@ -319,7 +319,7 @@ class PuzzlingCRM_Dashboard_Router {
         <link href="<?php echo $assets_url; ?>css/puzzlingcrm-custom.css?v=<?php echo PUZZLINGCRM_VERSION; ?>&t=<?php echo time(); ?>" rel="stylesheet">
         
         <!-- RTL Complete Fix (آخرین فایل - بالاترین اولویت) -->
-        <link href="<?php echo $assets_url; ?>css/rtl-complete-fix.css?v=<?php echo PUZZLINGCRM_VERSION; ?>&t=<?php echo time(); ?>" rel="stylesheet">
+        <link href="<?php echo $assets_url; ?>css/rtl-complete-fix.css?v=<?php echo PUZZLINGCRM_VERSION; ?>&t=<?php echo time(); ?>&v4=<?php echo time(); ?>" rel="stylesheet">
         
         <?php
         // Load page-specific styles
@@ -633,7 +633,7 @@ class PuzzlingCRM_Dashboard_Router {
         <script src="<?php echo $assets_url; ?>js/custom.js"></script>
         
         <!-- PuzzlingCRM Scripts -->
-        <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/puzzlingcrm-scripts.js"></script>
+        <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/puzzlingcrm-scripts.js?v=<?php echo PUZZLINGCRM_VERSION; ?>&t=<?php echo time(); ?>&v2=<?php echo time(); ?>"></script>
         <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/tasks-management.js"></script>
         <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/user-management.js"></script>
         <script src="<?php echo PUZZLINGCRM_PLUGIN_URL; ?>assets/js/lead-management.js"></script>
@@ -711,7 +711,7 @@ class PuzzlingCRM_Dashboard_Router {
         // 6. Custom styles (highest priority - loaded last)
         wp_enqueue_style('pzl-xintra-bridge', $assets_url . 'css/puzzlingcrm-xintra-bridge.css', ['pzl-styles', 'pzl-icons'], PUZZLINGCRM_VERSION);
         wp_enqueue_style('pzl-custom', $assets_url . 'css/puzzlingcrm-custom.css', ['pzl-xintra-bridge'], PUZZLINGCRM_VERSION . '.' . time() . '.3');
-        wp_enqueue_style('pzl-rtl-fix', $assets_url . 'css/rtl-complete-fix.css', ['pzl-custom'], PUZZLINGCRM_VERSION . '.' . time());
+		wp_enqueue_style('pzl-rtl-fix', $assets_url . 'css/rtl-complete-fix.css', ['pzl-custom'], PUZZLINGCRM_VERSION . '.' . time() . '.' . time() . '.' . time() . '.' . time());
         
         // Page-specific styles
         $view = isset($_GET['view']) ? sanitize_key($_GET['view']) : 'dashboard';

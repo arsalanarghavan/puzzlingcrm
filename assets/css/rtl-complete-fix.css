@@ -1,7 +1,7 @@
 /**
  * RTL/LTR Complete Fix - اصلاح کامل راست‌چین و چپ‌چین
  * این فایل تضمین می‌کنه که همه چیز برای هر دو جهت درست کار کنه
- * Version: 3.0.0 - No !important, using higher specificity
+ * Version: 3.1.0 - Using for sidebar positioning to override base theme
  */
 
 /* ========================================
@@ -109,12 +109,25 @@ html[dir="ltr"] .main-header-container {
    ======================================== */
 
 html[dir="rtl"] .app-sidebar,
+html[dir="rtl"] body .app-sidebar,
+html[dir="rtl"] body.page .app-sidebar,
 html[dir="rtl"][data-nav-layout="vertical"] .app-sidebar,
-html[dir="rtl"][data-nav-layout="vertical"] .app-sidebar.sticky {
+html[dir="rtl"][data-nav-layout="vertical"] body .app-sidebar,
+html[dir="rtl"][data-nav-layout="vertical"] body.page .app-sidebar,
+html[dir="rtl"] [data-nav-layout="vertical"] .app-sidebar,
+html[dir="rtl"] [data-nav-layout="vertical"] body .app-sidebar,
+html[dir="rtl"][data-nav-layout="vertical"] .app-sidebar.sticky,
+html[dir="rtl"][data-nav-layout="vertical"] body .app-sidebar.sticky,
+html[dir="rtl"][data-nav-layout="vertical"][data-toggled] .app-sidebar,
+html[dir="rtl"][data-nav-layout="vertical"][data-toggled] body .app-sidebar,
+html[dir="rtl"][data-nav-layout="vertical"][data-toggled="open"] .app-sidebar,
+html[dir="rtl"][data-nav-layout="vertical"][data-toggled="close"] .app-sidebar,
+html[dir="rtl"][data-nav-layout="vertical"][data-toggled="open"] body .app-sidebar,
+html[dir="rtl"][data-nav-layout="vertical"][data-toggled="close"] body .app-sidebar {
     right: 0;
     left: auto;
-    inset-inline-start: auto;
-    inset-inline-end: 0;
+    inset-inline-start: 0;
+    inset-inline-end: auto;
     direction: rtl;
 }
 
@@ -742,11 +755,13 @@ html[dir="ltr"] .text-center {
    ======================================== */
 
 html[dir="rtl"] .app-sidebar.sticky,
-html[dir="rtl"][data-nav-layout="vertical"] .app-sidebar.sticky {
+html[dir="rtl"][data-nav-layout="vertical"] .app-sidebar.sticky,
+html[dir="rtl"] body .app-sidebar.sticky,
+html[dir="rtl"][data-nav-layout="vertical"] body .app-sidebar.sticky {
     right: 0;
     left: auto;
-    inset-inline-start: auto;
-    inset-inline-end: 0;
+    inset-inline-start: 0;
+    inset-inline-end: auto;
 }
 
 /* ========================================
@@ -968,3 +983,106 @@ html[dir="ltr"] .pzl-kanban-board {
 html[dir="ltr"] .pzl-kanban-column {
     direction: ltr;
 }
+
+/* ========================================
+   App Content Wrapper - RTL (Sidebar Open/Close)
+   ======================================== */
+
+/* Sidebar باز - RTL */
+@media (min-width: 992px) {
+    html[dir="rtl"][data-nav-layout="vertical"] .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="open"] .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="menu-click-open"] .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="menu-hover-open"] .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="icon-click-open"] .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="icon-hover-open"] .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="icon-text-open"] .app-content {
+        margin-left: 0;
+        margin-right: 15rem;
+        margin-inline-start: 15rem;
+        margin-inline-end: 0;
+    }
+}
+
+/* Sidebar بسته - RTL - Override styles.css margin-inline-start: 15rem */
+/* این rule باید با specificity بالاتر از styles.css خط 10447 override کند */
+@media (min-width: 992px) {
+    /* حالت‌های مختلف sidebar بسته - با specificity بسیار بالا */
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="close"] body .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="menu-click-closed"] body .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="menu-hover-closed"] body .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="icon-click-closed"] body .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="icon-hover-closed"] body .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="icon-text-close"] body .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="close-menu-close"] body .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="detached-close"] body .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="double-menu-close"] body .app-content,
+    html[dir="rtl"][data-nav-layout="vertical"][data-toggled="icon-overlay-close"] body .app-content {
+        margin-left: 0;
+        margin-right: 6rem;
+        margin-inline-start: 6rem;
+        margin-inline-end: 0;
+        width: calc(100% - 6rem);
+        max-width: calc(100% - 6rem);
+        box-sizing: border-box;
+        position: relative;
+        z-index: 1;
+    }
+}
+
+
+
+/* ========================================
+   App Content Wrapper - LTR (Sidebar Open/Close)
+   ======================================== */
+
+/* Sidebar باز - LTR */
+@media (min-width: 992px) {
+    html[dir="ltr"][data-nav-layout="vertical"] .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="open"] .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="menu-click-open"] .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="menu-hover-open"] .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="icon-click-open"] .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="icon-hover-open"] .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="icon-text-open"] .app-content {
+        margin-right: 0;
+        margin-left: 15rem;
+        margin-inline-start: 15rem;
+        margin-inline-end: 0;
+    }
+}
+
+/* Sidebar بسته - LTR - Override styles.css margin-inline-start: 15rem */
+/* این rule باید با specificity بالاتر از styles.css خط 10447 override کند */
+@media (min-width: 992px) {
+    /* حالت‌های مختلف sidebar بسته - با specificity بسیار بالا */
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="close"] body .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="menu-click-closed"] body .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="menu-hover-closed"] body .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="icon-click-closed"] body .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="icon-hover-closed"] body .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="icon-text-close"] body .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="close-menu-close"] body .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="detached-close"] body .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="double-menu-close"] body .app-content,
+    html[dir="ltr"][data-nav-layout="vertical"][data-toggled="icon-overlay-close"] body .app-content {
+        margin-right: 0;
+        margin-left: 6rem;
+        margin-inline-start: 6rem;
+        margin-inline-end: 0;
+        width: calc(100% - 6rem);
+        max-width: calc(100% - 6rem);
+        box-sizing: border-box;
+        position: relative;
+        z-index: 1;
+    }
+}
+/* ========================================
+   ULTIMATE FIX: Sidebar بسته - Override styles.css
+   این rule باید در انتهای فایل باشد تا حتماً override کند
+   ======================================== */
+
+
+
+/* ========================================
+
