@@ -37,6 +37,7 @@ class PuzzlingCRM_Main_Ajax_Handler {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-email-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-payment-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-import-export-ajax-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-dashboard-ajax-handler.php';
     }
 
     private function define_hooks() {
@@ -59,5 +60,6 @@ class PuzzlingCRM_Main_Ajax_Handler {
         new PuzzlingCRM_Email_Ajax_Handler();
         new PuzzlingCRM_Payment_Ajax_Handler();
         new PuzzlingCRM_Import_Export_Ajax_Handler();
+        new PuzzlingCRM_Dashboard_Ajax_Handler();
     }
 }

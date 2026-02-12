@@ -14,6 +14,131 @@ class PuzzlingCRM_User_Ajax_Handler {
         add_action('wp_ajax_puzzling_delete_user', [$this, 'ajax_delete_user']);
         add_action('wp_ajax_puzzling_update_my_profile', [$this, 'ajax_update_my_profile']);
         add_action('wp_ajax_puzzling_search_users', [$this, 'ajax_search_users']);
+        add_action('wp_ajax_puzzlingcrm_get_users', [$this, 'ajax_get_users']);
+    }
+
+    /**
+     * Get list of users for React dashboard (JSON).
+     */
+    public function ajax_get_users() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+        $role_filter = isset($_POST['role']) ? sanitize_key($_POST['role']) : '';
+
+        $args = [
+            'orderby' => 'display_name',
+            'order' => 'ASC',
+        ];
+        if (!empty($role_filter)) {
+            if ($role_filter === 'staff') {
+                $args['role__in'] = ['system_manager', 'finance_manager', 'team_member', 'administrator'];
+            } else {
+                $args['role'] = $role_filter;
+            }
+        }
+        if (!empty($search)) {
+            $args['search'] = '*' . $search . '*';
+            $args['search_columns'] = ['user_login', 'user_email', 'user_nicename', 'display_name'];
+            $args['meta_query'] = [
+                'relation' => 'OR',
+                ['key' => 'pzl_mobile_phone', 'value' => $search, 'compare' => 'LIKE'],
+                ['key' => 'pzl_national_id', 'value' => $search, 'compare' => 'LIKE'],
+                ['key' => 'first_name', 'value' => $search, 'compare' => 'LIKE'],
+                ['key' => 'last_name', 'value' => $search, 'compare' => 'LIKE'],
+            ];
+        } else {
+            unset($args['meta_query']);
+        }
+
+        $users = get_users($args);
+        $user_counts = count_users();
+
+        $items = [];
+        foreach ($users as $user) {
+            $phone = get_user_meta($user->ID, 'pzl_mobile_phone', true);
+            $role_slug = !empty($user->roles) ? $user->roles[0] : '';
+            $role_name = !empty($user->roles) && isset(wp_roles()->roles[$user->roles[0]])
+                ? wp_roles()->roles[$user->roles[0]]['name'] : '---';
+            $avatar_url = get_avatar_url($user->ID, ['size' => 40]);
+
+            $can_delete = (get_current_user_id() != $user->ID && $user->ID != 1);
+            $department_name = '---';
+            $job_title_name = '---';
+            if ($role_filter === 'staff' || in_array($role_slug, ['system_manager', 'finance_manager', 'team_member', 'administrator'], true)) {
+                $positions = wp_get_object_terms($user->ID, 'organizational_position');
+                if (!is_wp_error($positions) && !empty($positions)) {
+                    $pos = $positions[0];
+                    if ((int) $pos->parent === 0) {
+                        $department_name = $pos->name;
+                    } else {
+                        $job_title_name = $pos->name;
+                        $parent_dept = get_term($pos->parent, 'organizational_position');
+                        if (!is_wp_error($parent_dept) && $parent_dept) {
+                            $department_name = $parent_dept->name;
+                        }
+                    }
+                }
+            }
+            $items[] = [
+                'id' => $user->ID,
+                'display_name' => $user->display_name,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'email' => $user->user_email,
+                'phone' => $phone ?: '',
+                'role_slug' => $role_slug,
+                'role_name' => $role_name,
+                'department_name' => $department_name,
+                'job_title_name' => $job_title_name,
+                'registered' => $user->user_registered,
+                'registered_jalali' => function_exists('jdate') ? jdate('Y/m/d', strtotime($user->user_registered)) : date('Y/m/d', strtotime($user->user_registered)),
+                'avatar_url' => $avatar_url,
+                'delete_nonce' => $can_delete ? wp_create_nonce('puzzling_delete_user_' . $user->ID) : '',
+                'can_delete' => $can_delete,
+            ];
+        }
+
+        $stats = [
+            'total' => $user_counts['total_users'],
+            'customers' => $user_counts['avail_roles']['customer'] ?? 0,
+            'staff' => 0,
+        ];
+        foreach (['system_manager', 'finance_manager', 'team_member', 'administrator'] as $r) {
+            $stats['staff'] += $user_counts['avail_roles'][$r] ?? 0;
+        }
+
+        $roles = [];
+        foreach (get_editable_roles() as $slug => $role_data) {
+            $roles[] = ['slug' => $slug, 'name' => $role_data['name']];
+        }
+
+        $payload = [
+            'users' => $items,
+            'stats' => $stats,
+            'roles' => $roles,
+        ];
+        if ( $role_filter === 'staff' ) {
+            $all_positions = get_terms( [ 'taxonomy' => 'organizational_position', 'hide_empty' => false, 'orderby' => 'name' ] );
+            $departments = [];
+            $job_titles = [];
+            if ( $all_positions && ! is_wp_error( $all_positions ) ) {
+                foreach ( $all_positions as $t ) {
+                    if ( (int) $t->parent === 0 ) {
+                        $departments[] = [ 'id' => $t->term_id, 'name' => $t->name ];
+                    } else {
+                        $job_titles[] = [ 'id' => $t->term_id, 'name' => $t->name, 'parent' => $t->parent ];
+                    }
+                }
+            }
+            $payload['departments'] = $departments;
+            $payload['job_titles'] = $job_titles;
+        }
+
+        wp_send_json_success( $payload );
     }
 
     public function ajax_manage_user() {

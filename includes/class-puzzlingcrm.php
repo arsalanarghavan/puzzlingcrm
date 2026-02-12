@@ -252,6 +252,14 @@ class PuzzlingCRM {
         if (!$is_dashboard_router && !$is_dashboard_shortcode && !$is_dashboard_url) {
             return;
         }
+
+        // When SPA build exists, dashboard router serves the React shell which loads its own assets.
+        // Do not enqueue legacy dashboard scripts/styles to avoid conflict and duplicate loading.
+        $build_dir = PUZZLINGCRM_PLUGIN_DIR . 'assets/dashboard-build/';
+        $spa_js_exists = file_exists($build_dir . 'dashboard-index.js') || file_exists($build_dir . 'dashboard-main.js');
+        if ($is_dashboard_router && $spa_js_exists) {
+            return;
+        }
         
         // Debug log
         error_log('PuzzlingCRM: Enqueuing dashboard assets - Router: ' . ($is_dashboard_router ? 'YES' : 'NO') . ', Shortcode: ' . ($is_dashboard_shortcode ? 'YES' : 'NO') . ', URL: ' . ($is_dashboard_url ? 'YES' : 'NO'));

@@ -231,12 +231,24 @@ class PuzzlingCRM_Component_Registry {
 	}
 
 	/**
-	 * Check if current page is a dashboard page
+	 * Check if current page is a dashboard page (rewrite, embed, or shortcode)
 	 *
 	 * @return bool
 	 */
 	private function is_dashboard_page() {
-		return (bool) get_query_var( 'puzzling_dashboard', false );
+		if ( get_query_var( 'puzzling_dashboard', false ) ) {
+			return true;
+		}
+		if ( get_query_var( 'puzzling_embed', false ) ) {
+			return true;
+		}
+		if ( is_singular() ) {
+			$post = get_queried_object();
+			if ( $post instanceof WP_Post && has_shortcode( $post->post_content, 'puzzling_dashboard' ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

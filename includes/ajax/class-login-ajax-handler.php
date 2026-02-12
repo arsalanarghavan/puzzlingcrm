@@ -29,6 +29,11 @@ class PuzzlingCRM_Login_Ajax_Handler {
         
         add_action('wp_ajax_puzzling_auto_login', [$this, 'auto_login']);
         add_action('wp_ajax_nopriv_puzzling_auto_login', [$this, 'auto_login']);
+
+        add_action('wp_ajax_puzzling_send_email_otp', [$this, 'send_email_otp']);
+        add_action('wp_ajax_nopriv_puzzling_send_email_otp', [$this, 'send_email_otp']);
+        add_action('wp_ajax_puzzling_verify_email_otp', [$this, 'verify_email_otp']);
+        add_action('wp_ajax_nopriv_puzzling_verify_email_otp', [$this, 'verify_email_otp']);
     }
 
     /**
@@ -233,7 +238,152 @@ class PuzzlingCRM_Login_Ajax_Handler {
     }
 
     /**
+     * AJAX handler for sending OTP code via email
+     */
+    public function send_email_otp() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+
+        if (!isset($_POST['email'])) {
+            wp_send_json_error(['message' => 'ایمیل الزامی است.']);
+        }
+
+        $email = sanitize_email($_POST['email']);
+        if (!is_email($email)) {
+            wp_send_json_error(['message' => 'فرمت ایمیل صحیح نیست.']);
+        }
+
+        $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+        $otp_length = intval($settings['otp_length'] ?? 6);
+        $otp_expiry_minutes = intval($settings['otp_expiry_minutes'] ?? 5);
+        $expiry_seconds = $otp_expiry_minutes * MINUTE_IN_SECONDS;
+
+        $user = get_user_by('email', $email);
+        if (!$user) {
+            $user = $this->create_user_from_email($email);
+            if (!$user || is_wp_error($user)) {
+                wp_send_json_error(['message' => 'خطا در ایجاد حساب کاربری. لطفاً مجدداً تلاش کنید.']);
+            }
+        }
+
+        $otp_code = $this->generate_otp_code($otp_length);
+        $transient_key = 'puzzling_email_otp_' . md5($email);
+        set_transient($transient_key, [
+            'code' => $otp_code,
+            'user_id' => $user->ID,
+            'attempts' => 0
+        ], $expiry_seconds);
+
+        $subject = $settings['login_email_otp_subject'] ?? 'کد ورود شما';
+        $body_template = $settings['login_email_otp_body'] ?? "کد ورود شما: %CODE%\nاعتبار: {$otp_expiry_minutes} دقیقه";
+        $body = str_replace('%CODE%', $otp_code, $body_template);
+
+        $headers = ['Content-Type: text/plain; charset=UTF-8'];
+        $sent = wp_mail($email, $subject, $body, $headers);
+
+        if ($sent) {
+            PuzzlingCRM_Logger::add('ارسال کد ورود به ایمیل', [
+                'content' => "کد ورود برای {$email} ارسال شد.",
+                'type' => 'log'
+            ]);
+            wp_send_json_success([
+                'message' => 'کد تایید به ایمیل شما ارسال شد.',
+                'expires_in' => $expiry_seconds
+            ]);
+        } else {
+            wp_send_json_error(['message' => 'خطا در ارسال ایمیل. لطفاً بعداً تلاش کنید.']);
+        }
+    }
+
+    /**
+     * AJAX handler for verifying email OTP code
+     */
+    public function verify_email_otp() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+
+        if (!isset($_POST['email']) || !isset($_POST['otp_code'])) {
+            wp_send_json_error(['message' => 'اطلاعات ناقص است.']);
+        }
+
+        $email = sanitize_email($_POST['email']);
+        $otp_code = sanitize_text_field($_POST['otp_code']);
+        if (function_exists('tr_num')) {
+            $otp_code = tr_num($otp_code, 'en');
+        }
+
+        $transient_key = 'puzzling_email_otp_' . md5($email);
+        $otp_data = get_transient($transient_key);
+
+        if (!$otp_data) {
+            wp_send_json_error(['message' => 'کد تایید منقضی شده است. لطفاً کد جدید درخواست کنید.']);
+        }
+
+        $otp_max_attempts = intval(PuzzlingCRM_Settings_Handler::get_setting('otp_max_attempts', 3));
+        if ($otp_data['attempts'] >= $otp_max_attempts) {
+            delete_transient($transient_key);
+            wp_send_json_error(['message' => 'تعداد تلاش‌های مجاز تمام شده است. لطفاً کد جدید درخواست کنید.']);
+        }
+
+        if ($otp_data['code'] !== $otp_code) {
+            $otp_data['attempts']++;
+            $expiry = intval(PuzzlingCRM_Settings_Handler::get_setting('otp_expiry_minutes', 5)) * MINUTE_IN_SECONDS;
+            set_transient($transient_key, $otp_data, $expiry);
+            $remaining = $otp_max_attempts - $otp_data['attempts'];
+            wp_send_json_error([
+                'message' => "کد تایید اشتباه است. ({$remaining} تلاش باقی‌مانده)"
+            ]);
+        }
+
+        $user = get_user_by('ID', $otp_data['user_id']);
+        if (!$user) {
+            wp_send_json_error(['message' => 'کاربر یافت نشد.']);
+        }
+
+        delete_transient($transient_key);
+        wp_set_current_user($user->ID);
+        wp_set_auth_cookie($user->ID, true);
+
+        PuzzlingCRM_Logger::add('ورود با کد ایمیل', [
+            'content' => "کاربر {$user->user_login} با کد ایمیل وارد شد.",
+            'type' => 'log',
+            'user_id' => $user->ID
+        ]);
+
+        $redirect_url = $this->get_redirect_url_for_user($user);
+        wp_send_json_success([
+            'message' => 'ورود موفقیت‌آمیز بود.',
+            'redirect_url' => $redirect_url
+        ]);
+    }
+
+    /**
+     * Create new user from email address
+     */
+    private function create_user_from_email($email) {
+        $username = sanitize_user(str_replace(['@', '.'], ['_', '_'], $email), true);
+        if (username_exists($username)) {
+            $username = $username . '_' . time();
+        }
+        $user_id = wp_create_user(
+            $username,
+            wp_generate_password(12, true, true),
+            $email
+        );
+        if (is_wp_error($user_id)) {
+            return false;
+        }
+        $user = new WP_User($user_id);
+        $user->set_role('client');
+        PuzzlingCRM_Logger::add('ثبت نام کاربر جدید', [
+            'content' => "کاربر جدید با ایمیل {$email} ثبت نام کرد.",
+            'type' => 'log',
+            'user_id' => $user_id
+        ]);
+        return $user;
+    }
+
+    /**
      * AJAX handler for traditional password login
+     * Accepts username, email, or phone number as identifier.
      */
     public function login_with_password() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
@@ -246,14 +396,23 @@ class PuzzlingCRM_Login_Ajax_Handler {
         $password = $_POST['password'];
         $remember = isset($_POST['remember']) ? (bool)$_POST['remember'] : false;
 
-        // Find user by username or email
-        $user = get_user_by('login', $username);
+        $username = $this->convert_persian_numbers($username);
+        $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+        $phone_pattern = $settings['login_phone_pattern'] ?? '^09[0-9]{9}$';
+
+        $user = null;
+        if (preg_match('/' . $phone_pattern . '/', $username)) {
+            $user = $this->find_user_by_phone($username);
+        }
+        if (!$user) {
+            $user = get_user_by('login', $username);
+        }
         if (!$user) {
             $user = get_user_by('email', $username);
         }
 
         if (!$user) {
-            wp_send_json_error(['message' => 'نام کاربری یا ایمیل یافت نشد.']);
+            wp_send_json_error(['message' => 'نام کاربری، ایمیل یا شماره موبایل یافت نشد.']);
         }
 
         // Check password
@@ -424,8 +583,8 @@ class PuzzlingCRM_Login_Ajax_Handler {
             wp_send_json_error(['message' => 'رمز عبور باید حداقل 6 کاراکتر باشد.']);
         }
 
-        // Check if user exists
-        $user = get_user_by('meta_value', $phone_number, 'pzl_mobile_phone');
+        // Check if user exists by phone
+        $user = $this->find_user_by_phone($phone_number);
         
         if (!$user) {
             wp_send_json_error(['message' => 'کاربر یافت نشد. لطفاً مجدداً کد تایید را وارد کنید.']);

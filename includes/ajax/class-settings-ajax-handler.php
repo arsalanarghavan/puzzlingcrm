@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) exit;
 class PuzzlingCRM_Settings_Ajax_Handler {
 
     public function __construct() {
+        // Get settings (for dashboard React app)
+        add_action('wp_ajax_puzzlingcrm_get_settings', [$this, 'get_settings']);
         // Save general settings
         add_action('wp_ajax_puzzling_save_settings', [$this, 'save_settings']);
         add_action('wp_ajax_puzzling_save_white_label_settings', [$this, 'save_white_label_settings']);
@@ -32,6 +34,95 @@ class PuzzlingCRM_Settings_Ajax_Handler {
         add_action('wp_ajax_puzzling_delete_task_category', [$this, 'delete_task_category']);
     }
     
+    /**
+     * Get settings by tab (for dashboard React app)
+     */
+    public function get_settings() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+        $tab = isset($_POST['settings_tab']) ? sanitize_key($_POST['settings_tab']) : '';
+        $data = [];
+        switch ($tab) {
+            case 'authentication':
+                $all = PuzzlingCRM_Settings_Handler::get_all_settings();
+                $data = [
+                    'login_phone_pattern' => $all['login_phone_pattern'] ?? '^09[0-9]{9}$',
+                    'login_phone_length' => (int) ($all['login_phone_length'] ?? 11),
+                    'login_sms_template' => $all['login_sms_template'] ?? 'کد ورود شما: %CODE%',
+                    'otp_expiry_minutes' => (int) ($all['otp_expiry_minutes'] ?? 5),
+                    'otp_max_attempts' => (int) ($all['otp_max_attempts'] ?? 3),
+                    'otp_length' => (int) ($all['otp_length'] ?? 6),
+                    'enable_password_login' => !empty($all['enable_password_login']),
+                    'enable_sms_login' => !empty($all['enable_sms_login']),
+                    'login_redirect_url' => $all['login_redirect_url'] ?? '',
+                    'logout_redirect_url' => $all['logout_redirect_url'] ?? '',
+                    'force_logout_inactive' => !empty($all['force_logout_inactive']),
+                    'inactive_timeout_minutes' => (int) ($all['inactive_timeout_minutes'] ?? 30),
+                ];
+                break;
+            case 'style':
+                $data = [
+                    'primary_color' => get_option('puzzlingcrm_primary_color', '#845adf'),
+                    'font_family' => get_option('puzzlingcrm_font_family', 'IRANSans'),
+                    'font_size' => (int) get_option('puzzlingcrm_font_size', 14),
+                ];
+                break;
+            case 'payment':
+                $data = [
+                    'zarinpal_merchant' => get_option('puzzlingcrm_zarinpal_merchant', ''),
+                    'zarinpal_sandbox' => get_option('puzzlingcrm_zarinpal_sandbox', '0') === '1',
+                ];
+                break;
+            case 'sms':
+                $data = [
+                    'sms_service' => get_option('puzzlingcrm_sms_service', ''),
+                    'sms_username' => get_option('puzzlingcrm_sms_username', ''),
+                    'sms_password' => get_option('puzzlingcrm_sms_password', ''),
+                    'sms_sender' => get_option('puzzlingcrm_sms_sender', ''),
+                ];
+                break;
+            case 'notifications':
+                $data = [
+                    'telegram_bot_token' => get_option('puzzlingcrm_telegram_bot_token', ''),
+                    'telegram_chat_id' => get_option('puzzlingcrm_telegram_chat_id', ''),
+                ];
+                break;
+            case 'canned_responses':
+                $posts = get_posts(['post_type' => 'canned_response', 'numberposts' => -1, 'post_status' => 'publish', 'orderby' => 'title']);
+                $data = ['items' => array_map(function ($p) {
+                    return ['id' => $p->ID, 'title' => $p->post_title, 'content' => $p->post_content];
+                }, $posts)];
+                break;
+            case 'positions':
+                $posts = get_posts(['post_type' => 'position', 'numberposts' => -1, 'post_status' => 'publish', 'orderby' => 'title']);
+                $data = ['items' => array_map(function ($p) {
+                    return ['id' => $p->ID, 'title' => $p->post_title, 'permissions' => (array) get_post_meta($p->ID, '_position_permissions', true)];
+                }, $posts)];
+                break;
+            case 'task_categories':
+                $terms = get_terms(['taxonomy' => 'task_category', 'hide_empty' => false]);
+                $items = [];
+                if (!is_wp_error($terms)) {
+                    foreach ($terms as $t) {
+                        $items[] = ['id' => $t->term_id, 'name' => $t->name, 'slug' => $t->slug, 'color' => get_term_meta($t->term_id, 'category_color', true) ?: '#845adf'];
+                    }
+                }
+                $data = ['items' => $items];
+                break;
+            case 'workflow':
+            case 'automations':
+            case 'forms':
+            case 'leads':
+                $data = PuzzlingCRM_Settings_Handler::get_all_settings();
+                break;
+            default:
+                wp_send_json_error(['message' => 'تب تنظیمات نامعتبر است.']);
+        }
+        wp_send_json_success($data);
+    }
+
     /**
      * Save user preference (language, theme, sidebar, etc.)
      */
@@ -562,7 +653,9 @@ class PuzzlingCRM_Settings_Ajax_Handler {
             'login_redirect_url' => esc_url_raw($_POST['login_redirect_url'] ?? ''),
             'logout_redirect_url' => esc_url_raw($_POST['logout_redirect_url'] ?? ''),
             'force_logout_inactive' => isset($_POST['force_logout_inactive']) ? 1 : 0,
-            'inactive_timeout_minutes' => intval($_POST['inactive_timeout_minutes'] ?? 30)
+            'inactive_timeout_minutes' => intval($_POST['inactive_timeout_minutes'] ?? 30),
+            'login_email_otp_subject' => sanitize_text_field($_POST['login_email_otp_subject'] ?? 'کد ورود شما'),
+            'login_email_otp_body' => sanitize_textarea_field($_POST['login_email_otp_body'] ?? "کد ورود شما: %CODE%\nاعتبار: 5 دقیقه")
         ];
 
         // Validate regex pattern

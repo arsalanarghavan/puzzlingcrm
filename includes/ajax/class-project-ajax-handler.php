@@ -17,6 +17,436 @@ class PuzzlingCRM_Project_Ajax_Handler {
         add_action('wp_ajax_puzzling_add_services_from_product', [$this, 'ajax_add_services_from_product']);
         add_action('wp_ajax_puzzling_get_projects_for_customer', [$this, 'ajax_get_projects_for_customer']);
         add_action('wp_ajax_puzzling_delete_contract', [$this, 'ajax_delete_contract']);
+        add_action('wp_ajax_puzzlingcrm_get_contracts', [$this, 'ajax_get_contracts']);
+        add_action('wp_ajax_puzzlingcrm_get_contract', [$this, 'ajax_get_contract']);
+        add_action('wp_ajax_puzzlingcrm_get_projects', [$this, 'ajax_get_projects']);
+        add_action('wp_ajax_puzzlingcrm_get_project', [$this, 'ajax_get_project']);
+    }
+
+    /**
+     * Get list of contracts for React dashboard (JSON).
+     */
+    public function ajax_get_contracts() {
+        $this->load_dependencies();
+        if (!check_ajax_referer('puzzlingcrm-ajax-nonce', 'security', false)) {
+            wp_send_json_error(['message' => 'خطای امنیتی.']);
+        }
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $search = isset($_POST['s']) ? sanitize_text_field($_POST['s']) : '';
+        $customer_filter = isset($_POST['customer_filter']) ? intval($_POST['customer_filter']) : 0;
+        $payment_status_filter = isset($_POST['payment_status']) ? sanitize_key($_POST['payment_status']) : '';
+        $paged = isset($_POST['paged']) ? max(1, intval($_POST['paged'])) : 1;
+
+        $args = [
+            'post_type' => 'contract',
+            'posts_per_page' => 20,
+            'paged' => $paged,
+        ];
+        if (!empty($search)) {
+            $args['s'] = $search;
+        }
+        if ($customer_filter > 0) {
+            $args['author'] = $customer_filter;
+        }
+
+        $query = new WP_Query($args);
+        $customers = get_users(['role__in' => ['customer', 'subscriber', 'client'], 'orderby' => 'display_name']);
+        $customers_list = [];
+        foreach ($customers as $c) {
+            $customers_list[] = ['id' => $c->ID, 'display_name' => $c->display_name];
+        }
+
+        $items = [];
+        foreach ($query->posts as $post) {
+            $contract_id = $post->ID;
+            $author_id = (int) $post->post_author;
+            $customer = $author_id ? get_userdata($author_id) : null;
+            $customer_name = ($customer && $customer->exists()) ? $customer->display_name : 'مشتری حذف شده';
+            $customer_email = ($customer && $customer->exists()) ? $customer->user_email : '';
+
+            $installments = get_post_meta($contract_id, '_installments', true);
+            if (!is_array($installments)) $installments = [];
+
+            $total_amount = get_post_meta($contract_id, '_total_amount', true);
+            $total_amount_int = (int) preg_replace('/[^\d]/', '', $total_amount);
+            $paid_amount = 0;
+            $pending_amount = 0;
+            $paid_count = 0;
+            $pending_count = 0;
+            foreach ($installments as $inst) {
+                $inst_amount = (int) preg_replace('/[^\d]/', '', ($inst['amount'] ?? 0));
+                $inst_status = $inst['status'] ?? 'pending';
+                if ($inst_status === 'paid') {
+                    $paid_amount += $inst_amount;
+                    $paid_count++;
+                } elseif ($inst_status !== 'cancelled') {
+                    $pending_amount += $inst_amount;
+                    $pending_count++;
+                }
+            }
+            if (empty($total_amount_int) && count($installments) > 0) {
+                $total_amount_int = $paid_amount + $pending_amount;
+            }
+
+            $contract_status = get_post_meta($contract_id, '_contract_status', true);
+            $status_class = 'pending';
+            if ($contract_status === 'cancelled') {
+                $status_text = 'لغو شده';
+                $status_class = 'cancelled';
+            } elseif ($total_amount_int > 0 && $paid_amount >= $total_amount_int) {
+                $status_text = 'تکمیل پرداخت';
+                $status_class = 'paid';
+            } elseif ($paid_amount > 0) {
+                $status_text = 'در حال پرداخت';
+                $status_class = 'pending';
+            } else {
+                $status_text = 'در انتظار پرداخت';
+                $status_class = 'pending';
+            }
+
+            if ($payment_status_filter === 'paid' && $status_class !== 'paid') continue;
+            if ($payment_status_filter === 'pending' && $status_class === 'paid') continue;
+
+            $start_date = get_post_meta($contract_id, '_project_start_date', true);
+            $start_date_jalali = $start_date && function_exists('puzzling_gregorian_to_jalali')
+                ? puzzling_gregorian_to_jalali($start_date) : '-';
+            $payment_percentage = $total_amount_int > 0 ? round(($paid_amount / $total_amount_int) * 100) : 0;
+            $contract_number = get_post_meta($contract_id, '_contract_number', true) ?: (string) $contract_id;
+
+            $items[] = [
+                'id' => $contract_id,
+                'contract_number' => $contract_number,
+                'title' => $post->post_title,
+                'customer_id' => $author_id,
+                'customer_name' => $customer_name,
+                'customer_email' => $customer_email,
+                'total_amount' => $total_amount_int,
+                'paid_amount' => $paid_amount,
+                'pending_amount' => $pending_amount,
+                'installment_count' => count($installments),
+                'paid_count' => $paid_count,
+                'pending_count' => $pending_count,
+                'status_class' => $status_class,
+                'status_text' => $status_text,
+                'start_date' => $start_date,
+                'start_date_jalali' => $start_date_jalali,
+                'payment_percentage' => $payment_percentage,
+                'is_cancelled' => $contract_status === 'cancelled',
+                'delete_nonce' => wp_create_nonce('puzzling_delete_contract_' . $contract_id),
+            ];
+        }
+
+        wp_send_json_success([
+            'contracts' => $items,
+            'customers' => $customers_list,
+            'total_pages' => $query->max_num_pages,
+            'current_page' => $paged,
+        ]);
+    }
+
+    /**
+     * Get single contract for edit.
+     */
+    public function ajax_get_contract() {
+        $this->load_dependencies();
+        if (!check_ajax_referer('puzzlingcrm-ajax-nonce', 'security', false)) {
+            wp_send_json_error(['message' => 'خطای امنیتی.']);
+        }
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+        $contract_id = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
+        $post = get_post($contract_id);
+        if (!$post || $post->post_type !== 'contract') {
+            wp_send_json_error(['message' => 'قرارداد یافت نشد.']);
+        }
+
+        $installments = get_post_meta($contract_id, '_installments', true);
+        if (!is_array($installments)) $installments = [];
+        $start_date = get_post_meta($contract_id, '_project_start_date', true);
+        $start_jalali = $start_date && function_exists('puzzling_gregorian_to_jalali')
+            ? puzzling_gregorian_to_jalali($start_date) : '';
+
+        $inst_data = [];
+        foreach ($installments as $i) {
+            $due = $i['due_date'] ?? '';
+            $due_jalali = $due && function_exists('puzzling_gregorian_to_jalali')
+                ? puzzling_gregorian_to_jalali($due) : $due;
+            $inst_data[] = [
+                'amount' => $i['amount'] ?? '',
+                'due_date' => $due_jalali,
+                'due_date_gregorian' => $due,
+                'status' => $i['status'] ?? 'pending',
+            ];
+        }
+
+        $related_projects = get_posts([
+            'post_type' => 'project',
+            'posts_per_page' => -1,
+            'meta_key' => '_contract_id',
+            'meta_value' => $contract_id,
+        ]);
+
+        $customers = get_users(['role__in' => ['customer', 'subscriber'], 'orderby' => 'display_name']);
+        $customers_list = [];
+        foreach ($customers as $c) {
+            $customers_list[] = ['id' => $c->ID, 'display_name' => $c->display_name];
+        }
+
+        $durations = [
+            ['value' => '1-month', 'label' => 'یک ماهه'],
+            ['value' => '3-months', 'label' => 'سه ماهه'],
+            ['value' => '6-months', 'label' => 'شش ماهه'],
+            ['value' => '12-months', 'label' => 'یک ساله'],
+        ];
+        $models = [
+            ['value' => 'onetime', 'label' => 'یکبار پرداخت'],
+            ['value' => 'subscription', 'label' => 'اشتراکی'],
+        ];
+
+        wp_send_json_success([
+            'contract' => [
+                'id' => $post->ID,
+                'title' => $post->post_title,
+                'customer_id' => (int) $post->post_author,
+                'contract_number' => get_post_meta($contract_id, '_contract_number', true),
+                'start_date' => $start_date,
+                'start_date_jalali' => $start_jalali,
+                'total_amount' => get_post_meta($contract_id, '_total_amount', true),
+                'total_installments' => get_post_meta($contract_id, '_total_installments', true) ?: 1,
+                'duration' => get_post_meta($contract_id, '_project_contract_duration', true) ?: '1-month',
+                'subscription_model' => get_post_meta($contract_id, '_project_subscription_model', true) ?: 'onetime',
+                'installments' => $inst_data,
+                'is_cancelled' => get_post_meta($contract_id, '_contract_status', true) === 'cancelled',
+                'delete_nonce' => wp_create_nonce('puzzling_delete_contract_' . $contract_id),
+            ],
+            'related_projects' => array_map(function ($p) {
+                return ['id' => $p->ID, 'title' => $p->post_title];
+            }, $related_projects),
+            'customers' => $customers_list,
+            'durations' => $durations,
+            'models' => $models,
+        ]);
+    }
+
+    public function ajax_get_projects() {
+        $this->load_dependencies();
+        if (!check_ajax_referer('puzzlingcrm-ajax-nonce', 'security', false)) {
+            wp_send_json_error(['message' => 'خطای امنیتی.']);
+        }
+        $current_user_id = get_current_user_id();
+        $is_manager = current_user_can('manage_options');
+        $is_team_member = in_array('team_member', (array) wp_get_current_user()->roles);
+
+        $search = isset($_POST['s']) ? sanitize_text_field($_POST['s']) : '';
+        $contract_filter = isset($_POST['contract_id']) ? intval($_POST['contract_id']) : 0;
+        $status_filter = isset($_POST['status_filter']) ? intval($_POST['status_filter']) : 0;
+        $paged = isset($_POST['paged']) ? max(1, intval($_POST['paged'])) : 1;
+
+        $args = [
+            'post_type' => 'project',
+            'posts_per_page' => 20,
+            'paged' => $paged,
+            'post_status' => 'publish',
+        ];
+        if ($search) $args['s'] = $search;
+        if ($contract_filter > 0) {
+            $args['meta_query'] = [['key' => '_contract_id', 'value' => $contract_filter]];
+        }
+        if ($status_filter > 0) {
+            $args['tax_query'] = [['taxonomy' => 'project_status', 'field' => 'term_id', 'terms' => $status_filter]];
+        }
+        if (!$is_manager && !$is_team_member) {
+            $args['author'] = $current_user_id;
+        }
+
+        $query = new WP_Query($args);
+        $items = [];
+        foreach ($query->posts as $post) {
+            $contract_id = get_post_meta($post->ID, '_contract_id', true);
+            $contract = $contract_id ? get_post($contract_id) : null;
+            $customer_name = $contract && $contract->post_author ? get_the_author_meta('display_name', $contract->post_author) : '---';
+            $status_terms = get_the_terms($post->ID, 'project_status');
+            $status_name = !empty($status_terms) ? $status_terms[0]->name : '---';
+            $can_delete = $is_manager || $is_team_member;
+            $items[] = [
+                'id' => $post->ID,
+                'title' => $post->post_title,
+                'contract_id' => (int) $contract_id,
+                'customer_name' => $customer_name,
+                'status_name' => $status_name,
+                'status_id' => !empty($status_terms) ? $status_terms[0]->term_id : 0,
+                'delete_nonce' => $can_delete ? wp_create_nonce('puzzling_delete_project_' . $post->ID) : '',
+            ];
+        }
+
+        $contracts = get_posts(['post_type' => 'contract', 'posts_per_page' => -1, 'orderby' => 'ID', 'order' => 'DESC']);
+        $contracts_list = [];
+        foreach ($contracts as $c) {
+            $cust = get_userdata($c->post_author);
+            $contracts_list[] = ['id' => $c->ID, 'title' => $c->post_title, 'customer_name' => $cust ? $cust->display_name : '---'];
+        }
+        $statuses = get_terms(['taxonomy' => 'project_status', 'hide_empty' => false]);
+        $statuses_list = array_map(function ($t) {
+            return ['id' => $t->term_id, 'name' => $t->name];
+        }, is_array($statuses) ? $statuses : []);
+
+        $managers = [];
+        if ($is_manager || $is_team_member) {
+            $managers_raw = get_users(['role__in' => ['system_manager', 'administrator'], 'orderby' => 'display_name']);
+            $managers = array_map(function ($u) {
+                return ['id' => $u->ID, 'display_name' => $u->display_name];
+            }, $managers_raw);
+        }
+
+        wp_send_json_success([
+            'projects' => $items,
+            'contracts' => $contracts_list,
+            'statuses' => $statuses_list,
+            'managers' => $managers,
+            'total_pages' => $query->max_num_pages,
+            'current_page' => $paged,
+        ]);
+    }
+
+    public function ajax_get_project() {
+        $this->load_dependencies();
+        if (!check_ajax_referer('puzzlingcrm-ajax-nonce', 'security', false)) {
+            wp_send_json_error(['message' => 'خطای امنیتی.']);
+        }
+        $current_user_id = get_current_user_id();
+        $user_roles = (array) wp_get_current_user()->roles;
+        $is_manager = current_user_can('manage_options');
+        $is_team_member = in_array('team_member', $user_roles, true);
+        $is_customer = in_array('customer', $user_roles, true);
+        if (!$is_manager && !$is_team_member && !$is_customer) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
+        $post = get_post($project_id);
+        if (!$post || $post->post_type !== 'project') {
+            wp_send_json_error(['message' => 'پروژه یافت نشد.']);
+        }
+
+        $has_access = $is_manager;
+        if (!$has_access && $is_team_member) {
+            $assigned_members = get_post_meta($project_id, '_assigned_team_members', true);
+            if (is_array($assigned_members) && in_array($current_user_id, $assigned_members, true)) {
+                $has_access = true;
+            }
+            if (!$has_access) {
+                $user_tasks = get_posts([
+                    'post_type' => 'task',
+                    'posts_per_page' => 1,
+                    'meta_query' => [
+                        ['key' => '_project_id', 'value' => $project_id, 'compare' => '='],
+                        ['key' => '_assigned_to', 'value' => $current_user_id, 'compare' => '='],
+                    ],
+                ]);
+                if (!empty($user_tasks)) {
+                    $has_access = true;
+                }
+            }
+        }
+        if (!$has_access && $is_customer && (int) $post->post_author === $current_user_id) {
+            $has_access = true;
+        }
+        if (!$has_access) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم برای مشاهده این پروژه را ندارید.']);
+        }
+
+        $status_terms = get_the_terms($project_id, 'project_status');
+        $start_date = get_post_meta($project_id, '_project_start_date', true);
+        $end_date = get_post_meta($project_id, '_project_end_date', true);
+        $contract_id = (int) get_post_meta($project_id, '_contract_id', true);
+        $project_manager_id = (int) get_post_meta($project_id, '_project_manager', true);
+        $assigned_members = get_post_meta($project_id, '_assigned_team_members', true);
+        $assigned_members = is_array($assigned_members) ? $assigned_members : [];
+        $priority = get_post_meta($project_id, '_project_priority', true) ?: 'medium';
+
+        $contract = $contract_id ? get_post($contract_id) : null;
+        $customer_id = $contract && $contract->post_author ? $contract->post_author : $post->post_author;
+        $customer = $customer_id ? get_userdata($customer_id) : null;
+        $manager = $project_manager_id ? get_userdata($project_manager_id) : null;
+
+        $project_tasks_args = [
+            'post_type' => 'task',
+            'posts_per_page' => -1,
+            'meta_query' => [['key' => '_project_id', 'value' => $project_id, 'compare' => '=']],
+            'orderby' => 'post_date',
+            'order' => 'DESC',
+        ];
+        if (!$is_manager) {
+            $project_tasks_args['meta_query'][] = ['key' => '_assigned_to', 'value' => $current_user_id, 'compare' => '='];
+            $project_tasks_args['meta_query']['relation'] = 'AND';
+        }
+        $project_tasks = get_posts($project_tasks_args);
+        $total_tasks = count($project_tasks);
+        $completed_tasks = 0;
+        $tasks_list = [];
+        foreach ($project_tasks as $task_post) {
+            $task_status_terms = wp_get_post_terms($task_post->ID, 'task_status');
+            $is_done = !empty($task_status_terms) && $task_status_terms[0]->slug === 'done';
+            if ($is_done) {
+                $completed_tasks++;
+            }
+            $tasks_list[] = [
+                'id' => $task_post->ID,
+                'title' => $task_post->post_title,
+                'status_slug' => !empty($task_status_terms) ? $task_status_terms[0]->slug : '',
+                'status_name' => !empty($task_status_terms) ? $task_status_terms[0]->name : '',
+            ];
+        }
+        $completion_percentage = $total_tasks > 0 ? round(($completed_tasks / $total_tasks) * 100) : 0;
+
+        $managers = get_users(['role__in' => ['system_manager', 'administrator'], 'orderby' => 'display_name']);
+        $contracts = get_posts(['post_type' => 'contract', 'posts_per_page' => -1]);
+        $statuses = get_terms(['taxonomy' => 'project_status', 'hide_empty' => false]);
+        $assigned_members_data = [];
+        foreach ($assigned_members as $uid) {
+            $u = get_userdata($uid);
+            if ($u) {
+                $assigned_members_data[] = ['id' => $u->ID, 'display_name' => $u->display_name];
+            }
+        }
+
+        wp_send_json_success([
+            'project' => [
+                'id' => $post->ID,
+                'title' => $post->post_title,
+                'content' => $post->post_content,
+                'contract_id' => $contract_id,
+                'project_manager' => $project_manager_id,
+                'project_status' => !empty($status_terms) ? $status_terms[0]->term_id : 0,
+                'status_name' => !empty($status_terms) ? $status_terms[0]->name : '---',
+                'start_date' => $start_date,
+                'end_date' => $end_date,
+                'priority' => $priority,
+                'delete_nonce' => $is_manager ? wp_create_nonce('puzzling_delete_project_' . $project_id) : '',
+                'customer_id' => $customer_id,
+                'customer_name' => $customer ? $customer->display_name : '---',
+                'manager_name' => $manager ? $manager->display_name : '---',
+                'assigned_members' => $assigned_members_data,
+                'tasks' => $tasks_list,
+                'total_tasks' => $total_tasks,
+                'completed_tasks' => $completed_tasks,
+                'completion_percentage' => $completion_percentage,
+            ],
+            'managers' => array_map(function ($u) {
+                return ['id' => $u->ID, 'display_name' => $u->display_name];
+            }, $managers),
+            'contracts' => array_map(function ($c) {
+                $cust = get_userdata($c->post_author);
+                return ['id' => $c->ID, 'title' => $c->post_title, 'customer_name' => $cust ? $cust->display_name : '---'];
+            }, $contracts),
+            'statuses' => array_map(function ($t) {
+                return ['id' => $t->term_id, 'name' => $t->name];
+            }, is_array($statuses) ? $statuses : []),
+        ]);
     }
 
     /**
@@ -113,8 +543,9 @@ class PuzzlingCRM_Project_Ajax_Handler {
         // Project Dates
         if (isset($_POST['project_start_date']) && !empty($_POST['project_start_date'])) {
             $start_date_jalali = sanitize_text_field($_POST['project_start_date']);
-            // Convert Jalali to Gregorian if jdate function exists
-            if (function_exists('puzzling_jalali_to_gregorian')) {
+            if (preg_match('/^\d{4}-\d{1,2}-\d{1,2}$/', trim($start_date_jalali))) {
+                $start_date_gregorian = trim($start_date_jalali);
+            } elseif (function_exists('puzzling_jalali_to_gregorian')) {
                 $start_date_gregorian = puzzling_jalali_to_gregorian($start_date_jalali);
             } elseif (function_exists('jalali_to_gregorian')) {
                 $date_parts = explode('/', $start_date_jalali);
@@ -134,8 +565,9 @@ class PuzzlingCRM_Project_Ajax_Handler {
         
         if (isset($_POST['project_end_date']) && !empty($_POST['project_end_date'])) {
             $end_date_jalali = sanitize_text_field($_POST['project_end_date']);
-            // Convert Jalali to Gregorian if jdate function exists
-            if (function_exists('puzzling_jalali_to_gregorian')) {
+            if (preg_match('/^\d{4}-\d{1,2}-\d{1,2}$/', trim($end_date_jalali))) {
+                $end_date_gregorian = trim($end_date_jalali);
+            } elseif (function_exists('puzzling_jalali_to_gregorian')) {
                 $end_date_gregorian = puzzling_jalali_to_gregorian($end_date_jalali);
             } elseif (function_exists('jalali_to_gregorian')) {
                 $date_parts = explode('/', $end_date_jalali);
@@ -277,7 +709,12 @@ class PuzzlingCRM_Project_Ajax_Handler {
         }
 
         // Convert and validate start date with error logging
-        $start_date_gregorian = puzzling_jalali_to_gregorian($start_date_jalali, true);
+        // Accept Gregorian Y-m-d from React date inputs
+        if (preg_match('/^\d{4}-\d{1,2}-\d{1,2}$/', trim($start_date_jalali))) {
+            $start_date_gregorian = trim($start_date_jalali);
+        } else {
+            $start_date_gregorian = puzzling_jalali_to_gregorian($start_date_jalali, true);
+        }
         $start_timestamp = strtotime($start_date_gregorian);
 
         if (empty($start_date_gregorian) || $start_timestamp === false) {
@@ -395,8 +832,12 @@ class PuzzlingCRM_Project_Ajax_Handler {
                     continue;
                 }
                 
-                // Convert date with error logging
-                $due_date_gregorian = puzzling_jalali_to_gregorian($jalali_date, true);
+                // Convert date with error logging (accept Y-m-d from React)
+                if (preg_match('/^\d{4}-\d{1,2}-\d{1,2}$/', trim($jalali_date))) {
+                    $due_date_gregorian = trim($jalali_date);
+                } else {
+                    $due_date_gregorian = puzzling_jalali_to_gregorian($jalali_date, true);
+                }
                 
                 if (empty($due_date_gregorian) || strtotime($due_date_gregorian) === false) {
                     error_log("PuzzlingCRM Contract: Invalid installment date - Index: $i, Jalali: $jalali_date");

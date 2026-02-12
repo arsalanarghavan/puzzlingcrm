@@ -13,12 +13,75 @@ require_once dirname( __FILE__ ) . '/../class-logger.php';
 class PuzzlingCRM_Lead_Ajax_Handler {
 
     public function __construct() {
+        add_action('wp_ajax_puzzling_get_leads', [ $this, 'get_leads' ]);
         add_action('wp_ajax_puzzling_add_lead', [ $this, 'add_lead' ]);
         add_action('wp_ajax_puzzling_delete_lead', [ $this, 'delete_lead' ]);
         add_action('wp_ajax_puzzling_edit_lead', [ $this, 'edit_lead' ]);
         add_action('wp_ajax_puzzling_change_lead_status', [ $this, 'change_lead_status' ]);
         add_action('wp_ajax_puzzling_add_lead_status', [ $this, 'add_lead_status' ]);
         add_action('wp_ajax_puzzling_delete_lead_status', [ $this, 'delete_lead_status' ]);
+    }
+
+    /**
+     * Returns leads list as JSON for SPA/API.
+     */
+    public function get_leads() {
+        if ( ! check_ajax_referer( 'puzzlingcrm-ajax-nonce', 'security', false ) ) {
+            wp_send_json_error( [ 'message' => __( 'درخواست نامعتبر.', 'puzzlingcrm' ) ] );
+        }
+        if ( ! ( current_user_can( 'manage_options' ) || current_user_can( 'system_manager' ) ) ) {
+            wp_send_json_error( [ 'message' => __( 'شما دسترسی لازم را ندارید.', 'puzzlingcrm' ) ] );
+        }
+        $paged    = isset( $_POST['paged'] ) ? max( 1, (int) $_POST['paged'] ) : 1;
+        $per_page = isset( $_POST['per_page'] ) ? min( 50, max( 1, (int) $_POST['per_page'] ) ) : 20;
+        $search   = isset( $_POST['s'] ) ? sanitize_text_field( wp_unslash( $_POST['s'] ) ) : '';
+        $status   = isset( $_POST['status_filter'] ) ? sanitize_text_field( wp_unslash( $_POST['status_filter'] ) ) : '';
+        $args     = [
+            'post_type'      => 'pzl_lead',
+            'post_status'    => 'publish',
+            'posts_per_page' => $per_page,
+            'paged'          => $paged,
+            's'              => $search,
+        ];
+        if ( $status !== '' ) {
+            $args['tax_query'] = [ [ 'taxonomy' => 'lead_status', 'field' => 'slug', 'terms' => $status ] ];
+        }
+        $query   = new WP_Query( $args );
+        $leads   = [];
+        $statuses = get_terms( [ 'taxonomy' => 'lead_status', 'hide_empty' => false ] );
+        if ( is_wp_error( $statuses ) ) {
+            $statuses = [];
+        }
+        if ( $query->have_posts() ) {
+            while ( $query->have_posts() ) {
+                $query->the_post();
+                $lead_id    = get_the_ID();
+                $terms      = wp_get_object_terms( $lead_id, 'lead_status' );
+                $status_name = ( ! empty( $terms ) && ! is_wp_error( $terms ) ) ? $terms[0]->name : __( 'نامشخص', 'puzzlingcrm' );
+                $status_slug = ( ! empty( $terms ) && ! is_wp_error( $terms ) ) ? $terms[0]->slug : '';
+                $leads[] = [
+                    'id'          => $lead_id,
+                    'first_name'  => get_post_meta( $lead_id, '_first_name', true ),
+                    'last_name'   => get_post_meta( $lead_id, '_last_name', true ),
+                    'mobile'      => get_post_meta( $lead_id, '_mobile', true ),
+                    'email'       => get_post_meta( $lead_id, '_email', true ),
+                    'business_name' => get_post_meta( $lead_id, '_business_name', true ),
+                    'gender'      => get_post_meta( $lead_id, '_gender', true ),
+                    'status_name' => $status_name,
+                    'status_slug' => $status_slug,
+                    'date'        => get_the_date( 'Y-m-d' ),
+                ];
+            }
+            wp_reset_postdata();
+        }
+        wp_send_json_success( [
+            'leads'   => $leads,
+            'total'   => (int) $query->found_posts,
+            'pages'   => (int) $query->max_num_pages,
+            'statuses' => array_map( function ( $t ) {
+                return [ 'slug' => $t->slug, 'name' => $t->name ];
+            }, is_array( $statuses ) ? $statuses : [] ),
+        ] );
     }
 
     /**

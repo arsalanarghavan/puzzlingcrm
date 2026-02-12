@@ -52,7 +52,7 @@ class PuzzlingCRM_Dashboard_Router {
         'contracts' => [
             'title' => 'قراردادها',
             'icon' => 'ri-file-text-line',
-            'roles' => ['system_manager', 'team_member', 'client'],
+            'roles' => ['system_manager', 'finance_manager', 'team_member', 'client'],
             'partial' => 'page-contracts',
         ],
         
@@ -60,7 +60,7 @@ class PuzzlingCRM_Dashboard_Router {
         'invoices' => [
             'title' => 'پیش‌فاکتورها',
             'icon' => 'ri-file-list-3-line',
-            'roles' => ['system_manager', 'team_member', 'client'],
+            'roles' => ['system_manager', 'finance_manager', 'team_member', 'client'],
             'partial' => 'page-pro-invoices',
         ],
         
@@ -128,11 +128,11 @@ class PuzzlingCRM_Dashboard_Router {
             'partial' => 'page-consultations',
         ],
         
-        // Reports (Manager only)
+        // Reports (Manager + Finance)
         'reports' => [
             'title' => 'گزارشات',
             'icon' => 'ri-bar-chart-box-line',
-            'roles' => ['system_manager'],
+            'roles' => ['system_manager', 'finance_manager'],
             'partial' => 'page-reports',
         ],
         
@@ -167,29 +167,119 @@ class PuzzlingCRM_Dashboard_Router {
      */
     public function __construct() {
         add_action('init', [$this, 'add_rewrite_rules']);
+        add_action('init', [$this, 'maybe_flush_rewrites_on_version_change']);
         add_filter('query_vars', [$this, 'add_query_vars']);
         add_action('template_redirect', [$this, 'template_redirect']);
         add_action('puzzlingcrm_dashboard_head', [$this, 'enqueue_dashboard_assets']);
+        add_filter('template_include', [$this, 'force_spa_for_dashboard_shortcode_page'], 1);
+    }
+
+    /**
+     * Flush rewrite rules when plugin version changes (ensures dashboard-embed rule is active).
+     */
+    public function maybe_flush_rewrites_on_version_change() {
+        $saved = get_option('puzzlingcrm_rewrite_version', '');
+        $current = defined('PUZZLINGCRM_VERSION') ? PUZZLINGCRM_VERSION : '2.0.0';
+        if ($saved !== $current) {
+            flush_rewrite_rules();
+            update_option('puzzlingcrm_rewrite_version', $current);
+        }
+    }
+
+    /**
+     * When a page contains [puzzling_dashboard] and SPA build exists, serve the SPA shell
+     * so the user sees the React dashboard instead of the old PHP output.
+     *
+     * @param string $template Current template path.
+     * @return string Template path.
+     */
+    public function force_spa_for_dashboard_shortcode_page( $template ) {
+        if ( ! is_singular() || ! is_user_logged_in() ) {
+            return $template;
+        }
+        $post = get_queried_object();
+        if ( ! $post instanceof WP_Post || ! has_shortcode( $post->post_content, 'puzzling_dashboard' ) ) {
+            return $template;
+        }
+        $build = PUZZLINGCRM_PLUGIN_DIR . 'assets/dashboard-build/dashboard-index.js';
+        if ( ! file_exists( $build ) ) {
+            $build = PUZZLINGCRM_PLUGIN_DIR . 'assets/dashboard-build/dashboard-main.js';
+        }
+        if ( ! file_exists( $build ) ) {
+            return $template;
+        }
+        return PUZZLINGCRM_PLUGIN_DIR . 'templates/dashboard/dashboard-spa-only.php';
     }
 
     public function add_rewrite_rules() {
         add_rewrite_rule('^dashboard/?$', 'index.php?puzzling_dashboard=1', 'top');
         add_rewrite_rule('^dashboard/([^/]+)/?$', 'index.php?puzzling_dashboard=1&dashboard_page=$matches[1]', 'top');
         add_rewrite_rule('^dashboard/([^/]+)/([0-9]+)/?$', 'index.php?puzzling_dashboard=1&dashboard_page=$matches[1]&item_id=$matches[2]', 'top');
+        add_rewrite_rule('^dashboard-embed/([^/]+)/?$', 'index.php?puzzling_embed=1&embed_page=$matches[1]', 'top');
     }
 
     public function add_query_vars($vars) {
         $vars[] = 'puzzling_dashboard';
         $vars[] = 'dashboard_page';
         $vars[] = 'item_id';
+        $vars[] = 'puzzling_embed';
+        $vars[] = 'embed_page';
         return $vars;
     }
 
     public function template_redirect() {
+        if (get_query_var('puzzling_embed')) {
+            $this->load_embed_template();
+            exit;
+        }
         if (get_query_var('puzzling_dashboard')) {
             $this->load_dashboard_template();
             exit;
         }
+    }
+
+    /**
+     * Load embed template (partial only, for iframe in SPA).
+     */
+    private function load_embed_template() {
+        if (!is_user_logged_in()) {
+            wp_redirect(home_url('/login'));
+            exit;
+        }
+
+        $slug = get_query_var('embed_page', '');
+        if (empty($slug)) {
+            status_header(404);
+            echo '<p>' . esc_html__('صفحه یافت نشد.', 'puzzlingcrm') . '</p>';
+            exit;
+        }
+
+        $routes = self::get_routes();
+        if (!isset($routes[$slug])) {
+            status_header(404);
+            echo '<p>' . esc_html__('صفحه یافت نشد.', 'puzzlingcrm') . '</p>';
+            exit;
+        }
+
+        $user = wp_get_current_user();
+        $user_role = $this->get_user_dashboard_role($user);
+        $route = $routes[$slug];
+
+        if (!in_array($user_role, $route['roles'])) {
+            status_header(403);
+            echo '<p>' . esc_html__('دسترسی غیرمجاز.', 'puzzlingcrm') . '</p>';
+            exit;
+        }
+
+        $embed_shell = PUZZLINGCRM_PLUGIN_DIR . 'templates/dashboard/dashboard-embed-shell.php';
+        if (file_exists($embed_shell)) {
+            $embed_partial = $this->get_partial_for_role($route['partial'], $user_role);
+            include $embed_shell;
+        } else {
+            status_header(500);
+            echo '<p>' . esc_html__('خطای سرور.', 'puzzlingcrm') . '</p>';
+        }
+        exit;
     }
 
     private function load_dashboard_template() {
@@ -884,13 +974,17 @@ class PuzzlingCRM_Dashboard_Router {
      * Render dashboard wrapper using new component system
      */
     private function render_dashboard_wrapper($current_page, $route, $user) {
-        // Load the new component-based wrapper
+        // Load SPA shell for React dashboard (single entry; React Router handles routes)
+        $spa_shell = PUZZLINGCRM_PLUGIN_DIR . 'templates/dashboard/dashboard-spa-shell.php';
+        if (file_exists($spa_shell)) {
+            include $spa_shell;
+            return;
+        }
+        // Fallback: component-based wrapper
         $wrapper_file = PUZZLINGCRM_PLUGIN_DIR . 'templates/dashboard/dashboard-wrapper.php';
-        
         if (file_exists($wrapper_file)) {
             include $wrapper_file;
         } else {
-            // Fallback to old method if wrapper doesn't exist
             $this->render_dashboard_wrapper_original($current_page, $route, $user);
         }
     }
@@ -988,6 +1082,9 @@ class PuzzlingCRM_Dashboard_Router {
         
         if (in_array('administrator', $roles) || in_array('system_manager', $roles)) {
             return 'system_manager';
+        }
+        if (in_array('finance_manager', $roles)) {
+            return 'finance_manager';
         }
         if (in_array('team_member', $roles)) {
             return 'team_member';

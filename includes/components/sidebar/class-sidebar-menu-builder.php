@@ -147,7 +147,7 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 			),
 			array(
 				'id'       => 'tasks',
-				'title'    => __( 'All Tasks', 'puzzlingcrm' ),
+				'title'    => __( 'همه وظایف', 'puzzlingcrm' ),
 				'url'      => $dashboard_url . '/tasks',
 				'icon'     => 'ri-task-line',
 			),

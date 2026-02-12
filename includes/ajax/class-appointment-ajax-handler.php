@@ -16,6 +16,8 @@ class PuzzlingCRM_Appointment_Ajax_Handler {
         add_action('wp_ajax_puzzling_update_appointment_date', [$this, 'update_appointment_date']);
         add_action('wp_ajax_puzzling_get_customers_list', [$this, 'get_customers_list']);
         add_action('wp_ajax_puzzling_client_request_appointment', [$this, 'client_request_appointment']);
+        add_action('wp_ajax_puzzlingcrm_get_appointments', [$this, 'ajax_get_appointments']);
+        add_action('wp_ajax_puzzlingcrm_get_appointment', [$this, 'ajax_get_appointment']);
     }
 
     /**
@@ -40,11 +42,11 @@ class PuzzlingCRM_Appointment_Ajax_Handler {
             wp_send_json_error(['message' => 'لطفاً تمام فیلدهای ضروری را پر کنید.']);
         }
 
-        // Convert Jalali to Gregorian if needed
-        if (function_exists('jmktime')) {
+        // Accept Y-m-d (Gregorian) from React; otherwise convert Jalali to Gregorian
+        if (!preg_match('/^\d{4}-\d{1,2}-\d{1,2}$/', trim($date)) && function_exists('jmktime')) {
             $date_parts = explode('/', $date);
             if (count($date_parts) === 3) {
-                $timestamp = jmktime(0, 0, 0, $date_parts[1], $date_parts[2], $date_parts[0]);
+                $timestamp = jmktime(0, 0, 0, (int) $date_parts[1], (int) $date_parts[2], (int) $date_parts[0]);
                 $date = date('Y-m-d', $timestamp);
             }
         }
@@ -269,6 +271,112 @@ class PuzzlingCRM_Appointment_Ajax_Handler {
         wp_send_json_success([
             'message' => 'درخواست شما ثبت شد و در اسرع وقت بررسی خواهد شد.',
             'reload' => true
+        ]);
+    }
+
+    /**
+     * Get appointments list for React dashboard.
+     */
+    public function ajax_get_appointments() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_posts') && !current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+        $search = isset($_POST['s']) ? sanitize_text_field($_POST['s']) : '';
+        $date_from = isset($_POST['date_from']) ? sanitize_text_field($_POST['date_from']) : '';
+        $date_to = isset($_POST['date_to']) ? sanitize_text_field($_POST['date_to']) : '';
+        $paged = isset($_POST['paged']) ? max(1, intval($_POST['paged'])) : 1;
+        $per_page = isset($_POST['per_page']) ? min(100, max(1, intval($_POST['per_page']))) : 50;
+
+        $args = [
+            'post_type' => 'appointment',
+            'posts_per_page' => $per_page,
+            'paged' => $paged,
+            'post_status' => 'publish',
+            'orderby' => 'meta_value',
+            'meta_key' => '_appointment_datetime',
+            'order' => 'ASC',
+        ];
+        if (!empty($search)) {
+            $args['s'] = $search;
+        }
+        $meta_query = [];
+        if (!empty($date_from) || !empty($date_to)) {
+            if (!empty($date_from) && !empty($date_to)) {
+                $meta_query[] = ['key' => '_appointment_datetime', 'value' => [$date_from . ' 00:00:00', $date_to . ' 23:59:59'], 'compare' => 'BETWEEN', 'type' => 'CHAR'];
+            } elseif (!empty($date_from)) {
+                $meta_query[] = ['key' => '_appointment_datetime', 'value' => $date_from, 'compare' => '>=', 'type' => 'CHAR'];
+            } else {
+                $meta_query[] = ['key' => '_appointment_datetime', 'value' => $date_to . ' 23:59:59', 'compare' => '<=', 'type' => 'CHAR'];
+            }
+        }
+        if (!empty($meta_query)) {
+            $args['meta_query'] = $meta_query;
+        }
+
+        $query = new \WP_Query($args);
+        $items = [];
+        foreach ($query->posts as $post) {
+            $customer_id = $post->post_author;
+            $customer = get_user_by('id', $customer_id);
+            $datetime = get_post_meta($post->ID, '_appointment_datetime', true);
+            $status_terms = wp_get_post_terms($post->ID, 'appointment_status');
+            $status_slug = !empty($status_terms) ? $status_terms[0]->slug : 'pending';
+            $status_name = !empty($status_terms) ? $status_terms[0]->name : 'نامشخص';
+            $items[] = [
+                'id' => $post->ID,
+                'title' => $post->post_title,
+                'notes' => $post->post_content,
+                'customer_id' => $customer_id,
+                'customer_name' => $customer ? $customer->display_name : '---',
+                'datetime' => $datetime,
+                'status_slug' => $status_slug,
+                'status_name' => $status_name,
+            ];
+        }
+        $statuses = get_terms(['taxonomy' => 'appointment_status', 'hide_empty' => false]);
+        $statuses_list = [];
+        if ($statuses && !is_wp_error($statuses)) {
+            foreach ($statuses as $t) {
+                $statuses_list[] = ['slug' => $t->slug, 'name' => $t->name];
+            }
+        }
+        wp_send_json_success([
+            'appointments' => $items,
+            'statuses' => $statuses_list,
+            'total' => $query->found_posts,
+            'total_pages' => $query->max_num_pages,
+        ]);
+    }
+
+    /**
+     * Get single appointment for React (edit form).
+     */
+    public function ajax_get_appointment() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_posts') && !current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+        $appointment_id = isset($_POST['appointment_id']) ? intval($_POST['appointment_id']) : 0;
+        $post = get_post($appointment_id);
+        if (!$post || $post->post_type !== 'appointment') {
+            wp_send_json_error(['message' => 'قرار ملاقات یافت نشد.']);
+        }
+        $datetime = get_post_meta($appointment_id, '_appointment_datetime', true);
+        $date_val = $datetime ? date('Y-m-d', strtotime($datetime)) : '';
+        $time_val = $datetime ? date('H:i', strtotime($datetime)) : '';
+        $status_terms = wp_get_post_terms($appointment_id, 'appointment_status');
+        $status_slug = !empty($status_terms) ? $status_terms[0]->slug : 'pending';
+        wp_send_json_success([
+            'appointment' => [
+                'id' => $post->ID,
+                'title' => $post->post_title,
+                'notes' => $post->post_content,
+                'customer_id' => (int) $post->post_author,
+                'date' => $date_val,
+                'time' => $time_val,
+                'status_slug' => $status_slug,
+            ],
         ]);
     }
 }

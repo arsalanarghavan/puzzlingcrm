@@ -13,6 +13,8 @@ class PuzzlingCRM_Form_Ajax_Handler {
         // --- Form & Invoice Actions ---
         add_action('wp_ajax_puzzling_manage_pro_invoice', [$this, 'ajax_manage_pro_invoice']);
         add_action('wp_ajax_puzzling_generate_pro_invoice_pdf', [$this, 'ajax_generate_pro_invoice_pdf']);
+        add_action('wp_ajax_puzzlingcrm_get_invoices', [$this, 'ajax_get_invoices']);
+        add_action('wp_ajax_puzzlingcrm_get_invoice', [$this, 'ajax_get_invoice']);
 
         // --- Appointment Actions ---
         add_action('wp_ajax_puzzling_manage_appointment', [$this, 'ajax_manage_appointment']);
@@ -45,7 +47,11 @@ class PuzzlingCRM_Form_Ajax_Handler {
             wp_send_json_error(['message' => 'انتخاب مشتری، پروژه و تاریخ صدور الزامی است.']);
         }
 
-        $issue_date_gregorian = puzzling_jalali_to_gregorian($issue_date_jalali);
+        if (preg_match('/^\d{4}-\d{1,2}-\d{1,2}$/', trim($issue_date_jalali))) {
+            $issue_date_gregorian = trim($issue_date_jalali);
+        } else {
+            $issue_date_gregorian = puzzling_jalali_to_gregorian($issue_date_jalali);
+        }
         $invoice_number = 'puz-' . jdate('ymd', strtotime($issue_date_gregorian), '', 'en') . '-' . $project_id;
         
         $items = [];
@@ -104,6 +110,86 @@ class PuzzlingCRM_Form_Ajax_Handler {
         wp_send_json_success(['message' => $message, 'reload' => true]);
     }
     
+    public function ajax_get_invoices() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+        $paged = isset($_POST['paged']) ? max(1, intval($_POST['paged'])) : 1;
+        $query = new WP_Query([
+            'post_type' => 'pzl_pro_invoice',
+            'posts_per_page' => 20,
+            'paged' => $paged,
+        ]);
+        $items = [];
+        foreach ($query->posts as $post) {
+            $inv_id = $post->ID;
+            $customer = get_userdata((int) $post->post_author);
+            $project_id = get_post_meta($inv_id, '_project_id', true);
+            $items[] = [
+                'id' => $inv_id,
+                'invoice_number' => get_post_meta($inv_id, '_pro_invoice_number', true),
+                'customer_id' => (int) $post->post_author,
+                'customer_name' => $customer && $customer->exists() ? $customer->display_name : '---',
+                'project_id' => (int) $project_id,
+                'project_title' => $project_id ? get_the_title($project_id) : '---',
+                'final_total' => (float) get_post_meta($inv_id, '_final_total', true),
+                'issue_date' => get_post_meta($inv_id, '_issue_date', true),
+                'date_display' => get_the_date('Y/m/d', $post),
+            ];
+        }
+        $customers = get_users(['role__in' => ['customer', 'subscriber'], 'orderby' => 'display_name']);
+        $customers_list = array_map(function ($c) {
+            return ['id' => $c->ID, 'display_name' => $c->display_name];
+        }, $customers);
+        wp_send_json_success([
+            'invoices' => $items,
+            'customers' => $customers_list,
+            'total_pages' => $query->max_num_pages,
+            'current_page' => $paged,
+        ]);
+    }
+
+    public function ajax_get_invoice() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+        $invoice_id = isset($_POST['invoice_id']) ? intval($_POST['invoice_id']) : 0;
+        $post = get_post($invoice_id);
+        if (!$post || $post->post_type !== 'pzl_pro_invoice') {
+            wp_send_json_error(['message' => 'پیش‌فاکتور یافت نشد.']);
+        }
+        $issue_date = get_post_meta($invoice_id, '_issue_date', true);
+        $issue_jalali = $issue_date && function_exists('puzzling_gregorian_to_jalali')
+            ? puzzling_gregorian_to_jalali($issue_date) : $issue_date;
+        $items = get_post_meta($invoice_id, '_invoice_items', true);
+        if (!is_array($items)) $items = [];
+        $customers = get_users(['role__in' => ['customer', 'subscriber'], 'orderby' => 'display_name']);
+        $customers_list = array_map(function ($c) {
+            return ['id' => $c->ID, 'display_name' => $c->display_name];
+        }, $customers);
+        $projects = get_posts(['post_type' => 'project', 'author' => $post->post_author, 'posts_per_page' => -1]);
+        $projects_list = array_map(function ($p) {
+            return ['id' => $p->ID, 'title' => $p->post_title];
+        }, $projects);
+        wp_send_json_success([
+            'invoice' => [
+                'id' => $post->ID,
+                'customer_id' => (int) $post->post_author,
+                'project_id' => (int) get_post_meta($invoice_id, '_project_id', true),
+                'invoice_number' => get_post_meta($invoice_id, '_pro_invoice_number', true),
+                'issue_date' => $issue_date,
+                'issue_date_jalali' => $issue_jalali,
+                'items' => $items,
+                'payment_method' => get_post_meta($invoice_id, '_payment_method', true),
+                'notes' => $post->post_content,
+            ],
+            'customers' => $customers_list,
+            'projects' => $projects_list,
+        ]);
+    }
+
     public function ajax_generate_pro_invoice_pdf() {
         check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
         if (!current_user_can('manage_options')) {

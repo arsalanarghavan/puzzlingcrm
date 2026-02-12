@@ -16,6 +16,164 @@ class PuzzlingCRM_Ticket_Ajax_Handler {
         add_action('wp_ajax_puzzling_submit_ticket_rating', [$this, 'ajax_submit_ticket_rating']);
         add_action('wp_ajax_nopriv_puzzling_submit_ticket_rating', [$this, 'ajax_submit_ticket_rating']);
         add_action('wp_ajax_puzzling_get_canned_response', [$this, 'ajax_get_canned_response']);
+        add_action('wp_ajax_puzzlingcrm_get_tickets', [$this, 'ajax_get_tickets']);
+        add_action('wp_ajax_puzzlingcrm_get_ticket', [$this, 'ajax_get_ticket']);
+    }
+
+    public function ajax_get_tickets() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => 'لطفاً وارد شوید.']);
+        }
+        $current_user_id = get_current_user_id();
+        $is_manager = current_user_can('manage_options');
+        $is_team_member = in_array('team_member', (array) wp_get_current_user()->roles);
+
+        $search = isset($_POST['s']) ? sanitize_text_field($_POST['s']) : '';
+        $status_filter = isset($_POST['status_filter']) ? sanitize_key($_POST['status_filter']) : '';
+        $priority_filter = isset($_POST['priority_filter']) ? sanitize_key($_POST['priority_filter']) : '';
+        $department_filter = isset($_POST['department_filter']) ? intval($_POST['department_filter']) : 0;
+        $paged = isset($_POST['paged']) ? max(1, intval($_POST['paged'])) : 1;
+
+        $args = [
+            'post_type' => 'ticket',
+            'posts_per_page' => 15,
+            'post_status' => 'publish',
+            'paged' => $paged,
+            'orderby' => 'modified',
+            'order' => 'DESC',
+            'tax_query' => ['relation' => 'AND'],
+        ];
+        if ($status_filter) {
+            $args['tax_query'][] = ['taxonomy' => 'ticket_status', 'field' => 'slug', 'terms' => $status_filter];
+        }
+        if ($priority_filter) {
+            $args['tax_query'][] = ['taxonomy' => 'ticket_priority', 'field' => 'slug', 'terms' => $priority_filter];
+        }
+        if ($department_filter > 0) {
+            $args['tax_query'][] = ['taxonomy' => 'organizational_position', 'field' => 'term_id', 'terms' => $department_filter];
+        }
+        if ($search) {
+            $args['s'] = $search;
+        }
+        if (!$is_manager && !$is_team_member) {
+            $args['author'] = $current_user_id;
+        }
+
+        $query = new WP_Query($args);
+        $items = [];
+        foreach ($query->posts as $post) {
+            $status_terms = get_the_terms($post->ID, 'ticket_status');
+            $department_terms = get_the_terms($post->ID, 'organizational_position');
+            $priority_terms = get_the_terms($post->ID, 'ticket_priority');
+            $items[] = [
+                'id' => $post->ID,
+                'title' => $post->post_title,
+                'author_name' => get_the_author_meta('display_name', $post->post_author),
+                'modified' => get_the_modified_date('Y/m/d H:i', $post),
+                'status_slug' => !empty($status_terms) ? $status_terms[0]->slug : 'open',
+                'status_name' => !empty($status_terms) ? $status_terms[0]->name : 'نامشخص',
+                'department_name' => !empty($department_terms) ? $department_terms[0]->name : '---',
+                'priority_slug' => !empty($priority_terms) ? $priority_terms[0]->slug : 'default',
+                'priority_name' => !empty($priority_terms) ? $priority_terms[0]->name : '---',
+            ];
+        }
+
+        $statuses = [];
+        foreach (get_terms(['taxonomy' => 'ticket_status', 'hide_empty' => false]) as $t) {
+            $statuses[] = ['slug' => $t->slug, 'name' => $t->name];
+        }
+        $priorities = [];
+        foreach (get_terms(['taxonomy' => 'ticket_priority', 'hide_empty' => false]) as $t) {
+            $priorities[] = ['slug' => $t->slug, 'name' => $t->name, 'term_id' => $t->term_id];
+        }
+        $departments = [];
+        foreach (get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false, 'parent' => 0]) as $t) {
+            $departments[] = ['id' => $t->term_id, 'name' => $t->name];
+        }
+
+        wp_send_json_success([
+            'tickets' => $items,
+            'statuses' => $statuses,
+            'priorities' => $priorities,
+            'departments' => $departments,
+            'total_pages' => $query->max_num_pages,
+            'current_page' => $paged,
+            'is_manager' => $is_manager,
+            'is_team_member' => $is_team_member,
+        ]);
+    }
+
+    public function ajax_get_ticket() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => 'لطفاً وارد شوید.']);
+        }
+        $ticket_id = isset($_POST['ticket_id']) ? intval($_POST['ticket_id']) : 0;
+        $current_user_id = get_current_user_id();
+
+        if (!function_exists('puzzling_can_user_view_ticket') || !puzzling_can_user_view_ticket($ticket_id, $current_user_id)) {
+            wp_send_json_error(['message' => 'شما دسترسی لازم برای مشاهده این تیکت را ندارید.']);
+        }
+
+        $ticket = get_post($ticket_id);
+        if (!$ticket || $ticket->post_type !== 'ticket') {
+            wp_send_json_error(['message' => 'تیکت یافت نشد.']);
+        }
+
+        $status_terms = get_the_terms($ticket_id, 'ticket_status');
+        $department_terms = get_the_terms($ticket_id, 'organizational_position');
+        $priority_terms = get_the_terms($ticket_id, 'ticket_priority');
+        $assigned_to_id = get_post_meta($ticket_id, '_assigned_to', true);
+
+        $comments = get_comments(['post_id' => $ticket_id, 'status' => 'approve', 'order' => 'ASC']);
+        $replies = [];
+        foreach ($comments as $c) {
+            $replies[] = [
+                'id' => $c->comment_ID,
+                'author' => $c->comment_author,
+                'content' => $c->comment_content,
+                'date' => $c->comment_date,
+            ];
+        }
+
+        $departments = [];
+        foreach (get_terms(['taxonomy' => 'organizational_position', 'hide_empty' => false, 'parent' => 0]) as $t) {
+            $departments[] = ['id' => $t->term_id, 'name' => $t->name];
+        }
+        $statuses = [];
+        foreach (get_terms(['taxonomy' => 'ticket_status', 'hide_empty' => false]) as $t) {
+            $statuses[] = ['slug' => $t->slug, 'name' => $t->name];
+        }
+        $priorities = [];
+        foreach (get_terms(['taxonomy' => 'ticket_priority', 'hide_empty' => false]) as $t) {
+            $priorities[] = ['term_id' => $t->term_id, 'slug' => $t->slug, 'name' => $t->name];
+        }
+
+        wp_send_json_success([
+            'ticket' => [
+                'id' => $ticket->ID,
+                'title' => $ticket->post_title,
+                'content' => $ticket->post_content,
+                'author_id' => (int) $ticket->post_author,
+                'author_name' => get_the_author_meta('display_name', $ticket->post_author),
+                'date' => get_the_date('Y/m/d H:i', $ticket),
+                'status_slug' => !empty($status_terms) ? $status_terms[0]->slug : 'open',
+                'status_name' => !empty($status_terms) ? $status_terms[0]->name : 'نامشخص',
+                'department_name' => !empty($department_terms) ? $department_terms[0]->name : '---',
+                'department_id' => !empty($department_terms) ? $department_terms[0]->term_id : 0,
+                'priority_name' => !empty($priority_terms) ? $priority_terms[0]->name : '---',
+                'priority_id' => !empty($priority_terms) ? $priority_terms[0]->term_id : 0,
+                'assigned_to_id' => (int) $assigned_to_id,
+                'assigned_to_name' => $assigned_to_id ? get_the_author_meta('display_name', $assigned_to_id) : '---',
+                'is_closed' => (!empty($status_terms) && $status_terms[0]->slug === 'closed'),
+                'replies' => $replies,
+            ],
+            'departments' => $departments,
+            'statuses' => $statuses,
+            'priorities' => $priorities,
+            'can_manage' => current_user_can('manage_options'),
+        ]);
     }
 
     private function notify_all_admins($title, $args) {

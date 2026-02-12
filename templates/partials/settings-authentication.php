@@ -24,6 +24,9 @@ $inactive_timeout_minutes = intval($settings['inactive_timeout_minutes'] ?? 30);
 // SMS Pattern settings (moved from SMS tab)
 $melipayamak_login_pattern = $settings['melipayamak_login_pattern'] ?? '';
 $parsgreen_login_template = $settings['parsgreen_login_template'] ?? '';
+// Email OTP template
+$login_email_otp_subject = $settings['login_email_otp_subject'] ?? 'کد ورود شما';
+$login_email_otp_body = $settings['login_email_otp_body'] ?? "کد ورود شما: %CODE%\nاعتبار: 5 دقیقه";
 ?>
 
 <h3><i class="ri-shield-keyhole-line"></i> تنظیمات احراز هویت</h3>
@@ -201,6 +204,28 @@ $parsgreen_login_template = $settings['parsgreen_login_template'] ?? '';
                 <small class="form-text text-muted">
                     از <code>%CODE%</code> برای نمایش کد OTP استفاده کنید
                 </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- بخش 2.6: قالب ایمیل OTP -->
+    <div class="pzl-settings-section">
+        <h4><i class="ri-mail-line"></i> قالب ایمیل ورود (کد یکبارمصرف)</h4>
+        <div class="pzl-info-box">
+            <i class="ri-information-line"></i>
+            <p>برای ورود با ایمیل، کد OTP به ایمیل کاربر ارسال می‌شود. موضوع و متن ایمیل را در زیر تنظیم کنید.</p>
+        </div>
+        <div class="pzl-form-row">
+            <div class="form-group">
+                <label for="login_email_otp_subject"><strong>موضوع ایمیل</strong></label>
+                <input type="text" id="login_email_otp_subject" name="login_email_otp_subject" value="<?php echo esc_attr($login_email_otp_subject); ?>" class="ltr-input" placeholder="کد ورود شما">
+            </div>
+        </div>
+        <div class="pzl-form-row">
+            <div class="form-group">
+                <label for="login_email_otp_body"><strong>متن ایمیل</strong></label>
+                <textarea id="login_email_otp_body" name="login_email_otp_body" rows="4" class="ltr-input" placeholder="کد ورود شما: %CODE%"><?php echo esc_textarea($login_email_otp_body); ?></textarea>
+                <small class="form-text text-muted">از <code>%CODE%</code> برای نمایش کد OTP استفاده کنید.</small>
             </div>
         </div>
     </div>

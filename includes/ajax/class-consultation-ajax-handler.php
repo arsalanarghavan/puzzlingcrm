@@ -10,8 +10,59 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class PuzzlingCRM_Consultation_Ajax_Handler {
 
     public function __construct() {
+        add_action('wp_ajax_puzzlingcrm_get_consultations', [$this, 'ajax_get_consultations']);
         add_action('wp_ajax_puzzling_manage_consultation', [$this, 'ajax_manage_consultation']);
         add_action('wp_ajax_puzzling_convert_consultation_to_project', [$this, 'ajax_convert_consultation_to_project']);
+    }
+
+    /**
+     * Get list of consultations for React dashboard.
+     */
+    public function ajax_get_consultations() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $posts = get_posts([
+            'post_type'   => 'pzl_consultation',
+            'posts_per_page' => -1,
+            'orderby'     => 'date',
+            'order'       => 'DESC',
+        ]);
+
+        $statuses = [];
+        $terms = get_terms(['taxonomy' => 'consultation_status', 'hide_empty' => false]);
+        foreach ($terms as $t) {
+            $statuses[] = ['slug' => $t->slug, 'name' => $t->name];
+        }
+
+        $items = [];
+        foreach ($posts as $p) {
+            $phone = get_post_meta($p->ID, '_consultation_phone', true);
+            $email = get_post_meta($p->ID, '_consultation_email', true);
+            $type = get_post_meta($p->ID, '_consultation_type', true);
+            $datetime = get_post_meta($p->ID, '_consultation_datetime', true);
+            $status_terms = get_the_terms($p->ID, 'consultation_status');
+            $status_slug = !empty($status_terms) ? $status_terms[0]->slug : 'in-progress';
+            $status_name = !empty($status_terms) ? $status_terms[0]->name : 'در حال انجام';
+
+            $items[] = [
+                'id'           => $p->ID,
+                'name'         => $p->post_title,
+                'phone'        => $phone,
+                'email'        => $email,
+                'type'         => $type,
+                'type_label'   => ($type === 'in-person') ? 'حضوری' : 'تلفنی',
+                'datetime'     => $datetime,
+                'datetime_display' => !empty($datetime) ? date_i18n('Y/m/d H:i', strtotime($datetime)) : '',
+                'status_slug'  => $status_slug,
+                'status_name'  => $status_name,
+                'notes'        => $p->post_content,
+            ];
+        }
+
+        wp_send_json_success(['consultations' => $items, 'statuses' => $statuses]);
     }
 
     /**
@@ -38,7 +89,15 @@ class PuzzlingCRM_Consultation_Ajax_Handler {
         }
 
         $post_title = $name;
-        $datetime = !empty($date) ? puzzling_jalali_to_gregorian($date) . ' ' . $time : '';
+        $date_gregorian = '';
+        if (!empty($date)) {
+            if (preg_match('/^\d{4}-\d{1,2}-\d{1,2}$/', trim($date))) {
+                $date_gregorian = trim($date);
+            } else {
+                $date_gregorian = function_exists('puzzling_jalali_to_gregorian') ? puzzling_jalali_to_gregorian($date) : '';
+            }
+        }
+        $datetime = !empty($date_gregorian) ? $date_gregorian . ' ' . trim($time) : '';
         
         $post_data = [
             'post_title' => $post_title,

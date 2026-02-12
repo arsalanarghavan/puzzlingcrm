@@ -34,14 +34,49 @@ class PuzzlingCRM_Header_Data_Provider {
 
 		$current_user = wp_get_current_user();
 		$user_role    = self::get_user_role_display( $current_user );
+		$role_slug    = self::get_user_role_slug( $current_user );
 
+		$avatar_size = 96;
+		$avatar_url  = get_avatar_url( $current_user->ID, array( 'size' => $avatar_size ) );
+		$pic_id      = get_user_meta( $current_user->ID, 'pzl_profile_picture_id', true );
+		if ( $pic_id && wp_attachment_is_image( $pic_id ) ) {
+			$avatar_url = wp_get_attachment_image_url( (int) $pic_id, array( $avatar_size, $avatar_size ) ) ?: $avatar_url;
+		}
 		return array(
-			'id'     => $current_user->ID,
-			'name'   => $current_user->display_name,
-			'email'  => $current_user->user_email,
-			'avatar' => get_avatar_url( $current_user->ID, array( 'size' => 32 ) ),
-			'role'   => $user_role,
+			'id'               => $current_user->ID,
+			'name'             => $current_user->display_name,
+			'email'            => $current_user->user_email,
+			'avatar'           => get_avatar_url( $current_user->ID, array( 'size' => 32 ) ),
+			'avatarLarge'      => $avatar_url,
+			'role'             => $user_role,
+			'roleSlug'         => $role_slug,
+			'first_name'       => $current_user->first_name,
+			'last_name'        => $current_user->last_name,
+			'pzl_mobile_phone' => get_user_meta( $current_user->ID, 'pzl_mobile_phone', true ) ?: '',
 		);
+	}
+
+	/**
+	 * Get user role slug for dashboard logic.
+	 *
+	 * @param WP_User $user User object.
+	 * @return string Role slug (system_manager, team_member, client, etc).
+	 */
+	private static function get_user_role_slug( $user ) {
+		$roles = (array) $user->roles;
+		if ( in_array( 'administrator', $roles, true ) || in_array( 'system_manager', $roles, true ) ) {
+			return 'system_manager';
+		}
+		if ( in_array( 'finance_manager', $roles, true ) ) {
+			return 'finance_manager';
+		}
+		if ( in_array( 'team_member', $roles, true ) ) {
+			return 'team_member';
+		}
+		if ( in_array( 'customer', $roles, true ) || in_array( 'client', $roles, true ) ) {
+			return 'client';
+		}
+		return 'guest';
 	}
 
 	/**

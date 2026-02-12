@@ -44,6 +44,7 @@ class PuzzlingCRM_Task_Ajax_Handler {
         add_action('wp_ajax_puzzling_get_tasks_calendar', [$this, 'get_tasks_calendar']);
         add_action('wp_ajax_puzzling_get_tasks_gantt', [$this, 'get_tasks_gantt']);
         add_action('wp_ajax_puzzling_create_task', [$this, 'add_task']); // Alias برای add_task
+        add_action('wp_ajax_puzzlingcrm_get_tasks', [$this, 'ajax_get_tasks']);
     }
 
     private function _log_task_activity($task_id, $activity_text) {
@@ -740,5 +741,173 @@ class PuzzlingCRM_Task_Ajax_Handler {
         $end_ts = strtotime($end);
         $diff = $end_ts - $start_ts;
         return max(1, round($diff / (60 * 60 * 24)));
+    }
+
+    /**
+     * Get tasks list for React dashboard (JSON) with filters.
+     */
+    public function ajax_get_tasks() {
+        check_ajax_referer('puzzlingcrm-ajax-nonce', 'security');
+        if (!current_user_can('edit_tasks') && !current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'دسترسی غیرمجاز.']);
+        }
+
+        $search = isset($_POST['s']) ? sanitize_text_field($_POST['s']) : '';
+        $project_filter = isset($_POST['project_filter']) ? intval($_POST['project_filter']) : 0;
+        $staff_filter = isset($_POST['staff_filter']) ? intval($_POST['staff_filter']) : 0;
+        $priority_filter = isset($_POST['priority_filter']) ? sanitize_key($_POST['priority_filter']) : '';
+        $label_filter = isset($_POST['label_filter']) ? sanitize_key($_POST['label_filter']) : '';
+        $status_filter = isset($_POST['status']) ? sanitize_key($_POST['status']) : '';
+        $paged = isset($_POST['paged']) ? max(1, intval($_POST['paged'])) : 1;
+        $per_page = isset($_POST['per_page']) ? min(100, max(1, intval($_POST['per_page']))) : 50;
+
+        $args = [
+            'post_type' => 'task',
+            'posts_per_page' => $per_page,
+            'paged' => $paged,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'post_status' => 'publish',
+        ];
+        if (!empty($search)) {
+            $args['s'] = $search;
+        }
+        $meta_query = [];
+        if ($project_filter > 0) {
+            $meta_query[] = ['key' => '_project_id', 'value' => $project_filter, 'compare' => '='];
+        }
+        if ($staff_filter > 0) {
+            $meta_query[] = ['key' => '_assigned_to', 'value' => $staff_filter, 'compare' => '='];
+        }
+        if (!empty($meta_query)) {
+            $args['meta_query'] = $meta_query;
+        }
+        $tax_query = [];
+        if (!empty($priority_filter)) {
+            $tax_query[] = ['taxonomy' => 'task_priority', 'field' => 'slug', 'terms' => $priority_filter];
+        }
+        if (!empty($label_filter)) {
+            $tax_query[] = ['taxonomy' => 'task_label', 'field' => 'slug', 'terms' => $label_filter];
+        }
+        if (!empty($status_filter)) {
+            $tax_query[] = ['taxonomy' => 'task_status', 'field' => 'slug', 'terms' => $status_filter];
+        }
+        if (!empty($tax_query)) {
+            $args['tax_query'] = $tax_query;
+        }
+
+        $current_user_id = get_current_user_id();
+        $user_roles = (array) wp_get_current_user()->roles;
+        $is_manager = in_array('administrator', $user_roles) || in_array('system_manager', $user_roles);
+        if (!$is_manager) {
+            if (!isset($args['meta_query'])) {
+                $args['meta_query'] = [];
+            }
+            $args['meta_query'][] = ['key' => '_assigned_to', 'value' => $current_user_id, 'compare' => '='];
+            $args['meta_query']['relation'] = 'AND';
+        }
+
+        $query = new WP_Query($args);
+        $items = [];
+        foreach ($query->posts as $post) {
+            $task_id = $post->ID;
+            $due_date = get_post_meta($task_id, '_due_date', true);
+            $project_id = (int) get_post_meta($task_id, '_project_id', true);
+            $assigned_to = (int) get_post_meta($task_id, '_assigned_to', true);
+            $status_terms = get_the_terms($task_id, 'task_status');
+            $priority_terms = get_the_terms($task_id, 'task_priority');
+            $label_terms = get_the_terms($task_id, 'task_label');
+            $status_slug = $status_name = '';
+            if ($status_terms && !is_wp_error($status_terms)) {
+                $status_slug = $status_terms[0]->slug;
+                $status_name = $status_terms[0]->name;
+            }
+            $priority_slug = $priority_name = '';
+            if ($priority_terms && !is_wp_error($priority_terms)) {
+                $priority_slug = $priority_terms[0]->slug;
+                $priority_name = $priority_terms[0]->name;
+            }
+            $labels = [];
+            if ($label_terms && !is_wp_error($label_terms)) {
+                foreach ($label_terms as $t) {
+                    $labels[] = ['slug' => $t->slug, 'name' => $t->name];
+                }
+            }
+            $assigned_name = $assigned_to ? get_the_author_meta('display_name', $assigned_to) : '';
+            $project_title = $project_id ? get_the_title($project_id) : '';
+            $items[] = [
+                'id' => $task_id,
+                'title' => $post->post_title,
+                'content' => $post->post_content,
+                'status_slug' => $status_slug,
+                'status_name' => $status_name,
+                'priority_slug' => $priority_slug,
+                'priority_name' => $priority_name,
+                'labels' => $labels,
+                'due_date' => $due_date,
+                'project_id' => $project_id,
+                'project_title' => $project_title,
+                'assigned_to' => $assigned_to,
+                'assigned_name' => $assigned_name,
+                'post_date' => $post->post_date,
+            ];
+        }
+
+        $all_statuses = get_terms(['taxonomy' => 'task_status', 'hide_empty' => false, 'orderby' => 'term_order', 'order' => 'ASC']);
+        $statuses_list = [];
+        if ($all_statuses && !is_wp_error($all_statuses)) {
+            foreach ($all_statuses as $t) {
+                $statuses_list[] = ['id' => $t->term_id, 'slug' => $t->slug, 'name' => $t->name, 'count' => $t->count];
+            }
+        }
+        $priorities_list = [];
+        $priorities = get_terms(['taxonomy' => 'task_priority', 'hide_empty' => false]);
+        if ($priorities && !is_wp_error($priorities)) {
+            foreach ($priorities as $t) {
+                $priorities_list[] = ['id' => $t->term_id, 'slug' => $t->slug, 'name' => $t->name];
+            }
+        }
+        $labels_list = [];
+        $labels_tax = get_terms(['taxonomy' => 'task_label', 'hide_empty' => false]);
+        if ($labels_tax && !is_wp_error($labels_tax)) {
+            foreach ($labels_tax as $t) {
+                $labels_list[] = ['id' => $t->term_id, 'slug' => $t->slug, 'name' => $t->name];
+            }
+        }
+        $projects_list = [];
+        $staff_list = [];
+        if ($is_manager) {
+            $projects_list = get_posts(['post_type' => 'project', 'numberposts' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC']);
+            $projects_list = array_map(function ($p) {
+                return ['id' => $p->ID, 'title' => $p->post_title];
+            }, $projects_list);
+            $staff_list = get_users(['role__in' => ['system_manager', 'team_member', 'administrator'], 'orderby' => 'display_name']);
+            $staff_list = array_map(function ($u) {
+                return ['id' => $u->ID, 'display_name' => $u->display_name];
+            }, $staff_list);
+        }
+
+        $total_tasks = (int) wp_count_posts('task')->publish;
+        $done_term = get_term_by('slug', 'done', 'task_status');
+        $completed_count = $done_term ? $done_term->count : 0;
+        $active_count = $total_tasks - $completed_count;
+        $total_projects = $is_manager ? (int) wp_count_posts('project')->publish : 0;
+
+        wp_send_json_success([
+            'tasks' => $items,
+            'statuses' => $statuses_list,
+            'priorities' => $priorities_list,
+            'labels' => $labels_list,
+            'projects' => $projects_list,
+            'staff' => $staff_list,
+            'total_pages' => $query->max_num_pages,
+            'total' => $query->found_posts,
+            'stats' => [
+                'total_tasks' => $total_tasks,
+                'active_tasks' => $active_count,
+                'completed_tasks' => $completed_count,
+                'total_projects' => $total_projects,
+            ],
+        ]);
     }
 }
