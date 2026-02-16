@@ -17,6 +17,7 @@ import { TasksPage } from "@/pages/tasks-page"
 import { AppointmentsPage } from "@/pages/appointments-page"
 import { StaffPage } from "@/pages/staff-page"
 import { ReportsPage } from "@/pages/reports-page"
+import { VisitorStatisticsPage } from "@/pages/visitor-statistics-page"
 import { SettingsPage } from "@/pages/settings-page"
 import { ServicesPage } from "@/pages/services-page"
 import { CampaignsPage } from "@/pages/campaigns-page"
@@ -41,6 +42,7 @@ function AppRoutes() {
         <Route path="appointments/*" element={<AppointmentsPage />} />
         <Route path="staff/*" element={<StaffPage />} />
         <Route path="reports/*" element={<ReportsPage />} />
+        <Route path="visitor-statistics" element={<VisitorStatisticsPage />} />
         <Route path="services/*" element={<ServicesPage />} />
         <Route path="campaigns/*" element={<CampaignsPage />} />
         <Route path="settings/*" element={<SettingsPage />} />

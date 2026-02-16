@@ -1078,44 +1078,38 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // **CRITICAL FIX**: Initialize datepickers - try multiple methods
+    // Initialize datepickers: Persian (Jalali) when calendar_locale is fa_IR, Gregorian (Flatpickr) when en_US
     function initAllDatepickers() {
-        console.log('PuzzlingCRM: Initializing datepickers...');
-        console.log('PuzzlingCRM: persianDatepicker available?', typeof $.fn.persianDatepicker === 'function');
-        console.log('PuzzlingCRM: PuzzlingJalaliDatePicker available?', typeof PuzzlingJalaliDatePicker !== 'undefined');
-        console.log('PuzzlingCRM: window.PuzzlingJalaliDatePickerInstance available?', typeof window.PuzzlingJalaliDatePickerInstance !== 'undefined');
-        
-        var datepickerFields = $('.pzl-jalali-date-picker');
-        console.log('PuzzlingCRM: Found', datepickerFields.length, 'datepicker fields');
-        
-        if (datepickerFields.length === 0) {
-            console.warn('PuzzlingCRM: No datepicker fields found! Checking form...');
-            var form = $('#manage-contract-form');
-            if (form.length > 0) {
-                console.log('PuzzlingCRM: Form found, checking all inputs...');
-                form.find('input[type="text"]').each(function() {
-                    var $input = $(this);
-                    console.log('PuzzlingCRM: Input found - ID:', $input.attr('id'), 'Name:', $input.attr('name'), 'Classes:', $input.attr('class'));
-                });
-            }
+        var calendarLocale = (puzzlingcrm_ajax_obj.calendar_locale || 'fa_IR');
+        var datepickerFields = $('.pzl-jalali-date-picker, .pzl-date-picker');
+        if (datepickerFields.length === 0) return;
+
+        // English: use Flatpickr (Gregorian), output Y-m-d
+        if (calendarLocale === 'en_US' && typeof flatpickr !== 'undefined') {
+            datepickerFields.each(function() {
+                var $el = $(this);
+                if ($el.data('pzl-flatpickr')) return;
+                var val = ($el.attr('value') || $el.val() || '').trim();
+                try {
+                    var fp = flatpickr(this, {
+                        dateFormat: 'Y-m-d',
+                        allowInput: true,
+                        disableMobile: true
+                    });
+                    if (val) fp.setDate(val, false);
+                    $el.data('pzl-flatpickr', fp);
+                } catch (e) {}
+            });
+            return;
         }
-        
-        // Method 1: Try persianDatepicker from CDN (PREFERRED)
+
+        // Persian: Jalali datepicker
         if (typeof $.fn.persianDatepicker === 'function') {
-            console.log('PuzzlingCRM: Using persianDatepicker from CDN');
             datepickerFields.each(function() {
                 var $this = $(this);
-                // Skip if already initialized
-                if ($this.data('pwt-datepicker') || $this.data('persianDatepicker') || $this.hasClass('pwt-datepicker-input-element')) {
-                    console.log('PuzzlingCRM: Datepicker already initialized for', $this.attr('id') || $this.attr('name'));
-                    return;
-                }
+                if ($this.data('pwt-datepicker') || $this.data('persianDatepicker') || $this.hasClass('pwt-datepicker-input-element')) return;
                 try {
-                    // Destroy any existing datepicker first
-                    if ($this.data('pwt-datepicker')) {
-                        $this.persianDatepicker('destroy');
-                    }
-                    
+                    if ($this.data('pwt-datepicker')) $this.persianDatepicker('destroy');
                     $this.persianDatepicker({
                         format: 'YYYY/MM/DD',
                         autoClose: true,
@@ -1123,32 +1117,21 @@ jQuery(document).ready(function($) {
                         observer: true,
                         initialValue: false
                     });
-                    console.log('PuzzlingCRM: Successfully initialized persianDatepicker for', $this.attr('id') || $this.attr('name'));
-                } catch(e) {
-                    console.error('PuzzlingCRM: Error initializing persianDatepicker for', $this.attr('id') || $this.attr('name'), ':', e);
-                }
+                } catch (e) {}
             });
-            return; // Success, exit early
-        } 
-        
-        // Method 2: Use custom datepicker (puzzling-datepicker.js)
+            return;
+        }
+
         if (typeof window.PuzzlingJalaliDatePickerInstance !== 'undefined' || typeof PuzzlingJalaliDatePicker !== 'undefined') {
-            console.log('PuzzlingCRM: Custom datepicker library detected');
-            // The custom datepicker should auto-initialize via its own script
-            // But let's verify fields are found
             datepickerFields.each(function() {
                 var $this = $(this);
-                var fieldId = $this.attr('id') || $this.attr('name') || 'unknown';
-                console.log('PuzzlingCRM: Checking custom datepicker for field:', fieldId, 'Active:', $this.data('pzl-datepicker-active'));
                 if (!$this.data('pzl-datepicker-active')) {
-                    console.warn('PuzzlingCRM: Custom datepicker not active for', fieldId, '- may need manual initialization');
+                    console.warn('PuzzlingCRM: Custom datepicker not active for', $this.attr('id') || $this.attr('name'));
                 }
             });
-        } 
-        
-        // Method 3: Fallback - try again later
-        if (datepickerFields.length > 0 && typeof $.fn.persianDatepicker !== 'function' && typeof window.PuzzlingJalaliDatePickerInstance === 'undefined') {
-            console.warn('PuzzlingCRM: No datepicker library found, retrying in 500ms...');
+        }
+
+        if (datepickerFields.length > 0 && calendarLocale === 'fa_IR' && typeof $.fn.persianDatepicker !== 'function' && typeof window.PuzzlingJalaliDatePickerInstance === 'undefined') {
             setTimeout(initAllDatepickers, 500);
         }
     }

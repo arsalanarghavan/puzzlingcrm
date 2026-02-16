@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/ui/date-picker"
 import { getConfigOrNull } from "@/api/client"
 import { getReports } from "@/api/reports"
 import {
@@ -90,19 +90,17 @@ export function ReportsPage() {
           <div className="flex flex-wrap items-end gap-3 mb-4">
             <div className="space-y-1">
               <label className="text-sm text-muted-foreground">از تاریخ</label>
-              <Input
-                type="date"
+              <DatePicker
                 value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                onChange={setDateFrom}
                 className="w-[160px]"
               />
             </div>
             <div className="space-y-1">
               <label className="text-sm text-muted-foreground">تا تاریخ</label>
-              <Input
-                type="date"
+              <DatePicker
                 value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                onChange={setDateTo}
                 className="w-[160px]"
               />
             </div>

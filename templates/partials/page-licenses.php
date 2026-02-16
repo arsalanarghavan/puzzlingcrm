@@ -159,11 +159,11 @@ $licenses = PuzzlingCRM_License_Manager::get_all_licenses();
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="start_date" class="form-label">تاریخ شروع</label>
-                            <input type="date" class="form-control" id="start_date" name="start_date" value="<?php echo esc_attr(date('Y-m-d')); ?>">
+                            <input type="text" class="form-control pzl-date-picker" id="start_date" name="start_date" value="<?php echo esc_attr(date('Y-m-d')); ?>" placeholder="YYYY-MM-DD">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="expiry_date" class="form-label">تاریخ انقضا</label>
-                            <input type="date" class="form-control" id="expiry_date" name="expiry_date">
+                            <input type="text" class="form-control pzl-date-picker" id="expiry_date" name="expiry_date" placeholder="YYYY-MM-DD">
                         </div>
                     </div>
                     <div class="mb-3">
@@ -201,7 +201,7 @@ $licenses = PuzzlingCRM_License_Manager::get_all_licenses();
                     <input type="hidden" id="renew_license_id" name="id">
                     <div class="mb-3">
                         <label for="renew_expiry_date" class="form-label">تاریخ انقضای جدید <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" id="renew_expiry_date" name="expiry_date" required>
+                        <input type="text" class="form-control pzl-date-picker" id="renew_expiry_date" name="expiry_date" required placeholder="YYYY-MM-DD">
                     </div>
                 </div>
                 <div class="modal-footer">

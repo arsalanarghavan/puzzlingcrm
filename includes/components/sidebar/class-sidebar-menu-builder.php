@@ -218,6 +218,12 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 				'url'      => $dashboard_url . '/logs',
 				'icon'     => 'ri-file-list-2-line',
 			),
+			array(
+				'id'       => 'visitor-statistics',
+				'title'    => __( 'آمار بازدید', 'puzzlingcrm' ),
+				'url'      => $dashboard_url . '/visitor-statistics',
+				'icon'     => 'ri-line-chart-line',
+			),
 			// Campaigns (Coming Soon)
 			array(
 				'type'  => 'category',

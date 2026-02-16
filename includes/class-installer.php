@@ -313,6 +313,115 @@ class PuzzlingCRM_Installer {
         ) $charset_collate;";
         dbDelta($sql);
 
+        // System logs table
+        $table_name = $wpdb->prefix . 'puzzlingcrm_system_logs';
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            log_type varchar(50) NOT NULL COMMENT 'error, debug, console, button_error',
+            severity varchar(20) DEFAULT 'info' COMMENT 'info, warning, error, critical',
+            message text NOT NULL,
+            context longtext DEFAULT NULL COMMENT 'JSON data',
+            file varchar(500) DEFAULT NULL,
+            line int(11) DEFAULT NULL,
+            user_id bigint(20) DEFAULT NULL,
+            ip_address varchar(45) DEFAULT NULL,
+            user_agent text DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY log_type (log_type),
+            KEY severity (severity),
+            KEY user_id (user_id),
+            KEY created_at (created_at),
+            KEY ip_address (ip_address(45))
+        ) $charset_collate;";
+        dbDelta($sql);
+
+        // User logs table
+        $table_name = $wpdb->prefix . 'puzzlingcrm_user_logs';
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) NOT NULL,
+            action_type varchar(100) NOT NULL COMMENT 'button_click, form_submit, ajax_call, page_view',
+            action_description varchar(500) NOT NULL,
+            target_type varchar(100) DEFAULT NULL,
+            target_id bigint(20) DEFAULT NULL,
+            metadata longtext DEFAULT NULL COMMENT 'JSON data',
+            ip_address varchar(45) DEFAULT NULL,
+            user_agent text DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY user_id (user_id),
+            KEY action_type (action_type),
+            KEY target_type (target_type),
+            KEY target_id (target_id),
+            KEY created_at (created_at),
+            KEY ip_address (ip_address(45))
+        ) $charset_collate;";
+        dbDelta($sql);
+
+        // Visitors table (for visitor statistics)
+        $table_name = $wpdb->prefix . 'puzzlingcrm_visitors';
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            ip_address varchar(45) NOT NULL,
+            user_agent text,
+            country varchar(100) DEFAULT NULL,
+            country_code varchar(2) DEFAULT NULL,
+            browser varchar(100) DEFAULT NULL,
+            browser_version varchar(50) DEFAULT NULL,
+            os varchar(100) DEFAULT NULL,
+            os_version varchar(50) DEFAULT NULL,
+            device_type varchar(50) DEFAULT NULL COMMENT 'desktop, mobile, tablet',
+            device_model varchar(255) DEFAULT NULL,
+            first_visit datetime DEFAULT CURRENT_TIMESTAMP,
+            last_visit datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            visit_count int(11) DEFAULT 1,
+            is_bot tinyint(1) DEFAULT 0,
+            PRIMARY KEY  (id),
+            KEY ip_address (ip_address(45)),
+            KEY last_visit (last_visit),
+            KEY is_bot (is_bot)
+        ) $charset_collate;";
+        dbDelta($sql);
+
+        // Visits table
+        $table_name = $wpdb->prefix . 'puzzlingcrm_visits';
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            visitor_id bigint(20) NOT NULL,
+            page_url varchar(500) NOT NULL,
+            page_title varchar(255) DEFAULT NULL,
+            referrer varchar(500) DEFAULT NULL,
+            referrer_domain varchar(255) DEFAULT NULL,
+            search_engine varchar(50) DEFAULT NULL,
+            search_keyword text DEFAULT NULL,
+            visit_date datetime DEFAULT CURRENT_TIMESTAMP,
+            session_id varchar(100) DEFAULT NULL,
+            entity_id bigint(20) DEFAULT NULL,
+            PRIMARY KEY  (id),
+            KEY visitor_id (visitor_id),
+            KEY page_url (page_url(255)),
+            KEY visit_date (visit_date),
+            KEY session_id (session_id)
+        ) $charset_collate;";
+        dbDelta($sql);
+
+        // Visitor pages table (aggregated page stats)
+        $table_name = $wpdb->prefix . 'puzzlingcrm_visitor_pages';
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            page_url varchar(500) NOT NULL,
+            page_title varchar(255) DEFAULT NULL,
+            visit_count int(11) DEFAULT 0,
+            unique_visitors int(11) DEFAULT 0,
+            last_visit datetime DEFAULT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY page_url (page_url(255)),
+            KEY visit_count (visit_count),
+            KEY last_visit (last_visit)
+        ) $charset_collate;";
+        dbDelta($sql);
+
         // Licenses table
         self::create_license_table();
     }

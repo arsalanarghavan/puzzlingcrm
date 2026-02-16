@@ -59,7 +59,10 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-main-ajax-handler.php'; // **CORRECTED**
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-cron-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-settings-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-log-database.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-logger.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-reports-dashboard.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-visitor-statistics.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-agile-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-automation-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-pdf-reporter.php';
@@ -142,6 +145,8 @@ class PuzzlingCRM {
      */
     private function define_hooks() {
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_dashboard_assets' ] );
+        add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_visitor_tracking' ], 20 );
+        add_action( 'template_redirect', [ $this, 'maybe_track_visit' ], 5 );
         
         // Language switching handler - must run early, before plugins_loaded
         add_action( 'plugins_loaded', [ $this, 'handle_language_switch' ], 1 );
@@ -309,45 +314,43 @@ class PuzzlingCRM {
             wp_enqueue_style('dhtmlx-gantt', 'https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css', [], '8.0');
         }
         
-        // Persian Date & Datepicker - Always load on contracts page (force load)
-        // Check if we're on contracts page by multiple methods
+        // Datepicker: load by language (Persian = Jalali, English = Gregorian/Flatpickr)
         $is_contracts_page = (
-            $current_page === 'contracts' || 
-            strpos($request_uri, 'contracts') !== false || 
+            $current_page === 'contracts' ||
+            strpos($request_uri, 'contracts') !== false ||
             (isset($_GET['view']) && $_GET['view'] === 'contracts') ||
             (isset($_GET['pzl_page']) && $_GET['pzl_page'] === 'contracts')
         );
-        
-        if ($needs_datepicker || $is_contracts_page || in_array($current_page, ['contracts', 'projects', 'appointments', 'tasks'])) {
-            error_log('PuzzlingCRM: Enqueuing datepicker scripts for page: ' . $current_page . ', is_contracts: ' . ($is_contracts_page ? 'YES' : 'NO'));
-            
-            // Load persian-date first
-            wp_enqueue_script('persian-date', 'https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js', [], '1.1.0', true);
-            
-            // Load persianDatepicker from CDN (PRIMARY METHOD)
-            wp_enqueue_style('persian-datepicker-css', 'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css', [], '1.2.0');
-            wp_enqueue_script('persian-datepicker-js', 'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js', ['jquery', 'persian-date'], '1.2.0', true);
-            
-            // Also load custom datepicker as fallback
-            wp_enqueue_style( 'puzzling-datepicker-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzling-datepicker.css', [], PUZZLINGCRM_VERSION );
-            wp_enqueue_script( 'puzzling-datepicker-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzling-datepicker.js', ['jquery', 'persian-date'], PUZZLINGCRM_VERSION, true );
-            
-            // Verify files exist
-            $datepicker_js_path = PUZZLINGCRM_PLUGIN_DIR . 'assets/js/puzzling-datepicker.js';
-            $datepicker_css_path = PUZZLINGCRM_PLUGIN_DIR . 'assets/css/puzzling-datepicker.css';
-            error_log('PuzzlingCRM: Datepicker JS file exists: ' . (file_exists($datepicker_js_path) ? 'YES' : 'NO') . ' - Path: ' . $datepicker_js_path);
-            error_log('PuzzlingCRM: Datepicker CSS file exists: ' . (file_exists($datepicker_css_path) ? 'YES' : 'NO') . ' - Path: ' . $datepicker_css_path);
-            error_log('PuzzlingCRM: Datepicker scripts enqueued successfully');
-        } else {
-            error_log('PuzzlingCRM: NOT enqueuing datepicker scripts - page: ' . $current_page . ', needs_datepicker: ' . ($needs_datepicker ? 'YES' : 'NO') . ', is_contracts: ' . ($is_contracts_page ? 'YES' : 'NO'));
+        $pages_with_datepicker = ['contracts', 'projects', 'appointments', 'tasks', 'reports', 'licenses'];
+        $needs_datepicker = $needs_datepicker || in_array($current_page, ['reports', 'licenses']);
+        $load_datepicker = $needs_datepicker || $is_contracts_page || in_array($current_page, $pages_with_datepicker);
+
+        $calendar_locale = class_exists('PuzzlingCRM_Calendar_Helper') ? PuzzlingCRM_Calendar_Helper::get_locale() : 'fa_IR';
+        $is_persian_calendar = ( $calendar_locale === 'fa_IR' );
+
+        if ( $load_datepicker ) {
+            if ( $is_persian_calendar ) {
+                wp_enqueue_script('persian-date', 'https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js', [], '1.1.0', true);
+                wp_enqueue_style('persian-datepicker-css', 'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css', [], '1.2.0');
+                wp_enqueue_script('persian-datepicker-js', 'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js', ['jquery', 'persian-date'], '1.2.0', true);
+                wp_enqueue_style( 'puzzling-datepicker-styles', PUZZLINGCRM_PLUGIN_URL . 'assets/css/puzzling-datepicker.css', [], PUZZLINGCRM_VERSION );
+                wp_enqueue_script( 'puzzling-datepicker-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzling-datepicker.js', ['jquery', 'persian-date'], PUZZLINGCRM_VERSION, true );
+            } else {
+                wp_enqueue_style( 'puzzlingcrm-flatpickr-css', PUZZLINGCRM_PLUGIN_URL . 'assets/libs/flatpickr/flatpickr.min.css', [], PUZZLINGCRM_VERSION );
+                wp_enqueue_script( 'puzzlingcrm-flatpickr-js', PUZZLINGCRM_PLUGIN_URL . 'assets/libs/flatpickr/flatpickr.min.js', ['jquery'], PUZZLINGCRM_VERSION, true );
+            }
         }
-        
-        // Re-enqueue main scripts with proper dependencies if datepicker is needed
-        if ($needs_datepicker) {
+
+        $datepicker_deps = ['jquery', 'sweetalert2'];
+        if ( $load_datepicker && $is_persian_calendar ) {
+            $datepicker_deps[] = 'persian-datepicker-js';
+        } elseif ( $load_datepicker && ! $is_persian_calendar ) {
+            $datepicker_deps[] = 'puzzlingcrm-flatpickr-js';
+        }
+        if ( $load_datepicker ) {
             wp_dequeue_script('puzzlingcrm-scripts');
-            wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'sweetalert2', 'persian-datepicker-js'], PUZZLINGCRM_VERSION, true );
+            wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', $datepicker_deps, PUZZLINGCRM_VERSION, true );
         } else {
-            // Main scripts file - Minified dependencies (when datepicker is not needed)
             wp_enqueue_script( 'puzzlingcrm-scripts', PUZZLINGCRM_PLUGIN_URL . 'assets/js/puzzlingcrm-scripts.js', ['jquery', 'sweetalert2'], PUZZLINGCRM_VERSION, true );
         }
         
@@ -401,9 +404,11 @@ class PuzzlingCRM {
             set_transient($cache_key, $cached_data, 5 * MINUTE_IN_SECONDS);
         }
 
+        $calendar_locale_for_js = class_exists('PuzzlingCRM_Calendar_Helper') ? PuzzlingCRM_Calendar_Helper::get_locale() : 'fa_IR';
         wp_localize_script('puzzlingcrm-scripts', 'puzzlingcrm_ajax_obj', [
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('puzzlingcrm-ajax-nonce'),
+            'calendar_locale' => $calendar_locale_for_js,
             'lang'     => [
                 'confirm_title' => __('آیا مطمئن هستید؟', 'puzzlingcrm'),
                 'confirm_delete_project' => __('تمام قراردادها و اطلاعات مرتبط با این پروژه نیز حذف خواهند شد. این عمل قابل بازگشت نیست.', 'puzzlingcrm'),
@@ -418,6 +423,57 @@ class PuzzlingCRM {
             'users' => $cached_data['users'],
             'labels' => $cached_data['labels'],
         ]);
+    }
+
+    /**
+     * Enqueue visitor tracking script on front only (not admin, not dashboard) when setting is enabled.
+     */
+    public function enqueue_visitor_tracking() {
+        if ( is_admin() ) {
+            return;
+        }
+        if ( get_query_var( 'puzzling_dashboard', false ) ) {
+            return;
+        }
+        $uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+        if ( strpos( $uri, '/dashboard' ) !== false || strpos( $uri, 'wp-admin' ) !== false || strpos( $uri, 'wp-login' ) !== false ) {
+            return;
+        }
+        $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+        if ( empty( $settings['enable_visitor_statistics'] ) || $settings['enable_visitor_statistics'] !== '1' ) {
+            return;
+        }
+        wp_enqueue_script(
+            'puzzlingcrm-visitor-tracking',
+            PUZZLINGCRM_PLUGIN_URL . 'assets/js/visitor-tracking.js',
+            array(),
+            PUZZLINGCRM_VERSION,
+            true
+        );
+        wp_localize_script( 'puzzlingcrm-visitor-tracking', 'puzzlingcrm_visitor_tracking', array(
+            'ajax_url' => admin_url( 'admin-ajax.php' ),
+        ) );
+    }
+
+    /**
+     * Server-side visit tracking (once per request) when visitor statistics enabled, front only.
+     */
+    public function maybe_track_visit() {
+        if ( is_admin() ) {
+            return;
+        }
+        if ( get_query_var( 'puzzling_dashboard', false ) ) {
+            return;
+        }
+        $uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+        if ( strpos( $uri, '/dashboard' ) !== false || strpos( $uri, 'wp-admin' ) !== false || strpos( $uri, 'wp-login' ) !== false ) {
+            return;
+        }
+        $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+        if ( empty( $settings['enable_visitor_statistics'] ) || $settings['enable_visitor_statistics'] !== '1' ) {
+            return;
+        }
+        PuzzlingCRM_Visitor_Statistics::track_visit( null, null, null, null );
     }
     
     /**

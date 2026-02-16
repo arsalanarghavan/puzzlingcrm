@@ -29,6 +29,7 @@ const PAGE_TITLES: Record<string, string> = {
   staff: "کارکنان",
   consultations: "مشاوره‌ها",
   reports: "گزارشات",
+  "visitor-statistics": "آمار بازدید",
   campaigns: "کمپین‌ها",
   services: "خدمات و محصولات",
   logs: "لاگ‌ها",

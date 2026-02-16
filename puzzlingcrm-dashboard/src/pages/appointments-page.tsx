@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -36,6 +37,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { getConfigOrNull } from "@/api/client"
+import { getCurrentLanguage } from "@/lib/language"
+import DateObject from "react-date-object"
+import gregorian from "react-date-object/calendars/gregorian"
+import persian from "react-date-object/calendars/persian"
+import persian_fa from "react-date-object/locales/persian_fa"
 import { getUsers } from "@/api/customers"
 import {
   getAppointments,
@@ -78,8 +84,13 @@ export function AppointmentsPage() {
     status_slug: "pending",
     notes: "",
   })
+  const isJalali = getCurrentLanguage() === "fa"
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const d = new Date()
+    if (getCurrentLanguage() === "fa") {
+      const j = new DateObject({ date: d, calendar: persian, locale: persian_fa })
+      return { year: j.year, month: j.month.index }
+    }
     return { year: d.getFullYear(), month: d.getMonth() }
   })
 
@@ -102,10 +113,36 @@ export function AppointmentsPage() {
   }, [])
 
   const loadCalendar = useCallback(async () => {
-    const start = new Date(calendarMonth.year, calendarMonth.month, 1)
-    const end = new Date(calendarMonth.year, calendarMonth.month + 1, 0)
-    const startStr = start.toISOString().slice(0, 10)
-    const endStr = end.toISOString().slice(0, 10)
+    let startStr: string
+    let endStr: string
+    if (isJalali) {
+      const first = new DateObject({
+        year: calendarMonth.year,
+        month: calendarMonth.month + 1,
+        day: 1,
+        calendar: persian,
+      }).convert(gregorian)
+      const lastDay = new DateObject({
+        year: calendarMonth.year,
+        month: calendarMonth.month + 1,
+        day: 1,
+        calendar: persian,
+        locale: persian_fa,
+      }).month.length
+      const last = new DateObject({
+        year: calendarMonth.year,
+        month: calendarMonth.month + 1,
+        day: lastDay,
+        calendar: persian,
+      }).convert(gregorian)
+      startStr = first.format("YYYY-MM-DD")
+      endStr = last.format("YYYY-MM-DD")
+    } else {
+      const start = new Date(calendarMonth.year, calendarMonth.month, 1)
+      const end = new Date(calendarMonth.year, calendarMonth.month + 1, 0)
+      startStr = start.toISOString().slice(0, 10)
+      endStr = end.toISOString().slice(0, 10)
+    }
     try {
       const res = await getAppointmentsCalendar(startStr, endStr)
       if (res.success && res.data?.events) {
@@ -114,7 +151,7 @@ export function AppointmentsPage() {
     } catch {
       setEvents([])
     }
-  }, [calendarMonth])
+  }, [calendarMonth, isJalali])
 
   const loadCustomers = useCallback(async () => {
     const res = await getUsers({ role: "customer" })
@@ -242,13 +279,46 @@ export function AppointmentsPage() {
     }
   }, [deleteId, loadList, loadCalendar, view])
 
-  const daysInMonth = new Date(calendarMonth.year, calendarMonth.month + 1, 0).getDate()
-  const firstDayJs = new Date(calendarMonth.year, calendarMonth.month, 1).getDay()
-  const firstDay = (firstDayJs + 1) % 7
-  const monthName = new Date(calendarMonth.year, calendarMonth.month, 1).toLocaleDateString("fa-IR", {
-    month: "long",
-    year: "numeric",
-  })
+  const dayNames = isJalali ? ["ش", "ی", "د", "س", "چ", "پ", "ج"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+  let daysInMonth: number
+  let firstDay: number
+  let monthName: string
+  const gridDays: { day: number; isoDate: string }[] = []
+
+  if (isJalali) {
+    const jFirst = new DateObject({
+      year: calendarMonth.year,
+      month: calendarMonth.month + 1,
+      day: 1,
+      calendar: persian,
+      locale: persian_fa,
+    })
+    daysInMonth = jFirst.month.length
+    firstDay = jFirst.weekDay.index
+    monthName = jFirst.format("MMMM YYYY")
+    for (let day = 1; day <= daysInMonth; day++) {
+      const jd = new DateObject({
+        year: calendarMonth.year,
+        month: calendarMonth.month + 1,
+        day,
+        calendar: persian,
+      }).convert(gregorian)
+      gridDays.push({ day, isoDate: jd.format("YYYY-MM-DD") })
+    }
+  } else {
+    daysInMonth = new Date(calendarMonth.year, calendarMonth.month + 1, 0).getDate()
+    const firstDayJs = new Date(calendarMonth.year, calendarMonth.month, 1).getDay()
+    firstDay = (firstDayJs + 1) % 7
+    monthName = new Date(calendarMonth.year, calendarMonth.month, 1).toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    })
+    for (let day = 1; day <= daysInMonth; day++) {
+      const isoDate = `${calendarMonth.year}-${String(calendarMonth.month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+      gridDays.push({ day, isoDate })
+    }
+  }
+
   const eventsByDate: Record<string, CalendarEvent[]> = {}
   events.forEach((ev) => {
     const d = ev.start.slice(0, 10)
@@ -321,10 +391,10 @@ export function AppointmentsPage() {
                       <TableCell>{a.customer_name}</TableCell>
                       <TableCell>
                         {a.datetime
-                          ? new Date(a.datetime).toLocaleString("fa-IR", {
-                              dateStyle: "short",
-                              timeStyle: "short",
-                            })
+                          ? new Date(a.datetime).toLocaleString(
+                              getCurrentLanguage() === "fa" ? "fa-IR" : "en-US",
+                              { dateStyle: "short", timeStyle: "short" }
+                            )
                           : "—"}
                       </TableCell>
                       <TableCell>
@@ -390,7 +460,7 @@ export function AppointmentsPage() {
               </div>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-sm">
-              {["ش", "ی", "د", "س", "چ", "پ", "ج"].map((day) => (
+              {dayNames.map((day) => (
                 <div key={day} className="font-medium text-muted-foreground py-1">
                   {day}
                 </div>
@@ -398,13 +468,11 @@ export function AppointmentsPage() {
               {Array.from({ length: firstDay }, (_, i) => (
                 <div key={`empty-${i}`} />
               ))}
-              {Array.from({ length: daysInMonth }, (_, i) => {
-                const day = i + 1
-                const dateStr = `${calendarMonth.year}-${String(calendarMonth.month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-                const dayEvents = eventsByDate[dateStr] ?? []
+              {gridDays.map(({ day, isoDate }) => {
+                const dayEvents = eventsByDate[isoDate] ?? []
                 return (
                   <div
-                    key={day}
+                    key={`${isoDate}-${day}`}
                     className="min-h-[80px] rounded border bg-muted/30 p-1 text-left"
                   >
                     <span className="text-muted-foreground">{day}</span>
@@ -467,10 +535,9 @@ export function AppointmentsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">تاریخ *</label>
-                <Input
-                  type="date"
+                <DatePicker
                   value={form.date}
-                  onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                  onChange={(v) => setForm((f) => ({ ...f, date: v }))}
                 />
               </div>
               <div className="space-y-2">

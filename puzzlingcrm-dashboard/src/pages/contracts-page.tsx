@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -663,10 +664,9 @@ export function ContractsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>تاریخ شروع *</Label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={form.start_date}
-                    onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))}
+                    onChange={(v) => setForm((f) => ({ ...f, start_date: v }))}
                     required
                   />
                 </div>
@@ -746,10 +746,9 @@ export function ContractsPage() {
                         onChange={(e) => updateInstallment(idx, "amount", e.target.value)}
                         className="flex-1"
                       />
-                      <Input
-                        type="date"
+                      <DatePicker
                         value={row.due_date}
-                        onChange={(e) => updateInstallment(idx, "due_date", e.target.value)}
+                        onChange={(v) => updateInstallment(idx, "due_date", v)}
                         className="flex-1"
                       />
                       <Select value={row.status} onValueChange={(v) => updateInstallment(idx, "status", v)}>
@@ -827,7 +826,7 @@ export function ContractsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>تاریخ شروع *</Label>
-                    <Input type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} required />
+                    <DatePicker value={form.start_date} onChange={(v) => setForm((f) => ({ ...f, start_date: v }))} required />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label>عنوان قرارداد</Label>
@@ -876,7 +875,7 @@ export function ContractsPage() {
                       <div key={idx} className="flex gap-2 items-center">
                         <span className="w-8 text-muted-foreground">#{idx + 1}</span>
                         <Input placeholder="مبلغ" value={row.amount} onChange={(e) => updateInstallment(idx, "amount", e.target.value)} className="flex-1" />
-                        <Input type="date" value={row.due_date} onChange={(e) => updateInstallment(idx, "due_date", e.target.value)} className="flex-1" />
+                        <DatePicker value={row.due_date} onChange={(v) => updateInstallment(idx, "due_date", v)} className="flex-1" />
                         <Select value={row.status} onValueChange={(v) => updateInstallment(idx, "status", v)}>
                           <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
                           <SelectContent>

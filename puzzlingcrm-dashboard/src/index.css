@@ -1,3 +1,6 @@
+/* Date picker (react-multi-date-picker) - locale-aware calendar */
+@import "react-multi-date-picker/styles/colors/teal.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

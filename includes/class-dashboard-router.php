@@ -159,6 +159,14 @@ class PuzzlingCRM_Dashboard_Router {
             'roles' => ['system_manager'],
             'partial' => 'page-logs',
         ],
+
+        // Visitor statistics (Manager only)
+        'visitor-statistics' => [
+            'title' => 'آمار بازدید',
+            'icon' => 'ri-line-chart-line',
+            'roles' => ['system_manager'],
+            'partial' => 'page-visitor-statistics',
+        ],
         
         // Settings (Manager only)
         'settings' => [
@@ -856,8 +864,8 @@ class PuzzlingCRM_Dashboard_Router {
         // Custom scripts
         wp_enqueue_script('pzl-custom-js', $assets_url . 'js/custom.js', ['jquery', 'pzl-theme-switcher'], PUZZLINGCRM_VERSION, true);
         
-        // Chart.js for dashboard pages
-        if (empty($current_page) || $view === 'dashboard' || $view === 'reports') {
+        // Chart.js for dashboard pages (reports, visitor-statistics, main dashboard)
+        if (empty($current_page) || $view === 'dashboard' || $view === 'reports' || $current_page === 'visitor-statistics') {
             wp_enqueue_script('pzl-chartjs', $assets_url . 'libs/chart.js/chart.umd.js', ['jquery'], PUZZLINGCRM_VERSION, true);
         }
         
@@ -905,7 +913,22 @@ class PuzzlingCRM_Dashboard_Router {
         if ($view === 'reports') {
             wp_enqueue_script('pzl-reports-export', PUZZLINGCRM_PLUGIN_URL . 'assets/js/reports-export.js', ['jquery'], PUZZLINGCRM_VERSION, true);
         }
-        
+
+        // Logging tracker for logs page (system_manager / manage_options)
+        if (($view === 'logs' || $current_page === 'logs') && current_user_can('manage_options')) {
+            wp_enqueue_script('pzl-logging-tracker', PUZZLINGCRM_PLUGIN_URL . 'assets/js/logging-tracker.js', ['jquery'], PUZZLINGCRM_VERSION, true);
+            $log_settings = PuzzlingCRM_Settings_Handler::get_all_settings();
+            wp_localize_script('pzl-logging-tracker', 'puzzlingcrm_logging_settings', [
+                'enable_logging_system'   => isset( $log_settings['enable_logging_system'] ) ? (bool) $log_settings['enable_logging_system'] : true,
+                'log_console_messages'   => isset( $log_settings['log_console_messages'] ) ? (bool) $log_settings['log_console_messages'] : true,
+                'enable_user_logging'    => isset( $log_settings['enable_user_logging'] ) ? (bool) $log_settings['enable_user_logging'] : true,
+                'log_button_clicks'      => isset( $log_settings['log_button_clicks'] ) ? (bool) $log_settings['log_button_clicks'] : true,
+                'log_form_submissions'   => isset( $log_settings['log_form_submissions'] ) ? (bool) $log_settings['log_form_submissions'] : true,
+                'log_ajax_calls'         => isset( $log_settings['log_ajax_calls'] ) ? (bool) $log_settings['log_ajax_calls'] : true,
+                'log_page_views'         => isset( $log_settings['log_page_views'] ) ? (bool) $log_settings['log_page_views'] : false,
+            ]);
+        }
+
         // WordPress Media Uploader for settings page
         // Note: wp_enqueue_media() works in frontend for logged-in users
         if ($current_page === 'settings' && is_user_logged_in()) {

@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -495,11 +496,11 @@ export function ProjectsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>تاریخ شروع</Label>
-                  <Input type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
+                  <DatePicker value={form.start_date} onChange={(v) => setForm((f) => ({ ...f, start_date: v }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>تاریخ پایان</Label>
-                  <Input type="date" value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} />
+                  <DatePicker value={form.end_date} onChange={(v) => setForm((f) => ({ ...f, end_date: v }))} />
                 </div>
               </div>
               <div className="space-y-2">
@@ -586,11 +587,11 @@ export function ProjectsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>تاریخ شروع</Label>
-                    <Input type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
+                    <DatePicker value={form.start_date} onChange={(v) => setForm((f) => ({ ...f, start_date: v }))} />
                   </div>
                   <div className="space-y-2">
                     <Label>تاریخ پایان</Label>
-                    <Input type="date" value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} />
+                    <DatePicker value={form.end_date} onChange={(v) => setForm((f) => ({ ...f, end_date: v }))} />
                   </div>
                 </div>
                 <div className="space-y-2">

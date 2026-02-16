@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -326,23 +327,21 @@ export function LicensesPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="start_date">تاریخ شروع</Label>
-                <Input
+                <DatePicker
                   id="start_date"
-                  type="date"
                   value={addForm.start_date}
-                  onChange={(e) =>
-                    setAddForm((f) => ({ ...f, start_date: e.target.value }))
+                  onChange={(v) =>
+                    setAddForm((f) => ({ ...f, start_date: v }))
                   }
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="expiry_date">تاریخ انقضا</Label>
-                <Input
+                <DatePicker
                   id="expiry_date"
-                  type="date"
                   value={addForm.expiry_date}
-                  onChange={(e) =>
-                    setAddForm((f) => ({ ...f, expiry_date: e.target.value }))
+                  onChange={(v) =>
+                    setAddForm((f) => ({ ...f, expiry_date: v }))
                   }
                 />
               </div>
@@ -395,11 +394,10 @@ export function LicensesPage() {
           <form onSubmit={handleRenew} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="renew_expiry_date">تاریخ انقضای جدید *</Label>
-              <Input
+              <DatePicker
                 id="renew_expiry_date"
-                type="date"
                 value={renewDate}
-                onChange={(e) => setRenewDate(e.target.value)}
+                onChange={setRenewDate}
                 required
               />
             </div>

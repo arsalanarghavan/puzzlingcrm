@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Label } from "@/components/ui/label"
 import {
   Table,
@@ -381,10 +382,9 @@ export function InvoicesPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>تاریخ صدور *</Label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={form.issue_date}
-                    onChange={(e) => setForm((f) => ({ ...f, issue_date: e.target.value }))}
+                    onChange={(v) => setForm((f) => ({ ...f, issue_date: v }))}
                     required
                   />
                 </div>

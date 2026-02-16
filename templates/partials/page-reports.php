@@ -136,13 +136,13 @@ $date_to = isset($_GET['date_to']) ? sanitize_text_field($_GET['date_to']) : dat
                 <label class="form-label fw-semibold">
                     <i class="ri-calendar-line me-1 text-primary"></i>از تاریخ
                 </label>
-                <input type="date" name="date_from" class="form-control ltr-input" value="<?php echo esc_attr($date_from); ?>">
+                <input type="text" name="date_from" class="form-control ltr-input pzl-date-picker" value="<?php echo esc_attr($date_from); ?>" placeholder="YYYY-MM-DD">
             </div>
             <div class="col-md-3">
                 <label class="form-label fw-semibold">
                     <i class="ri-calendar-check-line me-1 text-success"></i>تا تاریخ
                 </label>
-                <input type="date" name="date_to" class="form-control ltr-input" value="<?php echo esc_attr($date_to); ?>">
+                <input type="text" name="date_to" class="form-control ltr-input pzl-date-picker" value="<?php echo esc_attr($date_to); ?>" placeholder="YYYY-MM-DD">
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-primary w-100">

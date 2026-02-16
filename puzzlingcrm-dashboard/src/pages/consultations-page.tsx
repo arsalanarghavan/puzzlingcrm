@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -298,11 +299,10 @@ export function ConsultationsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="date">تاریخ قرار</Label>
-                <Input
+                <DatePicker
                   id="date"
-                  type="date"
                   value={form.date}
-                  onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                  onChange={(v) => setForm((f) => ({ ...f, date: v }))}
                 />
               </div>
               <div className="space-y-2">

@@ -304,7 +304,7 @@ jQuery(document).ready(function($) {
         
         function initializeAllPickers() {
             console.log('PuzzlingCRM Custom Datepicker: Initializing all pickers...');
-            var pickers = $('.pzl-jalali-date-picker');
+            var pickers = $('.pzl-jalali-date-picker, .pzl-date-picker');
             console.log('PuzzlingCRM Custom Datepicker: Found', pickers.length, 'datepicker fields');
             
             if (pickers.length === 0) {
@@ -363,7 +363,7 @@ jQuery(document).ready(function($) {
                     for (let node of mutation.addedNodes) {
                         if (node.nodeType === 1) { // Element node
                             var $node = $(node);
-                            if ($node.hasClass('pzl-jalali-date-picker') || $node.find('.pzl-jalali-date-picker').length > 0) {
+                            if ($node.hasClass('pzl-jalali-date-picker') || $node.hasClass('pzl-date-picker') || $node.find('.pzl-jalali-date-picker, .pzl-date-picker').length > 0) {
                                 console.log('PuzzlingCRM Custom Datepicker: New datepicker field detected, initializing...');
                                 initializeAllPickers();
                                 break;
