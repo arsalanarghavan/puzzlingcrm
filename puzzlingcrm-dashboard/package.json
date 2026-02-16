@@ -26,6 +26,7 @@
     "@radix-ui/react-tooltip": "^1.1.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "jspdf": "^4.1.0",
     "lucide-react": "^0.468.0",
     "react": "^19.2.0",
     "react-date-object": "^2.1.9",

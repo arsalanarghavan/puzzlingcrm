@@ -16,6 +16,8 @@ import {
   UserPlus,
   Users,
   Ticket,
+  FileDown,
+  FileSpreadsheet,
 } from "lucide-react"
 
 const TABS = [
@@ -79,10 +81,102 @@ export function ReportsPage() {
     setDateTo(new Date(d.getFullYear(), d.getMonth(), 0).toISOString().slice(0, 10))
   }
 
+  const handleExportCsv = (type: "contracts" | "tasks") => {
+    const c = window.puzzlingcrm
+    if (!c?.ajaxUrl || !c?.nonce) return
+    const params = new URLSearchParams({
+      action: "puzzlingcrm_export_reports_csv",
+      security: c.nonce,
+      type,
+      date_from: dateFrom,
+      date_to: dateTo,
+    })
+    window.open(`${c.ajaxUrl}?${params.toString()}`, "_blank")
+  }
+
+  const handleExportPdf = () => {
+    if (!data) return
+    import("jspdf").then(({ jsPDF }) => {
+      const doc = new jsPDF("p", "mm", "a4")
+      const pageW = doc.getPageWidth()
+      let y = 20
+      doc.setFontSize(18)
+      doc.text("گزارش PuzzlingCRM", pageW / 2, y, { align: "center" })
+      y += 12
+      doc.setFontSize(11)
+      doc.text(`بازه: ${dateFrom} تا ${dateTo}`, pageW / 2, y, { align: "center" })
+      y += 10
+      doc.text(`تاریخ تهیه: ${new Date().toLocaleDateString("fa-IR")}`, pageW / 2, y, { align: "center" })
+      y += 15
+      doc.setFontSize(10)
+      const labels: Record<string, string> = {
+        total_projects: "کل پروژه‌ها",
+        total_tasks: "کل وظایف",
+        completed_tasks: "وظایف تکمیل‌شده",
+        total_tickets: "تیکت‌ها",
+        total_leads: "سرنخ‌ها",
+        total_customers: "مشتریان",
+        total_contracts: "قراردادها",
+        total_revenue: "کل درآمد",
+      }
+      Object.entries(data).forEach(([key, value]) => {
+        if (key === "project_by_status" || key === "task_by_status" || key === "currency") return
+        const label = labels[key] ?? key
+        const text = `${label}: ${value != null ? String(value) : "-"}`
+        if (y > 270) {
+          doc.addPage()
+          y = 20
+        }
+        doc.text(text, 20, y)
+        y += 8
+      })
+      if (Array.isArray(data.project_by_status)) {
+        doc.text("پروژه به وضعیت:", 20, y)
+        y += 7
+        ;(data.project_by_status as { name: string; count: number }[]).forEach((item) => {
+          if (y > 270) {
+            doc.addPage()
+            y = 20
+          }
+          doc.text(`  ${item.name}: ${item.count}`, 20, y)
+          y += 7
+        })
+      }
+      if (Array.isArray(data.task_by_status)) {
+        y += 5
+        doc.text("وظیفه به وضعیت:", 20, y)
+        y += 7
+        ;(data.task_by_status as { name: string; count: number }[]).forEach((item) => {
+          if (y > 270) {
+            doc.addPage()
+            y = 20
+          }
+          doc.text(`  ${item.name}: ${item.count}`, 20, y)
+          y += 7
+        })
+      }
+      doc.save(`report-${dateFrom}-${dateTo}.pdf`)
+    })
+  }
+
   return (
     <div className="space-y-6" dir={isRtl ? "rtl" : "ltr"}>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-xl font-semibold">گزارشات</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => handleExportCsv("contracts")} className="gap-2">
+            <FileSpreadsheet className="h-4 w-4" />
+            خروجی CSV (قراردادها)
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handleExportCsv("tasks")} className="gap-2">
+            <FileSpreadsheet className="h-4 w-4" />
+            خروجی CSV (وظایف)
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={!data} className="gap-2">
+            <FileDown className="h-4 w-4" />
+            خروجی PDF
+          </Button>
+        </div>
       </div>
 
       <Card>

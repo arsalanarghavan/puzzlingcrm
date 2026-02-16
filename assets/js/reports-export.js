@@ -140,7 +140,7 @@ jQuery(document).ready(function($) {
     }
 
     /**
-     * Export to PDF Function
+     * Export to PDF Function – uses real stats from the page (cards and tables).
      */
     function exportToPDF(reportType) {
         Swal.fire({
@@ -151,38 +151,69 @@ jQuery(document).ready(function($) {
         });
 
         setTimeout(function() {
+            if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
+                Swal.fire({ icon: 'error', title: 'خطا', text: 'کتابخانه PDF بارگذاری نشده است.' });
+                return;
+            }
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4');
-            
-            // Add title
-            doc.setFontSize(20);
-            doc.text('PuzzlingCRM Report', 105, 20, { align: 'center' });
-            
-            doc.setFontSize(12);
-            doc.text('Report Type: ' + reportType.toUpperCase(), 105, 30, { align: 'center' });
-            doc.text('Generated: ' + new Date().toLocaleDateString('fa-IR'), 105, 37, { align: 'center' });
-            
-            // Add line
+            const pageW = doc.getPageWidth();
+            let y = 20;
+
+            doc.setFontSize(18);
+            doc.text('گزارش PuzzlingCRM', pageW / 2, y, { align: 'center' });
+            y += 10;
+            doc.setFontSize(11);
+            doc.text('نوع: ' + (reportType === 'overview' ? 'نمای کلی' : reportType === 'finance' ? 'مالی' : reportType === 'tasks' ? 'وظایف' : reportType === 'tickets' ? 'تیکت‌ها' : reportType === 'agile' ? 'Agile' : reportType), pageW / 2, y, { align: 'center' });
+            y += 7;
+            doc.text('تاریخ تهیه: ' + new Date().toLocaleDateString('fa-IR'), pageW / 2, y, { align: 'center' });
+            y += 12;
             doc.setLineWidth(0.5);
-            doc.line(20, 42, 190, 42);
-            
-            // Add content based on report type
-            let yPos = 50;
+            doc.line(20, y, 190, y);
+            y += 12;
             doc.setFontSize(10);
-            
-            doc.text('This is a sample PDF export.', 20, yPos);
-            yPos += 10;
-            doc.text('Full PDF generation with charts and tables', 20, yPos);
-            yPos += 7;
-            doc.text('will be implemented based on your requirements.', 20, yPos);
-            
-            // Add footer
+
+            // Collect stats from page cards (p.text-muted = label, h4 or h3 = value)
+            var rows = [];
+            $('.card.custom-card .card-body').each(function() {
+                var label = $(this).find('p.text-muted').first().text().trim();
+                var value = $(this).find('h4').first().text().trim() || $(this).find('h3').first().text().trim();
+                if (label && value !== undefined) {
+                    rows.push([label, value]);
+                }
+            });
+            if (rows.length === 0) {
+                $('.col-xxl-3 .card-body, .col-xl-6 .card-body').each(function() {
+                    var label = $(this).find('p.text-muted').first().text().trim();
+                    var value = $(this).find('h4').first().text().trim() || $(this).find('h3').first().text().trim();
+                    if (label && value !== undefined) rows.push([label, value]);
+                });
+            }
+            rows.forEach(function(r) {
+                if (y > 270) { doc.addPage(); y = 20; }
+                doc.text(r[0] + ': ' + r[1], 20, y);
+                y += 8;
+            });
+
+            // Optional: table data from first table on page
+            var $table = $('.table tbody').first();
+            if ($table.length && $table.find('tr').length > 0) {
+                y += 8;
+                if (y > 270) { doc.addPage(); y = 20; }
+                doc.setFontSize(9);
+                $table.find('tr').slice(0, 15).each(function() {
+                    var cells = $(this).find('td').map(function() { return $(this).text().trim(); }).get();
+                    if (cells.length && y <= 270) {
+                        doc.text(cells.join(' | ').substring(0, 90), 20, y);
+                        y += 6;
+                    }
+                });
+            }
+
             doc.setFontSize(8);
-            doc.text('PuzzlingCRM - Professional Business Management System', 105, 280, { align: 'center' });
-            
-            // Save
-            doc.save(reportType + '-report.pdf');
-            
+            doc.text('PuzzlingCRM', pageW / 2, 285, { align: 'center' });
+            doc.save(reportType + '-report-' + new Date().toISOString().slice(0, 10) + '.pdf');
+
             Swal.fire({
                 icon: 'success',
                 title: 'موفق!',
@@ -190,7 +221,7 @@ jQuery(document).ready(function($) {
                 showConfirmButton: false,
                 timer: 2000
             });
-        }, 1500);
+        }, 500);
     }
 
     /**
