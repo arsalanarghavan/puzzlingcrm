@@ -20,6 +20,156 @@ class PuzzlingCRM_Lead_Ajax_Handler {
         add_action('wp_ajax_puzzling_change_lead_status', [ $this, 'change_lead_status' ]);
         add_action('wp_ajax_puzzling_add_lead_status', [ $this, 'add_lead_status' ]);
         add_action('wp_ajax_puzzling_delete_lead_status', [ $this, 'delete_lead_status' ]);
+        add_action('wp_ajax_puzzling_assign_lead', [ $this, 'assign_lead' ]);
+        add_action('wp_ajax_puzzlingcrm_get_lead_assignees', [ $this, 'get_lead_assignees' ]);
+        add_action('wp_ajax_puzzlingcrm_get_lead_for_contract', [ $this, 'get_lead_for_contract' ]);
+        add_action('wp_ajax_puzzlingcrm_create_customer_from_lead', [ $this, 'create_customer_from_lead' ]);
+    }
+
+    /**
+     * Returns lead data for pre-filling contract form.
+     */
+    public function get_lead_for_contract() {
+        if ( ! check_ajax_referer( 'puzzlingcrm-ajax-nonce', 'security', false ) ) {
+            wp_send_json_error( [ 'message' => __( 'درخواست نامعتبر.', 'puzzlingcrm' ) ] );
+        }
+        if ( ! $this->can_manage_leads() ) {
+            wp_send_json_error( [ 'message' => __( 'شما دسترسی لازم را ندارید.', 'puzzlingcrm' ) ] );
+        }
+        $lead_id = isset( $_POST['lead_id'] ) ? absint( $_POST['lead_id'] ) : 0;
+        if ( ! $lead_id ) {
+            wp_send_json_error( [ 'message' => __( 'شناسه سرنخ نامعتبر است.', 'puzzlingcrm' ) ] );
+        }
+        $lead = get_post( $lead_id );
+        if ( ! $lead || $lead->post_type !== 'pzl_lead' ) {
+            wp_send_json_error( [ 'message' => __( 'سرنخ یافت نشد.', 'puzzlingcrm' ) ] );
+        }
+        $first_name   = get_post_meta( $lead_id, '_first_name', true );
+        $last_name    = get_post_meta( $lead_id, '_last_name', true );
+        $mobile       = get_post_meta( $lead_id, '_mobile', true );
+        $email        = get_post_meta( $lead_id, '_email', true );
+        $business_name = get_post_meta( $lead_id, '_business_name', true );
+        $existing_customer_id = 0;
+        if ( ! empty( $mobile ) || ! empty( $email ) ) {
+            $args = [ 'role' => 'customer' ];
+            if ( ! empty( $email ) ) {
+                $u = get_user_by( 'email', $email );
+                if ( $u ) $existing_customer_id = $u->ID;
+            }
+            if ( ! $existing_customer_id && ! empty( $mobile ) ) {
+                $users = get_users( [ 'meta_key' => 'pzl_mobile_phone', 'meta_value' => $mobile, 'number' => 1 ] );
+                if ( ! empty( $users ) ) $existing_customer_id = $users[0]->ID;
+            }
+        }
+        wp_send_json_success( [
+            'lead_id'   => $lead_id,
+            'first_name' => $first_name,
+            'last_name'  => $last_name,
+            'mobile'     => $mobile,
+            'email'      => $email,
+            'business_name' => $business_name,
+            'existing_customer_id' => $existing_customer_id,
+        ] );
+    }
+
+    /**
+     * Creates a customer user from lead data.
+     */
+    public function create_customer_from_lead() {
+        if ( ! check_ajax_referer( 'puzzlingcrm-ajax-nonce', 'security', false ) ) {
+            wp_send_json_error( [ 'message' => __( 'درخواست نامعتبر.', 'puzzlingcrm' ) ] );
+        }
+        if ( ! $this->can_manage_leads() ) {
+            wp_send_json_error( [ 'message' => __( 'شما دسترسی لازم را ندارید.', 'puzzlingcrm' ) ] );
+        }
+        $lead_id = isset( $_POST['lead_id'] ) ? absint( $_POST['lead_id'] ) : 0;
+        if ( ! $lead_id ) {
+            wp_send_json_error( [ 'message' => __( 'شناسه سرنخ نامعتبر است.', 'puzzlingcrm' ) ] );
+        }
+        $lead = get_post( $lead_id );
+        if ( ! $lead || $lead->post_type !== 'pzl_lead' ) {
+            wp_send_json_error( [ 'message' => __( 'سرنخ یافت نشد.', 'puzzlingcrm' ) ] );
+        }
+        $first_name   = get_post_meta( $lead_id, '_first_name', true );
+        $last_name    = get_post_meta( $lead_id, '_last_name', true );
+        $mobile       = get_post_meta( $lead_id, '_mobile', true );
+        $email        = get_post_meta( $lead_id, '_email', true );
+        $business_name = get_post_meta( $lead_id, '_business_name', true );
+        if ( empty( $first_name ) || empty( $last_name ) || empty( $mobile ) ) {
+            wp_send_json_error( [ 'message' => __( 'نام، نام خانوادگی و موبایل سرنخ الزامی هستند.', 'puzzlingcrm' ) ] );
+        }
+        $login = 'cust_' . $lead_id . '_' . preg_replace( '/\D/', '', $mobile );
+        $login = sanitize_user( $login, true );
+        if ( strlen( $login ) < 3 ) $login = 'cust_' . $lead_id . '_' . time();
+        $email = ! empty( $email ) ? sanitize_email( $email ) : $login . '@puzzlingcrm.local';
+        $user_id = wp_create_user( $login, wp_generate_password( 12, true ), $email );
+        if ( is_wp_error( $user_id ) ) {
+            wp_send_json_error( [ 'message' => $user_id->get_error_message() ] );
+        }
+        wp_update_user( [
+            'ID' => $user_id,
+            'display_name' => trim( $first_name . ' ' . $last_name ),
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+        ] );
+        $u = get_user_by( 'ID', $user_id );
+        if ( $u ) {
+            $u->set_role( 'customer' );
+        }
+        update_user_meta( $user_id, 'pzl_mobile_phone', $mobile );
+        if ( ! empty( $business_name ) ) {
+            update_user_meta( $user_id, 'billing_company', $business_name );
+        }
+        update_post_meta( $lead_id, '_converted_to_customer_id', $user_id );
+        $terms = wp_get_object_terms( $lead_id, 'lead_status' );
+        $converted = get_term_by( 'slug', 'converted', 'lead_status' );
+        if ( $converted ) {
+            wp_set_object_terms( $lead_id, $converted->term_id, 'lead_status' );
+        }
+        wp_send_json_success( [
+            'customer_id' => $user_id,
+            'message' => __( 'مشتری با موفقیت از سرنخ ایجاد شد.', 'puzzlingcrm' ),
+        ] );
+    }
+
+    /**
+     * Returns users who can be assigned leads (sales_consultant, system_manager).
+     */
+    public function get_lead_assignees() {
+        if ( ! check_ajax_referer( 'puzzlingcrm-ajax-nonce', 'security', false ) ) {
+            wp_send_json_error( [ 'message' => __( 'درخواست نامعتبر.', 'puzzlingcrm' ) ] );
+        }
+        if ( ! $this->can_manage_leads() ) {
+            wp_send_json_error( [ 'message' => __( 'شما دسترسی لازم را ندارید.', 'puzzlingcrm' ) ] );
+        }
+        $search = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
+        $args = [
+            'role__in' => [ 'sales_consultant', 'system_manager', 'administrator' ],
+            'orderby'  => 'display_name',
+            'order'    => 'ASC',
+        ];
+        if ( ! empty( $search ) ) {
+            $args['search']         = '*' . $search . '*';
+            $args['search_columns'] = [ 'user_login', 'user_email', 'display_name', 'user_nicename' ];
+        }
+        $users = get_users( $args );
+        $items = array_map( function ( $u ) {
+            return [ 'id' => $u->ID, 'display_name' => $u->display_name ];
+        }, $users );
+        wp_send_json_success( [ 'users' => $items ] );
+    }
+
+    private function can_manage_leads() {
+        $user = wp_get_current_user();
+        $roles = (array) $user->roles;
+        return current_user_can('manage_options')
+            || in_array('system_manager', $roles, true)
+            || in_array('sales_consultant', $roles, true);
+    }
+
+    private function get_user_display_name( $user_id ) {
+        $user = $user_id ? get_userdata( (int) $user_id ) : null;
+        return $user && $user->exists() ? $user->display_name : '';
     }
 
     /**
@@ -29,7 +179,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
         if ( ! check_ajax_referer( 'puzzlingcrm-ajax-nonce', 'security', false ) ) {
             wp_send_json_error( [ 'message' => __( 'درخواست نامعتبر.', 'puzzlingcrm' ) ] );
         }
-        if ( ! ( current_user_can( 'manage_options' ) || current_user_can( 'system_manager' ) ) ) {
+        if ( ! $this->can_manage_leads() ) {
             wp_send_json_error( [ 'message' => __( 'شما دسترسی لازم را ندارید.', 'puzzlingcrm' ) ] );
         }
         $paged    = isset( $_POST['paged'] ) ? max( 1, (int) $_POST['paged'] ) : 1;
@@ -59,6 +209,18 @@ class PuzzlingCRM_Lead_Ajax_Handler {
                 $terms      = wp_get_object_terms( $lead_id, 'lead_status' );
                 $status_name = ( ! empty( $terms ) && ! is_wp_error( $terms ) ) ? $terms[0]->name : __( 'نامشخص', 'puzzlingcrm' );
                 $status_slug = ( ! empty( $terms ) && ! is_wp_error( $terms ) ) ? $terms[0]->slug : '';
+                $assigned_to = (int) get_post_meta( $lead_id, '_lead_assigned_to', true );
+                $source_terms = wp_get_object_terms( $lead_id, 'lead_source' );
+                $source_name  = ( ! empty( $source_terms ) && ! is_wp_error( $source_terms ) ) ? $source_terms[0]->name : '';
+                $source_slug  = ( ! empty( $source_terms ) && ! is_wp_error( $source_terms ) ) ? $source_terms[0]->slug : '';
+                $form_data_raw = get_post_meta( $lead_id, '_elementor_form_data', true );
+                $form_submission_data = [];
+                if ( ! empty( $form_data_raw ) ) {
+                    $decoded = json_decode( $form_data_raw, true );
+                    if ( is_array( $decoded ) ) {
+                        $form_submission_data = $decoded;
+                    }
+                }
                 $leads[] = [
                     'id'          => $lead_id,
                     'first_name'  => get_post_meta( $lead_id, '_first_name', true ),
@@ -67,13 +229,25 @@ class PuzzlingCRM_Lead_Ajax_Handler {
                     'email'       => get_post_meta( $lead_id, '_email', true ),
                     'business_name' => get_post_meta( $lead_id, '_business_name', true ),
                     'gender'      => get_post_meta( $lead_id, '_gender', true ),
+                    'notes'       => get_post( $lead_id )->post_content ?: '',
                     'status_name' => $status_name,
                     'status_slug' => $status_slug,
                     'date'        => get_the_date( 'Y-m-d' ),
+                    'assigned_to' => $assigned_to,
+                    'assigned_to_name' => $assigned_to ? $this->get_user_display_name( $assigned_to ) : '',
+                    'last_assignment_note' => get_post_meta( $lead_id, '_last_assignment_note', true ) ?: '',
+                    'lead_source_slug' => $source_slug,
+                    'lead_source_name' => $source_name,
+                    'campaign_id' => (int) get_post_meta( $lead_id, '_campaign_id', true ),
+                    'form_submission_data' => $form_submission_data,
                 ];
             }
             wp_reset_postdata();
         }
+        $lead_sources = get_terms( [ 'taxonomy' => 'lead_source', 'hide_empty' => false ] );
+        $lead_sources = is_wp_error( $lead_sources ) ? [] : $lead_sources;
+        $campaigns = get_posts( [ 'post_type' => 'pzl_campaign', 'posts_per_page' => -1, 'orderby' => 'title' ] );
+
         wp_send_json_success( [
             'leads'   => $leads,
             'total'   => (int) $query->found_posts,
@@ -81,6 +255,12 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             'statuses' => array_map( function ( $t ) {
                 return [ 'slug' => $t->slug, 'name' => $t->name ];
             }, is_array( $statuses ) ? $statuses : [] ),
+            'lead_sources' => array_map( function ( $t ) {
+                return [ 'slug' => $t->slug, 'name' => $t->name ];
+            }, $lead_sources ),
+            'campaigns' => array_map( function ( $p ) {
+                return [ 'id' => $p->ID, 'title' => $p->post_title ];
+            }, $campaigns ),
         ] );
     }
 
@@ -99,7 +279,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             }
             
             // Check user permissions
-            if ( ! ( current_user_can( 'manage_options' ) || current_user_can( 'system_manager' ) ) ) {
+            if ( ! $this->can_manage_leads() ) {
                 error_log('PuzzlingCRM: User does not have permission to add lead. User ID: ' . get_current_user_id());
                 wp_send_json_error(['message' => __('شما دسترسی لازم برای انجام این کار را ندارید.', 'puzzlingcrm')]);
             }
@@ -112,6 +292,8 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             $email = sanitize_email($_POST['email'] ?? '');
             $gender = sanitize_text_field($_POST['gender'] ?? '');
             $notes = sanitize_textarea_field($_POST['notes'] ?? '');
+            $lead_source = sanitize_text_field($_POST['lead_source'] ?? '');
+            $campaign_id = isset($_POST['campaign_id']) ? intval($_POST['campaign_id']) : 0;
 
             error_log("PuzzlingCRM: Lead data - First: {$first_name}, Last: {$last_name}, Mobile: {$mobile}, Email: {$email}, Business: {$business_name}, Gender: {$gender}");
 
@@ -146,6 +328,15 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             
             error_log("PuzzlingCRM: Lead meta data updated for ID: {$lead_id}");
             
+            // Set lead source
+            if ( ! empty( $lead_source ) ) {
+                wp_set_object_terms( $lead_id, $lead_source, 'lead_source' );
+            }
+            // Set campaign
+            if ( $campaign_id > 0 ) {
+                update_post_meta( $lead_id, '_campaign_id', $campaign_id );
+            }
+
             // Set lead status
             $settings = PuzzlingCRM_Settings_Handler::get_all_settings();
             $default_status = !empty($settings['lead_default_status']) ? $settings['lead_default_status'] : null;
@@ -225,7 +416,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             }
             
             // Check user permissions
-            if ( ! ( current_user_can( 'manage_options' ) || current_user_can( 'system_manager' ) ) ) {
+            if ( ! $this->can_manage_leads() ) {
                 error_log('PuzzlingCRM: User does not have permission to edit lead. User ID: ' . get_current_user_id());
                 wp_send_json_error(['message' => __('شما دسترسی لازم برای انجام این کار را ندارید.', 'puzzlingcrm')]);
             }
@@ -246,6 +437,8 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             $email = sanitize_email($_POST['email'] ?? '');
             $gender = sanitize_text_field($_POST['gender'] ?? '');
             $notes = sanitize_textarea_field($_POST['notes'] ?? '');
+            $lead_source = sanitize_text_field($_POST['lead_source'] ?? '');
+            $campaign_id = isset($_POST['campaign_id']) ? intval($_POST['campaign_id']) : 0;
 
             error_log("PuzzlingCRM: Lead edit data - First: {$first_name}, Last: {$last_name}, Mobile: {$mobile}, Email: {$email}, Business: {$business_name}, Gender: {$gender}");
 
@@ -273,6 +466,13 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             update_post_meta($lead_id, '_email', $email);
             update_post_meta($lead_id, '_business_name', $business_name);
             update_post_meta($lead_id, '_gender', $gender);
+            update_post_meta($lead_id, '_campaign_id', $campaign_id > 0 ? $campaign_id : '');
+
+            if ( ! empty( $lead_source ) ) {
+                wp_set_object_terms( $lead_id, $lead_source, 'lead_source' );
+            } else {
+                wp_set_object_terms( $lead_id, [], 'lead_source' );
+            }
 
             error_log("PuzzlingCRM: Lead meta data updated for ID: {$lead_id}");
 
@@ -355,7 +555,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             }
             
             // Check user permissions
-            if ( ! ( current_user_can( 'manage_options' ) || current_user_can( 'system_manager' ) ) ) {
+            if ( ! $this->can_manage_leads() ) {
                 error_log('PuzzlingCRM: User does not have permission to change lead status. User ID: ' . get_current_user_id());
                 wp_send_json_error(['message' => __('شما دسترسی لازم برای انجام این کار را ندارید.', 'puzzlingcrm')]);
             }
@@ -453,7 +653,7 @@ class PuzzlingCRM_Lead_Ajax_Handler {
             }
             
             // Check user permissions
-            if ( ! ( current_user_can( 'manage_options' ) || current_user_can( 'system_manager' ) ) ) {
+            if ( ! $this->can_manage_leads() ) {
                 error_log('PuzzlingCRM: User does not have permission to delete lead. User ID: ' . get_current_user_id());
                 wp_send_json_error(['message' => __('شما دسترسی لازم برای انجام این کار را ندارید.', 'puzzlingcrm')]);
             }
@@ -831,5 +1031,54 @@ class PuzzlingCRM_Lead_Ajax_Handler {
                 ]);
             }
         }
+    }
+
+    /**
+     * Assign lead to sales consultant with optional note.
+     */
+    public function assign_lead() {
+        if ( ! check_ajax_referer( 'puzzlingcrm-ajax-nonce', 'security', false ) ) {
+            wp_send_json_error( [ 'message' => __( 'درخواست نامعتبر.', 'puzzlingcrm' ) ] );
+        }
+        if ( ! $this->can_manage_leads() ) {
+            wp_send_json_error( [ 'message' => __( 'شما دسترسی لازم را ندارید.', 'puzzlingcrm' ) ] );
+        }
+
+        $lead_id      = isset( $_POST['lead_id'] ) ? intval( $_POST['lead_id'] ) : 0;
+        $assigned_to  = isset( $_POST['assigned_to'] ) ? intval( $_POST['assigned_to'] ) : 0;
+        $note         = isset( $_POST['note'] ) ? sanitize_textarea_field( wp_unslash( $_POST['note'] ) ) : '';
+
+        if ( ! $lead_id ) {
+            wp_send_json_error( [ 'message' => __( 'شناسه سرنخ نامعتبر است.', 'puzzlingcrm' ) ] );
+        }
+
+        $lead = get_post( $lead_id );
+        if ( ! $lead || $lead->post_type !== 'pzl_lead' ) {
+            wp_send_json_error( [ 'message' => __( 'سرنخ یافت نشد.', 'puzzlingcrm' ) ] );
+        }
+
+        update_post_meta( $lead_id, '_lead_assigned_to', $assigned_to );
+        if ( ! empty( $note ) ) {
+            update_post_meta( $lead_id, '_last_assignment_note', $note );
+        }
+
+        $assigned_term = get_term_by( 'slug', 'assigned', 'lead_status' );
+        if ( $assigned_term ) {
+            wp_set_object_terms( $lead_id, $assigned_term->term_id, 'lead_status' );
+        }
+
+        wp_cache_delete( $lead_id, 'post_meta' );
+        clean_post_cache( $lead_id );
+
+        if ( class_exists( 'PuzzlingCRM_Logger' ) ) {
+            $assignee_name = $assigned_to ? $this->get_user_display_name( $assigned_to ) : __( 'بدون ارجاع', 'puzzlingcrm' );
+            PuzzlingCRM_Logger::add( 'ارجاع سرنخ', [
+                'content' => sprintf( __( 'سرنخ #%1$d به %2$s ارجاع داده شد.', 'puzzlingcrm' ), $lead_id, $assignee_name ),
+                'type' => 'log',
+                'details' => [ 'lead_id' => $lead_id, 'assigned_to' => $assigned_to, 'user_id' => get_current_user_id() ],
+            ] );
+        }
+
+        wp_send_json_success( [ 'message' => __( 'ارجاع با موفقیت انجام شد.', 'puzzlingcrm' ), 'reload' => true ] );
     }
 }

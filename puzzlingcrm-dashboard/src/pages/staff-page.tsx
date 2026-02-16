@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SELECT_NONE_VALUE } from "@/lib/constants"
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,7 @@ import {
   type CustomerUser,
   type GetUsersResponse,
 } from "@/api/customers"
+import { cn } from "@/lib/utils"
 import { Plus, Loader2, Pencil, Trash2 } from "lucide-react"
 
 const STAFF_ROLES = [
@@ -277,7 +279,13 @@ export function StaffPage() {
           <DialogHeader>
             <DialogTitle>{editUser ? "ویرایش کارمند" : "افزودن کارمند"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleSubmit()
+            }}
+            className="space-y-4 py-4"
+          >
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">نام</label>
@@ -340,16 +348,20 @@ export function StaffPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">دپارتمان</label>
                 <Select
-                  value={form.department ? String(form.department) : ""}
+                  value={form.department ? String(form.department) : SELECT_NONE_VALUE}
                   onValueChange={(v) =>
-                    setForm((f) => ({ ...f, department: parseInt(v, 10) || 0, job_title: 0 }))
+                    setForm((f) => ({
+                      ...f,
+                      department: v === SELECT_NONE_VALUE ? 0 : parseInt(v, 10) || 0,
+                      job_title: 0,
+                    }))
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="انتخاب دپارتمان" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">—</SelectItem>
+                    <SelectItem value={SELECT_NONE_VALUE}>—</SelectItem>
                     {departments.map((d) => (
                       <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
                     ))}
@@ -361,14 +373,19 @@ export function StaffPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">عنوان شغلی</label>
                 <Select
-                  value={form.job_title ? String(form.job_title) : ""}
-                  onValueChange={(v) => setForm((f) => ({ ...f, job_title: parseInt(v, 10) || 0 }))}
+                  value={form.job_title ? String(form.job_title) : SELECT_NONE_VALUE}
+                  onValueChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      job_title: v === SELECT_NONE_VALUE ? 0 : parseInt(v, 10) || 0,
+                    }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="انتخاب عنوان شغلی" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">—</SelectItem>
+                    <SelectItem value={SELECT_NONE_VALUE}>—</SelectItem>
                     {jobTitlesForDept.map((j) => (
                       <SelectItem key={j.id} value={String(j.id)}>{j.name}</SelectItem>
                     ))}
@@ -376,14 +393,14 @@ export function StaffPage() {
                 </Select>
               </div>
             )}
-          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setFormOpen(false)}>انصراف</Button>
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting && <Loader2 className="h-4 w-4 animate-spin me-2" />}
+            <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>انصراف</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting && <Loader2 className={cn("h-4 w-4 animate-spin shrink-0", isRtl ? "ms-2" : "me-2")} />}
               {editUser ? "ذخیره" : "ایجاد"}
             </Button>
           </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

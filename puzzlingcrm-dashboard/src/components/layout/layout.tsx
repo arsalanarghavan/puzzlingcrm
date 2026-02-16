@@ -29,6 +29,8 @@ const PAGE_TITLES: Record<string, string> = {
   staff: "کارکنان",
   consultations: "مشاوره‌ها",
   reports: "گزارشات",
+  campaigns: "کمپین‌ها",
+  services: "خدمات و محصولات",
   logs: "لاگ‌ها",
   settings: "تنظیمات",
   profile: "پروفایل من",
@@ -70,7 +72,7 @@ export function Layout() {
 
   return (
     <div
-      className="flex min-h-screen flex-col md:flex-row"
+      className="flex min-h-screen min-w-0 flex-col md:flex-row bg-background text-foreground"
       dir={isRtlLayout ? "rtl" : "ltr"}
     >
       <Sidebar

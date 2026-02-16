@@ -131,6 +131,14 @@ if ( file_exists( $main_js_index ) ) {
 	return;
 }
 
+// If expected CSS file is missing (e.g. Vite emitted dashboard-tabs.css), use any dashboard-*.css
+if ( ! file_exists( $build_dir . $spa_css ) ) {
+	$dashboard_css_files = glob( $build_dir . 'dashboard-*.css' );
+	if ( ! empty( $dashboard_css_files ) ) {
+		$spa_css = basename( $dashboard_css_files[0] );
+	}
+}
+
 // Strong cache busting: use file modification time so any rebuild triggers fresh load
 $js_file  = $build_dir . $spa_js;
 $css_file = $build_dir . $spa_css;
@@ -147,6 +155,23 @@ $css_mtime = file_exists( $css_file ) ? filemtime( $css_file ) : $version;
 	<?php wp_head(); ?>
 	<link rel="stylesheet" href="<?php echo esc_url( PUZZLINGCRM_PLUGIN_URL . 'assets/css/fonts.css' ); ?>?v=<?php echo esc_attr( $version ); ?>" />
 	<link rel="stylesheet" href="<?php echo esc_url( $build_url . $spa_css ); ?>?v=<?php echo esc_attr( $css_mtime ); ?>" />
+	<style type="text/css">
+		body.pzl-dashboard-spa {
+			min-height: 100vh;
+			margin: 0;
+			background-color: hsl(var(--background, 0 0% 100%));
+			color: hsl(var(--foreground, 222.2 84% 4.9%));
+		}
+		body.pzl-dashboard-spa #root {
+			min-height: 100vh;
+			min-width: 100%;
+			display: flex;
+			flex-direction: column;
+			flex: 1;
+			background-color: inherit;
+			color: inherit;
+		}
+	</style>
 </head>
 <body class="pzl-dashboard-spa" data-dashboard="spa">
 	<div id="root"></div>

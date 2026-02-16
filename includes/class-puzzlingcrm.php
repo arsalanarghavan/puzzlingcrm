@@ -71,6 +71,7 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-parsgreen-handler.php';
 		// NEW: Telegram Handler
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-telegram-handler.php';
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/integrations/class-elementor-lead-integration.php';
         
         // Login Page and AJAX Handler
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-login-page.php';
@@ -183,6 +184,9 @@ class PuzzlingCRM {
             }
         });
         
+        // Elementor Pro form integration - load when Elementor is ready
+        add_action( 'elementor/loaded', [ $this, 'init_elementor_integration' ] );
+
         // Load advanced features only when needed
         add_action('admin_enqueue_scripts', function($hook) {
             // WebSocket - only on dashboard pages
@@ -416,6 +420,16 @@ class PuzzlingCRM {
         ]);
     }
     
+    /**
+     * Initialize Elementor Pro form integration when Elementor is loaded.
+     */
+    public function init_elementor_integration() {
+        if ( ! defined( 'ELEMENTOR_PRO_VERSION' ) ) {
+            return;
+        }
+        new PuzzlingCRM_Elementor_Lead_Integration();
+    }
+
     /**
      * Handle language switching from cookie
      * Must run early (before textdomain is loaded)

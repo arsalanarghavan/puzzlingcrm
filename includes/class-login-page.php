@@ -128,7 +128,7 @@ class PuzzlingCRM_Login_Page {
             return admin_url();
         }
         
-        if (in_array('system_manager', $user->roles) || in_array('team_member', $user->roles)) {
+        if (in_array('system_manager', $user->roles) || in_array('team_member', $user->roles) || in_array('sales_consultant', $user->roles)) {
             return home_url('/dashboard');
         }
         

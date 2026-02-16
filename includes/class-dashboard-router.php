@@ -52,8 +52,16 @@ class PuzzlingCRM_Dashboard_Router {
         'contracts' => [
             'title' => 'قراردادها',
             'icon' => 'ri-file-text-line',
-            'roles' => ['system_manager', 'finance_manager', 'team_member', 'client'],
+            'roles' => ['system_manager', 'finance_manager', 'team_member', 'sales_consultant', 'client'],
             'partial' => 'page-contracts',
+        ],
+        
+        // Services & Products (Manager only)
+        'services' => [
+            'title' => 'خدمات و محصولات',
+            'icon' => 'ri-service-line',
+            'roles' => ['system_manager'],
+            'partial' => 'page-services',
         ],
         
         // Invoices
@@ -88,11 +96,11 @@ class PuzzlingCRM_Dashboard_Router {
             'partial' => 'page-appointments',
         ],
         
-        // Leads (Manager only)
+        // Leads (Manager + Sales Consultant)
         'leads' => [
             'title' => 'سرنخ‌ها',
             'icon' => 'ri-user-add-line',
-            'roles' => ['system_manager'],
+            'roles' => ['system_manager', 'sales_consultant'],
             'partial' => 'page-leads',
         ],
         
@@ -104,11 +112,11 @@ class PuzzlingCRM_Dashboard_Router {
             'partial' => 'page-licenses',
         ],
         
-        // Customers (Manager only)
+        // Customers (Manager + Sales Consultant for contract creation)
         'customers' => [
             'title' => 'مشتریان',
             'icon' => 'ri-group-line',
-            'roles' => ['system_manager'],
+            'roles' => ['system_manager', 'sales_consultant'],
             'partial' => 'page-customers',
         ],
         
@@ -128,6 +136,14 @@ class PuzzlingCRM_Dashboard_Router {
             'partial' => 'page-consultations',
         ],
         
+        // Campaigns (Manager only - coming soon)
+        'campaigns' => [
+            'title' => 'کمپین‌ها',
+            'icon' => 'ri-megaphone-line',
+            'roles' => ['system_manager'],
+            'partial' => 'page-campaigns',
+        ],
+
         // Reports (Manager + Finance)
         'reports' => [
             'title' => 'گزارشات',
@@ -1089,6 +1105,9 @@ class PuzzlingCRM_Dashboard_Router {
         if (in_array('team_member', $roles)) {
             return 'team_member';
         }
+        if (in_array('sales_consultant', $roles)) {
+            return 'sales_consultant';
+        }
         if (in_array('client', $roles) || in_array('customer', $roles)) {
             return 'client';
         }
@@ -1107,6 +1126,9 @@ class PuzzlingCRM_Dashboard_Router {
         }
         if (in_array('team_member', $roles)) {
             return 'کارمند';
+        }
+        if (in_array('sales_consultant', $roles)) {
+            return 'کارشناس فروش';
         }
         if (in_array('client', $roles) || in_array('customer', $roles)) {
             return 'مشتری';
@@ -1128,6 +1150,8 @@ class PuzzlingCRM_Dashboard_Router {
             $user_role = 'system_manager';
         } elseif (in_array('team_member', $roles)) {
             $user_role = 'team_member';
+        } elseif (in_array('sales_consultant', $roles)) {
+            $user_role = 'sales_consultant';
         } elseif (in_array('client', $roles) || in_array('customer', $roles)) {
             $user_role = 'client';
         }

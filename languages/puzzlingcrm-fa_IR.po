@@ -174,6 +174,30 @@ msgstr "همه گزارشات"
 msgid "General Settings"
 msgstr "تنظیمات عمومی"
 
+msgid "System"
+msgstr "سیستم"
+
+msgid "Licenses"
+msgstr "لایسنس‌ها"
+
+msgid "Logs"
+msgstr "لاگ‌ها"
+
+msgid "Consultations"
+msgstr "مشاوره‌ها"
+
+msgid "Services & Products"
+msgstr "سرویس‌ها و محصولات"
+
+msgid "Subscriptions & Services"
+msgstr "اشتراک‌ها و سرویس‌ها"
+
+msgid "Marketing"
+msgstr "بازاریابی"
+
+msgid "Campaigns (Coming Soon)"
+msgstr "کمپین‌ها (به‌زودی)"
+
 msgid "View Site"
 msgstr "مشاهده سایت"
 

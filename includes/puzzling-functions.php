@@ -79,6 +79,44 @@ if ( ! function_exists( 'puzzling_can_user_view_ticket' ) ) {
         return false;
     }
 }
+
+if ( ! function_exists( 'puzzling_user_can_assign_project' ) ) {
+    /**
+     * Checks if a user can assign a project (to employees).
+     *
+     * @param int $user_id   The user attempting to assign.
+     * @param int $project_id The project being assigned.
+     * @return bool True if the user can assign, false otherwise.
+     */
+    function puzzling_user_can_assign_project( $user_id, $project_id ) {
+        if ( ! $user_id || ! $project_id ) {
+            return false;
+        }
+        $user = get_user_by( 'ID', $user_id );
+        if ( ! $user ) {
+            return false;
+        }
+        $roles = (array) $user->roles;
+
+        // Administrator and system_manager can always assign.
+        if ( in_array( 'administrator', $roles, true ) || in_array( 'system_manager', $roles, true ) ) {
+            return true;
+        }
+
+        // Department manager: can assign if project's department is in their managed departments.
+        $dept_manager_ids = (array) get_user_meta( $user_id, '_department_manager_dept_ids', true );
+        $dept_manager_ids = array_filter( array_map( 'intval', $dept_manager_ids ) );
+        if ( ! empty( $dept_manager_ids ) ) {
+            $project_dept_id = (int) get_post_meta( $project_id, '_department_id', true );
+            if ( $project_dept_id > 0 && in_array( $project_dept_id, $dept_manager_ids, true ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
 // **REVISED & STABILIZED V3: Renders the HTML for a single task card**
 if ( ! function_exists( 'puzzling_render_task_card' ) ) {
     function puzzling_render_task_card( $task_post ) {

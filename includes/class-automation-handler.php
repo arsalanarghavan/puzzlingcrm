@@ -41,15 +41,20 @@ class PuzzlingCRM_Automation_Handler {
         // --- 2. Loop through subscription items to create projects ---
         foreach ( $subscription->get_items() as $item ) {
             $product_id = $item->get_product_id();
-            $linked_template_id = get_post_meta( $product_id, '_puzzling_project_template_id', true );
+            $task_template_id  = get_post_meta( $product_id, '_puzzling_task_template_id', true );
+            $project_template_id = get_post_meta( $product_id, '_puzzling_project_template_id', true );
 
-            // If the product is a service linked to a project template...
-            if ( $linked_template_id ) {
-                $project_id = $this->create_project_from_template($product_id, $contract_id);
+            // Create project if either task template or project template is linked
+            if ( $task_template_id || $project_template_id ) {
+                $project_id = $this->create_project_from_template( $product_id, $contract_id );
 
-                if (!is_wp_error($project_id)) {
-                    // 3. Create default tasks for the new project
-                    $this->create_tasks_from_template($project_id, $linked_template_id);
+                if ( ! is_wp_error( $project_id ) ) {
+                    // 3. Create tasks: prefer task_template (supports recurring), fallback to project template
+                    if ( $task_template_id ) {
+                        $this->create_tasks_from_task_template( $project_id, (int) $task_template_id );
+                    } elseif ( $project_template_id ) {
+                        $this->create_tasks_from_template( $project_id, (int) $project_template_id );
+                    }
                 }
             }
         }
@@ -134,6 +139,44 @@ class PuzzlingCRM_Automation_Handler {
         }
 
         return $project_id;
+    }
+
+    /**
+     * Creates tasks from task_template (_template_tasks) - supports recurring types.
+     * @param int $project_id  The project ID.
+     * @param int $template_id The task_template post ID.
+     */
+    private function create_tasks_from_task_template( $project_id, $template_id ) {
+        $tasks = get_post_meta( $template_id, '_template_tasks', true );
+        if ( empty( $tasks ) || ! is_array( $tasks ) ) {
+            return;
+        }
+        $start = strtotime( current_time( 'Y-m-d' ) );
+        $todo_term = get_term_by( 'slug', 'todo', 'task_status' );
+        $todo_term_id = $todo_term ? $todo_term->term_id : 0;
+
+        foreach ( $tasks as $task_data ) {
+            $title   = isset( $task_data['title'] ) ? sanitize_text_field( $task_data['title'] ) : '';
+            $duration = isset( $task_data['duration'] ) ? floatval( $task_data['duration'] ) : 1;
+            if ( empty( $title ) ) {
+                continue;
+            }
+            $due_date = date( 'Y-m-d', strtotime( "+{$duration} days", $start ) );
+            $task_id = wp_insert_post( [
+                'post_title'   => $title,
+                'post_type'    => 'task',
+                'post_status'  => 'publish',
+            ] );
+            if ( $task_id && ! is_wp_error( $task_id ) ) {
+                update_post_meta( $task_id, '_project_id', $project_id );
+                update_post_meta( $task_id, '_start_date', date( 'Y-m-d', $start ) );
+                update_post_meta( $task_id, '_due_date', $due_date );
+                if ( $todo_term_id ) {
+                    wp_set_object_terms( $task_id, $todo_term_id, 'task_status' );
+                }
+                $start = strtotime( $due_date );
+            }
+        }
     }
 
     /**

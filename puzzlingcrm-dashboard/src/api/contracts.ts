@@ -73,6 +73,38 @@ export async function getContract(contractId: number) {
   })
 }
 
+export interface ProjectTemplate {
+  id: number
+  title: string
+}
+
+export async function getProjectTemplates() {
+  return apiPost<{ templates: ProjectTemplate[] }>("puzzlingcrm_get_project_templates", {})
+}
+
+export interface WcProduct {
+  id: number
+  name: string
+  type: string
+  price: string
+}
+
+export async function getContractProducts() {
+  return apiPost<{ products: WcProduct[]; wc_active: boolean }>("puzzlingcrm_list_products", {})
+}
+
+export async function getProjectAssignees(search?: string) {
+  return apiPost<{ users: { id: number; display_name: string }[] }>("puzzlingcrm_get_project_assignees", {
+    search: search ?? "",
+  })
+}
+
+export async function getProductProjectsPreview(productId: number) {
+  return apiPost<{ titles: string[] }>("puzzlingcrm_get_product_projects_preview", {
+    product_id: productId,
+  })
+}
+
 export async function manageContract(data: {
   contract_id?: number
   customer_id: number
@@ -85,6 +117,9 @@ export async function manageContract(data: {
   payment_amount: string[]
   payment_due_date: string[]
   payment_status: string[]
+  project_template_id?: number
+  product_id?: number
+  project_assignments?: number[]
 }) {
   const form = new FormData()
   form.set("contract_id", String(data.contract_id ?? 0))
@@ -100,6 +135,15 @@ export async function manageContract(data: {
     form.append("payment_due_date[]", data.payment_due_date[i] ?? "")
     form.append("payment_status[]", data.payment_status[i] ?? "pending")
   })
+  if (data.project_template_id != null && data.project_template_id > 0) {
+    form.set("project_template_id", String(data.project_template_id))
+  }
+  if (data.product_id != null && data.product_id > 0) {
+    form.set("product_id", String(data.product_id))
+    if (data.project_assignments?.length) {
+      data.project_assignments.forEach((uid) => form.append("project_assignments[]", String(uid)))
+    }
+  }
   return apiPostForm<{ message?: string; reload?: boolean; contract_id?: number }>(
     "puzzling_manage_contract",
     form

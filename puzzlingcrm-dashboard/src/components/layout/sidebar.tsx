@@ -25,6 +25,8 @@ import {
   FileStack,
   User,
   Settings,
+  Package,
+  Megaphone,
   type LucideIcon,
 } from "lucide-react"
 import type { PuzzlingCRMMenuItem } from "@/types/global"
@@ -52,6 +54,8 @@ const iconMap: Record<string, LucideIcon> = {
   logs: FileStack,
   settings: Settings,
   profile: User,
+  services: Package,
+  campaigns: Megaphone,
 }
 
 interface SidebarProps {

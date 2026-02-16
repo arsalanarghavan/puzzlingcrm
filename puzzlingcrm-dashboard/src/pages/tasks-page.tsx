@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SELECT_ALL_VALUE } from "@/lib/constants"
 import {
   Dialog,
   DialogContent,
@@ -282,12 +283,15 @@ export function TasksPage() {
               className="max-w-[200px]"
             />
             {projects.length > 0 && (
-              <Select value={projectFilter} onValueChange={setProjectFilter}>
+              <Select
+                value={projectFilter === "" ? SELECT_ALL_VALUE : projectFilter}
+                onValueChange={(v) => setProjectFilter(v === SELECT_ALL_VALUE ? "" : v)}
+              >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="پروژه" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">همه</SelectItem>
+                  <SelectItem value={SELECT_ALL_VALUE}>همه</SelectItem>
                   {projects.map((p) => (
                     <SelectItem key={p.id} value={String(p.id)}>{p.title}</SelectItem>
                   ))}
@@ -295,12 +299,15 @@ export function TasksPage() {
               </Select>
             )}
             {staff.length > 0 && (
-              <Select value={staffFilter} onValueChange={setStaffFilter}>
+              <Select
+                value={staffFilter === "" ? SELECT_ALL_VALUE : staffFilter}
+                onValueChange={(v) => setStaffFilter(v === SELECT_ALL_VALUE ? "" : v)}
+              >
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="کارمند" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">همه</SelectItem>
+                  <SelectItem value={SELECT_ALL_VALUE}>همه</SelectItem>
                   {staff.map((s) => (
                     <SelectItem key={s.id} value={String(s.id)}>{s.display_name}</SelectItem>
                   ))}
@@ -308,12 +315,15 @@ export function TasksPage() {
               </Select>
             )}
             {(data?.priorities?.length ?? 0) > 0 && (
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <Select
+                value={priorityFilter === "" ? SELECT_ALL_VALUE : priorityFilter}
+                onValueChange={(v) => setPriorityFilter(v === SELECT_ALL_VALUE ? "" : v)}
+              >
                 <SelectTrigger className="w-[120px]">
                   <SelectValue placeholder="اولویت" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">همه</SelectItem>
+                  <SelectItem value={SELECT_ALL_VALUE}>همه</SelectItem>
                   {(data?.priorities ?? []).map((p) => (
                     <SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>
                   ))}
@@ -321,12 +331,15 @@ export function TasksPage() {
               </Select>
             )}
             {(data?.labels?.length ?? 0) > 0 && (
-              <Select value={labelFilter} onValueChange={setLabelFilter}>
+              <Select
+                value={labelFilter === "" ? SELECT_ALL_VALUE : labelFilter}
+                onValueChange={(v) => setLabelFilter(v === SELECT_ALL_VALUE ? "" : v)}
+              >
                 <SelectTrigger className="w-[120px]">
                   <SelectValue placeholder="برچسب" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">همه</SelectItem>
+                  <SelectItem value={SELECT_ALL_VALUE}>همه</SelectItem>
                   {(data?.labels ?? []).map((l) => (
                     <SelectItem key={l.id} value={l.slug}>{l.name}</SelectItem>
                   ))}
@@ -531,7 +544,7 @@ export function TasksPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>انصراف</Button>
             <Button onClick={handleAddSubmit} disabled={submitting}>
-              {submitting && <Loader2 className="h-4 w-4 animate-spin me-2" />}
+              {submitting && <Loader2 className={cn("h-4 w-4 animate-spin shrink-0", isRtl ? "ms-2" : "me-2")} />}
               ایجاد
             </Button>
           </DialogFooter>

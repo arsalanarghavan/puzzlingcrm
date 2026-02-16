@@ -21,6 +21,135 @@ class PuzzlingCRM_Project_Ajax_Handler {
         add_action('wp_ajax_puzzlingcrm_get_contract', [$this, 'ajax_get_contract']);
         add_action('wp_ajax_puzzlingcrm_get_projects', [$this, 'ajax_get_projects']);
         add_action('wp_ajax_puzzlingcrm_get_project', [$this, 'ajax_get_project']);
+        add_action('wp_ajax_puzzlingcrm_get_project_templates', [$this, 'ajax_get_project_templates']);
+        add_action('wp_ajax_puzzlingcrm_get_project_assignees', [ $this, 'ajax_get_project_assignees' ]);
+        add_action('wp_ajax_puzzlingcrm_get_product_projects_preview', [ $this, 'ajax_get_product_projects_preview' ]);
+        add_action('wp_ajax_puzzlingcrm_get_assignable_employees', [ $this, 'ajax_get_assignable_employees' ]);
+    }
+
+    /**
+     * Returns project titles that would be created from a WC product (Simple=1, Grouped=N children).
+     */
+    public function ajax_get_product_projects_preview() {
+        $this->load_dependencies();
+        if ( ! check_ajax_referer( 'puzzlingcrm-ajax-nonce', 'security', false ) ) {
+            wp_send_json_error( [ 'message' => __( 'درخواست نامعتبر.', 'puzzlingcrm' ) ] );
+        }
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( [ 'message' => __( 'دسترسی غیرمجاز.', 'puzzlingcrm' ) ] );
+        }
+        $product_id = isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0;
+        if ( ! $product_id || ! function_exists( 'wc_get_product' ) ) {
+            wp_send_json_success( [ 'titles' => [] ] );
+        }
+        $product = wc_get_product( $product_id );
+        if ( ! $product ) {
+            wp_send_json_success( [ 'titles' => [] ] );
+        }
+        $child_ids = $product->is_type( 'grouped' ) ? $product->get_children() : [ $product->get_id() ];
+        $titles = [];
+        foreach ( $child_ids as $cid ) {
+            $child = wc_get_product( $cid );
+            if ( $child ) {
+                $titles[] = $child->get_name();
+            }
+        }
+        wp_send_json_success( [ 'titles' => $titles ] );
+    }
+
+    /**
+     * Returns users who can be assigned projects (system_manager, team_member, administrator).
+     */
+    public function ajax_get_project_assignees() {
+        $this->load_dependencies();
+        if ( ! check_ajax_referer( 'puzzlingcrm-ajax-nonce', 'security', false ) ) {
+            wp_send_json_error( [ 'message' => __( 'درخواست نامعتبر.', 'puzzlingcrm' ) ] );
+        }
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( [ 'message' => __( 'دسترسی غیرمجاز.', 'puzzlingcrm' ) ] );
+        }
+        $search = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
+        $args = [
+            'role__in' => [ 'system_manager', 'team_member', 'administrator' ],
+            'orderby'  => 'display_name',
+            'order'    => 'ASC',
+        ];
+        if ( ! empty( $search ) ) {
+            $args['search']         = '*' . $search . '*';
+            $args['search_columns'] = [ 'user_login', 'user_email', 'display_name', 'user_nicename' ];
+        }
+        $users = get_users( $args );
+        $items = array_map( function ( $u ) {
+            return [ 'id' => $u->ID, 'display_name' => $u->display_name ];
+        }, $users );
+        wp_send_json_success( [ 'users' => $items ] );
+    }
+
+    /**
+     * Get assignable employees with optional department filter and workload sort.
+     */
+    public function ajax_get_assignable_employees() {
+        $this->load_dependencies();
+        if ( ! check_ajax_referer( 'puzzlingcrm-ajax-nonce', 'security', false ) ) {
+            wp_send_json_error( [ 'message' => __( 'درخواست نامعتبر.', 'puzzlingcrm' ) ] );
+        }
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( [ 'message' => __( 'دسترسی غیرمجاز.', 'puzzlingcrm' ) ] );
+        }
+        $department_id = isset( $_POST['department_id'] ) ? absint( $_POST['department_id'] ) : 0;
+        $role_filter   = isset( $_POST['role'] ) ? sanitize_key( $_POST['role'] ) : '';
+        $sort_by_load  = isset( $_POST['sort_by_load'] ) && $_POST['sort_by_load'] === '1';
+
+        $args = [
+            'role__in' => [ 'system_manager', 'team_member', 'administrator' ],
+            'orderby'  => 'display_name',
+            'order'    => 'ASC',
+        ];
+        if ( $role_filter && in_array( $role_filter, [ 'system_manager', 'team_member', 'administrator' ], true ) ) {
+            $args['role'] = $role_filter;
+            unset( $args['role__in'] );
+        }
+        if ( $department_id > 0 ) {
+            $args['tax_query'] = [
+                [
+                    'taxonomy' => 'organizational_position',
+                    'field'    => 'term_id',
+                    'terms'    => $department_id,
+                ],
+            ];
+        }
+        $users = get_users( $args );
+
+        if ( $sort_by_load && ! empty( $users ) ) {
+            $counts = [];
+            foreach ( $users as $u ) {
+                $projects = get_posts( [
+                    'post_type'      => 'project',
+                    'posts_per_page' => -1,
+                    'fields'         => 'ids',
+                    'meta_query'     => [
+                        [ 'key' => '_assigned_to', 'value' => $u->ID, 'compare' => '=' ],
+                    ],
+                ] );
+                $tasks = get_posts( [
+                    'post_type'      => 'task',
+                    'posts_per_page' => -1,
+                    'fields'         => 'ids',
+                    'meta_query'     => [ [ 'key' => '_assigned_to', 'value' => $u->ID, 'compare' => '=' ] ],
+                ] );
+                $counts[ $u->ID ] = count( $projects ) + count( $tasks );
+            }
+            usort( $users, function ( $a, $b ) use ( $counts ) {
+                $ca = $counts[ $a->ID ] ?? 0;
+                $cb = $counts[ $b->ID ] ?? 0;
+                return $ca <=> $cb;
+            } );
+        }
+
+        $items = array_map( function ( $u ) {
+            return [ 'id' => $u->ID, 'display_name' => $u->display_name ];
+        }, $users );
+        wp_send_json_success( [ 'users' => $items ] );
     }
 
     /**
@@ -906,6 +1035,56 @@ class PuzzlingCRM_Project_Ajax_Handler {
             'total_amount' => get_post_meta($the_contract_id, '_total_amount', true)
         ], 'success');
         
+        // When creating a new contract, optionally create projects from WC product or from template
+        if ( $contract_id == 0 ) {
+            $product_id = isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0;
+            $project_assignments = isset( $_POST['project_assignments'] ) && is_array( $_POST['project_assignments'] )
+                ? array_map( 'intval', $_POST['project_assignments'] ) : [];
+
+            if ( $product_id > 0 && function_exists( 'wc_get_product' ) ) {
+                update_post_meta( $the_contract_id, '_wc_product_id', $product_id );
+                $product = wc_get_product( $product_id );
+                $active_status = get_term_by( 'slug', 'active', 'project_status' );
+                if ( $product ) {
+                    $child_ids = $product->is_type( 'grouped' ) ? $product->get_children() : [ $product->get_id() ];
+                    $idx = 0;
+                    foreach ( $child_ids as $child_id ) {
+                        $child = wc_get_product( $child_id );
+                        if ( ! $child ) continue;
+                        $project_id = wp_insert_post( [
+                            'post_title'   => $child->get_name(),
+                            'post_author'  => (int) get_post( $the_contract_id )->post_author,
+                            'post_status'  => 'publish',
+                            'post_type'    => 'project',
+                        ], true );
+                        if ( ! is_wp_error( $project_id ) ) {
+                            update_post_meta( $project_id, '_contract_id', $the_contract_id );
+                            $dept_id = (int) get_post_meta( $child_id, '_puzzling_default_department_id', true );
+                            if ( $dept_id > 0 ) {
+                                update_post_meta( $project_id, '_department_id', $dept_id );
+                            }
+                            $assigned = isset( $project_assignments[ $idx ] ) ? (int) $project_assignments[ $idx ] : 0;
+                            if ( $assigned > 0 ) {
+                                update_post_meta( $project_id, '_assigned_to', $assigned );
+                            }
+                            if ( $active_status ) {
+                                wp_set_object_terms( $project_id, $active_status->term_id, 'project_status' );
+                            }
+                            $idx++;
+                        }
+                    }
+                }
+            } else {
+                $project_template_id = isset( $_POST['project_template_id'] ) ? absint( $_POST['project_template_id'] ) : 0;
+                if ( $project_template_id > 0 ) {
+                    $project_id = $this->create_project_from_template_for_contract( $project_template_id, $the_contract_id );
+                    if ( is_int( $project_id ) ) {
+                        $this->create_tasks_from_template_for_project( $project_id, $project_template_id );
+                    }
+                }
+            }
+        }
+
         ob_end_clean();
         wp_send_json_success([
             'message' => $message, 
@@ -1114,5 +1293,144 @@ class PuzzlingCRM_Project_Ajax_Handler {
         
         ob_end_clean();
         wp_send_json_success($projects_data);
+    }
+
+    /**
+     * Get project templates (pzl_project_template) for dashboard contract form.
+     */
+    public function ajax_get_project_templates() {
+        $this->load_dependencies();
+        ob_start();
+        if ( ! check_ajax_referer( 'puzzlingcrm-ajax-nonce', 'security', false ) ) {
+            wp_send_json_error( [ 'message' => 'خطای امنیتی.' ] );
+        }
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( [ 'message' => 'دسترسی غیرمجاز.' ] );
+        }
+        $templates = get_posts( [
+            'post_type'      => 'pzl_project_template',
+            'posts_per_page' => -1,
+            'orderby'        => 'title',
+            'order'          => 'ASC',
+            'post_status'    => 'publish',
+        ] );
+        $list = [];
+        foreach ( $templates as $t ) {
+            $list[] = [ 'id' => $t->ID, 'title' => $t->post_title ];
+        }
+        ob_end_clean();
+        wp_send_json_success( [ 'templates' => $list ] );
+    }
+
+    /**
+     * Create a project linked to a contract from a project template (dashboard flow).
+     *
+     * @param int $template_id pzl_project_template post ID.
+     * @param int $contract_id Contract post ID.
+     * @return int|WP_Error Project ID or error.
+     */
+    private function create_project_from_template_for_contract( $template_id, $contract_id ) {
+        $template = get_post( $template_id );
+        if ( ! $template || $template->post_type !== 'pzl_project_template' ) {
+            return new WP_Error( 'invalid_template', 'قالب پروژه نامعتبر است.' );
+        }
+        $contract = get_post( $contract_id );
+        if ( ! $contract || $contract->post_type !== 'contract' ) {
+            return new WP_Error( 'invalid_contract', 'قرارداد نامعتبر است.' );
+        }
+        $project_title = $template->post_title;
+        $project_id = wp_insert_post( [
+            'post_title'   => $project_title,
+            'post_author'  => $contract->post_author,
+            'post_status'  => 'publish',
+            'post_type'    => 'project',
+        ], true );
+        if ( is_wp_error( $project_id ) ) {
+            return $project_id;
+        }
+        update_post_meta( $project_id, '_contract_id', $contract_id );
+        $active_status = get_term_by( 'slug', 'active', 'project_status' );
+        if ( $active_status ) {
+            wp_set_object_terms( $project_id, $active_status->term_id, 'project_status' );
+        }
+        if ( class_exists( 'PuzzlingCRM_Logger' ) ) {
+            PuzzlingCRM_Logger::add( 'پروژه از قالب ایجاد شد', [ 'project_id' => $project_id, 'contract_id' => $contract_id, 'template_id' => $template_id ], 'success' );
+        }
+        return $project_id;
+    }
+
+    /**
+     * Create tasks for a project from template's _default_tasks. Supports optional per-employee: if a task has assigned_role, one task per user with that role is created.
+     *
+     * @param int $project_id  Project post ID.
+     * @param int $template_id pzl_project_template post ID.
+     */
+    private function create_tasks_from_template_for_project( $project_id, $template_id ) {
+        $default_tasks = get_post_meta( $template_id, '_default_tasks', true );
+        if ( empty( $default_tasks ) || ! is_array( $default_tasks ) ) {
+            return;
+        }
+        $default_status_slug = function_exists( 'puzzling_get_default_task_status_slug' ) ? puzzling_get_default_task_status_slug() : 'to-do';
+        $default_status = get_term_by( 'slug', $default_status_slug, 'task_status' );
+        $default_term_id = $default_status ? $default_status->term_id : 0;
+
+        foreach ( $default_tasks as $task_data ) {
+            $title = isset( $task_data['title'] ) ? sanitize_text_field( $task_data['title'] ) : '';
+            if ( $title === '' ) {
+                continue;
+            }
+            $content = isset( $task_data['content'] ) ? wp_kses_post( $task_data['content'] ) : '';
+            $assigned_role = isset( $task_data['assigned_role'] ) ? sanitize_key( $task_data['assigned_role'] ) : '';
+
+            if ( $assigned_role !== '' ) {
+                $users_with_role = get_users( [ 'role' => $assigned_role, 'fields' => 'ID' ] );
+                if ( empty( $users_with_role ) ) {
+                    $task_id = wp_insert_post( [
+                        'post_title'   => $title,
+                        'post_content' => $content,
+                        'post_type'    => 'task',
+                        'post_status'  => 'publish',
+                    ], true );
+                    if ( ! is_wp_error( $task_id ) ) {
+                        update_post_meta( $task_id, '_project_id', $project_id );
+                        if ( $default_term_id ) {
+                            wp_set_object_terms( $task_id, $default_term_id, 'task_status' );
+                        }
+                    }
+                    continue;
+                }
+                foreach ( $users_with_role as $user_id ) {
+                    $task_id = wp_insert_post( [
+                        'post_title'   => $title,
+                        'post_content' => $content,
+                        'post_type'    => 'task',
+                        'post_status'  => 'publish',
+                    ], true );
+                    if ( ! is_wp_error( $task_id ) ) {
+                        update_post_meta( $task_id, '_project_id', $project_id );
+                        update_post_meta( $task_id, '_assigned_to', $user_id );
+                        if ( $default_term_id ) {
+                            wp_set_object_terms( $task_id, $default_term_id, 'task_status' );
+                        }
+                    }
+                }
+            } else {
+                $task_id = wp_insert_post( [
+                    'post_title'   => $title,
+                    'post_content' => $content,
+                    'post_type'    => 'task',
+                    'post_status'  => 'publish',
+                ], true );
+                if ( ! is_wp_error( $task_id ) ) {
+                    update_post_meta( $task_id, '_project_id', $project_id );
+                    if ( $default_term_id ) {
+                        wp_set_object_terms( $task_id, $default_term_id, 'task_status' );
+                    }
+                }
+            }
+        }
+        if ( class_exists( 'PuzzlingCRM_Logger' ) ) {
+            PuzzlingCRM_Logger::add( 'تسک‌ها از قالب ایجاد شدند', [ 'project_id' => $project_id, 'template_id' => $template_id ], 'success' );
+        }
     }
 }

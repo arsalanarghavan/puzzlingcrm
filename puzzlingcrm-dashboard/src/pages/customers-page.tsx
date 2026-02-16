@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SELECT_ALL_VALUE } from "@/lib/constants"
 import { getConfigOrNull } from "@/api/client"
 import {
   getUsers,
@@ -263,12 +264,15 @@ export function CustomersPage() {
             </div>
             <div className="w-[180px]">
               <Label>نقش</Label>
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <Select
+                value={roleFilter === "" ? SELECT_ALL_VALUE : roleFilter}
+                onValueChange={(v) => setRoleFilter(v === SELECT_ALL_VALUE ? "" : v)}
+              >
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="همه نقش‌ها" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">همه نقش‌ها</SelectItem>
+                  <SelectItem value={SELECT_ALL_VALUE}>همه نقش‌ها</SelectItem>
                   {roles.map((r) => (
                     <SelectItem key={r.slug} value={r.slug}>
                       {r.name}
@@ -450,7 +454,7 @@ export function CustomersPage() {
                 انصراف
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting && <Loader2 className="h-4 w-4 animate-spin me-2" />}
+                {submitting && <Loader2 className={cn("h-4 w-4 animate-spin shrink-0", isRtl ? "ms-2" : "me-2")} />}
                 {editingUser ? "ذخیره تغییرات" : "ایجاد کاربر"}
               </Button>
             </DialogFooter>
@@ -480,7 +484,7 @@ export function CustomersPage() {
                 انصراف
               </Button>
               <Button type="submit" disabled={submitting || !smsMessage.trim()}>
-                {submitting && <Loader2 className="h-4 w-4 animate-spin me-2" />}
+                {submitting && <Loader2 className={cn("h-4 w-4 animate-spin shrink-0", isRtl ? "ms-2" : "me-2")} />}
                 ارسال پیامک
               </Button>
             </DialogFooter>

@@ -18,6 +18,8 @@ import { AppointmentsPage } from "@/pages/appointments-page"
 import { StaffPage } from "@/pages/staff-page"
 import { ReportsPage } from "@/pages/reports-page"
 import { SettingsPage } from "@/pages/settings-page"
+import { ServicesPage } from "@/pages/services-page"
+import { CampaignsPage } from "@/pages/campaigns-page"
 import { getConfigOrNull } from "@/api/client"
 
 function AppRoutes() {
@@ -39,6 +41,8 @@ function AppRoutes() {
         <Route path="appointments/*" element={<AppointmentsPage />} />
         <Route path="staff/*" element={<StaffPage />} />
         <Route path="reports/*" element={<ReportsPage />} />
+        <Route path="services/*" element={<ServicesPage />} />
+        <Route path="campaigns/*" element={<CampaignsPage />} />
         <Route path="settings/*" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

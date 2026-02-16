@@ -468,7 +468,7 @@ export function InvoicesPage() {
               </div>
 
               <Button type="submit" disabled={submitting}>
-                {submitting && <Loader2 className="h-4 w-4 animate-spin me-2" />}
+                {submitting && <Loader2 className={cn("h-4 w-4 animate-spin shrink-0", isRtl ? "ms-2" : "me-2")} />}
                 {editingInvoice ? "ذخیره" : "ایجاد و ارسال"}
               </Button>
             </form>

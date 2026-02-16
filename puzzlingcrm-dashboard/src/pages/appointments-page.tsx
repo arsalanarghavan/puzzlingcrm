@@ -511,7 +511,7 @@ export function AppointmentsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setFormOpen(false)}>انصراف</Button>
             <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting && <Loader2 className="h-4 w-4 animate-spin me-2" />}
+              {submitting && <Loader2 className={cn("h-4 w-4 animate-spin shrink-0", isRtl ? "ms-2" : "me-2")} />}
               {editId ? "ذخیره" : "ایجاد"}
             </Button>
           </DialogFooter>

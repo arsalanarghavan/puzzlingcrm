@@ -50,6 +50,10 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 				$menu_items = self::get_manager_menu();
 				break;
 
+			case 'sales_consultant':
+				$menu_items = self::get_sales_consultant_menu();
+				break;
+
 			case 'finance_manager':
 				$menu_items = self::get_finance_menu();
 				break;
@@ -118,6 +122,17 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 				'url'      => $dashboard_url . '/contracts',
 				'icon'     => 'ri-file-text-line',
 			),
+			// Services & Products Category
+			array(
+				'type'  => 'category',
+				'title' => __( 'Services & Products', 'puzzlingcrm' ),
+			),
+			array(
+				'id'       => 'services',
+				'title'    => __( 'Subscriptions & Services', 'puzzlingcrm' ),
+				'url'      => $dashboard_url . '/services',
+				'icon'     => 'ri-service-line',
+			),
 			// Finance Category
 			array(
 				'type'  => 'category',
@@ -180,6 +195,40 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 				'url'      => $dashboard_url . '/staff',
 				'icon'     => 'ri-user-star-line',
 			),
+			array(
+				'id'       => 'consultations',
+				'title'    => __( 'Consultations', 'puzzlingcrm' ),
+				'url'      => $dashboard_url . '/consultations',
+				'icon'     => 'ri-message-2-line',
+			),
+			// System Category
+			array(
+				'type'  => 'category',
+				'title' => __( 'System', 'puzzlingcrm' ),
+			),
+			array(
+				'id'       => 'licenses',
+				'title'    => __( 'Licenses', 'puzzlingcrm' ),
+				'url'      => $dashboard_url . '/licenses',
+				'icon'     => 'ri-key-2-line',
+			),
+			array(
+				'id'       => 'logs',
+				'title'    => __( 'Logs', 'puzzlingcrm' ),
+				'url'      => $dashboard_url . '/logs',
+				'icon'     => 'ri-file-list-2-line',
+			),
+			// Campaigns (Coming Soon)
+			array(
+				'type'  => 'category',
+				'title' => __( 'Marketing', 'puzzlingcrm' ),
+			),
+			array(
+				'id'       => 'campaigns',
+				'title'    => __( 'Campaigns (Coming Soon)', 'puzzlingcrm' ),
+				'url'      => $dashboard_url . '/campaigns',
+				'icon'     => 'ri-megaphone-line',
+			),
 			// Reports Category
 			array(
 				'type'  => 'category',
@@ -201,6 +250,50 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 				'title'    => __( 'General Settings', 'puzzlingcrm' ),
 				'url'      => $dashboard_url . '/settings',
 				'icon'     => 'ri-settings-3-line',
+			),
+		);
+	}
+
+	/**
+	 * Get sales consultant menu items
+	 *
+	 * @return array Menu items.
+	 */
+	private static function get_sales_consultant_menu() {
+		$dashboard_url = home_url( '/dashboard' );
+
+		return array(
+			array(
+				'id'    => 'dashboard',
+				'title' => __( 'Dashboard', 'puzzlingcrm' ),
+				'url'   => $dashboard_url,
+				'icon'  => 'ri-home-4-line',
+			),
+			array(
+				'type'  => 'category',
+				'title' => __( 'Leads', 'puzzlingcrm' ),
+			),
+			array(
+				'id'    => 'leads',
+				'title' => __( 'Leads', 'puzzlingcrm' ),
+				'url'   => $dashboard_url . '/leads',
+				'icon'  => 'ri-user-add-line',
+			),
+			array(
+				'type'  => 'category',
+				'title' => __( 'Sales', 'puzzlingcrm' ),
+			),
+			array(
+				'id'    => 'contracts',
+				'title' => __( 'Contracts', 'puzzlingcrm' ),
+				'url'   => $dashboard_url . '/contracts',
+				'icon'  => 'ri-file-text-line',
+			),
+			array(
+				'id'    => 'customers',
+				'title' => __( 'Customers', 'puzzlingcrm' ),
+				'url'   => $dashboard_url . '/customers',
+				'icon'  => 'ri-group-line',
 			),
 		);
 	}
@@ -342,6 +435,10 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 
 		if ( in_array( 'team_member', $roles, true ) ) {
 			return 'team_member';
+		}
+
+		if ( in_array( 'sales_consultant', $roles, true ) ) {
+			return 'sales_consultant';
 		}
 
 		if ( in_array( 'customer', $roles, true ) ) {

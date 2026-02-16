@@ -79,6 +79,7 @@ class PuzzlingCRM_User_Profile {
             ]],
             'job_info' => [ 'title' => 'اطلاعات شغلی / سازمانی', 'fields' => [
                 'organizational_position' => ['label' => 'جایگاه سازمانی (دپارتمان/عنوان)', 'type' => 'position_select'],
+                'department_manager_dept_ids' => ['label' => 'دپارتمان‌های مدیریتی (برای ارجاع پروژه)', 'type' => 'department_manager_multi'],
                 'personnel_code' => ['label' => 'کد پرسنلی', 'type' => 'text'],
                 'direct_manager' => ['label' => 'مدیر مستقیم', 'type' => 'text'],
                 'hire_date' => ['label' => 'تاریخ استخدام', 'type' => 'text'],
@@ -143,6 +144,20 @@ class PuzzlingCRM_User_Profile {
                                 }
                                 echo '</select>';
                                 break;
+                           case 'department_manager_multi':
+                                $dept_ids = (array) get_user_meta( $user->ID, '_department_manager_dept_ids', true );
+                                $dept_ids = array_filter( array_map( 'intval', $dept_ids ) );
+                                $departments = get_terms( [ 'taxonomy' => 'organizational_position', 'hide_empty' => false, 'parent' => 0 ] );
+                                echo '<select name="_department_manager_dept_ids[]" id="_department_manager_dept_ids" multiple style="width:100%; min-height:80px;">';
+                                echo '<option value="">—</option>';
+                                if ( ! is_wp_error( $departments ) ) {
+                                    foreach ( $departments as $d ) {
+                                        echo '<option value="' . esc_attr( $d->term_id ) . '" ' . ( in_array( $d->term_id, $dept_ids, true ) ? 'selected' : '' ) . '>' . esc_html( $d->name ) . '</option>';
+                                    }
+                                }
+                                echo '</select>';
+                                echo '<p class="description">' . esc_html__( 'اگر این کاربر مدیر دپارتمان است، دپارتمان‌هایی که مدیریت می‌کند را انتخاب کنید. پروژه‌های آن دپارتمان را می‌تواند به کارمند ارجاع دهد.', 'puzzlingcrm' ) . '</p>';
+                                break;
                            case 'position_select':
                                 $current_pos = wp_get_object_terms($user->ID, 'organizational_position', ['fields' => 'ids']);
                                 $current_pos_id = !empty($current_pos) ? $current_pos[0] : 0;
@@ -173,7 +188,7 @@ class PuzzlingCRM_User_Profile {
 
         foreach ($this->profile_fields as $section) {
             foreach ($section['fields'] as $field_key => $field) {
-                if ($field['type'] === 'position_select') continue; // Handled separately
+                if ( in_array( $field['type'], [ 'position_select', 'department_manager_multi' ], true ) ) continue; // Handled separately
                 $meta_key = 'pzl_' . $field_key;
                 if (isset($_POST[$meta_key])) {
                     $value = sanitize_text_field($_POST[$meta_key]);
@@ -188,6 +203,12 @@ class PuzzlingCRM_User_Profile {
         // Save organizational position
         if (isset($_POST['organizational_position'])) {
             wp_set_object_terms($user_id, intval($_POST['organizational_position']), 'organizational_position', false);
+        }
+
+        // Save department manager dept ids
+        if ( isset( $_POST['_department_manager_dept_ids'] ) && is_array( $_POST['_department_manager_dept_ids'] ) ) {
+            $dept_ids = array_filter( array_map( 'intval', $_POST['_department_manager_dept_ids'] ) );
+            update_user_meta( $user_id, '_department_manager_dept_ids', $dept_ids );
         }
         
         // Handle profile picture upload

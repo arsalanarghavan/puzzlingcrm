@@ -64,6 +64,14 @@ class PuzzlingCRM_Roles_Manager {
             'edit_posts' => true, // **FIX**: Added capability to allow creating/editing tasks CPT.
             'edit_tasks' => true,
         ] );
+
+        // Sales Consultant (کارشناس فروش)
+        add_role( 'sales_consultant', 'کارشناس فروش', [
+            'read' => true,
+            'edit_posts' => true,
+            'edit_tasks' => true,
+            'edit_users' => false,
+        ] );
     }
 
     /**
@@ -83,6 +91,7 @@ class PuzzlingCRM_Roles_Manager {
         remove_role('finance_manager');
         remove_role('system_manager');
         remove_role('team_member');
+        remove_role('sales_consultant');
     }
 
     /**
@@ -96,7 +105,7 @@ class PuzzlingCRM_Roles_Manager {
 
         if ( is_admin() ) {
             $user = wp_get_current_user();
-            $roles_to_block = ['finance_manager', 'system_manager', 'team_member', 'customer'];
+            $roles_to_block = ['finance_manager', 'system_manager', 'team_member', 'sales_consultant', 'customer'];
             $user_roles = (array) $user->roles;
 
             $has_blocked_role = !empty( array_intersect( $roles_to_block, $user_roles ) );

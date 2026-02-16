@@ -6,20 +6,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { SELECT_ALL_VALUE } from "@/lib/constants"
 import { getConfigOrNull } from "@/api/client"
 import {
   getProjects,
@@ -29,7 +28,7 @@ import {
   type Project,
 } from "@/api/projects"
 import { cn } from "@/lib/utils"
-import { Plus, Loader2, Pencil, Trash2, List, FolderOpen, ArrowRight, User, Users, Calendar } from "lucide-react"
+import { Plus, Loader2, Pencil, Trash2, List, FolderOpen, ArrowRight, User, Users, Calendar, MoreVertical, Eye, ChevronRight, ChevronLeft, FileText } from "lucide-react"
 import type { ProjectDetail } from "@/api/projects"
 
 function ProjectDetailView({
@@ -222,6 +221,7 @@ export function ProjectsPage() {
   const [contractFilter, setContractFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [wizardStep, setWizardStep] = useState(1)
   const [form, setForm] = useState({
     project_title: "",
     contract_id: 0,
@@ -316,6 +316,7 @@ export function ProjectsPage() {
   const openNew = () => {
     navigate("/projects?action=new")
     setTab("new")
+    setWizardStep(1)
     setForm({
       project_title: "",
       contract_id: 0,
@@ -432,34 +433,33 @@ export function ProjectsPage() {
               <h3 className="text-lg font-semibold">{editId ? "ویرایش پروژه" : "ایجاد پروژه جدید"}</h3>
               <Button variant="outline" size="sm" onClick={backToList}>بازگشت</Button>
             </div>
+            {!editId && (
+              <div className="flex items-center gap-2 mb-6 pb-4 border-b">
+                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium", wizardStep === 1 ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary")}>1</div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium", wizardStep === 2 ? "bg-primary text-primary-foreground" : wizardStep > 1 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground")}>2</div>
+                <span className="text-sm text-muted-foreground mr-2">
+                  {wizardStep === 1 ? "انتخاب قرارداد" : "جزئیات پروژه"}
+                </span>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>نام پروژه *</Label>
-                  <Input
-                    value={form.project_title}
-                    onChange={(e) => setForm((f) => ({ ...f, project_title: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>قرارداد / مشتری *</Label>
-                  <Select
-                    value={form.contract_id ? String(form.contract_id) : ""}
-                    onValueChange={(v) => setForm((f) => ({ ...f, contract_id: parseInt(v, 10) || 0 }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="انتخاب قرارداد" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {contracts.map((c) => (
-                        <SelectItem key={c.id} value={String(c.id)}>
-                          {c.title} ({c.customer_name})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {editId ? (
+                <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>نام پروژه *</Label>
+                    <Input value={form.project_title} onChange={(e) => setForm((f) => ({ ...f, project_title: e.target.value }))} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>قرارداد / مشتری *</Label>
+                    <Select value={form.contract_id ? String(form.contract_id) : ""} onValueChange={(v) => setForm((f) => ({ ...f, contract_id: parseInt(v, 10) || 0 }))} disabled>
+                      <SelectTrigger><SelectValue placeholder="انتخاب قرارداد" /></SelectTrigger>
+                      <SelectContent>
+                        {contracts.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.title} ({c.customer_name})</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 <div className="space-y-2">
                   <Label>مدیر پروژه</Label>
                   <Select
@@ -512,9 +512,105 @@ export function ProjectsPage() {
                 />
               </div>
               <Button type="submit" disabled={submitting}>
-                {submitting && <Loader2 className="h-4 w-4 animate-spin me-2" />}
-                {editId ? "ذخیره" : "ایجاد پروژه"}
+                {submitting && <Loader2 className={cn("h-4 w-4 animate-spin shrink-0", isRtl ? "ms-2" : "me-2")} />}
+                ذخیره
               </Button>
+                </>
+              ) : (
+                <>
+              {wizardStep === 1 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                    <FileText className="h-5 w-5" />
+                    <span>انتخاب قرارداد برای متصل کردن پروژه</span>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>قرارداد / مشتری *</Label>
+                    <Select value={form.contract_id ? String(form.contract_id) : ""} onValueChange={(v) => setForm((f) => ({ ...f, contract_id: parseInt(v, 10) || 0 }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="انتخاب قرارداد" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {contracts.map((c) => (
+                          <SelectItem key={c.id} value={String(c.id)}>
+                            {c.title} ({c.customer_name})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button type="button" onClick={() => setWizardStep(2)} disabled={!form.contract_id}>
+                    بعدی
+                    <ChevronLeft className={cn("h-4 w-4 shrink-0", isRtl ? "ms-2" : "me-2")} />
+                  </Button>
+                </div>
+              )}
+              {wizardStep === 2 && (
+                <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>نام پروژه *</Label>
+                    <Input value={form.project_title} onChange={(e) => setForm((f) => ({ ...f, project_title: e.target.value }))} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>قرارداد (انتخاب شده)</Label>
+                    <Select value={String(form.contract_id)} onValueChange={() => {}} disabled>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {contracts.filter((c) => c.id === form.contract_id).map((c) => (
+                          <SelectItem key={c.id} value={String(c.id)}>{c.title} ({c.customer_name})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>مدیر پروژه</Label>
+                    <Select value={form.project_manager ? String(form.project_manager) : ""} onValueChange={(v) => setForm((f) => ({ ...f, project_manager: parseInt(v, 10) || 0 }))}>
+                      <SelectTrigger><SelectValue placeholder="انتخاب مدیر" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">—</SelectItem>
+                        {managers.map((m) => <SelectItem key={m.id} value={String(m.id)}>{m.display_name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>وضعیت *</Label>
+                    <Select value={form.project_status ? String(form.project_status) : ""} onValueChange={(v) => setForm((f) => ({ ...f, project_status: parseInt(v, 10) || 0 }))}>
+                      <SelectTrigger><SelectValue placeholder="انتخاب وضعیت" /></SelectTrigger>
+                      <SelectContent>
+                        {statuses.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>تاریخ شروع</Label>
+                    <Input type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>تاریخ پایان</Label>
+                    <Input type="date" value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>توضیحات</Label>
+                  <textarea className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm" value={form.project_content} onChange={(e) => setForm((f) => ({ ...f, project_content: e.target.value }))} rows={6} />
+                </div>
+                <div className="flex gap-4">
+                  <Button type="button" variant="outline" onClick={() => setWizardStep(1)}>
+                    <ChevronRight className={cn("h-4 w-4 shrink-0", isRtl ? "ms-2" : "me-2")} />
+                    قبلی
+                  </Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting && <Loader2 className={cn("h-4 w-4 animate-spin shrink-0", isRtl ? "ms-2" : "me-2")} />}
+                    ایجاد پروژه
+                  </Button>
+                </div>
+                </>
+              )}
+                </>
+              )}
             </form>
           </CardContent>
         </Card>
@@ -524,23 +620,29 @@ export function ProjectsPage() {
             <CardContent className="pt-6">
               <div className="flex flex-wrap gap-4 mb-4">
                 <Input placeholder="جستجو..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-[200px]" />
-                <Select value={contractFilter} onValueChange={setContractFilter}>
+                <Select
+                  value={contractFilter === "" ? SELECT_ALL_VALUE : contractFilter}
+                  onValueChange={(v) => setContractFilter(v === SELECT_ALL_VALUE ? "" : v)}
+                >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="قرارداد" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">همه</SelectItem>
+                    <SelectItem value={SELECT_ALL_VALUE}>همه</SelectItem>
                     {contracts.map((c) => (
                       <SelectItem key={c.id} value={String(c.id)}>{c.title}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select
+                  value={statusFilter === "" ? SELECT_ALL_VALUE : statusFilter}
+                  onValueChange={(v) => setStatusFilter(v === SELECT_ALL_VALUE ? "" : v)}
+                >
                   <SelectTrigger className="w-[120px]">
                     <SelectValue placeholder="وضعیت" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">همه</SelectItem>
+                    <SelectItem value={SELECT_ALL_VALUE}>همه</SelectItem>
                     {statuses.map((s) => (
                       <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                     ))}
@@ -548,50 +650,75 @@ export function ProjectsPage() {
                 </Select>
                 <Button onClick={loadList}>فیلتر</Button>
               </div>
-              {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : projects.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground">هیچ پروژه‌ای یافت نشد.</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>نام پروژه</TableHead>
-                      <TableHead>مشتری</TableHead>
-                      <TableHead>وضعیت</TableHead>
-                      <TableHead>عملیات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {projects.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell>
-                          <Link to={`/projects?action=view&project_id=${p.id}`} className="text-primary hover:underline font-medium flex items-center gap-2">
-                            <FolderOpen className="h-4 w-4" />
-                            {p.title}
-                          </Link>
-                        </TableCell>
-                        <TableCell>{p.customer_name}</TableCell>
-                        <TableCell><Badge variant="secondary">{p.status_name}</Badge></TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                            {(p as Project & { delete_nonce?: string }).delete_nonce ? (
-                              <Button variant="outline" size="sm" className="text-destructive" onClick={() => handleDelete(p as Project & { delete_nonce?: string })} disabled={submitting}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
             </CardContent>
           </Card>
+          {loading ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </CardContent>
+            </Card>
+          ) : projects.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <FolderOpen className="h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">هیچ پروژه‌ای یافت نشد.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {projects.map((p) => (
+                <Card key={p.id} className="overflow-hidden">
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col items-center text-center mb-4">
+                      <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center mb-2">
+                        <FolderOpen className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <Link
+                        to={`/projects?action=view&project_id=${p.id}`}
+                        className="font-medium text-primary hover:underline line-clamp-2"
+                      >
+                        {p.title}
+                      </Link>
+                      <p className="text-sm text-muted-foreground mt-1">{p.customer_name}</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Badge variant="secondary">{p.status_name}</Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link to={`/projects?action=view&project_id=${p.id}`}>
+                              <Eye className={cn("h-4 w-4 shrink-0", isRtl ? "ms-2" : "me-2")} />
+                              مشاهده
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEdit(p)}>
+                            <Pencil className={cn("h-4 w-4 shrink-0", isRtl ? "ms-2" : "me-2")} />
+                            ویرایش
+                          </DropdownMenuItem>
+                          {(p as Project & { delete_nonce?: string }).delete_nonce && (
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => handleDelete(p as Project & { delete_nonce?: string })}
+                              disabled={submitting}
+                            >
+                              <Trash2 className={cn("h-4 w-4 shrink-0", isRtl ? "ms-2" : "me-2")} />
+                              حذف
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
           {totalPages > 1 && (
             <div className="flex justify-center gap-2">
               <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>قبلی</Button>

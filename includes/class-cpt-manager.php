@@ -43,10 +43,23 @@ class PuzzlingCRM_CPT_Manager {
             'show_in_menu'  => 'puzzling-crm', // Main menu page slug
             'supports'      => ['title', 'editor', 'author', 'custom-fields'], // 'editor' for notes
             'hierarchical'  => false,
-            'taxonomies'    => ['lead_status'], // Connect to lead status taxonomy
+            'taxonomies'    => ['lead_status', 'lead_source'],
             'menu_icon'     => 'dashicons-businessperson',
         ]);
         // === END: LEAD CPT (NEW) ===
+
+        // Campaign CPT
+        register_post_type( 'pzl_campaign', [
+            'labels'        => [
+                'name'          => __( 'کمپین‌ها', 'puzzlingcrm' ),
+                'singular_name' => __( 'کمپین', 'puzzlingcrm' ),
+            ],
+            'public'        => false,
+            'show_ui'       => true,
+            'show_in_menu'  => 'puzzling-crm',
+            'supports'      => ['title', 'editor'],
+            'hierarchical'  => false,
+        ]);
 
         // Canned Response CPT - NEW
         register_post_type( 'pzl_canned_response', [
@@ -252,6 +265,20 @@ class PuzzlingCRM_CPT_Manager {
         ]);
         // === END: LEAD STATUS TAXONOMY (NEW) ===
 
+        // Lead Source Taxonomy
+        register_taxonomy('lead_source', 'pzl_lead', [
+            'label' => __( 'منبع ورود', 'puzzlingcrm' ),
+            'hierarchical' => true,
+            'public' => false,
+            'show_ui' => true,
+            'show_admin_column' => true,
+            'show_in_rest' => true,
+            'labels' => [
+                'name' => __( 'منابع ورود', 'puzzlingcrm' ),
+                'singular_name' => __( 'منبع ورود', 'puzzlingcrm' ),
+            ]
+        ]);
+
         // Consultation Status Taxonomy
         register_taxonomy('consultation_status', 'pzl_consultation', [
             'label' => __( 'نتیجه مشاوره', 'puzzlingcrm' ),
@@ -385,18 +412,36 @@ class PuzzlingCRM_CPT_Manager {
      */
     public static function create_default_terms() {
         // === START: LEAD STATUSES (CORRECTED) ===
-        // This function now only runs if there are NO statuses, to prevent overwriting user changes.
-        $existing_terms = get_terms(['taxonomy' => 'lead_status', 'hide_empty' => false]);
-        if (empty($existing_terms)) {
-            $lead_statuses = ['جدید' => 'new', 'در حال پیگیری' => 'in-progress', 'مشتری شده' => 'converted', 'لغو شده' => 'cancelled'];
-            foreach ($lead_statuses as $name => $slug) {
-                // The check is redundant now but good practice
-                if ( ! term_exists( $slug, 'lead_status' ) ) {
-                    wp_insert_term( $name, 'lead_status', ['slug' => $slug] );
-                }
+        // New installs: create all. Existing: add any missing (assigned, contracted).
+        $lead_statuses = [
+            'جدید' => 'new',
+            'ارجاع داده شده' => 'assigned',
+            'در حال پیگیری' => 'in-progress',
+            'قرارداد شده' => 'contracted',
+            'مشتری شده' => 'converted',
+            'لغو شده' => 'cancelled',
+        ];
+        foreach ($lead_statuses as $name => $slug) {
+            if ( ! term_exists( $slug, 'lead_status' ) ) {
+                wp_insert_term( $name, 'lead_status', ['slug' => $slug] );
             }
         }
         // === END: LEAD STATUSES (CORRECTED) ===
+
+        // Lead Sources
+        $lead_sources = [
+            'تلگرام' => 'telegram',
+            'بله' => 'bale',
+            'کارشناس ثبت کرده' => 'consultant',
+            'سایت' => 'website',
+            'اینستاگرام' => 'instagram',
+            'بازاریابی' => 'marketing',
+        ];
+        foreach ($lead_sources as $name => $slug) {
+            if ( ! term_exists( $slug, 'lead_source' ) ) {
+                wp_insert_term( $name, 'lead_source', ['slug' => $slug] );
+            }
+        }
 
         // Consultation Statuses
         $consultation_statuses = ['در حال پیگیری' => 'in-progress', 'تبدیل به پروژه' => 'converted', 'بسته شده' => 'closed'];
@@ -532,7 +577,7 @@ class PuzzlingCRM_CPT_Manager {
     public function render_project_template_meta_box( $post ) {
         wp_nonce_field('puzzling_save_project_template_link', 'puzzling_project_template_nonce');
         $linked_template_id = get_post_meta($post->ID, '_puzzling_project_template_id', true);
-        
+
         $templates = get_posts(['post_type' => 'pzl_project_template', 'posts_per_page' => -1]);
 
         echo '<p>' . __('این محصول (خدمت) پس از فروش، کدام قالب پروژه را ایجاد کند؟', 'puzzlingcrm') . '</p>';
@@ -544,6 +589,50 @@ class PuzzlingCRM_CPT_Manager {
             }
         }
         echo '</select>';
+
+        // Task template & service type (for recurring vs one-time tasks)
+        $task_template_id = get_post_meta($post->ID, '_puzzling_task_template_id', true);
+        $service_task_type = get_post_meta($post->ID, '_puzzling_service_task_type', true) ?: 'onetime';
+        $task_templates = get_posts(['post_type' => 'task_template', 'posts_per_page' => -1, 'orderby' => 'title', 'order' => 'ASC']);
+
+        echo '<hr style="margin: 16px 0;">';
+        echo '<p><strong>' . __('قالب تسک (اولویت بالاتر از قالب پروژه)', 'puzzlingcrm') . '</strong></p>';
+        echo '<select name="_puzzling_task_template_id" style="width:100%;">';
+        echo '<option value="">' . __('هیچکدام', 'puzzlingcrm') . '</option>';
+        if ($task_templates) {
+            foreach ($task_templates as $t) {
+                echo '<option value="' . esc_attr($t->ID) . '" ' . selected($task_template_id, $t->ID, false) . '>' . esc_html($t->post_title) . '</option>';
+            }
+        }
+        echo '</select>';
+        echo '<p class="description">' . __('اگر تنظیم شود، تسک‌ها از این قالب ساخته می‌شوند.', 'puzzlingcrm') . '</p>';
+
+        echo '<p style="margin-top: 12px;"><strong>' . __('نوع خدمت (تکرار تسک)', 'puzzlingcrm') . '</strong></p>';
+        $types = [
+            'onetime' => __('یکبار (مثل سایت)', 'puzzlingcrm'),
+            'daily'   => __('روزانه (مثل اینستاگرام)', 'puzzlingcrm'),
+            'weekly'  => __('هفتگی', 'puzzlingcrm'),
+            'monthly' => __('ماهانه', 'puzzlingcrm'),
+        ];
+        echo '<select name="_puzzling_service_task_type" style="width:100%;">';
+        foreach ($types as $val => $label) {
+            echo '<option value="' . esc_attr($val) . '" ' . selected($service_task_type, $val, false) . '>' . esc_html($label) . '</option>';
+        }
+        echo '</select>';
+
+        echo '<hr style="margin: 16px 0;">';
+        echo '<p><strong>' . __('دپارتمان پیشفرض', 'puzzlingcrm') . '</strong></p>';
+        $default_dept_id = (int) get_post_meta( $post->ID, '_puzzling_default_department_id', true );
+        $departments = get_terms( [ 'taxonomy' => 'organizational_position', 'hide_empty' => false, 'parent' => 0 ] );
+        echo '<select name="_puzzling_default_department_id" style="width:100%;">';
+        echo '<option value="">' . __('انتخاب کنید', 'puzzlingcrm') . '</option>';
+        if ( ! is_wp_error( $departments ) ) {
+            foreach ( $departments as $dept ) {
+                echo '<option value="' . esc_attr( $dept->term_id ) . '" ' . selected( $default_dept_id, $dept->term_id, false ) . '>' . esc_html( $dept->name ) . '</option>';
+            }
+        }
+        echo '</select>';
+        echo '<p class="description">' . __('پروژه‌های ایجادشده از این محصول به این دپارتمان تخصیص داده می‌شوند.', 'puzzlingcrm') . '</p>';
     }
 
     public function save_project_template_meta_box( $post_id ) {
@@ -553,6 +642,19 @@ class PuzzlingCRM_CPT_Manager {
 
         if (isset($_POST['_puzzling_project_template_id'])) {
             update_post_meta($post_id, '_puzzling_project_template_id', intval($_POST['_puzzling_project_template_id']));
+        }
+        if (isset($_POST['_puzzling_task_template_id'])) {
+            update_post_meta($post_id, '_puzzling_task_template_id', intval($_POST['_puzzling_task_template_id']));
+        }
+        if (isset($_POST['_puzzling_service_task_type'])) {
+            $type = sanitize_key($_POST['_puzzling_service_task_type']);
+            if (in_array($type, ['onetime', 'daily', 'weekly', 'monthly'], true)) {
+                update_post_meta($post_id, '_puzzling_service_task_type', $type);
+            }
+        }
+        if (isset($_POST['_puzzling_default_department_id'])) {
+            $dept_id = (int) $_POST['_puzzling_default_department_id'];
+            update_post_meta($post_id, '_puzzling_default_department_id', $dept_id > 0 ? $dept_id : '');
         }
     }
     

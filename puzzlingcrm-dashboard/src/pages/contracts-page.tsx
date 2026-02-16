@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SELECT_ALL_VALUE } from "@/lib/constants"
 import { getConfigOrNull } from "@/api/client"
 import {
   getContracts,
@@ -29,11 +30,22 @@ import {
   deleteContract,
   cancelContract,
   addProjectToContract,
+  getProjectTemplates,
+  getContractProducts,
+  getProductProjectsPreview,
+  getProjectAssignees,
   type Contract,
   type ContractDetail,
+  type ProjectTemplate,
+  type WcProduct,
 } from "@/api/contracts"
+import {
+  getLeadForContract,
+  createCustomerFromLead,
+  type LeadForContract,
+} from "@/api/leads"
 import { cn } from "@/lib/utils"
-import { Plus, Loader2, Pencil, Trash2, List, XCircle } from "lucide-react"
+import { Plus, Loader2, Pencil, Trash2, List, XCircle, ChevronRight, ChevronLeft, Package, UserPlus } from "lucide-react"
 
 function formatNumber(n: number) {
   return new Intl.NumberFormat("fa-IR").format(n)
@@ -46,6 +58,7 @@ export function ContractsPage() {
   const [searchParams] = useSearchParams()
   const initialTab = searchParams.get("action") === "new" ? "new" : "list"
   const editId = searchParams.get("contract_id") ? parseInt(searchParams.get("contract_id")!, 10) : null
+  const fromLeadId = searchParams.get("from_lead") ? parseInt(searchParams.get("from_lead")!, 10) : null
 
   const [tab, setTab] = useState<"list" | "new">(initialTab)
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -63,6 +76,18 @@ export function ContractsPage() {
   const [models, setModels] = useState<{ value: string; label: string }[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [newProjectTitle, setNewProjectTitle] = useState("")
+  const [projectTemplates, setProjectTemplates] = useState<ProjectTemplate[]>([])
+  const [createProjectWithTemplate, setCreateProjectWithTemplate] = useState(false)
+  const [projectTemplateId, setProjectTemplateId] = useState<string>("")
+  const [wizardStep, setWizardStep] = useState(1)
+  const [wcProducts, setWcProducts] = useState<WcProduct[]>([])
+  const [wcActive, setWcActive] = useState(false)
+  const [productId, setProductId] = useState(0)
+  const [projectTitlesPreview, setProjectTitlesPreview] = useState<string[]>([])
+  const [projectAssignees, setProjectAssignees] = useState<{ id: number; display_name: string }[]>([])
+  const [projectAssignments, setProjectAssignments] = useState<number[]>([])
+  const [leadForContract, setLeadForContract] = useState<LeadForContract | null>(null)
+  const [creatingCustomerFromLead, setCreatingCustomerFromLead] = useState(false)
   const [form, setForm] = useState({
     customer_id: 0,
     start_date: "",
@@ -146,6 +171,22 @@ export function ContractsPage() {
   }, [tab, loadList])
 
   useEffect(() => {
+    if (fromLeadId && tab === "new") {
+      getLeadForContract(fromLeadId).then((res) => {
+        const d = res.success && res.data ? res.data : null
+        if (d) {
+          setLeadForContract(d)
+          if (d.existing_customer_id > 0) {
+            setForm((f) => ({ ...f, customer_id: d.existing_customer_id }))
+          }
+        }
+      })
+    } else {
+      setLeadForContract(null)
+    }
+  }, [fromLeadId, tab])
+
+  useEffect(() => {
     if (editId && tab === "new") {
       loadContract(editId)
     } else if (tab === "new" && !editId) {
@@ -177,10 +218,48 @@ export function ContractsPage() {
     }
   }, [tab, editId])
 
+  useEffect(() => {
+    if (tab === "new" && !editingContract) {
+      getProjectTemplates().then((res) => {
+        if (res.success && res.data?.templates) setProjectTemplates(res.data.templates)
+      })
+      getContractProducts().then((res) => {
+        if (res.success && res.data) {
+          setWcProducts(res.data.products ?? [])
+          setWcActive(res.data.wc_active ?? false)
+        }
+      })
+      getProjectAssignees().then((res) => {
+        if (res.success && res.data?.users) setProjectAssignees(res.data.users)
+      })
+    }
+  }, [tab, editingContract])
+
+  useEffect(() => {
+    if (productId > 0) {
+      getProductProjectsPreview(productId).then((res) => {
+        if (res.success && res.data?.titles) {
+          setProjectTitlesPreview(res.data.titles)
+          setProjectAssignments(res.data.titles.map(() => 0))
+        }
+      })
+    } else {
+      setProjectTitlesPreview([])
+      setProjectAssignments([])
+    }
+  }, [productId])
+
   const openNew = () => {
     navigate("/contracts?action=new")
     setTab("new")
+    setLeadForContract(null)
     setEditingContract(null)
+    setCreateProjectWithTemplate(false)
+    setProjectTemplateId("")
+    setWizardStep(1)
+    setProductId(0)
+    setProjectTitlesPreview([])
+    setProjectAssignments([])
   }
 
   const openEdit = (c: Contract) => {
@@ -267,6 +346,12 @@ export function ContractsPage() {
         payment_amount: form.installments.map((i) => i.amount.replace(/\D/g, "") || "0"),
         payment_due_date: form.installments.map((i) => i.due_date),
         payment_status: form.installments.map((i) => i.status),
+        project_template_id:
+          !editingContract && !productId && createProjectWithTemplate && projectTemplateId
+            ? parseInt(projectTemplateId, 10)
+            : undefined,
+        product_id: !editingContract && productId > 0 ? productId : undefined,
+        project_assignments: !editingContract && productId > 0 ? projectAssignments : undefined,
       })
       if (res.success) {
         backToList()
@@ -369,12 +454,15 @@ export function ContractsPage() {
                 </div>
                 <div className="w-[180px]">
                   <Label>مشتری</Label>
-                  <Select value={customerFilter} onValueChange={setCustomerFilter}>
+                  <Select
+                    value={customerFilter === "" ? SELECT_ALL_VALUE : customerFilter}
+                    onValueChange={(v) => setCustomerFilter(v === SELECT_ALL_VALUE ? "" : v)}
+                  >
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="همه" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">همه مشتریان</SelectItem>
+                      <SelectItem value={SELECT_ALL_VALUE}>همه مشتریان</SelectItem>
                       {customers.map((c) => (
                         <SelectItem key={c.id} value={String(c.id)}>
                           {c.display_name}
@@ -385,12 +473,15 @@ export function ContractsPage() {
                 </div>
                 <div className="w-[140px]">
                   <Label>وضعیت پرداخت</Label>
-                  <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+                  <Select
+                    value={paymentStatusFilter === "" ? SELECT_ALL_VALUE : paymentStatusFilter}
+                    onValueChange={(v) => setPaymentStatusFilter(v === SELECT_ALL_VALUE ? "" : v)}
+                  >
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="همه" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">همه</SelectItem>
+                      <SelectItem value={SELECT_ALL_VALUE}>همه</SelectItem>
                       <SelectItem value="paid">پرداخت شده</SelectItem>
                       <SelectItem value="pending">در انتظار</SelectItem>
                     </SelectContent>
@@ -523,14 +614,40 @@ export function ContractsPage() {
               </Alert>
             )}
 
+            {!editingContract && (
+              <div className="flex items-center gap-2 mb-6 pb-4 border-b">
+                {[1, 2, 3, 4].map((s) => (
+                  <div key={s} className="flex items-center gap-1">
+                    <div
+                      className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                        wizardStep === s ? "bg-primary text-primary-foreground" : wizardStep > s ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {s}
+                    </div>
+                    {s < 4 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                  </div>
+                ))}
+                <span className="text-sm text-muted-foreground mr-2">
+                  {wizardStep === 1 && "اطلاعات پایه"}
+                  {wizardStep === 2 && "اقساط"}
+                  {wizardStep === 3 && "محصول"}
+                  {wizardStep === 4 && "ارجاع پروژه‌ها"}
+                </span>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
+              {editingContract ? (
+                <>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>مشتری *</Label>
                   <Select
                     value={form.customer_id ? String(form.customer_id) : ""}
                     onValueChange={(v) => setForm((f) => ({ ...f, customer_id: parseInt(v, 10) || 0 }))}
-                    disabled={!!editingContract}
+                    disabled
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="انتخاب مشتری" />
@@ -655,13 +772,216 @@ export function ContractsPage() {
 
               <div className="flex gap-4">
                 <Button type="submit" disabled={submitting || (editingContract?.is_cancelled ?? false)}>
-                  {submitting && <Loader2 className="h-4 w-4 animate-spin me-2" />}
-                  {editingContract ? "ذخیره تغییرات" : "ایجاد قرارداد"}
+                  {submitting && <Loader2 className={cn("h-4 w-4 animate-spin shrink-0", isRtl ? "ms-2" : "me-2")} />}
+                  ذخیره تغییرات
                 </Button>
                 <Button type="button" variant="outline" onClick={backToList}>
                   انصراف
                 </Button>
               </div>
+                </>
+              ) : (
+                <>
+              {(wizardStep === 1) && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {leadForContract && (
+                    <div className="sm:col-span-2 rounded-lg border p-4 bg-muted/30 space-y-2">
+                      <p className="text-sm font-medium">سرنخ #{leadForContract.lead_id}: {leadForContract.first_name} {leadForContract.last_name} — {leadForContract.mobile}</p>
+                      {leadForContract.existing_customer_id > 0 ? (
+                        <p className="text-sm text-muted-foreground">مشتری با این موبایل/ایمیل از قبل وجود دارد و در لیست انتخاب شده است.</p>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={creatingCustomerFromLead}
+                          onClick={async () => {
+                            setCreatingCustomerFromLead(true)
+                            setError(null)
+                            const res = await createCustomerFromLead(leadForContract.lead_id)
+                            setCreatingCustomerFromLead(false)
+                            if (res.success && res.data?.customer_id) {
+                              setForm((f) => ({ ...f, customer_id: res.data!.customer_id }))
+                              getContracts({}).then((r) => {
+                                if (r.success && r.data) setCustomers(r.data.customers ?? [])
+                              })
+                            } else {
+                              setError(res.message ?? "خطا در ایجاد مشتری")
+                            }
+                          }}
+                        >
+                          {creatingCustomerFromLead ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                          ایجاد مشتری از سرنخ
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label>مشتری *</Label>
+                    <Select value={form.customer_id ? String(form.customer_id) : ""} onValueChange={(v) => setForm((f) => ({ ...f, customer_id: parseInt(v, 10) || 0 }))}>
+                      <SelectTrigger><SelectValue placeholder="انتخاب مشتری" /></SelectTrigger>
+                      <SelectContent>
+                        {customers.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.display_name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>تاریخ شروع *</Label>
+                    <Input type="date" value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} required />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>عنوان قرارداد</Label>
+                    <Input value={form.contract_title} onChange={(e) => setForm((f) => ({ ...f, contract_title: e.target.value }))} placeholder="مثال: قرارداد پشتیبانی سالانه" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>مدت قرارداد</Label>
+                    <Select value={form.duration} onValueChange={(v) => setForm((f) => ({ ...f, duration: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(durations.length ? durations : [{ value: "1-month", label: "یک ماهه" }, { value: "3-months", label: "سه ماهه" }, { value: "6-months", label: "شش ماهه" }, { value: "12-months", label: "یک ساله" }]).map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>مدل اشتراک</Label>
+                    <Select value={form.subscription_model} onValueChange={(v) => setForm((f) => ({ ...f, subscription_model: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(models.length ? models : [{ value: "onetime", label: "یکبار پرداخت" }, { value: "subscription", label: "اشتراکی" }]).map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+              {(wizardStep === 2) && (
+                <div className="space-y-4">
+                  <h4 className="font-medium">اقساط</h4>
+                  <div className="flex flex-wrap gap-4 items-end p-4 bg-muted/50 rounded-lg">
+                    <div className="space-y-2">
+                      <Label>مبلغ کل (تومان)</Label>
+                      <Input placeholder="30,000,000" value={form.total_amount} onChange={(e) => setForm((f) => ({ ...f, total_amount: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>تعداد اقساط</Label>
+                      <Input type="number" min={1} value={form.total_installments} onChange={(e) => setForm((f) => ({ ...f, total_installments: parseInt(e.target.value, 10) || 1 }))} />
+                    </div>
+                    <Button type="button" variant="secondary" onClick={calculateInstallments}>محاسبه</Button>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <Label>لیست اقساط</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={addInstallmentRow}>افزودن قسط دستی</Button>
+                  </div>
+                  <div className="space-y-2">
+                    {form.installments.map((row, idx) => (
+                      <div key={idx} className="flex gap-2 items-center">
+                        <span className="w-8 text-muted-foreground">#{idx + 1}</span>
+                        <Input placeholder="مبلغ" value={row.amount} onChange={(e) => updateInstallment(idx, "amount", e.target.value)} className="flex-1" />
+                        <Input type="date" value={row.due_date} onChange={(e) => updateInstallment(idx, "due_date", e.target.value)} className="flex-1" />
+                        <Select value={row.status} onValueChange={(v) => updateInstallment(idx, "status", v)}>
+                          <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">در انتظار</SelectItem>
+                            <SelectItem value="paid">پرداخت شده</SelectItem>
+                            <SelectItem value="cancelled">لغو شده</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeInstallmentRow(idx)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(wizardStep === 3) && (
+                <div className="space-y-4">
+                  <h4 className="font-medium flex items-center gap-2"><Package className="h-5 w-5" /> انتخاب محصول ووکامرس</h4>
+                  {wcActive ? (
+                    <>
+                      <Select value={productId > 0 ? String(productId) : "_none"} onValueChange={(v) => setProductId(v === "_none" ? 0 : parseInt(v, 10))}>
+                        <SelectTrigger className="max-w-md">
+                          <SelectValue placeholder="انتخاب محصول (اختیاری)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="_none">بدون محصول</SelectItem>
+                          {wcProducts.map((p) => (
+                            <SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.type}) — {p.price}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {productId === 0 && (
+                        <div className="rounded-lg border p-4 space-y-4 bg-muted/30">
+                          <div className="flex items-center gap-2">
+                            <input type="checkbox" id="create-project-template" checked={createProjectWithTemplate} onChange={(e) => { setCreateProjectWithTemplate(e.target.checked); if (!e.target.checked) setProjectTemplateId("") }} className="h-4 w-4 rounded border-input" />
+                            <Label htmlFor="create-project-template" className="cursor-pointer font-medium">ایجاد پروژه با قالب</Label>
+                          </div>
+                          {createProjectWithTemplate && (
+                            <Select value={projectTemplateId} onValueChange={setProjectTemplateId}>
+                              <SelectTrigger className="max-w-md"><SelectValue placeholder="انتخاب قالب..." /></SelectTrigger>
+                              <SelectContent>
+                                {projectTemplates.map((t) => <SelectItem key={t.id} value={String(t.id)}>{t.title}</SelectItem>)}
+                                {projectTemplates.length === 0 && <SelectItem value="__none__" disabled>قالبی یافت نشد</SelectItem>}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground">ووکامرس فعال نیست. از قالب پروژه استفاده کنید.</p>
+                  )}
+                </div>
+              )}
+              {(wizardStep === 4) && (
+                <div className="space-y-4">
+                  <h4 className="font-medium flex items-center gap-2"><UserPlus className="h-5 w-5" /> ارجاع پروژه‌ها</h4>
+                  {projectTitlesPreview.length > 0 ? (
+                    <div className="space-y-3">
+                      {projectTitlesPreview.map((title, idx) => (
+                        <div key={idx} className="flex items-center gap-4">
+                          <span className="font-medium min-w-[180px]">{title}</span>
+                          <Select value={projectAssignments[idx] > 0 ? String(projectAssignments[idx]) : "_none"} onValueChange={(v) => setProjectAssignments((prev) => { const n = [...prev]; n[idx] = v === "_none" ? 0 : parseInt(v, 10); return n })}>
+                            <SelectTrigger className="max-w-[220px]"><SelectValue placeholder="ارجاع به..." /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_none">—</SelectItem>
+                              {projectAssignees.map((u) => <SelectItem key={u.id} value={String(u.id)}>{u.display_name}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">محصولی انتخاب نشده یا پروژه‌ای از آن ایجاد نمی‌شود.</p>
+                  )}
+                </div>
+              )}
+              <div className="flex gap-4">
+                {wizardStep > 1 && (
+                  <Button type="button" variant="outline" onClick={() => setWizardStep((s) => s - 1)}>
+                    <ChevronRight className={cn("h-4 w-4 shrink-0", isRtl ? "ms-2" : "me-2")} />
+                    قبلی
+                  </Button>
+                )}
+                {wizardStep < 4 ? (
+                  <Button
+                    type="button"
+                    onClick={() => setWizardStep((s) => s + 1)}
+                    disabled={
+                      (wizardStep === 1 && (!form.customer_id || !form.start_date)) ||
+                      (wizardStep === 2 && (form.installments.length === 0 || form.installments.some((i) => !i.amount || !i.due_date)))
+                    }
+                  >
+                    بعدی
+                    <ChevronLeft className={cn("h-4 w-4 shrink-0", isRtl ? "ms-2" : "me-2")} />
+                  </Button>
+                ) : (
+                  <Button type="submit" disabled={submitting}>
+                    {submitting && <Loader2 className={cn("h-4 w-4 animate-spin shrink-0", isRtl ? "ms-2" : "me-2")} />}
+                    ایجاد قرارداد
+                  </Button>
+                )}
+                <Button type="button" variant="outline" onClick={backToList}>انصراف</Button>
+              </div>
+                </>
+              )}
             </form>
 
             {editingContract && (
