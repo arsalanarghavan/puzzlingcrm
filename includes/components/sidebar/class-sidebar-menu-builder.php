@@ -1,8 +1,9 @@
 <?php
 /**
  * Sidebar Menu Builder
- * 
- * Builds menu structure based on user role
+ *
+ * Builds menu structure based on user role.
+ * Menu is organized in four modules: Dashboard, Projects, CRM, Accounting.
  *
  * @package PuzzlingCRM
  * @since 2.1.0
@@ -25,6 +26,18 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 	private static $menu_cache = array();
 
 	/**
+	 * Check if a module is enabled (for future use; all enabled by default).
+	 *
+	 * @param string $module_key Module key: dashboard, projects, crm, accounting.
+	 * @return bool
+	 */
+	public static function is_module_enabled( $module_key ) {
+		$settings = class_exists( 'PuzzlingCRM_Settings_Handler' ) ? PuzzlingCRM_Settings_Handler::get_all_settings() : array();
+		$key      = 'module_' . $module_key . '_enabled';
+		return isset( $settings[ $key ] ) ? ( (string) $settings[ $key ] === '1' ) : true;
+	}
+
+	/**
 	 * Build menu for specific user role
 	 *
 	 * @param string $user_role User role.
@@ -35,7 +48,6 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 			$user_role = self::get_current_user_role();
 		}
 
-		// Check cache
 		$cache_key = 'menu_' . $user_role;
 		if ( isset( self::$menu_cache[ $cache_key ] ) ) {
 			return self::$menu_cache[ $cache_key ];
@@ -43,221 +55,98 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 
 		$menu_items = array();
 
-		// Build menu based on role
 		switch ( $user_role ) {
 			case 'system_manager':
 			case 'administrator':
 				$menu_items = self::get_manager_menu();
 				break;
-
 			case 'sales_consultant':
 				$menu_items = self::get_sales_consultant_menu();
 				break;
-
 			case 'finance_manager':
 				$menu_items = self::get_finance_menu();
 				break;
-
 			case 'team_member':
 				$menu_items = self::get_team_member_menu();
 				break;
-
 			case 'customer':
 				$menu_items = self::get_customer_menu();
 				break;
-
 			default:
 				$menu_items = array();
 				break;
 		}
 
-		/**
-		 * Filter sidebar menu items
-		 *
-		 * @param array  $menu_items Menu items array.
-		 * @param string $user_role User role.
-		 */
 		$menu_items = apply_filters( 'puzzlingcrm_sidebar_menu_items', $menu_items, $user_role );
-
-		// Cache the result
 		self::$menu_cache[ $cache_key ] = $menu_items;
 
 		return $menu_items;
 	}
 
 	/**
-	 * Get manager menu items
+	 * Get manager menu items (four modules: Dashboard, Projects, CRM, Accounting)
 	 *
 	 * @return array Menu items with categories.
 	 */
 	private static function get_manager_menu() {
 		$dashboard_url = home_url( '/dashboard' );
+		$items          = array();
 
-		return array(
-			// Main Category
-			array(
-				'type'  => 'category',
-				'title' => __( 'Main', 'puzzlingcrm' ),
-			),
-			array(
-				'id'    => 'dashboard',
-				'title' => __( 'Dashboard', 'puzzlingcrm' ),
-				'url'   => $dashboard_url,
-				'icon'  => 'ri-home-4-line',
-			),
-			// Projects Category
-			array(
-				'type'  => 'category',
-				'title' => __( 'Projects', 'puzzlingcrm' ),
-			),
-			array(
-				'id'       => 'projects',
-				'title'    => __( 'All Projects', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/projects',
-				'icon'     => 'ri-folder-2-line',
-			),
-			array(
-				'id'       => 'contracts',
-				'title'    => __( 'Contracts', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/contracts',
-				'icon'     => 'ri-file-text-line',
-			),
-			// Services & Products Category
-			array(
-				'type'  => 'category',
-				'title' => __( 'Services & Products', 'puzzlingcrm' ),
-			),
-			array(
-				'id'       => 'services',
-				'title'    => __( 'Subscriptions & Services', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/services',
-				'icon'     => 'ri-service-line',
-			),
-			// Finance Category
-			array(
-				'type'  => 'category',
-				'title' => __( 'Finance', 'puzzlingcrm' ),
-			),
-			array(
-				'id'       => 'invoices',
-				'title'    => __( 'Invoices', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/invoices',
-				'icon'     => 'ri-file-list-3-line',
-			),
-			// Support Category
-			array(
-				'type'  => 'category',
-				'title' => __( 'Support', 'puzzlingcrm' ),
-			),
-			array(
-				'id'       => 'tickets',
-				'title'    => __( 'Tickets', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/tickets',
-				'icon'     => 'ri-customer-service-2-line',
-			),
-			// Tasks Category
-			array(
-				'type'  => 'category',
-				'title' => __( 'Tasks', 'puzzlingcrm' ),
-			),
-			array(
-				'id'       => 'tasks',
-				'title'    => __( 'همه وظایف', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/tasks',
-				'icon'     => 'ri-task-line',
-			),
-			array(
-				'id'       => 'appointments',
-				'title'    => __( 'Appointments', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/appointments',
-				'icon'     => 'ri-calendar-check-line',
-			),
-			// People Category
-			array(
-				'type'  => 'category',
-				'title' => __( 'People', 'puzzlingcrm' ),
-			),
-			array(
-				'id'       => 'leads',
-				'title'    => __( 'Leads', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/leads',
-				'icon'     => 'ri-user-add-line',
-			),
-			array(
-				'id'       => 'customers',
-				'title'    => __( 'Customers', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/customers',
-				'icon'     => 'ri-group-line',
-			),
-			array(
-				'id'       => 'staff',
-				'title'    => __( 'Staff', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/staff',
-				'icon'     => 'ri-user-star-line',
-			),
-			array(
-				'id'       => 'consultations',
-				'title'    => __( 'Consultations', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/consultations',
-				'icon'     => 'ri-message-2-line',
-			),
-			// System Category
-			array(
-				'type'  => 'category',
-				'title' => __( 'System', 'puzzlingcrm' ),
-			),
-			array(
-				'id'       => 'licenses',
-				'title'    => __( 'Licenses', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/licenses',
-				'icon'     => 'ri-key-2-line',
-			),
-			array(
-				'id'       => 'logs',
-				'title'    => __( 'Logs', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/logs',
-				'icon'     => 'ri-file-list-2-line',
-			),
-			array(
-				'id'       => 'visitor-statistics',
-				'title'    => __( 'آمار بازدید', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/visitor-statistics',
-				'icon'     => 'ri-line-chart-line',
-			),
-			// Campaigns (Coming Soon)
-			array(
-				'type'  => 'category',
-				'title' => __( 'Marketing', 'puzzlingcrm' ),
-			),
-			array(
-				'id'       => 'campaigns',
-				'title'    => __( 'Campaigns (Coming Soon)', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/campaigns',
-				'icon'     => 'ri-megaphone-line',
-			),
-			// Reports Category
-			array(
-				'type'  => 'category',
-				'title' => __( 'Reports', 'puzzlingcrm' ),
-			),
-			array(
-				'id'       => 'reports',
-				'title'    => __( 'All Reports', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/reports',
-				'icon'     => 'ri-bar-chart-box-line',
-			),
-			// Settings Category
-			array(
-				'type'  => 'category',
-				'title' => __( 'Settings', 'puzzlingcrm' ),
-			),
-			array(
-				'id'       => 'settings',
-				'title'    => __( 'General Settings', 'puzzlingcrm' ),
-				'url'      => $dashboard_url . '/settings',
-				'icon'     => 'ri-settings-3-line',
-			),
-		);
+		// Module 1: داشبورد پیشفرض
+		if ( self::is_module_enabled( 'dashboard' ) ) {
+			$items[] = array( 'type' => 'category', 'title' => __( 'داشبورد پیشفرض', 'puzzlingcrm' ) );
+			$items[] = array( 'id' => 'dashboard', 'title' => __( 'داشبورد', 'puzzlingcrm' ), 'url' => $dashboard_url, 'icon' => 'ri-home-4-line' );
+			$items[] = array( 'id' => 'reports', 'title' => __( 'گزارشات کلی', 'puzzlingcrm' ), 'url' => $dashboard_url . '/reports', 'icon' => 'ri-bar-chart-box-line' );
+		}
+
+		// Module 2: مدیریت پروژه
+		if ( self::is_module_enabled( 'projects' ) ) {
+			$items[] = array( 'type' => 'category', 'title' => __( 'مدیریت پروژه', 'puzzlingcrm' ) );
+			$items[] = array( 'id' => 'projects', 'title' => __( 'پروژه‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/projects', 'icon' => 'ri-folder-2-line' );
+			$items[] = array( 'id' => 'contracts', 'title' => __( 'قراردادها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/contracts', 'icon' => 'ri-file-text-line' );
+			$items[] = array( 'id' => 'tasks', 'title' => __( 'وظایف', 'puzzlingcrm' ), 'url' => $dashboard_url . '/tasks', 'icon' => 'ri-task-line' );
+			$items[] = array( 'id' => 'appointments', 'title' => __( 'قرار ملاقات‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/appointments', 'icon' => 'ri-calendar-check-line' );
+		}
+
+		// Module 3: ارتباط با مشتری (CRM)
+		if ( self::is_module_enabled( 'crm' ) ) {
+			$items[] = array( 'type' => 'category', 'title' => __( 'ارتباط با مشتری', 'puzzlingcrm' ) );
+			$items[] = array( 'id' => 'leads', 'title' => __( 'سرنخ‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/leads', 'icon' => 'ri-user-add-line' );
+			$items[] = array( 'id' => 'customers', 'title' => __( 'مشتریان', 'puzzlingcrm' ), 'url' => $dashboard_url . '/customers', 'icon' => 'ri-group-line' );
+			$items[] = array( 'id' => 'tickets', 'title' => __( 'تیکت‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/tickets', 'icon' => 'ri-customer-service-2-line' );
+			$items[] = array( 'id' => 'invoices', 'title' => __( 'پیش‌فاکتورها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/invoices', 'icon' => 'ri-file-list-3-line' );
+			$items[] = array( 'id' => 'services', 'title' => __( 'خدمات و محصولات', 'puzzlingcrm' ), 'url' => $dashboard_url . '/services', 'icon' => 'ri-service-line' );
+			$items[] = array( 'id' => 'campaigns', 'title' => __( 'کمپین‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/campaigns', 'icon' => 'ri-megaphone-line' );
+			$items[] = array( 'id' => 'consultations', 'title' => __( 'مشاوره‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/consultations', 'icon' => 'ri-discuss-line' );
+			$items[] = array( 'id' => 'staff', 'title' => __( 'کارکنان', 'puzzlingcrm' ), 'url' => $dashboard_url . '/staff', 'icon' => 'ri-user-star-line' );
+		}
+
+		// Module 4: حسابداری
+		if ( self::is_module_enabled( 'accounting' ) ) {
+			$items[] = array( 'type' => 'category', 'title' => __( 'حسابداری', 'puzzlingcrm' ) );
+			$items[] = array( 'id' => 'accounting', 'title' => __( 'داشبورد حسابداری', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting', 'icon' => 'ri-calculator-line' );
+			$items[] = array( 'id' => 'accounting-persons', 'title' => __( 'اشخاص (طرف‌های حساب)', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/persons', 'icon' => 'ri-user-line' );
+			$items[] = array( 'id' => 'accounting-products', 'title' => __( 'کالا و خدمات', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/products', 'icon' => 'ri-box-3-line' );
+			$items[] = array( 'id' => 'accounting-invoices', 'title' => __( 'فاکتورها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/invoices', 'icon' => 'ri-file-list-3-line' );
+			$items[] = array( 'id' => 'accounting-cash-accounts', 'title' => __( 'حساب‌های بانک/صندوق', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/cash-accounts', 'icon' => 'ri-bank-line' );
+			$items[] = array( 'id' => 'accounting-receipts', 'title' => __( 'رسید و پرداخت', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/receipts', 'icon' => 'ri-exchange-dollar-line' );
+			$items[] = array( 'id' => 'accounting-checks', 'title' => __( 'چک‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/checks', 'icon' => 'ri-bank-card-line' );
+			$items[] = array( 'id' => 'accounting-chart', 'title' => __( 'نمودار حساب‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/chart', 'icon' => 'ri-book-open-line' );
+			$items[] = array( 'id' => 'accounting-journals', 'title' => __( 'اسناد حسابداری', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/journals', 'icon' => 'ri-file-list-3-line' );
+			$items[] = array( 'id' => 'accounting-ledger', 'title' => __( 'دفتر کل / معین', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/ledger', 'icon' => 'ri-book-2-line' );
+			$items[] = array( 'id' => 'accounting-reports', 'title' => __( 'گزارشات مالی', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/reports', 'icon' => 'ri-bar-chart-2-line' );
+			$items[] = array( 'id' => 'accounting-fiscal-year', 'title' => __( 'سال مالی', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/fiscal-year', 'icon' => 'ri-calendar-line' );
+			$items[] = array( 'id' => 'accounting-settings', 'title' => __( 'تنظیمات حسابداری', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/settings', 'icon' => 'ri-settings-3-line' );
+		}
+
+		// System & Settings
+		$items[] = array( 'type' => 'category', 'title' => __( 'سیستم و تنظیمات', 'puzzlingcrm' ) );
+		$items[] = array( 'id' => 'licenses', 'title' => __( 'لایسنس‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/licenses', 'icon' => 'ri-key-2-line' );
+		$items[] = array( 'id' => 'logs', 'title' => __( 'لاگ‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/logs', 'icon' => 'ri-file-list-2-line' );
+		$items[] = array( 'id' => 'visitor-statistics', 'title' => __( 'آمار بازدید', 'puzzlingcrm' ), 'url' => $dashboard_url . '/visitor-statistics', 'icon' => 'ri-line-chart-line' );
+		$items[] = array( 'id' => 'settings', 'title' => __( 'تنظیمات عمومی', 'puzzlingcrm' ), 'url' => $dashboard_url . '/settings', 'icon' => 'ri-settings-3-line' );
+
+		return $items;
 	}
 
 	/**
@@ -269,38 +158,12 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 		$dashboard_url = home_url( '/dashboard' );
 
 		return array(
-			array(
-				'id'    => 'dashboard',
-				'title' => __( 'Dashboard', 'puzzlingcrm' ),
-				'url'   => $dashboard_url,
-				'icon'  => 'ri-home-4-line',
-			),
-			array(
-				'type'  => 'category',
-				'title' => __( 'Leads', 'puzzlingcrm' ),
-			),
-			array(
-				'id'    => 'leads',
-				'title' => __( 'Leads', 'puzzlingcrm' ),
-				'url'   => $dashboard_url . '/leads',
-				'icon'  => 'ri-user-add-line',
-			),
-			array(
-				'type'  => 'category',
-				'title' => __( 'Sales', 'puzzlingcrm' ),
-			),
-			array(
-				'id'    => 'contracts',
-				'title' => __( 'Contracts', 'puzzlingcrm' ),
-				'url'   => $dashboard_url . '/contracts',
-				'icon'  => 'ri-file-text-line',
-			),
-			array(
-				'id'    => 'customers',
-				'title' => __( 'Customers', 'puzzlingcrm' ),
-				'url'   => $dashboard_url . '/customers',
-				'icon'  => 'ri-group-line',
-			),
+			array( 'type' => 'category', 'title' => __( 'داشبورد پیشفرض', 'puzzlingcrm' ) ),
+			array( 'id' => 'dashboard', 'title' => __( 'داشبورد', 'puzzlingcrm' ), 'url' => $dashboard_url, 'icon' => 'ri-home-4-line' ),
+			array( 'type' => 'category', 'title' => __( 'ارتباط با مشتری', 'puzzlingcrm' ) ),
+			array( 'id' => 'leads', 'title' => __( 'سرنخ‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/leads', 'icon' => 'ri-user-add-line' ),
+			array( 'id' => 'contracts', 'title' => __( 'قراردادها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/contracts', 'icon' => 'ri-file-text-line' ),
+			array( 'id' => 'customers', 'title' => __( 'مشتریان', 'puzzlingcrm' ), 'url' => $dashboard_url . '/customers', 'icon' => 'ri-group-line' ),
 		);
 	}
 
@@ -311,33 +174,33 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 	 */
 	private static function get_finance_menu() {
 		$dashboard_url = home_url( '/dashboard' );
+		$items          = array();
 
-		return array(
-			array(
-				'id'    => 'dashboard',
-				'title' => __( 'Dashboard', 'puzzlingcrm' ),
-				'url'   => $dashboard_url,
-				'icon'  => 'ri-home-4-line',
-			),
-			array(
-				'id'    => 'contracts',
-				'title' => __( 'Contracts', 'puzzlingcrm' ),
-				'url'   => $dashboard_url . '/contracts',
-				'icon'  => 'ri-file-text-line',
-			),
-			array(
-				'id'    => 'invoices',
-				'title' => __( 'Invoices', 'puzzlingcrm' ),
-				'url'   => $dashboard_url . '/invoices',
-				'icon'  => 'ri-file-list-3-line',
-			),
-			array(
-				'id'    => 'reports',
-				'title' => __( 'Reports', 'puzzlingcrm' ),
-				'url'   => $dashboard_url . '/reports',
-				'icon'  => 'ri-bar-chart-box-line',
-			),
-		);
+		$items[] = array( 'type' => 'category', 'title' => __( 'داشبورد پیشفرض', 'puzzlingcrm' ) );
+		$items[] = array( 'id' => 'dashboard', 'title' => __( 'داشبورد', 'puzzlingcrm' ), 'url' => $dashboard_url, 'icon' => 'ri-home-4-line' );
+		$items[] = array( 'id' => 'reports', 'title' => __( 'گزارشات', 'puzzlingcrm' ), 'url' => $dashboard_url . '/reports', 'icon' => 'ri-bar-chart-box-line' );
+		$items[] = array( 'type' => 'category', 'title' => __( 'ارتباط با مشتری', 'puzzlingcrm' ) );
+		$items[] = array( 'id' => 'contracts', 'title' => __( 'قراردادها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/contracts', 'icon' => 'ri-file-text-line' );
+		$items[] = array( 'id' => 'invoices', 'title' => __( 'پیش‌فاکتورها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/invoices', 'icon' => 'ri-file-list-3-line' );
+
+		if ( self::is_module_enabled( 'accounting' ) ) {
+			$items[] = array( 'type' => 'category', 'title' => __( 'حسابداری', 'puzzlingcrm' ) );
+			$items[] = array( 'id' => 'accounting', 'title' => __( 'داشبورد حسابداری', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting', 'icon' => 'ri-calculator-line' );
+			$items[] = array( 'id' => 'accounting-persons', 'title' => __( 'اشخاص (طرف‌های حساب)', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/persons', 'icon' => 'ri-user-line' );
+			$items[] = array( 'id' => 'accounting-products', 'title' => __( 'کالا و خدمات', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/products', 'icon' => 'ri-box-3-line' );
+			$items[] = array( 'id' => 'accounting-invoices', 'title' => __( 'فاکتورها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/invoices', 'icon' => 'ri-file-list-3-line' );
+			$items[] = array( 'id' => 'accounting-cash-accounts', 'title' => __( 'حساب‌های بانک/صندوق', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/cash-accounts', 'icon' => 'ri-bank-line' );
+			$items[] = array( 'id' => 'accounting-receipts', 'title' => __( 'رسید و پرداخت', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/receipts', 'icon' => 'ri-exchange-dollar-line' );
+			$items[] = array( 'id' => 'accounting-checks', 'title' => __( 'چک‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/checks', 'icon' => 'ri-bank-card-line' );
+			$items[] = array( 'id' => 'accounting-chart', 'title' => __( 'نمودار حساب‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/chart', 'icon' => 'ri-book-open-line' );
+			$items[] = array( 'id' => 'accounting-journals', 'title' => __( 'اسناد حسابداری', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/journals', 'icon' => 'ri-file-list-3-line' );
+			$items[] = array( 'id' => 'accounting-ledger', 'title' => __( 'دفتر کل / معین', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/ledger', 'icon' => 'ri-book-2-line' );
+			$items[] = array( 'id' => 'accounting-reports', 'title' => __( 'گزارشات مالی', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/reports', 'icon' => 'ri-bar-chart-2-line' );
+			$items[] = array( 'id' => 'accounting-fiscal-year', 'title' => __( 'سال مالی', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/fiscal-year', 'icon' => 'ri-calendar-line' );
+			$items[] = array( 'id' => 'accounting-settings', 'title' => __( 'تنظیمات حسابداری', 'puzzlingcrm' ), 'url' => $dashboard_url . '/accounting/settings', 'icon' => 'ri-settings-3-line' );
+		}
+
+		return $items;
 	}
 
 	/**
@@ -349,30 +212,12 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 		$dashboard_url = home_url( '/dashboard' );
 
 		return array(
-			array(
-				'id'    => 'dashboard',
-				'title' => __( 'Dashboard', 'puzzlingcrm' ),
-				'url'   => $dashboard_url,
-				'icon'  => 'ri-home-4-line',
-			),
-			array(
-				'id'    => 'projects',
-				'title' => __( 'My Projects', 'puzzlingcrm' ),
-				'url'   => $dashboard_url . '/projects',
-				'icon'  => 'ri-folder-2-line',
-			),
-			array(
-				'id'    => 'tasks',
-				'title' => __( 'My Tasks', 'puzzlingcrm' ),
-				'url'   => $dashboard_url . '/tasks',
-				'icon'  => 'ri-task-line',
-			),
-			array(
-				'id'    => 'tickets',
-				'title' => __( 'Tickets', 'puzzlingcrm' ),
-				'url'   => $dashboard_url . '/tickets',
-				'icon'  => 'ri-customer-service-2-line',
-			),
+			array( 'type' => 'category', 'title' => __( 'داشبورد پیشفرض', 'puzzlingcrm' ) ),
+			array( 'id' => 'dashboard', 'title' => __( 'داشبورد', 'puzzlingcrm' ), 'url' => $dashboard_url, 'icon' => 'ri-home-4-line' ),
+			array( 'type' => 'category', 'title' => __( 'مدیریت پروژه', 'puzzlingcrm' ) ),
+			array( 'id' => 'projects', 'title' => __( 'پروژه‌های من', 'puzzlingcrm' ), 'url' => $dashboard_url . '/projects', 'icon' => 'ri-folder-2-line' ),
+			array( 'id' => 'tasks', 'title' => __( 'وظایف من', 'puzzlingcrm' ), 'url' => $dashboard_url . '/tasks', 'icon' => 'ri-task-line' ),
+			array( 'id' => 'tickets', 'title' => __( 'تیکت‌ها', 'puzzlingcrm' ), 'url' => $dashboard_url . '/tickets', 'icon' => 'ri-customer-service-2-line' ),
 		);
 	}
 
@@ -385,36 +230,11 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 		$dashboard_url = home_url( '/dashboard' );
 
 		return array(
-			array(
-				'id'    => 'dashboard',
-				'title' => __( 'Dashboard', 'puzzlingcrm' ),
-				'url'   => $dashboard_url,
-				'icon'  => 'ri-home-4-line',
-			),
-			array(
-				'id'    => 'projects',
-				'title' => __( 'My Projects', 'puzzlingcrm' ),
-				'url'   => $dashboard_url . '/projects',
-				'icon'  => 'ri-folder-2-line',
-			),
-			array(
-				'id'    => 'contracts',
-				'title' => __( 'My Contracts', 'puzzlingcrm' ),
-				'url'   => $dashboard_url . '/contracts',
-				'icon'  => 'ri-file-text-line',
-			),
-			array(
-				'id'    => 'invoices',
-				'title' => __( 'My Invoices', 'puzzlingcrm' ),
-				'url'   => $dashboard_url . '/invoices',
-				'icon'  => 'ri-file-list-3-line',
-			),
-			array(
-				'id'    => 'tickets',
-				'title' => __( 'Support Tickets', 'puzzlingcrm' ),
-				'url'   => $dashboard_url . '/tickets',
-				'icon'  => 'ri-customer-service-2-line',
-			),
+			array( 'id' => 'dashboard', 'title' => __( 'داشبورد', 'puzzlingcrm' ), 'url' => $dashboard_url, 'icon' => 'ri-home-4-line' ),
+			array( 'id' => 'projects', 'title' => __( 'پروژه‌های من', 'puzzlingcrm' ), 'url' => $dashboard_url . '/projects', 'icon' => 'ri-folder-2-line' ),
+			array( 'id' => 'contracts', 'title' => __( 'قراردادهای من', 'puzzlingcrm' ), 'url' => $dashboard_url . '/contracts', 'icon' => 'ri-file-text-line' ),
+			array( 'id' => 'invoices', 'title' => __( 'پیش‌فاکتورهای من', 'puzzlingcrm' ), 'url' => $dashboard_url . '/invoices', 'icon' => 'ri-file-list-3-line' ),
+			array( 'id' => 'tickets', 'title' => __( 'تیکت‌های پشتیبانی', 'puzzlingcrm' ), 'url' => $dashboard_url . '/tickets', 'icon' => 'ri-customer-service-2-line' ),
 		);
 	}
 
@@ -434,19 +254,15 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 		if ( in_array( 'administrator', $roles, true ) || in_array( 'system_manager', $roles, true ) ) {
 			return 'system_manager';
 		}
-
 		if ( in_array( 'finance_manager', $roles, true ) ) {
 			return 'finance_manager';
 		}
-
 		if ( in_array( 'team_member', $roles, true ) ) {
 			return 'team_member';
 		}
-
 		if ( in_array( 'sales_consultant', $roles, true ) ) {
 			return 'sales_consultant';
 		}
-
 		if ( in_array( 'customer', $roles, true ) ) {
 			return 'customer';
 		}
@@ -461,4 +277,3 @@ class PuzzlingCRM_Sidebar_Menu_Builder {
 		self::$menu_cache = array();
 	}
 }
-

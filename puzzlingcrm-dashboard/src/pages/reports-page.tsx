@@ -98,7 +98,7 @@ export function ReportsPage() {
     if (!data) return
     import("jspdf").then(({ jsPDF }) => {
       const doc = new jsPDF("p", "mm", "a4")
-      const pageW = doc.getPageWidth()
+      const pageW = (doc as unknown as { internal: { pageSize: { width: number } } }).internal.pageSize.width
       let y = 20
       doc.setFontSize(18)
       doc.text("گزارش PuzzlingCRM", pageW / 2, y, { align: "center" })

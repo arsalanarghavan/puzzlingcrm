@@ -23,6 +23,7 @@ $base_url = remove_query_arg('puzzling_notice');
         <a href="<?php echo add_query_arg('tab', 'leads', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'leads' ? 'active' : ''; ?>"><i class="ri-user-add-line"></i> وضعیت‌های لید</a>
         <a href="<?php echo add_query_arg('tab', 'log_debug', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'log_debug' ? 'active' : ''; ?>"><i class="ri-bug-line"></i> لاگ و دیباگ</a>
         <a href="<?php echo add_query_arg('tab', 'visitor_statistics', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'visitor_statistics' ? 'active' : ''; ?>"><i class="ri-line-chart-line"></i> آمار بازدید</a>
+        <a href="<?php echo add_query_arg('tab', 'modules', $base_url); ?>" class="pzl-tab <?php echo $active_tab == 'modules' ? 'active' : ''; ?>"><i class="ri-apps-line"></i> ماژول‌ها</a>
     </div>
 
     <div class="pzl-dashboard-tab-content">
@@ -75,6 +76,8 @@ $base_url = remove_query_arg('puzzling_notice');
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-log-debug.php';
         } elseif ( $active_tab == 'visitor_statistics' ) {
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-visitor-statistics.php';
+        } elseif ( $active_tab == 'modules' ) {
+            include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-modules.php';
         } else { // Default to 'payment'
             include PUZZLINGCRM_PLUGIN_DIR . 'templates/partials/settings-payment.php';
         }

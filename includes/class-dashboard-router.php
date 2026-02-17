@@ -184,6 +184,16 @@ class PuzzlingCRM_Dashboard_Router {
             'partial' => 'page-my-profile',
         ],
         ];
+
+        // Accounting module routes (when module is enabled)
+        if ( class_exists( 'PuzzlingCRM_Sidebar_Menu_Builder' ) && PuzzlingCRM_Sidebar_Menu_Builder::is_module_enabled( 'accounting' ) ) {
+            self::$routes['accounting'] = [
+                'title'  => __( 'حسابداری', 'puzzlingcrm' ),
+                'icon'   => 'ri-calculator-line',
+                'roles'  => [ 'system_manager', 'finance_manager' ],
+                'partial' => 'page-accounting',
+            ];
+        }
     }
 
     /**
@@ -237,6 +247,7 @@ class PuzzlingCRM_Dashboard_Router {
 
     public function add_rewrite_rules() {
         add_rewrite_rule('^dashboard/?$', 'index.php?puzzling_dashboard=1', 'top');
+        add_rewrite_rule('^dashboard/accounting/([^/]+)/?$', 'index.php?puzzling_dashboard=1&dashboard_page=accounting', 'top');
         add_rewrite_rule('^dashboard/([^/]+)/?$', 'index.php?puzzling_dashboard=1&dashboard_page=$matches[1]', 'top');
         add_rewrite_rule('^dashboard/([^/]+)/([0-9]+)/?$', 'index.php?puzzling_dashboard=1&dashboard_page=$matches[1]&item_id=$matches[2]', 'top');
         add_rewrite_rule('^dashboard-embed/([^/]+)/?$', 'index.php?puzzling_embed=1&embed_page=$matches[1]', 'top');

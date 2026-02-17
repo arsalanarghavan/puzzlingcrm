@@ -21,6 +21,19 @@ import { VisitorStatisticsPage } from "@/pages/visitor-statistics-page"
 import { SettingsPage } from "@/pages/settings-page"
 import { ServicesPage } from "@/pages/services-page"
 import { CampaignsPage } from "@/pages/campaigns-page"
+import { AccountingDashboardPage } from "@/pages/accounting/AccountingDashboardPage"
+import { ChartOfAccountsPage } from "@/pages/accounting/ChartOfAccountsPage"
+import { JournalsPage } from "@/pages/accounting/JournalsPage"
+import { LedgerPage } from "@/pages/accounting/LedgerPage"
+import { AccountingReportsPage } from "@/pages/accounting/AccountingReportsPage"
+import { FiscalYearPage } from "@/pages/accounting/FiscalYearPage"
+import { AccountingSettingsPage } from "@/pages/accounting/AccountingSettingsPage"
+import { PersonsPage } from "@/pages/accounting/PersonsPage"
+import { ProductsPage } from "@/pages/accounting/ProductsPage"
+import { InvoicesPage } from "@/pages/accounting/InvoicesPage"
+import { CashAccountsPage } from "@/pages/accounting/CashAccountsPage"
+import { ReceiptsPage } from "@/pages/accounting/ReceiptsPage"
+import { ChecksPage } from "@/pages/accounting/ChecksPage"
 import { getConfigOrNull } from "@/api/client"
 
 function AppRoutes() {
@@ -46,6 +59,19 @@ function AppRoutes() {
         <Route path="services/*" element={<ServicesPage />} />
         <Route path="campaigns/*" element={<CampaignsPage />} />
         <Route path="settings/*" element={<SettingsPage />} />
+        <Route path="accounting" element={<AccountingDashboardPage />} />
+        <Route path="accounting/chart" element={<ChartOfAccountsPage />} />
+        <Route path="accounting/journals" element={<JournalsPage />} />
+        <Route path="accounting/ledger" element={<LedgerPage />} />
+        <Route path="accounting/reports" element={<AccountingReportsPage />} />
+        <Route path="accounting/fiscal-year" element={<FiscalYearPage />} />
+        <Route path="accounting/settings" element={<AccountingSettingsPage />} />
+        <Route path="accounting/persons" element={<PersonsPage />} />
+        <Route path="accounting/products" element={<ProductsPage />} />
+        <Route path="accounting/invoices" element={<InvoicesPage />} />
+        <Route path="accounting/cash-accounts" element={<CashAccountsPage />} />
+        <Route path="accounting/receipts" element={<ReceiptsPage />} />
+        <Route path="accounting/checks" element={<ChecksPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

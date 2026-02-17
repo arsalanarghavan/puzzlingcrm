@@ -100,6 +100,9 @@ class PuzzlingCRM {
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-license-manager.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/ajax/class-license-ajax-handler.php';
         require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/class-license-api.php';
+
+        // Accounting module (when enabled via settings)
+        require_once PUZZLINGCRM_PLUGIN_DIR . 'includes/modules/accounting/class-accounting-module.php';
         
         // ENTERPRISE FEATURES (Lazy loaded - only when needed)
         // These will be loaded on-demand through autoloader
@@ -153,6 +156,7 @@ class PuzzlingCRM {
         
         // Initialize all core classes
         new PuzzlingCRM_Admin_Menu();
+        PuzzlingCRM_Accounting_Module::load();
         new PuzzlingCRM_CPT_Manager();
         new PuzzlingCRM_Roles_Manager();
         new PuzzlingCRM_User_Profile();
@@ -189,8 +193,8 @@ class PuzzlingCRM {
             }
         });
         
-        // Elementor Pro form integration - load when Elementor is ready
-        add_action( 'elementor/loaded', [ $this, 'init_elementor_integration' ] );
+        // Elementor Pro form integration - run early so we register before forms module fires actions/register
+        add_action( 'elementor_pro/init', [ $this, 'init_elementor_integration' ], 0 );
 
         // Load advanced features only when needed
         add_action('admin_enqueue_scripts', function($hook) {
